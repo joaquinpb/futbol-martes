@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>ABM Jugadores</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #ccc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    button {
+      margin-left: 0.5rem;
+    }
+    input[type="text"] {
+      padding: 0.3rem;
+      font-size: 1rem;
+      width: 60%;
+    }
+    #addPlayerInput {
+      width: 70%;
+      padding: 0.4rem;
+      font-size: 1rem;
+    }
+    #addPlayerBtn {
+      padding: 0.4rem 1rem;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gestión de Jugadores</h1>
+
+  <div>
+    <input type="text" id="addPlayerInput" placeholder="Nuevo jugador" />
+    <button id="addPlayerBtn">Agregar</button>
+  </div>
+
+  <ul id="playerList"></ul>
+
+  <script>
+    const SHEETDB_URL = "https://sheetdb.io/api/v1/t7wt49lsb6rmd";
+
+    const playerList = document.getElementById("playerList");
+    const addPlayerInput = document.getElementById("addPlayerInput");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+
+    // Cargar jugadores desde SheetDB
+    async function loadPlayers() {
+      playerList.innerHTML = "Cargando...";
+      try {
+        const res = await fetch(SHEETDB_URL);
+        const data = await res.json();
+        playerList.innerHTML = "";
+
+        data.forEach((item, index) => {
+          const li = document.createElement("li");
+          li.dataset.id = item.id || index; // id para operaciones
+
+          const span = document.createElement("span");
+          span.textContent = item.Nombre;
+
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "Editar";
+          editBtn.onclick = () => editPlayer(li, item.Nombre);
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.textContent = "Eliminar";
+          deleteBtn.onclick = () => deletePlayer(li.dataset.id);
+
+          li.appendChild(span);
+          li.appendChild(editBtn);
+          li.appendChild(deleteBtn);
+          playerList.appendChild(li);
+        });
+      } catch (e) {
+        playerList.innerHTML = "Error al cargar jugadores.";
+        console.error(e);
+      }
+    }
+
+    // Agregar jugador
+    addPlayerBtn.onclick = async () => {
+      const nombre = addPlayerInput.value.trim();
+      if (!nombre) {
+        alert("El nombre no puede estar vacío");
+        return;
+      }
+      try {
+        const res = await fetch(SHEETDB_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ data: { Nombre: nombre } })
+        });
+        if (res.ok) {
+          addPlayerInput.value = "";
+          loadPlayers();
+        } else {
+          alert("Error al agregar jugador");
+        }
+      } catch (e) {
+        alert("Error al agregar jugador");
+        console.error(e);
+      }
+    };
+
+    // Editar jugador (permite cambiar nombre inline)
+    function editPlayer(li, oldName) {
+      li.innerHTML = "";
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = oldName;
+
+      const saveBtn = document.createElement("button");
+      saveBtn.textContent = "Guardar";
+      saveBtn.onclick = () => savePlayer(li.dataset.id, input.value);
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.textContent = "Cancelar";
+      cancelBtn.onclick = () => loadPlayers();
+
+      li.appendChild(input);
+      li.appendChild(saveBtn);
+      li.appendChild(cancelBtn);
+    }
+
+    // Guardar jugador modificado
+    async function savePlayer(id, nuevoNombre) {
+      nuevoNombre = nuevoNombre.trim();
+      if (!nuevoNombre) {
+        alert("El nombre no puede estar vacío");
+        return;
+      }
+      try {
+        const res = await fetch(`${SHEETDB_URL}/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ data: { Nombre: nuevoNombre } })
+        });
+        if (res.ok) {
+          loadPlayers();
+        } else {
+          alert("Error al guardar jugador");
+        }
+      } catch (e) {
+        alert("Error al guardar jugador");
+        console.error(e);
+      }
+    }
+
+    // Borrar jugador
+    async function deletePlayer(id) {
+      if (!confirm("¿Seguro que querés borrar este jugador?")) return;
+      try {
+        const res = await fetch(`${SHEETDB_URL}/${id}`, {
+          method: "DELETE"
+        });
+        if (res.ok) {
+          loadPlayers();
+        } else {
+          alert("Error al borrar jugador");
+        }
+      } catch (e) {
+        alert("Error al borrar jugador");
+        console.error(e);
+      }
+    }
+
+    loadPlayers();
+  </script>
+</body>
+</html>
