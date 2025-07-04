@@ -65,22 +65,29 @@
       try {
         const res = await fetch(`${SHEETDB_URL_BASE}/search?sheet=Jugadores`);
         const data = await res.json();
+        console.log("Respuesta SheetDB:", data); // <--- para ver cómo viene
+
+        // En data.data están los jugadores reales
+        const jugadores = data.data || [];
+
         playerList.innerHTML = "";
 
-        data.forEach(item => {
+        jugadores.forEach(item => {
+          const nombre = item.Nombre;
+
           const li = document.createElement("li");
-          li.dataset.nombre = item.Nombre;
+          li.dataset.nombre = nombre;
 
           const span = document.createElement("span");
-          span.textContent = item.Nombre;
+          span.textContent = nombre;
 
           const editBtn = document.createElement("button");
           editBtn.textContent = "Editar";
-          editBtn.onclick = () => editPlayer(li, item.Nombre);
+          editBtn.onclick = () => editPlayer(li, nombre);
 
           const deleteBtn = document.createElement("button");
           deleteBtn.textContent = "Eliminar";
-          deleteBtn.onclick = () => deletePlayer(item.Nombre);
+          deleteBtn.onclick = () => deletePlayer(nombre);
 
           li.appendChild(span);
           li.appendChild(editBtn);
