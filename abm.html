@@ -54,7 +54,8 @@
   <ul id="playerList"></ul>
 
   <script>
-    const SHEETDB_URL = "https://sheetdb.io/api/v1/t7wt49lsb6rmd/sheet/Jugadores";
+    // Cambiá esta URL por la que te dio SheetDB para la hoja Jugadores, con /sheet/Jugadores al final
+    const SHEETDB_URL = "https://sheetdb.io/api/v1/9ji2hru4zyp43/sheet/Jugadores";
 
     const playerList = document.getElementById("playerList");
     const addPlayerInput = document.getElementById("addPlayerInput");
@@ -70,7 +71,8 @@
 
         data.forEach((item, index) => {
           const li = document.createElement("li");
-          li.dataset.id = item.id || index; // id para operaciones
+          // SheetDB puede no devolver un id único, usamos el índice si no está
+          li.dataset.id = item.id || (index + 1);
 
           const span = document.createElement("span");
           span.textContent = item.Nombre;
@@ -113,15 +115,16 @@
           addPlayerInput.value = "";
           loadPlayers();
         } else {
-          alert("Error al agregar jugador");
+          const errorText = await res.text();
+          alert("Error al agregar jugador: " + errorText);
         }
       } catch (e) {
-        alert("Error al agregar jugador");
+        alert("Error al agregar jugador: " + e.message);
         console.error(e);
       }
     };
 
-    // Editar jugador (permite cambiar nombre inline)
+    // Editar jugador (inline)
     function editPlayer(li, oldName) {
       li.innerHTML = "";
 
@@ -160,10 +163,11 @@
         if (res.ok) {
           loadPlayers();
         } else {
-          alert("Error al guardar jugador");
+          const errorText = await res.text();
+          alert("Error al guardar jugador: " + errorText);
         }
       } catch (e) {
-        alert("Error al guardar jugador");
+        alert("Error al guardar jugador: " + e.message);
         console.error(e);
       }
     }
@@ -178,10 +182,11 @@
         if (res.ok) {
           loadPlayers();
         } else {
-          alert("Error al borrar jugador");
+          const errorText = await res.text();
+          alert("Error al borrar jugador: " + errorText);
         }
       } catch (e) {
-        alert("Error al borrar jugador");
+        alert("Error al borrar jugador: " + e.message);
         console.error(e);
       }
     }
