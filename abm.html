@@ -54,25 +54,22 @@
   <ul id="playerList"></ul>
 
   <script>
-    // Cambiá esta URL por la que te dio SheetDB para la hoja Jugadores, con /sheet/Jugadores al final
-    const SHEETDB_URL = "https://sheetdb.io/api/v1/ttznrmj2vfc3v/sheet/Jugadores";
+    const SHEETDB_URL_BASE = "https://sheetdb.io/api/v1/ttznrmj2vfc3v";
 
     const playerList = document.getElementById("playerList");
     const addPlayerInput = document.getElementById("addPlayerInput");
     const addPlayerBtn = document.getElementById("addPlayerBtn");
 
-    // Cargar jugadores desde SheetDB
     async function loadPlayers() {
       playerList.innerHTML = "Cargando...";
       try {
-        const res = await fetch(SHEETDB_URL);
+        const res = await fetch(`${SHEETDB_URL_BASE}/sheet/Jugadores`);
         const data = await res.json();
         playerList.innerHTML = "";
 
-        data.forEach((item, index) => {
+        data.forEach(item => {
           const li = document.createElement("li");
-          // SheetDB puede no devolver un id único, usamos el índice si no está
-          li.dataset.id = item.id || (index + 1);
+          li.dataset.nombre = item.Nombre;
 
           const span = document.createElement("span");
           span.textContent = item.Nombre;
@@ -83,7 +80,7 @@
 
           const deleteBtn = document.createElement("button");
           deleteBtn.textContent = "Eliminar";
-          deleteBtn.onclick = () => deletePlayer(li.dataset.id);
+          deleteBtn.onclick = () => deletePlayer(item.Nombre);
 
           li.appendChild(span);
           li.appendChild(editBtn);
@@ -96,7 +93,6 @@
       }
     }
 
-    // Agregar jugador
     addPlayerBtn.onclick = async () => {
       const nombre = addPlayerInput.value.trim();
       if (!nombre) {
@@ -104,7 +100,7 @@
         return;
       }
       try {
-        const res = await fetch(SHEETDB_URL, {
+        const res = await fetch(`${SHEETDB_URL_BASE}/sheet/Jugadores`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -124,7 +120,6 @@
       }
     };
 
-    // Editar jugador (inline)
     function editPlayer(li, oldName) {
       li.innerHTML = "";
 
@@ -134,7 +129,7 @@
 
       const saveBtn = document.createElement("button");
       saveBtn.textContent = "Guardar";
-      saveBtn.onclick = () => savePlayer(li.dataset.id, input.value);
+      saveBtn.onclick = () => savePlayer(oldName, input.value);
 
       const cancelBtn = document.createElement("button");
       cancelBtn.textContent = "Cancelar";
@@ -145,21 +140,22 @@
       li.appendChild(cancelBtn);
     }
 
-    // Guardar jugador modificado
-    async function savePlayer(id, nuevoNombre) {
+    async function savePlayer(oldName, nuevoNombre) {
       nuevoNombre = nuevoNombre.trim();
       if (!nuevoNombre) {
         alert("El nombre no puede estar vacío");
         return;
       }
+
       try {
-        const res = await fetch(`${SHEETDB_URL}/${id}`, {
+        const res = await fetch(`${SHEETDB_URL_BASE}/Nombre/${encodeURIComponent(oldName)}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({ data: { Nombre: nuevoNombre } })
         });
+
         if (res.ok) {
           loadPlayers();
         } else {
@@ -172,11 +168,10 @@
       }
     }
 
-    // Borrar jugador
-    async function deletePlayer(id) {
+    async function deletePlayer(nombre) {
       if (!confirm("¿Seguro que querés borrar este jugador?")) return;
       try {
-        const res = await fetch(`${SHEETDB_URL}/${id}`, {
+        const res = await fetch(`${SHEETDB_URL_BASE}/Nombre/${encodeURIComponent(nombre)}`, {
           method: "DELETE"
         });
         if (res.ok) {
