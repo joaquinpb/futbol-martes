@@ -65,20 +65,29 @@
       document.getElementById("matchForm").addEventListener("submit", function (e) {
         e.preventDefault();
 
-        const darkTeam = Array.from(darkTeamSelect.selectedOptions).map(opt => opt.value);
-        const lightTeam = Array.from(lightTeamSelect.selectedOptions).map(opt => opt.value);
+        const darkTeam = Array.from(darkTeamSelect.selectedOptions).map(opt => opt.value).join(", ");
+        const lightTeam = Array.from(lightTeamSelect.selectedOptions).map(opt => opt.value).join(", ");
+        const fecha = new Date().toLocaleString("es-AR");
 
-        const formData = new FormData();
-        formData.append("equipoOscuro", darkTeam.join(", "));
-        formData.append("equipoClaro", lightTeam.join(", "));
+        // Reemplazá esta URL por la tuya de SheetDB
+        const SHEETDB_URL = "https://sheetdb.io/api/v1/t7wt49lsb6rmd";
 
-        fetch("https://sheetdb.io/api/v1/t7wt49lsb6rmd", {
+        fetch(SHEETDB_URL, {
           method: "POST",
-          body: formData,
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            data: {
+              Fecha: fecha,
+              Oscuros: darkTeam,
+              Claros: lightTeam
+            }
+          })
         })
-        .then(res => res.text())
-        .then(msg => {
-          alert("Guardado correctamente en Google Sheets");
+        .then(res => res.json())
+        .then(res => {
+          alert("Guardado correctamente en la hoja");
           darkTeamSelect.selectedIndex = -1;
           lightTeamSelect.selectedIndex = -1;
         })
