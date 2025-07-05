@@ -2,7 +2,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHgezrkEPvQYPGIlV2rcMne9d4px1ZfJ_60rVR4CsGunuyKFazNypVmGtYVYZwsuF6/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v1.0";
+const SCRIPT_VERSION = "v1.1"; // Updated version
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
@@ -57,7 +57,7 @@ async function cargarJugadores() {
         if (mensajeElem) {
             mensajeElem.textContent = errorMessage;
             mensajeElem.style.backgroundColor = '#f8d7da';
-            mensajeElem.style.color = '#721c24';
+            mensajeElem.color = '#721c24';
         } else {
             alert(errorMessage + "\nPor favor, revisa la consola del navegador para más detalles.");
         }
@@ -464,13 +464,14 @@ async function registrarResultado() {
         return;
     }
 
+    // Prepara los datos para la actualización del partido y los puntos de los jugadores
     const data = {
-        originalFecha: selectedMatch.Fecha,
-        nuevaFecha: selectedMatch.Fecha.split('T')[0],
+        originalFecha: selectedMatch.Fecha, // Fecha original del partido para identificarlo en el Apps Script
+        nuevaFecha: selectedMatch.Fecha.split('T')[0], // Mantenemos la misma fecha, solo formato YYYY-MM-DD
         equipoClaros: selectedMatch.EquipoClaros,
         equipoOscuros: selectedMatch.EquipoOscuros,
-        ganador: ganador,
-        action: 'updateMatch'
+        ganador: ganador, // El nuevo ganador
+        action: 'updateMatch' // Acción específica para que el Apps Script actualice el partido y los puntos
     };
 
     mensajeElem.textContent = 'Registrando resultado y actualizando puntos...';
@@ -480,7 +481,7 @@ async function registrarResultado() {
     try {
         const response = await fetch(`${SCRIPT_URL}`, {
             method: 'POST',
-            mode: 'no-cors',
+            mode: 'no-cors', // Necesario para Apps Script
             headers: {
                 'Content-Type': 'application/json',
             },
