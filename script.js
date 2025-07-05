@@ -4,6 +4,16 @@
 // ¡Esta URL es la que me proporcionaste y es crucial para la comunicación!
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMfXQc7qi6YgSQkK23gDDZxalyF60NkWTJpNXIejBqMBg7UQa59JlF4-qgpyBeXRNX/exec'; // ¡URL ACTUALIZADA!
 
+// Helper function to format date from YYYY-MM-DD to DD/MM/YYYY
+function formatDateToDDMMYYYY(dateString) {
+    if (!dateString) return '';
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+}
+
+// Global variable to store pending matches for easy access
+let currentPendingMatches = [];
+
 // --- Funciones para index.html (Crear Partido) ---
 
 /**
@@ -259,19 +269,35 @@ async function guardarPartido() {
         return;
     }
 
-    // Convierte las listas de jugadores de cada equipo en cadenas separadas por comas
-    const equipoClaros = Array.from(equipoClarosSelect.options).map(opt => opt.value).join(',');
-    const equipoOscuros = Array.from(equipoOscurosSelect.options).map(opt => opt.value).join(',');
-
-    // Prepara los datos a enviar a Google Apps Script
-    const data = {
-        fecha: fecha,
-        equipoClaros: equipoClaros,
-        equipoOscuros: equipoOscuros,
-        ganador: 'PENDIENTE' // Marca el partido como pendiente de resultado
-    };
-
     try {
+        // **NUEVA VALIDACIÓN:** No se pueden agregar 2 partidos con la misma fecha
+        const existingMatchesResponse = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
+        if (!existingMatchesResponse.ok) {
+            throw new Error(`Error HTTP al verificar partidos existentes: ${existingMatchesResponse.status} ${existingMatchesResponse.statusText || ''}.`);
+        }
+        const existingMatches = await existingMatchesResponse.json();
+
+        const isDuplicateDate = existingMatches.some(match => match.Fecha === fecha);
+
+        if (isDuplicateDate) {
+            mensajeElem.textContent = 'Ya existe un partido programado para esta fecha. Por favor, elige otra fecha.';
+            mensajeElem.style.backgroundColor = '#f8d7da';
+            mensajeElem.style.color = '#721c24';
+            return; // Detiene la ejecución si la fecha es duplicada
+        }
+
+        // Convierte las listas de jugadores de cada equipo en cadenas separadas por comas
+        const equipoClaros = Array.from(equipoClarosSelect.options).map(opt => opt.value).join(',');
+        const equipoOscuros = Array.from(equipoOscurosSelect.options).map(opt => opt.value).join(',');
+
+        // Prepara los datos a enviar a Google Apps Script
+        const data = {
+            fecha: fecha,
+            equipoClaros: equipoClaros,
+            equipoOscuros: equipoOscuros,
+            ganador: 'PENDIENTE' // Marca el partido como pendiente de resultado
+        };
+
         const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`, {
             method: 'POST',
             mode: 'no-cors',
@@ -324,25 +350,22 @@ async function cargarPartidosPendientes() {
         }
 
         const partidos = await response.json();
+        currentPendingMatches = partidos.filter(p => p.Ganador === 'PENDIENTE'); // Store pending matches globally
 
-        const partidosPendientes = partidos.filter(p => p.Ganador === 'PENDIENTE');
-
-        if (partidosPendientes.length === 0) {
+        if (currentPendingMatches.length === 0) {
             mensajeElem.textContent = 'No hay partidos pendientes de registrar resultados.';
             mensajeElem.style.backgroundColor = '#e6e6e6';
             mensajeElem.style.color = '#333';
             return;
         }
 
-        // Añade cada partido pendiente como una opción en el select
-        partidosPendientes.forEach(partido => {
+        // Add each pending match as an option in the select
+        currentPendingMatches.forEach(partido => {
             const option = document.createElement('option');
-            option.value = partido.Fecha; // Usa la fecha como identificador único para el partido
-            option.textContent = `${partido.Fecha} - Claros: ${partido.EquipoClaros} vs Oscuros: ${partido.EquipoOscuros}`;
-            // Guarda los nombres de los jugadores de cada equipo en atributos 'data-'
-            // Esto es útil para calcular los puntos más tarde
-            option.dataset.equipoClaros = partido.EquipoClaros;
-            option.dataset.equipoOscuros = partido.EquipoOscuros;
+            option.value = partido.Fecha; // Use the date as a unique identifier for the match
+            // NEW FORMAT: DD/MM/AAAA
+            const formattedDate = formatDateToDDMMYYYY(partido.Fecha);
+            option.textContent = formattedDate;
             partidosSelect.appendChild(option);
         });
         mensajeElem.textContent = 'Partidos pendientes cargados exitosamente.';
@@ -355,6 +378,42 @@ async function cargarPartidosPendientes() {
         mensajeElem.style.color = '#721c24';
     }
 }
+
+/**
+ * Muestra los detalles del partido seleccionado en las cajas de texto de equipos.
+ */
+function mostrarDetallesPartido() {
+    const partidosSelect = document.getElementById('seleccionarPartido');
+    const equipoClarosDetalle = document.getElementById('equipoClarosDetalle');
+    const equipoOscurosDetalle = document.getElementById('equipoOscurosDetalle');
+    const mensajeElem = document.getElementById('mensajeResultados');
+
+    const selectedDate = partidosSelect.value;
+
+    if (!selectedDate) {
+        equipoClarosDetalle.value = '';
+        equipoOscurosDetalle.value = '';
+        mensajeElem.textContent = 'Selecciona una fecha de partido para ver los detalles.';
+        mensajeElem.style.backgroundColor = '#f0f8ff';
+        mensajeElem.style.color = '#0056b3';
+        return;
+    }
+
+    const selectedMatch = currentPendingMatches.find(match => match.Fecha === selectedDate);
+
+    if (selectedMatch) {
+        equipoClarosDetalle.value = selectedMatch.EquipoClaros.split(',').join('\n');
+        equipoOscurosDetalle.value = selectedMatch.EquipoOscuros.split(',').join('\n');
+        mensajeElem.textContent = ''; // Clear message on successful load
+    } else {
+        equipoClarosDetalle.value = '';
+        equipoOscurosDetalle.value = '';
+        mensajeElem.textContent = 'No se encontraron detalles para el partido seleccionado.';
+        mensajeElem.style.backgroundColor = '#fff3cd';
+        mensajeElem.style.color = '#856404';
+    }
+}
+
 
 /**
  * Registra el resultado de un partido seleccionado y actualiza los puntos
@@ -382,11 +441,18 @@ async function registrarResultado() {
     }
     const ganador = ganadorRadio.value; // 'Claros', 'Oscuros', o 'Empate'
 
-    // Obtiene los nombres de los jugadores de los equipos Claros y Oscuros
-    // desde los atributos 'data-' de la opción seleccionada
-    const selectedOption = partidosSelect.options[partidosSelect.selectedIndex];
-    const jugadoresClaros = selectedOption.dataset.equipoClaros.split(',');
-    const jugadoresOscuros = selectedOption.dataset.equipoOscuros.split(',');
+    // Find the selected match from the globally stored pending matches
+    const selectedMatch = currentPendingMatches.find(match => match.Fecha === fechaPartido);
+
+    if (!selectedMatch) {
+        mensajeElem.textContent = 'Error: No se encontraron los detalles del partido seleccionado. Por favor, recarga la página.';
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+        return;
+    }
+
+    const jugadoresClaros = selectedMatch.EquipoClaros.split(',');
+    const jugadoresOscuros = selectedMatch.EquipoOscuros.split(',');
 
     try {
         // 1. Obtener los puntos actuales de todos los jugadores
@@ -453,6 +519,9 @@ async function registrarResultado() {
         // Recargar la lista de partidos pendientes para que el partido recién registrado
         // (que ahora debería estar marcado manualmente como no pendiente) desaparezca.
         cargarPartidosPendientes();
+        // Clear team details after registration
+        document.getElementById('equipoClarosDetalle').value = '';
+        document.getElementById('equipoOscurosDetalle').value = '';
 
     } catch (error) {
         console.error('Error al registrar resultado o actualizar puntos:', error);
