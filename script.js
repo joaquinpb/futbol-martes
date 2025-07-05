@@ -11,16 +11,39 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMfXQc7qi6YgSQkK23g
  * los clasifica como Titulares o Suplentes y los muestra en sus respectivas listas.
  */
 async function cargarJugadores() {
+    // Obtiene referencias a todos los elementos <select> y al elemento de mensaje
     const jugadoresTitularesSelect = document.getElementById('jugadoresTitulares');
     const jugadoresSuplentesSelect = document.getElementById('jugadoresSuplentes');
-    // Limpia las opciones existentes en todos los selects
-    jugadoresTitularesSelect.innerHTML = '';
-    jugadoresSuplentesSelect.innerHTML = '';
-    document.getElementById('equipoClaros').innerHTML = '';
-    document.getElementById('equipoOscuros').innerHTML = '';
+    const equipoClarosSelect = document.getElementById('equipoClaros');
+    const equipoOscurosSelect = document.getElementById('equipoOscuros');
     const mensajeElem = document.getElementById('mensaje');
 
-    // Mensaje de depuración inicial
+    // **VERIFICACIÓN CRÍTICA: Asegura que todos los elementos HTML existen antes de usarlos.**
+    // Si alguno es 'null', significa que no se encontró en el DOM.
+    if (!jugadoresTitularesSelect || !jugadoresSuplentesSelect || !equipoClarosSelect || !equipoOscurosSelect || !mensajeElem) {
+        const missingElements = [];
+        if (!jugadoresTitularesSelect) missingElements.push('jugadoresTitulares');
+        if (!jugadoresSuplentesSelect) missingElements.push('jugadoresSuplentes');
+        if (!equipoClarosSelect) missingElements.push('equipoClaros');
+        if (!equipoOscurosSelect) missingElements.push('equipoOscuros');
+        if (!mensajeElem) missingElements.push('mensaje'); // Este caso es menos probable si ya hay un error previo
+
+        const errorMessage = `Error crítico: No se encontraron los siguientes elementos HTML en la página: ${missingElements.join(', ')}. Asegúrate de que el HTML está completo y los IDs son correctos.`;
+        console.error(errorMessage); // Registra el error en la consola del navegador
+
+        // Intenta mostrar el mensaje en la interfaz si el elemento de mensaje existe
+        if (mensajeElem) {
+            mensajeElem.textContent = errorMessage;
+            mensajeElem.style.backgroundColor = '#f8d7da'; // Color de fondo para error
+            mensajeElem.style.color = '#721c24'; // Color de texto para error
+        } else {
+            // Si incluso el elemento de mensaje no se encuentra, usa un alert (último recurso)
+            alert(errorMessage + "\nPor favor, revisa la consola del navegador para más detalles.");
+        }
+        return; // Detiene la ejecución de la función si faltan elementos
+    }
+
+    // Mensaje de depuración inicial (solo si todos los elementos fueron encontrados)
     mensajeElem.textContent = 'Intentando cargar jugadores (Titulares/Suplentes)...';
     mensajeElem.style.backgroundColor = '#f0f8ff'; // Azul claro para información
     mensajeElem.style.color = '#0056b3';
@@ -77,7 +100,21 @@ async function cargarJugadores() {
 function transferPlayers(sourceId, destinationId, limit = -1) {
     const sourceSelect = document.getElementById(sourceId);
     const destinationSelect = document.getElementById(destinationId);
-    const mensajeElem = document.getElementById('mensaje');
+    const mensajeElem = document.getElementById('mensaje'); // Asume que el mensaje está en index.html
+
+    // Verificación de existencia de elementos para los selectores de transferencia
+    if (!sourceSelect || !destinationSelect || !mensajeElem) {
+        const errorMessage = `Error: Elementos de transferencia no encontrados (Origen: ${sourceId}, Destino: ${destinationId}).`;
+        console.error(errorMessage);
+        if (mensajeElem) {
+            mensajeElem.textContent = errorMessage;
+            mensajeElem.style.backgroundColor = '#f8d7da';
+            mensajeElem.style.color = '#721c24';
+        } else {
+            alert(errorMessage);
+        }
+        return;
+    }
 
     const selectedOptions = Array.from(sourceSelect.selectedOptions);
 
