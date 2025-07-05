@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v1.6"; // Updated version
+const SCRIPT_VERSION = "v1.7"; // Updated version
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
@@ -1028,6 +1028,20 @@ async function submitChamigoVotes() {
 
 // Lógica de inicialización para cada página
 document.addEventListener('DOMContentLoaded', () => {
+    // Mostrar la versión del HTML
+    const htmlElement = document.documentElement;
+    const htmlVersion = htmlElement.getAttribute('data-version');
+    const htmlVersionDiv = document.getElementById('htmlVersion');
+    if (htmlVersionDiv && htmlVersion) {
+        htmlVersionDiv.textContent = `HTML: v${htmlVersion}`;
+    }
+
+    // Mostrar la versión del script
+    const scriptVersionDiv = document.getElementById('scriptVersion');
+    if (scriptVersionDiv) {
+        scriptVersionDiv.textContent = `Script: ${SCRIPT_VERSION}`;
+    }
+
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '/futbol-martes/') {
         cargarJugadores();
         const fechaInput = document.getElementById('fechaPartido');
@@ -1042,10 +1056,5 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarTodosLosPartidos();
     } else if (window.location.pathname.includes('chamigo.html')) { // New condition for Chamigo page
         cargarPartidosParaChamigo();
-    }
-
-    const scriptVersionDiv = document.getElementById('scriptVersion');
-    if (scriptVersionDiv) {
-        scriptVersionDiv.textContent = `Script: ${SCRIPT_VERSION}`;
     }
 });
