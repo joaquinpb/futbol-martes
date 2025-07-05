@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHgezrkEPvQYPGIlV2rcMne9d4px1ZfJ_60rVR4CsGunuyKFazNypVmGtYVYZwsuF6/exec'; // ¡URL ACTUALIZADA!
 
 // Versión del script
-const SCRIPT_VERSION = "v0.8";
+const SCRIPT_VERSION = "v0.9";
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
