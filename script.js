@@ -14,80 +14,87 @@ async function cargarJugadores() {
     // Obtiene referencias a todos los elementos <select> y al elemento de mensaje
     const jugadoresTitularesSelect = document.getElementById('jugadoresTitulares');
     const jugadoresSuplentesSelect = document.getElementById('jugadoresSuplentes');
+    const jugadoresPartidoSelect = document.getElementById('jugadoresPartido'); // Nueva lista
     const equipoClarosSelect = document.getElementById('equipoClaros');
     const equipoOscurosSelect = document.getElementById('equipoOscuros');
     const mensajeElem = document.getElementById('mensaje');
 
     // **VERIFICACIÓN CRÍTICA: Asegura que todos los elementos HTML existen antes de usarlos.**
-    // Si alguno es 'null', significa que no se encontró en el DOM.
-    if (!jugadoresTitularesSelect || !jugadoresSuplentesSelect || !equipoClarosSelect || !equipoOscurosSelect || !mensajeElem) {
+    if (!jugadoresTitularesSelect || !jugadoresSuplentesSelect || !jugadoresPartidoSelect || !equipoClarosSelect || !equipoOscurosSelect || !mensajeElem) {
         const missingElements = [];
         if (!jugadoresTitularesSelect) missingElements.push('jugadoresTitulares');
         if (!jugadoresSuplentesSelect) missingElements.push('jugadoresSuplentes');
+        if (!jugadoresPartidoSelect) missingElements.push('jugadoresPartido');
         if (!equipoClarosSelect) missingElements.push('equipoClaros');
         if (!equipoOscurosSelect) missingElements.push('equipoOscuros');
-        if (!mensajeElem) missingElements.push('mensaje'); // Este caso es menos probable si ya hay un error previo
+        if (!mensajeElem) missingElements.push('mensaje');
 
         const errorMessage = `Error crítico: No se encontraron los siguientes elementos HTML en la página: ${missingElements.join(', ')}. Asegúrate de que el HTML está completo y los IDs son correctos.`;
-        console.error(errorMessage); // Registra el error en la consola del navegador
+        console.error(errorMessage);
 
-        // Intenta mostrar el mensaje en la interfaz si el elemento de mensaje existe
         if (mensajeElem) {
             mensajeElem.textContent = errorMessage;
-            mensajeElem.style.backgroundColor = '#f8d7da'; // Color de fondo para error
-            mensajeElem.style.color = '#721c24'; // Color de texto para error
+            mensajeElem.style.backgroundColor = '#f8d7da';
+            mensajeElem.style.color = '#721c24';
         } else {
-            // Si incluso el elemento de mensaje no se encuentra, usa un alert (último recurso)
             alert(errorMessage + "\nPor favor, revisa la consola del navegador para más detalles.");
         }
-        return; // Detiene la ejecución de la función si faltan elementos
+        return;
     }
 
-    // Mensaje de depuración inicial (solo si todos los elementos fueron encontrados)
+    // Limpia las opciones existentes en todos los selects
+    jugadoresTitularesSelect.innerHTML = '';
+    jugadoresSuplentesSelect.innerHTML = '';
+    jugadoresPartidoSelect.innerHTML = ''; // Limpia la nueva lista
+    equipoClarosSelect.innerHTML = '';
+    equipoOscurosSelect.innerHTML = '';
+
+    // Mensaje de depuración inicial
     mensajeElem.textContent = 'Intentando cargar jugadores (Titulares/Suplentes)...';
-    mensajeElem.style.backgroundColor = '#f0f8ff'; // Azul claro para información
+    mensajeElem.style.backgroundColor = '#f0f8ff';
     mensajeElem.style.color = '#0056b3';
 
     try {
-        // Realiza una petición GET a tu Apps Script para obtener los datos de la hoja "Jugadores"
         const response = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
 
         if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}. Posible problema con el despliegue del Apps Script o permisos.`);
         }
 
-        const jugadores = await response.json(); // Parsea la respuesta JSON
+        const jugadores = await response.json();
 
         if (jugadores.length === 0) {
             mensajeElem.textContent = 'No se encontraron jugadores en la hoja "Jugadores". Asegúrate de que la hoja no está vacía y los encabezados son correctos (Nombre, Puntos, Tipo).';
-            mensajeElem.style.backgroundColor = '#fff3cd'; // Amarillo claro para advertencia
+            mensajeElem.style.backgroundColor = '#fff3cd';
             mensajeElem.style.color = '#856404';
             return;
         }
 
-        // Itera sobre cada jugador obtenido y lo clasifica por su "Tipo"
         jugadores.forEach(jugador => {
-            if (jugador.Nombre && jugador.Tipo) { // Asegúrate de que tenga Nombre y Tipo
+            if (jugador.Nombre && jugador.Tipo) {
                 const option = document.createElement('option');
                 option.value = jugador.Nombre;
-                option.textContent = `${jugador.Nombre} (Puntos: ${jugador.Puntos})`;
+                // Mostrar solo el nombre en las listas de Titulares/Suplentes/Partido
+                option.textContent = jugador.Nombre;
+                // Almacenar el tipo original en un dataset para futuras referencias si es necesario
+                option.dataset.originalType = jugador.Tipo.toLowerCase();
+                option.dataset.puntos = jugador.Puntos; // Guardar puntos para referencia futura
 
                 if (jugador.Tipo.toLowerCase() === 'titular') {
                     jugadoresTitularesSelect.appendChild(option);
                 } else if (jugador.Tipo.toLowerCase() === 'suplente') {
                     jugadoresSuplentesSelect.appendChild(option);
                 }
-                // Ignora otros tipos o jugadores sin tipo definido
             }
         });
         mensajeElem.textContent = 'Jugadores cargados exitosamente en sus roles (Titulares/Suplentes).';
-        mensajeElem.style.backgroundColor = '#e2f0cb'; // Verde claro para éxito
-        mensajeElem.style.color = '#28a745'; // Verde oscuro para éxito
+        mensajeElem.style.backgroundColor = '#e2f0cb';
+        mensajeElem.style.color = '#28a745';
     } catch (error) {
         console.error('Error al cargar jugadores:', error);
         mensajeElem.textContent = `Error al cargar jugadores: ${error.message}. Por favor, verifica: 1) Tu conexión a internet. 2) Que la URL del Apps Script en script.js sea EXACTA. 3) Que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona". 4) Los nombres de las hojas ("Jugadores", "Partidos") y columnas ("Nombre", "Puntos", "Tipo", etc.) en Google Sheets.`;
-        mensajeElem.style.backgroundColor = '#f8d7da'; // Rojo claro para error
-        mensajeElem.style.color = '#721c24'; // Rojo oscuro para error
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
     }
 }
 
@@ -100,9 +107,8 @@ async function cargarJugadores() {
 function transferPlayers(sourceId, destinationId, limit = -1) {
     const sourceSelect = document.getElementById(sourceId);
     const destinationSelect = document.getElementById(destinationId);
-    const mensajeElem = document.getElementById('mensaje'); // Asume que el mensaje está en index.html
+    const mensajeElem = document.getElementById('mensaje');
 
-    // Verificación de existencia de elementos para los selectores de transferencia
     if (!sourceSelect || !destinationSelect || !mensajeElem) {
         const errorMessage = `Error: Elementos de transferencia no encontrados (Origen: ${sourceId}, Destino: ${destinationId}).`;
         console.error(errorMessage);
@@ -131,8 +137,12 @@ function transferPlayers(sourceId, destinationId, limit = -1) {
             destinationSelect.appendChild(option); // Mueve la opción al nuevo select
             movedCount++;
         } else {
-            // Si se alcanza el límite para un jugador específico, se puede notificar.
-            // Por simplicidad, no se muestra un mensaje por cada jugador que excede el límite.
+            // Mensaje específico si se intenta mover más jugadores de los permitidos
+            if (limit !== -1) {
+                mensajeElem.textContent = `No se pudo mover a ${option.textContent}. Límite de ${limit} jugadores alcanzado en la lista de destino.`;
+                mensajeElem.style.backgroundColor = '#fff3cd';
+                mensajeElem.style.color = '#856404';
+            }
         }
     });
 
@@ -140,8 +150,10 @@ function transferPlayers(sourceId, destinationId, limit = -1) {
         mensajeElem.textContent = `Se movieron ${movedCount} jugador(es) a la lista.`;
         mensajeElem.style.backgroundColor = '#e2f0cb';
         mensajeElem.style.color = '#28a745';
+    } else if (selectedOptions.length > 0 && limit !== -1 && destinationSelect.options.length >= limit) {
+        // Ya se mostró un mensaje de límite para un jugador específico, no es necesario otro general
     } else {
-        mensajeElem.textContent = `No se pudo mover ningún jugador. Límite de ${limit} alcanzado o no hay espacio.`;
+        mensajeElem.textContent = `No se pudo mover ningún jugador.`;
         mensajeElem.style.backgroundColor = '#fff3cd';
         mensajeElem.style.color = '#856404';
     }
@@ -154,7 +166,7 @@ function transferPlayers(sourceId, destinationId, limit = -1) {
  */
 async function guardarPartido() {
     const fecha = document.getElementById('fechaPartido').value;
-    const jugadoresTitularesSelect = document.getElementById('jugadoresTitulares'); // Ahora es la fuente para armar equipos
+    const jugadoresPartidoSelect = document.getElementById('jugadoresPartido'); // Fuente para armar equipos
     const equipoClarosSelect = document.getElementById('equipoClaros');
     const equipoOscurosSelect = document.getElementById('equipoOscuros');
     const mensajeElem = document.getElementById('mensaje');
@@ -167,11 +179,9 @@ async function guardarPartido() {
         return;
     }
 
-    // Validar que la lista de Titulares tenga 10 jugadores ANTES de armar los equipos
-    // (Aunque los botones de "Mover a Claros/Oscuros" ya lo validan a 5 cada uno,
-    // esta es una validación final para el total de titulares en el partido)
-    if (jugadoresTitularesSelect.options.length !== 10) {
-        mensajeElem.textContent = 'La lista de "Jugadores Titulares" debe contener exactamente 10 jugadores para formar los equipos del partido.';
+    // Validar que la lista de Jugadores del Partido tenga 10 jugadores
+    if (jugadoresPartidoSelect.options.length !== 10) {
+        mensajeElem.textContent = 'La lista de "Jugadores del Partido" debe contener exactamente 10 jugadores antes de formar los equipos.';
         mensajeElem.style.backgroundColor = '#f8d7da';
         mensajeElem.style.color = '#721c24';
         return;
@@ -211,8 +221,7 @@ async function guardarPartido() {
         mensajeElem.style.color = '#28a745';
 
         // Limpiar los equipos y recargar la lista de jugadores Titulares/Suplentes
-        document.getElementById('jugadoresTitulares').innerHTML = '';
-        document.getElementById('jugadoresSuplentes').innerHTML = '';
+        jugadoresPartidoSelect.innerHTML = '';
         equipoClarosSelect.innerHTML = '';
         equipoOscurosSelect.innerHTML = '';
         cargarJugadores(); // Recarga la lista de jugadores con sus roles fijos
@@ -240,11 +249,10 @@ async function cargarPartidosPendientes() {
 
     // Mensaje de depuración inicial
     mensajeElem.textContent = 'Intentando cargar partidos pendientes...';
-    mensajeElem.style.backgroundColor = '#f0f8ff'; // Azul claro para información
+    mensajeElem.style.backgroundColor = '#f0f8ff';
     mensajeElem.style.color = '#0056b3';
 
     try {
-        // Realiza una petición GET a tu Apps Script para obtener los datos de la hoja "Partidos"
         const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
 
         if (!response.ok) {
@@ -257,7 +265,7 @@ async function cargarPartidosPendientes() {
 
         if (partidosPendientes.length === 0) {
             mensajeElem.textContent = 'No hay partidos pendientes de registrar resultados.';
-            mensajeElem.style.backgroundColor = '#e6e6e6'; // Color neutro
+            mensajeElem.style.backgroundColor = '#e6e6e6';
             mensajeElem.style.color = '#333';
             return;
         }
@@ -274,8 +282,8 @@ async function cargarPartidosPendientes() {
             partidosSelect.appendChild(option);
         });
         mensajeElem.textContent = 'Partidos pendientes cargados exitosamente.';
-        mensajeElem.style.backgroundColor = '#e2f0cb'; // Verde claro para éxito
-        mensajeElem.style.color = '#28a745'; // Verde oscuro para éxito
+        mensajeElem.style.backgroundColor = '#e2f0cb';
+        mensajeElem.style.color = '#28a745';
     } catch (error) {
         console.error('Error al cargar partidos:', error);
         mensajeElem.textContent = `Error al cargar partidos pendientes: ${error.message}. Por favor, verifica: 1) Tu conexión a internet. 2) Que la URL del Apps Script en script.js sea EXACTA. 3) Que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona". 4) Los nombres de las hojas ("Jugadores", "Partidos") y columnas ("Nombre", "Puntos", "Tipo", etc.) en Google Sheets.`;
