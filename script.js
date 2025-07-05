@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v2.2"; // Updated version for Chamigo fix and robust Apps Script communication
+const SCRIPT_VERSION = "v2.3"; // Updated version for Chamigo filtering by period
 
 // Variable global para almacenar partidos pendientes para fácil acceso
 let currentPendingMatches = [];
@@ -501,7 +501,7 @@ async function registrarResultado() {
                 Ganados: parseInt(p.Ganados || 0),
                 Perdidos: parseInt(p.Perdidos || 0),
                 Empatados: parseInt(p.Empatados || 0),
-                PuntosChamigo: parseInt(p.PuntosChamigo || 0) // Chamigo points are cumulative
+                PuntosChamigo: parseInt(p.PuntosChamigo || 0) // Chamigo points are cumulative in Jugadores sheet
             });
         });
 
@@ -537,7 +537,12 @@ async function registrarResultado() {
 
         const playersToUpdate = Array.from(playerStatsMap.keys()).map(playerName => ({
             Nombre: playerName,
-            ...playerStatsMap.get(playerName)
+            // Only send general stats, NOT PuntosChamigo, as it's handled by 'voteChamigo' now
+            Puntos: playerStatsMap.get(playerName).Puntos,
+            PartidosJugados: playerStatsMap.get(playerName).PartidosJugados,
+            Ganados: playerStatsMap.get(playerName).Ganados,
+            Perdidos: playerStatsMap.get(playerName).Perdidos,
+            Empatados: playerStatsMap.get(playerName).Empatados
         }));
 
         const updatePlayersData = {
@@ -586,7 +591,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
     mensajePuntosElem.style.color = '#0056b3';
 
     try {
-        // Fetch all players data (for initial Chamigo points, which are cumulative)
+        // Fetch all players data (for initial names and types)
         const playersResponse = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
         if (!playersResponse.ok) {
             throw new Error(`Error HTTP al cargar jugadores: ${playersResponse.status} ${playersResponse.statusText || ''}.`);
@@ -600,6 +605,14 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
         }
         const allMatchesData = await matchesResponse.json();
 
+        // Fetch all Chamigo votes data from the new sheet
+        const chamigoVotesResponse = await fetch(`${SCRIPT_URL}?sheet=VotosChamigo`);
+        if (!chamigoVotesResponse.ok) {
+            throw new Error(`Error HTTP al cargar votos Chamigo: ${chamigoVotesResponse.status} ${chamigoVotesResponse.statusText || ''}.`);
+        }
+        const allChamigoVotes = await chamigoVotesResponse.json();
+
+
         // Initialize player stats with default values
         const playerStats = {};
         allPlayers.forEach(player => {
@@ -609,7 +622,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
                 Ganados: 0,
                 Perdidos: 0,
                 Empatados: 0,
-                PuntosChamigo: 0 // Initialize Chamigo points to 0 for calculation based on filtered matches
+                PuntosChamigo: 0 // Initialize Chamigo points to 0 for dynamic calculation
             };
         });
 
@@ -633,10 +646,9 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
                     return matchDate.getMonth() >= 6 && matchDate.getMonth() <= 11; // Julio (6) a Diciembre (11)
                 });
             }
-            // If 'Total', no further date filtering is needed beyond the year
         }
 
-        // Calculate points and stats from filtered matches
+        // Calculate general points and stats from filtered matches
         filteredMatches.forEach(match => {
             const equipoClaros = match.EquipoClaros.split(',').map(name => name.trim());
             const equipoOscuros = match.EquipoOscuros.split(',').map(name => name.trim());
@@ -682,47 +694,36 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             }
         });
 
-        // Now, apply Chamigo points based on the filtered matches
-        // This assumes Chamigo points are awarded per match and can be looked up.
-        // CURRENT LIMITATION: Chamigo points are cumulative in the 'Jugadores' sheet, not per match.
-        // To truly filter Chamigo points by period, we'd need a 'ChamigoVotes' sheet
-        // where each vote is recorded with a date.
-        // For now, if a player played in the filtered period, we show their TOTAL Chamigo points.
-        // If the user wants to filter Chamigo points by period, the backend needs to change.
-        if (filterPeriod === 'Total') {
-            allPlayers.forEach(player => {
-                if (playerStats[player.Nombre]) {
-                    playerStats[player.Nombre].PuntosChamigo = parseInt(player.PuntosChamigo || 0);
-                } else {
-                    // If a player has Chamigo points but no regular match points in the filtered period,
-                    // they should still appear if filterPeriod is 'Total'
-                    playerStats[player.Nombre] = playerStats[player.Nombre] || {
+        // Calculate Chamigo points based on filtered votes
+        allChamigoVotes.forEach(vote => {
+            const voteDate = new Date(vote.FechaPartido); // Assuming FechaPartido is ISO string
+            let shouldIncludeVote = true;
+
+            if (filterYear && voteDate.getFullYear() !== filterYear) {
+                shouldIncludeVote = false;
+            }
+
+            if (filterPeriod === 'Apertura' && (voteDate.getMonth() < 0 || voteDate.getMonth() > 5)) {
+                shouldIncludeVote = false;
+            } else if (filterPeriod === 'Clausura' && (voteDate.getMonth() < 6 || voteDate.getMonth() > 11)) {
+                shouldIncludeVote = false;
+            }
+
+            if (shouldIncludeVote) {
+                if (!playerStats[vote.Jugador]) {
+                    // Add player if they only have Chamigo points in the filtered period and no regular matches
+                    playerStats[vote.Jugador] = {
                         Puntos: 0,
                         PartidosJugados: 0,
                         Ganados: 0,
                         Perdidos: 0,
                         Empatados: 0,
-                        PuntosChamigo: parseInt(player.PuntosChamigo || 0)
+                        PuntosChamigo: 0
                     };
                 }
-            });
-        } else { // Apertura or Clausura
-            // For Apertura/Clausura, we need to sum Chamigo points ONLY from matches within that period.
-            // This requires a backend change to store Chamigo votes per match.
-            // As a temporary workaround, if a player played in the filtered period, we show their TOTAL Chamigo points.
-            // This is not ideal but reflects the current data structure.
-            // For a true filter, we'd need to iterate through filteredMatches and sum Chamigo points from those specific matches.
-            // Since we don't have per-match Chamigo data, we'll keep Chamigo points at 0 for Apertura/Clausura
-            // unless the backend is updated.
-            // Let's re-add the original Chamigo points only if the player played in the filtered period.
-            // This is still a compromise, but better than showing Chamigo points for players not in the period.
-            // This logic needs to be revisited if a "ChamigoVotesPerMatch" sheet is implemented.
-            allPlayers.forEach(player => {
-                if (playerStats[player.Nombre] && playerStats[player.Nombre].PartidosJugados > 0) {
-                    playerStats[player.Nombre].PuntosChamigo = parseInt(player.PuntosChamigo || 0);
-                }
-            });
-        }
+                playerStats[vote.Jugador].PuntosChamigo += parseInt(vote.PuntosOtorgados || 0);
+            }
+        });
 
 
         // Convert playerStats object to an array for sorting and display
@@ -736,12 +737,9 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             PuntosChamigo: playerStats[name].PuntosChamigo
         }));
 
-        // Filter out players who didn't play any filtered matches if a specific year/period filter is applied
-        if (filterYear && filterPeriod !== 'Total') { // Only filter by PartidosJugados if a specific period is selected
-             jugadoresParaTabla = jugadoresParaTabla.filter(j => j.PartidosJugados > 0);
-        } else if (filterPeriod === 'Total') {
-            // For 'Total', include all players who have any points (match or Chamigo)
-            jugadoresParaTabla = jugadoresParaTabla.filter(j => j.PartidosJugados > 0 || j.PuntosChamigo > 0);
+        // Filter out players who didn't play any filtered matches AND have no Chamigo points in the filtered period
+        if (filterYear || filterPeriod !== 'Total') {
+             jugadoresParaTabla = jugadoresParaTabla.filter(j => j.PartidosJugados > 0 || j.PuntosChamigo > 0);
         }
 
 
@@ -749,6 +747,10 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
         jugadoresParaTabla.sort((a, b) => {
             if (b.Puntos !== a.Puntos) {
                 return b.Puntos - a.Puntos; // Puntos Totales (DESC)
+            }
+            // If total points are equal, sort by Chamigo points (DESC)
+            if (b.PuntosChamigo !== a.PuntosChamigo) {
+                return b.PuntosChamigo - a.PuntosChamigo;
             }
             return b.PartidosJugados - a.PartidosJugados; // Jugados (DESC)
         });
@@ -1017,7 +1019,7 @@ async function actualizarPartido() {
 
         mensajeAdminElem.textContent = 'Partido actualizado exitosamente.';
         mensajeAdminElem.style.backgroundColor = '#e2f0cb';
-        mensajeElem.style.color = '#28a745';
+        mensajeAdminElem.style.color = '#28a745';
         cargarTodosLosPartidos();
     } catch (error) {
         console.error('Error al actualizar partido:', error);
