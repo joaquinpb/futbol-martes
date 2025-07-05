@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v1.7"; // Updated version
+const SCRIPT_VERSION = "v1.8"; // Updated version
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
@@ -228,7 +228,6 @@ function moveFromTeam(teamType) {
             mensajeElem.textContent = `Error interno al determinar lista de destino para ${option.textContent}.`;
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
-            return;
         }
 
         const destinationSelect = document.getElementById(destinationSelectId);
