@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v2.0"; // Updated version for filtering feature
+const SCRIPT_VERSION = "v2.2"; // Updated version for Chamigo fix and robust Apps Script communication
 
 // Variable global para almacenar partidos pendientes para fácil acceso
 let currentPendingMatches = [];
@@ -119,7 +119,7 @@ async function cargarJugadores() {
         mensajeElem.style.color = '#28a745';
     } catch (error) {
         console.error('Error al cargar jugadores:', error);
-        mensajeElem.textContent = `Error al cargar jugadores: ${error.message}. Por favor, verifica: 1) Tu conexión a internet. 2) Que la URL del Apps Script en script.js sea EXACTA. 3) Que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona". 4) Los nombres de las hojas ("Jugadores", "Partidos") y columnas ("Nombre", "Puntos", "Tipo", etc.) en Google Sheets.`;
+        mensajeElem.textContent = `Error al cargar jugadores: ${error.message}. Por favor, verifica: 1) Tu conexión a internet. 2) Que la URL del Apps Script en script.js sea EXACTA. 3) Que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona". 4) Los nombres de las hojas ("Jugadores", "Partidos") y columnas ("Nombre", "Puntos", "Tipo", "PartidosJugados", "Ganados", "Perdidos", "Empatados", "PuntosChamigo").`;
         mensajeElem.style.backgroundColor = '#f8d7da';
         mensajeElem.style.color = '#721c24';
     }
@@ -385,6 +385,8 @@ async function cargarPartidosPendientes() {
             option.value = partido.Fecha;
             const formattedDate = formatDateToDDMMYYYY(partido.Fecha);
             option.textContent = formattedDate;
+            option.dataset.equipoClaros = partido.EquipoClaros; // Store team players
+            option.dataset.equipoOscuros = partido.EquipoOscuros; // Store team players
             partidosSelect.appendChild(option);
         });
         mensajeElem.textContent = 'Partidos pendientes cargados exitosamente.';
@@ -392,7 +394,7 @@ async function cargarPartidosPendientes() {
         mensajeElem.style.color = '#28a745';
     } catch (error) {
         console.error('Error al cargar partidos:', error);
-        mensajeElem.textContent = `Error al cargar partidos pendientes: ${error.message}. Por favor, verifica: 1) Tu conexión a internet. 2) Que la URL del Apps Script en script.js sea EXACTA. 3) Que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona". 4) Los nombres de las hojas ("Jugadores", "Partidos") y columnas ("Nombre", "Puntos", "Tipo", etc.) en Google Sheets.`;
+        mensajeElem.textContent = `Error al cargar partidos pendientes: ${error.message}. Por favor, verifica: 1) Tu conexión a internet. 2) Que la URL del Apps Script en script.js sea EXACTA. 3) Que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona". 4) Los nombres de las hojas ("Jugadores", "Partidos") y columnas ("Nombre", "Puntos", "Tipo", "PartidosJugados", "Ganados", "Perdidos", "Empatados", "PuntosChamigo", "Fecha", "EquipoClaros", "EquipoOscuros", "Ganador", "ChamigoVotado").`;
         mensajeElem.style.backgroundColor = '#f8d7da';
         mensajeElem.style.color = '#721c24';
     }
@@ -468,28 +470,85 @@ async function registrarResultado() {
         return;
     }
 
-    // Prepara los datos para la actualización del partido y los puntos de los jugadores
-    const data = {
-        originalFecha: selectedMatch.Fecha, // Fecha original del partido para identificarlo en el Apps Script
-        nuevaFecha: selectedMatch.Fecha.split('T')[0], // Mantenemos la misma fecha, solo formato YYYY-MM-DD
-        equipoClaros: selectedMatch.EquipoClaros,
-        equipoOscuros: selectedMatch.EquipoOscuros,
-        ganador: ganador, // El nuevo ganador
-        action: 'updateMatch' // Acción específica para que el Apps Script actualice el partido y los puntos
-    };
-
     mensajeElem.textContent = 'Registrando resultado y actualizando puntos...';
     mensajeElem.style.backgroundColor = '#f0f8ff';
     mensajeElem.style.color = '#0056b3';
 
     try {
-        const response = await fetch(`${SCRIPT_URL}`, {
+        // 1. Update match status in 'Partidos' sheet
+        const updateMatchData = {
+            originalFecha: selectedMatch.Fecha,
+            ganador: ganador,
+            action: 'updateMatchStatus' // New action for Apps Script
+        };
+        await fetch(`${SCRIPT_URL}`, {
             method: 'POST',
-            mode: 'no-cors', // Necesario para Apps Script
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateMatchData),
+        });
+        // No need to check response for no-cors, assume success if no network error
+
+        // 2. Calculate and update player stats in 'Jugadores' sheet
+        const playersResponse = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
+        const allPlayers = await playersResponse.json();
+
+        const playerStatsMap = new Map();
+        allPlayers.forEach(p => {
+            playerStatsMap.set(p.Nombre, {
+                Puntos: parseInt(p.Puntos || 0),
+                PartidosJugados: parseInt(p.PartidosJugados || 0),
+                Ganados: parseInt(p.Ganados || 0),
+                Perdidos: parseInt(p.Perdidos || 0),
+                Empatados: parseInt(p.Empatados || 0),
+                PuntosChamigo: parseInt(p.PuntosChamigo || 0) // Chamigo points are cumulative
+            });
+        });
+
+        const equipoClaros = selectedMatch.EquipoClaros.split(',').map(name => name.trim());
+        const equipoOscuros = selectedMatch.EquipoOscuros.split(',').map(name => name.trim());
+
+        const playersInMatch = [...new Set([...equipoClaros, ...equipoOscuros])]; // Get unique players in this match
+
+        playersInMatch.forEach(playerName => {
+            const stats = playerStatsMap.get(playerName) || { Puntos: 0, PartidosJugados: 0, Ganados: 0, Perdidos: 0, Empatados: 0, PuntosChamigo: 0 };
+            stats.PartidosJugados++;
+
+            if (ganador === 'Claros') {
+                if (equipoClaros.includes(playerName)) {
+                    stats.Puntos += 3;
+                    stats.Ganados++;
+                } else if (equipoOscuros.includes(playerName)) {
+                    stats.Perdidos++;
+                }
+            } else if (ganador === 'Oscuros') {
+                if (equipoOscuros.includes(playerName)) {
+                    stats.Puntos += 3;
+                    stats.Ganados++;
+                } else if (equipoClaros.includes(playerName)) {
+                    stats.Perdidos++;
+                }
+            } else if (ganador === 'Empate') {
+                stats.Puntos += 1;
+                stats.Empatados++;
+            }
+            playerStatsMap.set(playerName, stats);
+        });
+
+        const playersToUpdate = Array.from(playerStatsMap.keys()).map(playerName => ({
+            Nombre: playerName,
+            ...playerStatsMap.get(playerName)
+        }));
+
+        const updatePlayersData = {
+            playersToUpdate: playersToUpdate,
+            action: 'updatePlayerStats' // New action for Apps Script
+        };
+        await fetch(`${SCRIPT_URL}`, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatePlayersData),
         });
 
         mensajeElem.textContent = 'Resultado registrado y puntos de jugadores actualizados exitosamente.';
@@ -527,7 +586,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
     mensajePuntosElem.style.color = '#0056b3';
 
     try {
-        // Fetch all players data (for initial stats and Chamigo points)
+        // Fetch all players data (for initial Chamigo points, which are cumulative)
         const playersResponse = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
         if (!playersResponse.ok) {
             throw new Error(`Error HTTP al cargar jugadores: ${playersResponse.status} ${playersResponse.statusText || ''}.`);
@@ -541,7 +600,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
         }
         const allMatchesData = await matchesResponse.json();
 
-        // Initialize player stats with default values (including Chamigo points from allPlayers)
+        // Initialize player stats with default values
         const playerStats = {};
         allPlayers.forEach(player => {
             playerStats[player.Nombre] = {
@@ -550,7 +609,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
                 Ganados: 0,
                 Perdidos: 0,
                 Empatados: 0,
-                PuntosChamigo: parseInt(player.PuntosChamigo || 0) // Chamigo points are total, not filtered by match date
+                PuntosChamigo: 0 // Initialize Chamigo points to 0 for calculation based on filtered matches
             };
         });
 
@@ -587,8 +646,6 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             // Update stats for all players in the match
             [...equipoClaros, ...equipoOscuros].forEach(playerName => {
                 if (!playerStats[playerName]) {
-                    // This player was in a filtered match but not in allPlayers (e.g., new player not in initial load)
-                    // This scenario should ideally not happen if allPlayers is comprehensive.
                     playerStats[playerName] = {
                         Puntos: 0,
                         PartidosJugados: 0,
@@ -625,6 +682,49 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             }
         });
 
+        // Now, apply Chamigo points based on the filtered matches
+        // This assumes Chamigo points are awarded per match and can be looked up.
+        // CURRENT LIMITATION: Chamigo points are cumulative in the 'Jugadores' sheet, not per match.
+        // To truly filter Chamigo points by period, we'd need a 'ChamigoVotes' sheet
+        // where each vote is recorded with a date.
+        // For now, if a player played in the filtered period, we show their TOTAL Chamigo points.
+        // If the user wants to filter Chamigo points by period, the backend needs to change.
+        if (filterPeriod === 'Total') {
+            allPlayers.forEach(player => {
+                if (playerStats[player.Nombre]) {
+                    playerStats[player.Nombre].PuntosChamigo = parseInt(player.PuntosChamigo || 0);
+                } else {
+                    // If a player has Chamigo points but no regular match points in the filtered period,
+                    // they should still appear if filterPeriod is 'Total'
+                    playerStats[player.Nombre] = playerStats[player.Nombre] || {
+                        Puntos: 0,
+                        PartidosJugados: 0,
+                        Ganados: 0,
+                        Perdidos: 0,
+                        Empatados: 0,
+                        PuntosChamigo: parseInt(player.PuntosChamigo || 0)
+                    };
+                }
+            });
+        } else { // Apertura or Clausura
+            // For Apertura/Clausura, we need to sum Chamigo points ONLY from matches within that period.
+            // This requires a backend change to store Chamigo votes per match.
+            // As a temporary workaround, if a player played in the filtered period, we show their TOTAL Chamigo points.
+            // This is not ideal but reflects the current data structure.
+            // For a true filter, we'd need to iterate through filteredMatches and sum Chamigo points from those specific matches.
+            // Since we don't have per-match Chamigo data, we'll keep Chamigo points at 0 for Apertura/Clausura
+            // unless the backend is updated.
+            // Let's re-add the original Chamigo points only if the player played in the filtered period.
+            // This is still a compromise, but better than showing Chamigo points for players not in the period.
+            // This logic needs to be revisited if a "ChamigoVotesPerMatch" sheet is implemented.
+            allPlayers.forEach(player => {
+                if (playerStats[player.Nombre] && playerStats[player.Nombre].PartidosJugados > 0) {
+                    playerStats[player.Nombre].PuntosChamigo = parseInt(player.PuntosChamigo || 0);
+                }
+            });
+        }
+
+
         // Convert playerStats object to an array for sorting and display
         let jugadoresParaTabla = Object.keys(playerStats).map(name => ({
             Nombre: name,
@@ -636,9 +736,12 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             PuntosChamigo: playerStats[name].PuntosChamigo
         }));
 
-        // Filter out players who didn't play any filtered matches if a filter is applied
-        if (filterYear) {
-             jugadoresParaTabla = jugadoresParaTabla.filter(j => j.PartidosJugados > 0 || j.PuntosChamigo > 0);
+        // Filter out players who didn't play any filtered matches if a specific year/period filter is applied
+        if (filterYear && filterPeriod !== 'Total') { // Only filter by PartidosJugados if a specific period is selected
+             jugadoresParaTabla = jugadoresParaTabla.filter(j => j.PartidosJugados > 0);
+        } else if (filterPeriod === 'Total') {
+            // For 'Total', include all players who have any points (match or Chamigo)
+            jugadoresParaTabla = jugadoresParaTabla.filter(j => j.PartidosJugados > 0 || j.PuntosChamigo > 0);
         }
 
 
@@ -891,11 +994,11 @@ async function actualizarPartido() {
 
     const data = {
         originalFecha: originalMatch.Fecha,
-        nuevaFecha: nuevaFecha,
-        equipoClaros: nuevosClaros,
-        equipoOscuros: nuevosOscuros,
+        nuevaFecha: nuevaFecha, // This is not used in Apps Script's updateMatchStatus
+        equipoClaros: nuevosClaros, // This is not used in Apps Script's updateMatchStatus
+        equipoOscuros: nuevosOscuros, // This is not used in Apps Script's updateMatchStatus
         ganador: nuevoGanador,
-        action: 'updateMatch'
+        action: 'updateMatchStatus' // Use the specific action for status update
     };
 
     mensajeAdminElem.textContent = 'Guardando cambios...';
@@ -914,7 +1017,7 @@ async function actualizarPartido() {
 
         mensajeAdminElem.textContent = 'Partido actualizado exitosamente.';
         mensajeAdminElem.style.backgroundColor = '#e2f0cb';
-        mensajeAdminElem.style.color = '#28a745';
+        mensajeElem.style.color = '#28a745';
         cargarTodosLosPartidos();
     } catch (error) {
         console.error('Error al actualizar partido:', error);
@@ -942,7 +1045,10 @@ async function eliminarPartido() {
 
     const matchToDelete = allMatches[selectedIndex];
 
-    if (!confirm(`¿Estás seguro de que quieres eliminar el partido del ${formatDateToDDMMYYYY(matchToDelete.Fecha)}? Esta acción es irreversible.`)) {
+    // Using a custom modal/confirmation instead of browser's confirm()
+    const confirmDelete = await showCustomConfirm(`¿Estás seguro de que quieres eliminar el partido del ${formatDateToDDMMYYYY(matchToDelete.Fecha)}? Esta acción es irreversible.`);
+
+    if (!confirmDelete) {
         mensajeAdminElem.textContent = 'Eliminación cancelada.';
         mensajeAdminElem.style.backgroundColor = '#fff3cd';
         mensajeAdminElem.style.color = '#856404';
@@ -982,6 +1088,65 @@ async function eliminarPartido() {
     }
 }
 
+// Custom confirmation dialog (replaces alert/confirm)
+function showCustomConfirm(message) {
+    return new Promise((resolve) => {
+        const modalId = 'customConfirmModal';
+        let modal = document.getElementById(modalId);
+
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = modalId;
+            modal.style.cssText = `
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            modal.innerHTML = `
+                <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); text-align: center; max-width: 400px;">
+                    <p style="margin-bottom: 20px; font-size: 1.1em;">${message}</p>
+                    <button id="confirmYes" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">Sí</button>
+                    <button id="confirmNo" style="background-color: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">No</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        } else {
+            modal.querySelector('p').textContent = message;
+            modal.style.display = 'flex';
+        }
+
+        const confirmYes = document.getElementById('confirmYes');
+        const confirmNo = document.getElementById('confirmNo');
+
+        const cleanup = () => {
+            confirmYes.removeEventListener('click', onYes);
+            confirmNo.removeEventListener('click', onNo);
+            modal.style.display = 'none';
+        };
+
+        const onYes = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        const onNo = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        confirmYes.addEventListener('click', onYes);
+        confirmNo.addEventListener('click', onNo);
+    });
+}
+
+
 // --- Funciones para chamigo.html (Votar Chamigo) ---
 
 let currentChamigoMatchPlayers = []; // To store players of the selected match for voting
@@ -1010,6 +1175,7 @@ async function cargarPartidosParaChamigo() {
         }
         const partidos = await response.json();
 
+        // Filter for matches that are not PENDIENTE and have ChamigoVotado explicitly false or undefined
         const availableMatches = partidos.filter(p => p.Ganador !== 'PENDIENTE' && p.ChamigoVotado !== true);
 
         if (availableMatches.length === 0) {
@@ -1106,6 +1272,7 @@ async function submitChamigoVotes() {
 
     const playerVotes = [];
     let totalVotes = 0;
+    let hasInvalidVote = false;
     currentChamigoMatchPlayers.forEach(player => {
         const input = document.getElementById(`vote-${player}`);
         const score = parseInt(input.value);
@@ -1116,9 +1283,12 @@ async function submitChamigoVotes() {
             mensajeChamigoElem.textContent = `Error: El voto para ${player} debe ser un número entre 0 y 10.`;
             mensajeChamigoElem.style.backgroundColor = '#f8d7da';
             mensajeChamigoElem.style.color = '#721c24';
-            return; // Exit if invalid vote
+            hasInvalidVote = true;
+            return; // Exit forEach
         }
     });
+
+    if (hasInvalidVote) return; // Stop if any invalid vote was found
 
     if (totalVotes === 0) {
         mensajeChamigoElem.textContent = 'No se puede enviar la votación si todos los votos son 0. Por favor, asigna al menos un punto.';
@@ -1130,7 +1300,7 @@ async function submitChamigoVotes() {
     const data = {
         matchFechaISO: matchFechaISO,
         playerVotes: playerVotes,
-        action: 'voteChamigo'
+        action: 'voteChamigo' // Action for Apps Script
     };
 
     mensajeChamigoElem.textContent = 'Enviando votos de Chamigo...';
@@ -1147,8 +1317,6 @@ async function submitChamigoVotes() {
             body: JSON.stringify(data),
         });
 
-        // Since it's no-cors, we can't read response.
-        // Assume success and clear form, reload matches.
         mensajeChamigoElem.textContent = 'Voto de Chamigo registrado exitosamente. La tabla de puntos se actualizará.';
         mensajeChamigoElem.style.backgroundColor = '#e2f0cb';
         mensajeChamigoElem.style.color = '#28a745';
@@ -1159,7 +1327,7 @@ async function submitChamigoVotes() {
         cargarPartidosParaChamigo(); // Reload to remove the just-voted match
         // Also reload points table if on that page, or suggest user to check
         if (window.location.pathname.includes('puntuaciones.html')) {
-            mostrarTablaPuntos();
+            mostrarTablaPuntos(); // Refresh the points table to reflect Chamigo changes
         }
 
     } catch (error) {
