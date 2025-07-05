@@ -15,8 +15,21 @@ function formatDateToDDMMYYYY(dateString) {
     return `${day}/${month}/${year}`;
 }
 
+// Función auxiliar para formatear la fecha de DD/MM/AAAA a YYYY-MM-DD (para input date)
+function formatDateToYYYYMMDD(dateString) {
+    if (!dateString) return '';
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return dateString; // Si ya está en YYYY-MM-DD o es otro formato, lo devuelve tal cual
+}
+
+
 // Variable global para almacenar partidos pendientes para fácil acceso
 let currentPendingMatches = [];
+// Variable global para almacenar TODOS los partidos para la página de administración
+let allMatches = [];
 
 // --- Funciones para index.html (Crear Partido) ---
 
@@ -279,12 +292,9 @@ async function guardarPartido() {
         }
         const existingMatches = await existingMatchesResponse.json();
 
-        // Log de depuración para ver los valores de fecha
-        console.log(`[guardarPartido] Fecha del input: '${fecha}'`);
         const isDuplicateDate = existingMatches.some(match => {
             // Extrae solo la parte de la fecha (YYYY-MM-DD) de la string ISO del Apps Script
             const matchDateOnly = match.Fecha.split('T')[0];
-            console.log(`[guardarPartido] Comparando con fecha existente (solo fecha): '${matchDateOnly}'`);
             return matchDateOnly === fecha; // Compara solo la parte de la fecha
         });
 
@@ -342,7 +352,7 @@ async function guardarPartido() {
  */
 async function cargarPartidosPendientes() {
     const partidosSelect = document.getElementById('seleccionarPartido');
-    // **CORRECCIÓN AQUÍ:** Verifica si el elemento existe antes de intentar manipularlo
+    // Verifica si el elemento existe antes de intentar manipularlo
     if (!partidosSelect) {
         console.error("Elemento 'seleccionarPartido' no encontrado. Asegúrate de que estás en la página correcta (resultados.html) y el ID es correcto.");
         return; // Sale de la función si el elemento no existe
@@ -352,7 +362,7 @@ async function cargarPartidosPendientes() {
     partidosSelect.innerHTML = '<option value="">Selecciona un partido...</option>';
     const mensajeElem = document.getElementById('mensajeResultados');
 
-    // **CORRECCIÓN AQUÍ:** Verifica si el elemento existe antes de intentar manipularlo
+    // Verifica si el elemento existe antes de intentar manipularlo
     if (!mensajeElem) {
         console.error("Elemento 'mensajeResultados' no encontrado.");
         return; // Sale de la función si el elemento no existe
@@ -637,8 +647,245 @@ async function mostrarTablaPuntos() {
     }
 }
 
+// --- Funciones para administrador.html ---
 
-// Lógica de inicialización para ambas páginas
+/**
+ * Carga todos los partidos de la hoja "Partidos" y los muestra en el select de administración.
+ */
+async function cargarTodosLosPartidos() {
+    const partidosAdminSelect = document.getElementById('seleccionarPartidoAdmin');
+    const mensajeAdminElem = document.getElementById('mensajeAdmin');
+    const adminForm = document.getElementById('adminForm');
+
+    // **CORRECCIÓN AQUÍ:** Verifica si los elementos existen antes de intentar manipularlos
+    if (!partidosAdminSelect || !mensajeAdminElem || !adminForm) {
+        console.error("Error: Elementos HTML para la administración de partidos no encontrados. Asegúrate de que estás en la página correcta (administrador.html) y los IDs son correctos.");
+        return;
+    }
+
+    partidosAdminSelect.innerHTML = '<option value="">Selecciona un partido...</option>';
+    adminForm.style.display = 'none'; // Oculta el formulario de edición por defecto
+    mensajeAdminElem.textContent = 'Cargando todos los partidos...';
+    mensajeAdminElem.style.backgroundColor = '#f0f8ff';
+    mensajeAdminElem.style.color = '#0056b3';
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
+        console.log('[cargarTodosLosPartidos] Respuesta del fetch:', response); // Debug: ver la respuesta cruda
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}.`);
+        }
+        allMatches = await response.json(); // Almacena todos los partidos globalmente
+        console.log('[cargarTodosLosPartidos] Datos recibidos (allMatches):', allMatches); // Debug: ver los datos parseados
+
+        if (allMatches.length === 0) {
+            mensajeAdminElem.textContent = 'No hay partidos registrados para administrar.';
+            mensajeAdminElem.style.backgroundColor = '#fff3cd';
+            mensajeAdminElem.style.color = '#856404';
+            return;
+        }
+
+        allMatches.forEach((partido, index) => {
+            console.log('[cargarTodosLosPartidos] Procesando partido:', partido); // Debug: ver cada objeto partido
+            const option = document.createElement('option');
+            option.value = index; // Usamos el índice como valor para acceder fácilmente al objeto en allMatches
+            const formattedDate = formatDateToDDMMYYYY(partido.Fecha);
+            option.textContent = `${formattedDate} - Claros: ${partido.EquipoClaros} vs Oscuros: ${partido.EquipoOscuros} (${partido.Ganador})`;
+            partidosAdminSelect.appendChild(option);
+        });
+
+        mensajeAdminElem.textContent = 'Partidos cargados exitosamente para administración.';
+        mensajeAdminElem.style.backgroundColor = '#e2f0cb';
+        mensajeAdminElem.style.color = '#28a745';
+
+    } catch (error) {
+        console.error('Error al cargar todos los partidos:', error);
+        mensajeAdminElem.textContent = `Error al cargar partidos para administración: ${error.message}.`;
+        mensajeAdminElem.style.backgroundColor = '#f8d7da';
+        mensajeAdminElem.style.color = '#721c24';
+    }
+}
+
+/**
+ * Carga los detalles de un partido seleccionado en el formulario de administración.
+ */
+function cargarDetallesPartidoAdmin() {
+    const partidosAdminSelect = document.getElementById('seleccionarPartidoAdmin');
+    const adminForm = document.getElementById('adminForm');
+    const mensajeAdminElem = document.getElementById('mensajeAdmin');
+
+    const selectedIndex = partidosAdminSelect.value;
+
+    if (selectedIndex === "") {
+        adminForm.style.display = 'none';
+        mensajeAdminElem.textContent = 'Selecciona un partido para ver sus detalles.';
+        mensajeAdminElem.style.backgroundColor = '#f0f8ff';
+        mensajeAdminElem.style.color = '#0056b3';
+        return;
+    }
+
+    const selectedMatch = allMatches[selectedIndex];
+
+    if (selectedMatch) {
+        document.getElementById('fechaPartidoAdmin').value = selectedMatch.Fecha.split('T')[0]; // Solo la parte de la fecha
+        document.getElementById('equipoClarosAdmin').value = selectedMatch.EquipoClaros.split(',').join('\n');
+        document.getElementById('equipoOscurosAdmin').value = selectedMatch.EquipoOscuros.split(',').join('\n');
+
+        // Seleccionar el radio button del ganador
+        const ganadorRadios = document.querySelectorAll('input[name="ganadorAdmin"]');
+        ganadorRadios.forEach(radio => {
+            if (radio.value === selectedMatch.Ganador) {
+                radio.checked = true;
+            } else {
+                radio.checked = false;
+            }
+        });
+
+        adminForm.style.display = 'block'; // Muestra el formulario
+        mensajeAdminElem.textContent = ''; // Limpia el mensaje
+    } else {
+        adminForm.style.display = 'none';
+        mensajeAdminElem.textContent = 'Error: No se encontraron los detalles del partido seleccionado.';
+        mensajeAdminElem.style.backgroundColor = '#f8d7da';
+        mensajeAdminElem.style.color = '#721c24';
+    }
+}
+
+/**
+ * Actualiza un partido existente en la hoja de Google Sheets.
+ */
+async function actualizarPartido() {
+    const partidosAdminSelect = document.getElementById('seleccionarPartidoAdmin');
+    const selectedIndex = partidosAdminSelect.value;
+    const mensajeAdminElem = document.getElementById('mensajeAdmin');
+
+    if (selectedIndex === "") {
+        mensajeAdminElem.textContent = 'Por favor, selecciona un partido para actualizar.';
+        mensajeAdminElem.style.backgroundColor = '#f8d7da';
+        mensajeAdminElem.style.color = '#721c24';
+        return;
+    }
+
+    const originalMatch = allMatches[selectedIndex];
+    const nuevaFecha = document.getElementById('fechaPartidoAdmin').value;
+    const nuevosClaros = document.getElementById('equipoClarosAdmin').value.split('\n').map(s => s.trim()).filter(s => s !== '').join(',');
+    const nuevosOscuros = document.getElementById('equipoOscurosAdmin').value.split('\n').map(s => s.trim()).filter(s => s !== '').join(',');
+    const nuevoGanador = document.querySelector('input[name="ganadorAdmin"]:checked')?.value || 'PENDIENTE';
+
+    // Validación de fecha duplicada (excluyendo el propio partido que se está editando)
+    const isDuplicateDate = allMatches.some((match, idx) => {
+        if (idx === parseInt(selectedIndex)) return false; // Ignorar el partido actual
+        return match.Fecha.split('T')[0] === nuevaFecha;
+    });
+
+    if (isDuplicateDate) {
+        mensajeAdminElem.textContent = 'Ya existe otro partido programado para esta fecha. Por favor, elige otra fecha.';
+        mensajeAdminElem.style.backgroundColor = '#f8d7da';
+        mensajeAdminElem.style.color = '#721c24';
+        return;
+    }
+
+    // Prepara los datos para la actualización
+    // Necesitamos la fecha original para identificar la fila en el Apps Script
+    const data = {
+        originalFecha: originalMatch.Fecha, // Usamos la fecha original como identificador único
+        nuevaFecha: nuevaFecha,
+        equipoClaros: nuevosClaros,
+        equipoOscuros: nuevosOscuros,
+        ganador: nuevoGanador,
+        action: 'updateMatch' // Acción específica para el Apps Script
+    };
+
+    mensajeAdminElem.textContent = 'Guardando cambios...';
+    mensajeAdminElem.style.backgroundColor = '#f0f8ff';
+    mensajeAdminElem.style.color = '#0056b3';
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}`, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+        // Como es no-cors, asumimos éxito. La verdadera confirmación vendría de una respuesta CORS.
+        // Por ahora, recargamos la lista para reflejar los cambios.
+
+        mensajeAdminElem.textContent = 'Partido actualizado exitosamente.';
+        mensajeAdminElem.style.backgroundColor = '#e2f0cb';
+        mensajeAdminElem.style.color = '#28a745';
+        cargarTodosLosPartidos(); // Recarga la lista para ver los cambios
+    } catch (error) {
+        console.error('Error al actualizar partido:', error);
+        mensajeAdminElem.textContent = `Error al actualizar partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
+        mensajeAdminElem.style.backgroundColor = '#f8d7da';
+        mensajeAdminElem.style.color = '#721c24';
+    }
+}
+
+/**
+ * Elimina un partido de la hoja de Google Sheets.
+ */
+async function eliminarPartido() {
+    const partidosAdminSelect = document.getElementById('seleccionarPartidoAdmin');
+    const selectedIndex = partidosAdminSelect.value;
+    const mensajeAdminElem = document.getElementById('mensajeAdmin');
+    const adminForm = document.getElementById('adminForm');
+
+    if (selectedIndex === "") {
+        mensajeAdminElem.textContent = 'Por favor, selecciona un partido para eliminar.';
+        mensajeAdminElem.style.backgroundColor = '#f8d7da';
+        mensajeAdminElem.style.color = '#721c24';
+        return;
+    }
+
+    const matchToDelete = allMatches[selectedIndex];
+
+    // Confirmación antes de eliminar
+    if (!confirm(`¿Estás seguro de que quieres eliminar el partido del ${formatDateToDDMMYYYY(matchToDelete.Fecha)}? Esta acción es irreversible.`)) {
+        mensajeAdminElem.textContent = 'Eliminación cancelada.';
+        mensajeAdminElem.style.backgroundColor = '#fff3cd';
+        mensajeAdminElem.style.color = '#856404';
+        return;
+    }
+
+    const data = {
+        fecha: matchToDelete.Fecha, // Usamos la fecha original como identificador
+        action: 'deleteMatch' // Acción específica para el Apps Script
+    };
+
+    mensajeAdminElem.textContent = 'Eliminando partido...';
+    mensajeAdminElem.style.backgroundColor = '#f0f8ff';
+    mensajeAdminElem.style.color = '#0056b3';
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}`, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+        // Como es no-cors, asumimos éxito.
+
+        mensajeAdminElem.textContent = 'Partido eliminado exitosamente.';
+        mensajeAdminElem.style.backgroundColor = '#e2f0cb';
+        mensajeAdminElem.style.color = '#28a745';
+
+        adminForm.style.display = 'none'; // Oculta el formulario después de eliminar
+        cargarTodosLosPartidos(); // Recarga la lista para reflejar la eliminación
+    } catch (error) {
+        console.error('Error al eliminar partido:', error);
+        mensajeAdminElem.textContent = `Error al eliminar partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
+        mensajeAdminElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+    }
+}
+
+
+// Lógica de inicialización para cada página
 document.addEventListener('DOMContentLoaded', () => {
     // Determina qué página se está cargando para ejecutar la función de inicialización correcta
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '/futbol-martes/') {
@@ -650,7 +897,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } else if (window.location.pathname.includes('resultados.html')) {
         cargarPartidosPendientes();
-    } else if (window.location.pathname.includes('puntuaciones.html')) { // Nueva condición para la página de puntuaciones
+    } else if (window.location.pathname.includes('puntuaciones.html')) {
         mostrarTablaPuntos();
+    } else if (window.location.pathname.includes('administrador.html')) { // Nueva condición para la página de administración
+        cargarTodosLosPartidos();
     }
 });
