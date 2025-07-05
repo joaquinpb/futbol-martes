@@ -291,7 +291,6 @@ async function guardarPartido() {
         if (!existingMatchesResponse.ok) {
             throw new Error(`Error HTTP al verificar partidos existentes: ${existingMatchesResponse.status} ${existingMatchesResponse.statusText || ''}.`);
         }
-        // CORRECCIÓN: Usar existingMatchesResponse.json() en lugar de response.json()
         const existingMatches = await existingMatchesResponse.json();
 
         const isDuplicateDate = existingMatches.some(match => {
@@ -486,73 +485,36 @@ async function registrarResultado() {
         return;
     }
 
-    const jugadoresClaros = selectedMatch.EquipoClaros.split(',');
-    const jugadoresOscuros = selectedMatch.EquipoOscuros.split(',');
+    // Prepara los datos para la actualización del partido y los puntos de los jugadores
+    const data = {
+        originalFecha: selectedMatch.Fecha, // Fecha original del partido para identificarlo en el Apps Script
+        nuevaFecha: selectedMatch.Fecha.split('T')[0], // Mantenemos la misma fecha, solo formato YYYY-MM-DD
+        equipoClaros: selectedMatch.EquipoClaros,
+        equipoOscuros: selectedMatch.EquipoOscuros,
+        ganador: ganador, // El nuevo ganador
+        action: 'updateMatch' // Acción específica para que el Apps Script actualice el partido y los puntos
+    };
+
+    mensajeElem.textContent = 'Registrando resultado y actualizando puntos...';
+    mensajeElem.style.backgroundColor = '#f0f8ff';
+    mensajeElem.style.color = '#0056b3';
 
     try {
-        // 1. Obtener los puntos actuales de todos los jugadores
-        const responseJugadores = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
-        const jugadoresActuales = await responseJugadores.json();
-
-        // Función auxiliar para obtener los puntos actuales de un jugador por su nombre
-        const obtenerPuntosActuales = (nombre) => {
-            const jugador = jugadoresActuales.find(j => j.Nombre.trim() === nombre.trim()); // .trim() para evitar espacios extras
-            return jugador ? parseInt(jugador.Puntos) : 0; // Si no se encuentra, asume 0 puntos
-        };
-
-        let jugadoresAActualizar = []; // Array para almacenar los jugadores con sus nuevos puntos
-
-        // 2. Calcular los nuevos puntos según el resultado del partido
-        if (ganador === 'Claros') {
-            jugadoresClaros.forEach(nombre => {
-                jugadoresAActualizar.push({ nombre: nombre.trim(), puntos: obtenerPuntosActuales(nombre) + 3 });
-            });
-            jugadoresOscuros.forEach(nombre => {
-                jugadoresAActualizar.push({ nombre: nombre.trim(), puntos: obtenerPuntosActuales(nombre) + 0 });
-            });
-        } else if (ganador === 'Oscuros') {
-            jugadoresOscuros.forEach(nombre => {
-                jugadoresAActualizar.push({ nombre: nombre.trim(), puntos: obtenerPuntosActuales(nombre) + 3 });
-            });
-            jugadoresClaros.forEach(nombre => {
-                jugadoresAActualizar.push({ nombre: nombre.trim(), puntos: obtenerPuntosActuales(nombre) + 0 });
-            });
-        } else { // Empate
-            jugadoresClaros.forEach(nombre => {
-                jugadoresAActualizar.push({ nombre: nombre.trim(), puntos: obtenerPuntosActuales(nombre) + 1 });
-            });
-            jugadoresOscuros.forEach(nombre => {
-                jugadoresAActualizar.push({ nombre: nombre.trim(), puntos: obtenerPuntosActuales(nombre) + 1 });
-            });
-        }
-
-        // 3. Enviar los datos de los jugadores actualizados a la hoja "Jugadores"
-        const responsePuntos = await fetch(`${SCRIPT_URL}?sheet=Jugadores`, {
+        const response = await fetch(`${SCRIPT_URL}`, {
             method: 'POST',
             mode: 'no-cors', // Necesario para Apps Script
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ jugadores: jugadoresAActualizar }), // Envía el array de jugadores a actualizar
+            body: JSON.stringify(data),
         });
-        // Asumimos éxito por no-cors.
+        // Como es no-cors, asumimos éxito. La verdadera confirmación vendría de una respuesta CORS.
 
-        // NOTA IMPORTANTE: La función doPost actual de tu Google Apps Script
-        // no tiene la capacidad de buscar una fila específica en la hoja "Partidos"
-        // (por ejemplo, por fecha) y actualizar su columna "Ganador".
-        // Solo puede añadir nuevas filas o actualizar jugadores por nombre.
-        // Por lo tanto, después de registrar el resultado y actualizar los puntos,
-        // DEBERÁS IR MANUALMENTE A TU GOOGLE SHEET "Futbol5_Datos"
-        // y cambiar el valor de 'PENDIENTE' a 'Claros', 'Oscuros' o 'Empate'
-        // en la fila del partido correspondiente.
-        // Si esto es un problema, se puede expandir el Apps Script para manejarlo.
-
-        mensajeElem.textContent = 'Resultado registrado y puntos de jugadores actualizados. Por favor, actualiza manualmente el ganador en tu hoja de Google Sheets para este partido.';
+        mensajeElem.textContent = 'Resultado registrado y puntos de jugadores actualizados exitosamente.';
         mensajeElem.style.backgroundColor = '#e2f0cb';
         mensajeElem.style.color = '#28a745';
 
-        // Recargar la lista de partidos pendientes para que el partido recién registrado
-        // (que ahora debería estar marcado manualmente como no pendiente) desaparezca.
+        // Recargar la lista de partidos pendientes para que el partido recién registrado desaparezca.
         cargarPartidosPendientes();
         // Limpiar los detalles del equipo después del registro
         document.getElementById('equipoClarosDetalle').value = '';
