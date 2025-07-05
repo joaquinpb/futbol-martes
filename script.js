@@ -181,7 +181,6 @@ function moveFromTeam(teamType) {
     selectedOptions.forEach(option => {
         // Obtiene el tipo original (titular/suplente) del atributo data-originalType
         const originalType = option.dataset.originalType;
-        // *** ESTE console.log ES CLAVE PARA LA DEPURACIÓN ***
         console.log(`[moveFromTeam] Moviendo jugador: ${option.textContent}, Tipo Original (dataset): '${originalType}'`);
 
         // Valida que el tipo original sea 'titular' o 'suplente'
@@ -193,7 +192,21 @@ function moveFromTeam(teamType) {
             return; // Salta esta opción si el tipo es inválido
         }
 
-        const destinationSelectId = `jugadores${originalType.charAt(0).toUpperCase() + originalType.slice(1)}`;
+        let destinationSelectId;
+        // **CORRECCIÓN AQUÍ:** Aseguramos que el ID de destino sea plural.
+        if (originalType === 'titular') {
+            destinationSelectId = 'jugadoresTitulares';
+        } else if (originalType === 'suplente') {
+            destinationSelectId = 'jugadoresSuplentes';
+        } else {
+            // Esto no debería ocurrir si la validación anterior es correcta, pero es un fallback
+            console.error(`[moveFromTeam] Fallback: Tipo original no reconocido para destino: '${originalType}'`);
+            mensajeElem.textContent = `Error interno al determinar lista de destino para ${option.textContent}.`;
+            mensajeElem.style.backgroundColor = '#f8d7da';
+            mensajeElem.style.color = '#721c24';
+            return;
+        }
+
         const destinationSelect = document.getElementById(destinationSelectId);
 
         if (destinationSelect) {
