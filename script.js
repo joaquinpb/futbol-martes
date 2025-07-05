@@ -1,6 +1,6 @@
 // Define la URL de tu Google Apps Script aquí.
 // ¡Esta URL es la que me proporcionaste y es crucial para la comunicación!
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHgezrkEPQYPGIlV2rcMne9d4px1ZfJ_60rVR4CsGunuyKFazNypVmGtYVYZwsuF6/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMfXQc7qi6YgSQkK23gDDZxalyF60NkWTJpNXIejBqMBg7UQa59JlF4-qgpyBeXRNX/exec';
 
 // --- Funciones para index.html (Crear Partido) ---
 
