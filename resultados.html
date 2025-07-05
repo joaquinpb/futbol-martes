@@ -22,23 +22,11 @@
 
         <h2>Registrar Resultado de Partido</h2>
 
-        <div class="pending-matches-container">
-            <h3>Partidos Pendientes de Registrar</h3>
-            <div id="messagePendingMatches" class="mensaje" style="display: none;"></div>
-            <table id="pendingMatchesTable" class="pending-matches-table">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Equipo Claros</th>
-                        <th>Equipo Oscuros</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Los partidos pendientes se cargarán aquí -->
-                </tbody>
-            </table>
-        </div>
+        <label for="pendingMatchesSelect">Seleccionar Partido Pendiente:</label>
+        <select id="pendingMatchesSelect">
+            <option value="">Cargando partidos...</option>
+        </select>
+        <div id="messagePendingMatches" class="mensaje" style="display: none;"></div>
 
         <div id="matchRegistrationForm" style="display: none;">
             <h3>Registrar Ganador para el Partido del <span id="selectedMatchDate"></span></h3>
@@ -159,7 +147,7 @@
         let auth;
         let userId;
 
-        let selectedMatchId = null; // Para almacenar el ID del partido seleccionado
+        let pendingMatches = {}; // To store match details by ID
 
         // Function to display messages
         function showMessage(msg, type = 'success') {
@@ -230,15 +218,16 @@
             }
         }
 
-        // Load pending matches into the table
+        // Load pending matches into the select dropdown
         async function loadPendingMatches() {
             if (!db || !userId) {
                 console.log("Firestore or userId not ready for loading pending matches.");
                 return;
             }
 
-            const pendingMatchesTableBody = document.querySelector('#pendingMatchesTable tbody');
-            pendingMatchesTableBody.innerHTML = ''; // Clear existing rows
+            const pendingMatchesSelect = document.getElementById('pendingMatchesSelect');
+            pendingMatchesSelect.innerHTML = '<option value="">Seleccionar partido...</option>'; // Reset options
+            pendingMatches = {}; // Clear stored matches
 
             try {
                 const q = query(
@@ -248,6 +237,7 @@
                 const querySnapshot = await getDocs(q);
 
                 if (querySnapshot.empty) {
+                    pendingMatchesSelect.innerHTML = '<option value="">No hay partidos pendientes</option>';
                     showPendingMatchesMessage("No hay partidos pendientes de registrar.", "success");
                     return;
                 }
@@ -255,18 +245,11 @@
                 querySnapshot.forEach((doc) => {
                     const match = doc.data();
                     const matchId = doc.id;
-                    const row = pendingMatchesTableBody.insertRow();
-
-                    row.insertCell(0).textContent = match.date;
-                    row.insertCell(1).textContent = match.teamClaros.join(", ");
-                    row.insertCell(2).textContent = match.teamOscuros.join(", ");
-
-                    const actionCell = row.insertCell(3);
-                    const registerButton = document.createElement('button');
-                    registerButton.textContent = 'Seleccionar';
-                    registerButton.classList.add('select-match-btn');
-                    registerButton.onclick = () => selectMatchToRegister(matchId, match);
-                    actionCell.appendChild(registerButton);
+                    pendingMatches[matchId] = match; // Store match details
+                    const option = document.createElement('option');
+                    option.value = matchId;
+                    option.textContent = `${match.date} - Claros: ${match.teamClaros.join(", ")} vs. Oscuros: ${match.teamOscuros.join(", ")}`;
+                    pendingMatchesSelect.appendChild(option);
                 });
                 showPendingMatchesMessage("", "success"); // Clear message if matches are loaded
             } catch (error) {
@@ -275,20 +258,23 @@
             }
         }
 
-        // Select a match to register its result
-        function selectMatchToRegister(matchId, match) {
-            selectedMatchId = matchId;
-            document.getElementById('selectedMatchDate').textContent = match.date;
-            document.getElementById('selectedMatchClaros').textContent = match.teamClaros.join(", ");
-            document.getElementById('selectedMatchOscuros').textContent = match.teamOscuros.join(", ");
-
-            document.getElementById('matchRegistrationForm').style.display = 'block';
-            document.getElementById('pendingMatchesTable').style.display = 'none'; // Hide table
-            document.getElementById('messagePendingMatches').style.display = 'none'; // Hide message
-        }
+        // Event listener for pending matches dropdown change
+        document.getElementById('pendingMatchesSelect').addEventListener('change', (event) => {
+            const selectedMatchId = event.target.value;
+            if (selectedMatchId) {
+                const match = pendingMatches[selectedMatchId];
+                document.getElementById('selectedMatchDate').textContent = match.date;
+                document.getElementById('selectedMatchClaros').textContent = match.teamClaros.join(", ");
+                document.getElementById('selectedMatchOscuros').textContent = match.teamOscuros.join(", ");
+                document.getElementById('matchRegistrationForm').style.display = 'block';
+            } else {
+                document.getElementById('matchRegistrationForm').style.display = 'none';
+            }
+        });
 
         // Register match result
         document.getElementById('registrarResultadoBtn').addEventListener('click', async () => {
+            const selectedMatchId = document.getElementById('pendingMatchesSelect').value;
             if (!selectedMatchId) {
                 showMessage("Primero selecciona un partido.", "error");
                 return;
@@ -332,9 +318,8 @@
 
         // Reset match registration form
         function resetMatchRegistrationForm() {
-            selectedMatchId = null;
+            document.getElementById('pendingMatchesSelect').value = "";
             document.getElementById('matchRegistrationForm').style.display = 'none';
-            document.getElementById('pendingMatchesTable').style.display = 'table'; // Show table again
             const winnerRadios = document.querySelectorAll('input[name="ganador"]');
             winnerRadios.forEach(radio => radio.checked = false);
         }
