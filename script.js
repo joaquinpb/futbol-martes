@@ -462,6 +462,90 @@ async function registrarResultado() {
     }
 }
 
+/**
+ * Muestra la tabla de puntos de los jugadores, ordenada de mayor a menor.
+ */
+async function mostrarTablaPuntos() {
+    const puntosTablaContainer = document.getElementById('puntosTablaContainer');
+    const mensajePuntosElem = document.getElementById('mensajePuntos');
+
+    if (!puntosTablaContainer || !mensajePuntosElem) {
+        console.error('Error: Elementos HTML para la tabla de puntos no encontrados.');
+        return;
+    }
+
+    mensajePuntosElem.textContent = 'Cargando tabla de puntos...';
+    mensajePuntosElem.style.backgroundColor = '#f0f8ff';
+    mensajePuntosElem.style.color = '#0056b3';
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
+
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}. Posible problema con el despliegue del Apps Script o permisos.`);
+        }
+
+        const jugadores = await response.json();
+
+        if (jugadores.length === 0) {
+            mensajePuntosElem.textContent = 'No hay jugadores registrados para mostrar la tabla de puntos.';
+            mensajePuntosElem.style.backgroundColor = '#fff3cd';
+            mensajePuntosElem.style.color = '#856404';
+            return;
+        }
+
+        // Filtra jugadores que tienen un nombre y puntos válidos, y los convierte a un formato numérico seguro
+        const jugadoresValidos = jugadores.filter(j => j.Nombre && !isNaN(parseInt(j.Puntos)))
+                                        .map(j => ({
+                                            Nombre: j.Nombre,
+                                            Puntos: parseInt(j.Puntos) // Asegura que Puntos sea un número
+                                        }));
+
+        // Ordena los jugadores por puntos de mayor a menor
+        jugadoresValidos.sort((a, b) => b.Puntos - a.Puntos);
+
+        // Crea la tabla HTML dinámicamente
+        let tablaHTML = `
+            <table class="puntos-table">
+                <thead>
+                    <tr>
+                        <th>Posición</th>
+                        <th>Jugador</th>
+                        <th>Puntos</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        jugadoresValidos.forEach((jugador, index) => {
+            tablaHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${jugador.Nombre}</td>
+                    <td>${jugador.Puntos}</td>
+                </tr>
+            `;
+        });
+
+        tablaHTML += `
+                </tbody>
+            </table>
+        `;
+
+        puntosTablaContainer.innerHTML = tablaHTML;
+        mensajePuntosElem.textContent = 'Tabla de puntos cargada exitosamente.';
+        mensajePuntosElem.style.backgroundColor = '#e2f0cb';
+        mensajePuntosElem.style.color = '#28a745';
+
+    } catch (error) {
+        console.error('Error al cargar la tabla de puntos:', error);
+        mensajePuntosElem.textContent = `Error al cargar la tabla de puntos: ${error.message}. Verifica tu conexión y el Apps Script.`;
+        mensajePuntosElem.style.backgroundColor = '#f8d7da';
+        mensajePuntosElem.style.color = '#721c24';
+    }
+}
+
+
 // Lógica de inicialización para ambas páginas
 document.addEventListener('DOMContentLoaded', () => {
     // Determina qué página se está cargando para ejecutar la función de inicialización correcta
@@ -474,5 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } else if (window.location.pathname.includes('resultados.html')) {
         cargarPartidosPendientes();
+    } else if (window.location.pathname.includes('puntuaciones.html')) { // Nueva condición para la página de puntuaciones
+        mostrarTablaPuntos();
     }
 });
