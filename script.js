@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v2.6"; // Added ABM for players in admin.html
+const SCRIPT_VERSION = "v2.8"; // Fixed error when calling cargarJugadores() from admin.html
 
 // Variable global para almacenar partidos pendientes para fácil acceso
 let currentPendingMatches = [];
@@ -49,24 +49,10 @@ async function cargarJugadores() {
     const equipoOscurosSelect = document.getElementById('equipoOscuros');
     const mensajeElem = document.getElementById('mensaje');
 
+    // Solo ejecuta esta función si los elementos específicos de index.html están presentes
     if (!jugadoresTitularesSelect || !jugadoresSuplentesSelect || !equipoClarosSelect || !equipoOscurosSelect || !mensajeElem) {
-        const missingElements = [];
-        if (!jugadoresTitularesSelect) missingElements.push('jugadoresTitulares');
-        if (!jugadoresSuplentesSelect) missingElements.push('jugadoresSuplentes');
-        if (!equipoClarosSelect) missingElements.push('equipoClaros');
-        if (!equipoOscurosSelect) missingElements.push('equipoOscuros');
-        if (!mensajeElem) missingElements.push('mensaje');
-
-        const errorMessage = `Error crítico: No se encontraron los siguientes elementos HTML en la página: ${missingElements.join(', ')}. Asegúrate de que el HTML está completo y los IDs son correctos.`;
-        console.error(errorMessage);
-
-        if (mensajeElem) {
-            mensajeElem.textContent = errorMessage;
-            mensajeElem.style.backgroundColor = '#f8d7da';
-            mensajeElem.style.color = '#721c24';
-        } else {
-            alert(errorMessage + "\nPor favor, revisa la consola del navegador para más detalles.");
-        }
+        // Esto es un error esperado si la función se llama desde otra página
+        // console.error("Elementos de index.html no encontrados, saltando cargarJugadores().");
         return;
     }
 
@@ -1061,9 +1047,9 @@ async function actualizarPartido() {
 
     const data = {
         originalFecha: originalMatch.Fecha,
-        nuevaFecha: nuevaFecha, // This is not used in Apps Script's updateMatchStatus
-        equipoClaros: nuevosClaros, // This is not used in Apps Script's updateMatchStatus
-        equipoOscuros: nuevosOscuros, // This is not used in Apps Script's updateMatchStatus
+        nuevaFecha: nuevaFecha,
+        equipoClaros: nuevosClaros,
+        equipoOscuros: nuevosOscuros,
         ganador: nuevoGanador,
         action: 'updateMatchStatus' // Use the specific action for status update
     };
@@ -1566,7 +1552,7 @@ async function addPlayer() {
         mensajeElem.style.color = '#28a745';
         clearPlayerForm();
         cargarJugadoresAdmin(); // Recargar la tabla de jugadores
-        cargarJugadores(); // Recargar en index.html si es necesario
+        // No llamar a cargarJugadores() aquí, ya que es para index.html
     } catch (error) {
         console.error('Error al agregar jugador:', error);
         mensajeElem.textContent = `Error al agregar jugador: ${error.message}.`;
@@ -1606,7 +1592,7 @@ async function modifyPlayer() {
     if (allPlayersData.some(p => p.Nombre.toLowerCase() === newPlayerName.toLowerCase() && p.Nombre !== selectedPlayerForModification)) {
         mensajeElem.textContent = `Error: Ya existe otro jugador con el nombre "${newPlayerName}".`;
         mensajeElem.style.backgroundColor = '#f8d7da';
-        mensaje.style.color = '#721c24';
+        mensajeElem.style.color = '#721c24';
         return;
     }
 
@@ -1634,7 +1620,7 @@ async function modifyPlayer() {
         mensajeElem.style.color = '#28a745';
         clearPlayerForm();
         cargarJugadoresAdmin(); // Recargar la tabla de jugadores
-        cargarJugadores(); // Recargar en index.html si es necesario
+        // No llamar a cargarJugadores() aquí, ya que es para index.html
     } catch (error) {
         console.error('Error al modificar jugador:', error);
         mensajeElem.textContent = `Error al modificar jugador: ${error.message}.`;
@@ -1681,7 +1667,7 @@ async function eliminarJugador(playerName) {
         mensajeElem.style.color = '#28a745';
         clearPlayerForm();
         cargarJugadoresAdmin(); // Recargar la tabla de jugadores
-        cargarJugadores(); // Recargar en index.html si es necesario
+        // No llamar a cargarJugadores() aquí, ya que es para index.html
     } catch (error) {
         console.error('Error al eliminar jugador:', error);
         mensajeElem.textContent = `Error al eliminar jugador: ${error.message}.`;
