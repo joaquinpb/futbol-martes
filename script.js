@@ -228,7 +228,7 @@ function moveFromTeam(teamType) {
             movedCount++;
         } else {
             console.error(`[moveFromTeam] Error: Lista de destino '${destinationSelectId}' no encontrada para el jugador ${option.textContent}. Tipo Original era: ${originalType}`);
-            mensajeElem.textContent = `Error: No se pudo mover a ${option.textContent}. Lista de destino no encontrada.`;
+            mensajeElem.textContent = `Error: No se pudo mover a ${option.textContent}. Lista de destino no encontrada.`
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
         }
@@ -281,7 +281,12 @@ async function guardarPartido() {
         }
         const existingMatches = await existingMatchesResponse.json();
 
-        const isDuplicateDate = existingMatches.some(match => match.Fecha === fecha);
+        // Log de depuración para ver los valores de fecha
+        console.log(`[guardarPartido] Fecha del input: '${fecha}'`);
+        const isDuplicateDate = existingMatches.some(match => {
+            console.log(`[guardarPartido] Comparando con fecha existente: '${match.Fecha}'`);
+            return match.Fecha === fecha;
+        });
 
         if (isDuplicateDate) {
             mensajeElem.textContent = 'Ya existe un partido programado para esta fecha. Por favor, elige otra fecha.';
