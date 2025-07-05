@@ -657,7 +657,7 @@ async function cargarTodosLosPartidos() {
     const mensajeAdminElem = document.getElementById('mensajeAdmin');
     const adminForm = document.getElementById('adminForm');
 
-    // **CORRECCIÓN AQUÍ:** Verifica si los elementos existen antes de intentar manipularlos
+    // Verifica si los elementos existen antes de intentar manipularlos
     if (!partidosAdminSelect || !mensajeAdminElem || !adminForm) {
         console.error("Error: Elementos HTML para la administración de partidos no encontrados. Asegúrate de que estás en la página correcta (administrador.html) y los IDs son correctos.");
         return;
@@ -671,12 +671,10 @@ async function cargarTodosLosPartidos() {
 
     try {
         const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
-        console.log('[cargarTodosLosPartidos] Respuesta del fetch:', response); // Debug: ver la respuesta cruda
         if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}.`);
         }
         allMatches = await response.json(); // Almacena todos los partidos globalmente
-        console.log('[cargarTodosLosPartidos] Datos recibidos (allMatches):', allMatches); // Debug: ver los datos parseados
 
         if (allMatches.length === 0) {
             mensajeAdminElem.textContent = 'No hay partidos registrados para administrar.';
@@ -685,11 +683,17 @@ async function cargarTodosLosPartidos() {
             return;
         }
 
+        // Ordenar los partidos por fecha de forma creciente
+        allMatches.sort((a, b) => {
+            const dateA = new Date(a.Fecha);
+            const dateB = new Date(b.Fecha);
+            return dateA - dateB;
+        });
+
         allMatches.forEach((partido, index) => {
-            console.log('[cargarTodosLosPartidos] Procesando partido:', partido); // Debug: ver cada objeto partido
             const option = document.createElement('option');
             option.value = index; // Usamos el índice como valor para acceder fácilmente al objeto en allMatches
-            const formattedDate = formatDateToDDMMYYYY(partido.Fecha);
+            const formattedDate = formatDateToDDMMYYYY(partido.Fecha); // Usar el formato DD/MM/AAAA
             option.textContent = `${formattedDate} - Claros: ${partido.EquipoClaros} vs Oscuros: ${partido.EquipoOscuros} (${partido.Ganador})`;
             partidosAdminSelect.appendChild(option);
         });
@@ -872,7 +876,7 @@ async function eliminarPartido() {
 
         mensajeAdminElem.textContent = 'Partido eliminado exitosamente.';
         mensajeAdminElem.style.backgroundColor = '#e2f0cb';
-        mensajeAdminElem.style.color = '#28a745';
+        mensajeElem.style.color = '#28a745';
 
         adminForm.style.display = 'none'; // Oculta el formulario después de eliminar
         cargarTodosLosPartidos(); // Recarga la lista para reflejar la eliminación
