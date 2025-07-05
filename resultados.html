@@ -1,502 +1,69 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-version="1.1">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultados - Club de Ajedrez</title>
+    <title>Futbol 5 - Registrar Resultados</title>
+    <!-- Enlaza el archivo de estilos CSS -->
     <link rel="stylesheet" href="style.css">
-    <!-- Font Awesome para iconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <h1>Resultados de Partidos</h1>
+        <h1>Registrar Resultados de Partido</h1>
+        <!-- Enlaces de navegación -->
+        <p>
+            <a href="index.html">Ir a Crear Partido</a> |
+            <a href="puntuaciones.html">Ir a Tabla de Puntos</a> |
+            <a href="administrador.html">Ir a Administrador</a> |
+            <a href="chamigo.html">Ir a Votar Chamigo</a>
+        </p>
 
-        <nav>
-            <a href="index.html">Inicio</a> |
-            <a href="admin.html">Administración</a> |
-            <a href="chamigo.html">Chamigo</a>
-        </nav>
-
-        <hr>
-
-        <h2>Registrar Resultado de Partido</h2>
-
-        <label for="pendingMatchesSelect">Seleccionar Partido Pendiente:</label>
-        <select id="pendingMatchesSelect">
-            <option value="">Cargando partidos...</option>
+        <label for="seleccionarPartido">Seleccionar Partido:</label>
+        <!-- Lista desplegable para seleccionar un partido pendiente de resultado -->
+        <select id="seleccionarPartido" onchange="mostrarDetallesPartido()">
+            <!-- Las opciones de partidos se cargarán aquí dinámicamente -->
         </select>
-        <div id="messagePendingMatches" class="mensaje" style="display: none;"></div>
 
-        <div id="matchRegistrationForm" style="display: none;">
-            <h3>Registrar Ganador para el Partido del <span id="selectedMatchDate"></span></h3>
-            <p>Claros: <span id="selectedMatchClaros"></span> vs. Oscuros: <span id="selectedMatchOscuros"></span></p>
-
-            <div class="resultados-winner-options">
-                <div class="radio-option">
-                    <input type="radio" id="ganadorClaros" name="ganador" value="claros">
-                    <label for="ganadorClaros">Ganan Claros</label>
-                </div>
-                <div class="radio-option">
-                    <input type="radio" id="ganadorOscuros" name="ganador" value="oscuros">
-                    <label for="ganadorOscuros">Ganan Oscuros</label>
-                </div>
-                <div class="radio-option">
-                    <input type="radio" id="empate" name="ganador" value="empate">
-                    <label for="empate">Empate</label>
-                </div>
+        <div class="team-details-container">
+            <div>
+                <h3>Equipo Claros</h3>
+                <!-- Campo de texto para mostrar los jugadores del equipo Claros -->
+                <textarea id="equipoClarosDetalle" rows="5" readonly></textarea>
             </div>
-
-            <button id="registrarResultadoBtn">Registrar Resultado</button>
-            <button id="cancelarRegistroBtn">Cancelar</button>
+            <div>
+                <h3>Equipo Oscuros</h3>
+                <!-- Campo de texto para mostrar los jugadores del equipo Oscuros -->
+                <textarea id="equipoOscurosDetalle" rows="5" readonly></textarea>
+            </div>
         </div>
 
-        <div id="message" class="mensaje" style="display: none;"></div>
-
-        <hr>
-
-        <h2>Tabla de Puntos</h2>
-        <div class="filters-container">
-            <div class="filter-group">
-                <label for="filterYear">Año:</label>
-                <select id="filterYear">
-                    <option value="all">Todos</option>
-                </select>
+        <h2>Resultado</h2>
+        <div class="resultados-winner-options">
+            <div class="radio-option">
+                <input type="radio" id="ganaronClaros" name="ganador" value="Claros">
+                <label for="ganaronClaros">Ganaron Claros</label>
             </div>
-            <div class="filter-group">
-                <label for="filterMonth">Mes:</label>
-                <select id="filterMonth">
-                    <option value="all">Todos</option>
-                    <option value="1">Enero</option>
-                    <option value="2">Febrero</option>
-                    <option value="3">Marzo</option>
-                    <option value="4">Abril</option>
-                    <option value="5">Mayo</option>
-                    <option value="6">Junio</option>
-                    <option value="7">Julio</option>
-                    <option value="8">Agosto</option>
-                    <option value="9">Septiembre</option>
-                    <option value="10">Octubre</option>
-                    <option value="11">Noviembre</option>
-                    <option value="12">Diciembre</option>
-                </select>
+            <div class="radio-option">
+                <input type="radio" id="ganaronOscuros" name="ganador" value="Oscuros">
+                <label for="ganaronOscuros">Ganaron Oscuros</label>
             </div>
-            <div class="filter-group">
-                <label>Período:</label>
-                <div class="period-options">
-                    <div class="radio-option">
-                        <input type="radio" id="periodAll" name="period" value="all" checked>
-                        <label for="periodAll">Todo</label>
-                    </div>
-                    <div class="radio-option">
-                        <input type="radio" id="periodYear" name="period" value="year">
-                        <label for="periodYear">Año</label>
-                    </div>
-                    <div class="radio-option">
-                        <input type="radio" id="periodMonth" name="period" value="month">
-                        <label for="periodMonth">Mes</label>
-                    </div>
-                </div>
+            <div class="radio-option">
+                <input type="radio" id="empate" name="ganador" value="Empate">
+                <label for="empate">Empate</label>
             </div>
-            <button id="applyFilterBtn" class="filter-button">
-                <i class="fas fa-filter"></i> Aplicar Filtro
-            </button>
         </div>
 
-        <div class="table-header-controls">
-            <button id="refreshPointsBtn" class="refresh-button">
-                <i class="fas fa-sync-alt"></i> Actualizar Puntos
-            </button>
-        </div>
+        <!-- Botón para registrar el resultado y actualizar los puntos de los jugadores -->
+        <button onclick="registrarResultado()">Registrar Resultado y Actualizar Puntos</button>
+        <!-- Área para mostrar mensajes al usuario (éxito/error) -->
+        <p id="mensajeResultados" class="mensaje"></p>
 
-        <table id="puntosTable" class="puntos-table">
-            <thead>
-                <tr>
-                    <th class="centered-cell">Posición</th>
-                    <th class="left-aligned-cell">Jugador</th>
-                    <th class="centered-cell">Puntos Totales</th>
-                    <th class="centered-cell">Jugados</th>
-                    <th class="centered-cell">Ganados</th>
-                    <th class="centered-cell">Perdidos</th>
-                    <th class="centered-cell">Empatados</th>
-                    <th class="centered-cell">Chamigo Ganados</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Los puntos se cargarán aquí -->
-            </tbody>
-        </table>
-
-        <div id="version-info" class="version-info">
-            <span id="htmlVersion">HTML Version: 1.0.0</span>
-            <span id="scriptVersion">Script Version: 1.0.0</span>
-        </div>
+        <!-- Elementos para mostrar la versión del HTML y del script -->
+        <p id="htmlVersion" class="version-info"></p>
+        <p id="scriptVersion" class="version-info"></p>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase configuration and initialization
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
-        let app;
-        let db;
-        let auth;
-        let userId;
-
-        let pendingMatches = {}; // To store match details by ID
-
-        // Function to display messages
-        function showMessage(msg, type = 'success') {
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = msg;
-            messageDiv.style.display = 'block';
-            if (type === 'success') {
-                messageDiv.style.backgroundColor = '#d4edda';
-                messageDiv.style.color = '#155724';
-                messageDiv.style.borderColor = '#badc58';
-            } else if (type === 'error') {
-                messageDiv.style.backgroundColor = '#f8d7da';
-                messageDiv.style.color = '#721c24';
-                messageDiv.style.borderColor = '#f5c6cb';
-            }
-            setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        // Function to display messages for pending matches section
-        function showPendingMatchesMessage(msg, type = 'success') {
-            const messageDiv = document.getElementById('messagePendingMatches');
-            messageDiv.textContent = msg;
-            messageDiv.style.display = 'block';
-            if (type === 'success') {
-                messageDiv.style.backgroundColor = '#d4edda';
-                messageDiv.style.color = '#155724';
-                messageDiv.style.borderColor = '#badc58';
-            } else if (type === 'error') {
-                messageDiv.style.backgroundColor = '#f8d7da';
-                messageDiv.style.color = '#721c24';
-                messageDiv.style.borderColor = '#f5c6cb';
-            }
-            setTimeout(() => {
-                messageDiv.style.display = 'none';
-            }, 5000);
-        }
-
-        // Initialize Firebase and set up auth listener
-        async function initializeFirebase() {
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        console.log("Authenticated user ID:", userId);
-                        // Load initial data after authentication
-                        loadPendingMatches();
-                        populateFilterYears();
-                        loadPointsTable();
-                    } else {
-                        // Sign in anonymously if no user is authenticated
-                        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error("Error initializing Firebase:", error);
-                showMessage("Error al inicializar la aplicación. Inténtalo de nuevo.", "error");
-            }
-        }
-
-        // Load pending matches into the select dropdown
-        async function loadPendingMatches() {
-            if (!db || !userId) {
-                console.log("Firestore or userId not ready for loading pending matches.");
-                return;
-            }
-
-            const pendingMatchesSelect = document.getElementById('pendingMatchesSelect');
-            pendingMatchesSelect.innerHTML = '<option value="">Seleccionar partido...</option>'; // Reset options
-            pendingMatches = {}; // Clear stored matches
-
-            try {
-                const q = query(
-                    collection(db, `artifacts/${appId}/public/data/matches`),
-                    where("registered", "==", false)
-                );
-                const querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                    pendingMatchesSelect.innerHTML = '<option value="">No hay partidos pendientes</option>';
-                    showPendingMatchesMessage("No hay partidos pendientes de registrar.", "success");
-                    return;
-                }
-
-                querySnapshot.forEach((doc) => {
-                    const match = doc.data();
-                    const matchId = doc.id;
-                    pendingMatches[matchId] = match; // Store match details
-                    const option = document.createElement('option');
-                    option.value = matchId;
-                    option.textContent = `${match.date} - Claros: ${match.teamClaros.join(", ")} vs. Oscuros: ${match.teamOscuros.join(", ")}`;
-                    pendingMatchesSelect.appendChild(option);
-                });
-                showPendingMatchesMessage("", "success"); // Clear message if matches are loaded
-            } catch (error) {
-                console.error("Error loading pending matches:", error);
-                showPendingMatchesMessage("Error al cargar partidos pendientes.", "error");
-            }
-        }
-
-        // Event listener for pending matches dropdown change
-        document.getElementById('pendingMatchesSelect').addEventListener('change', (event) => {
-            const selectedMatchId = event.target.value;
-            if (selectedMatchId) {
-                const match = pendingMatches[selectedMatchId];
-                document.getElementById('selectedMatchDate').textContent = match.date;
-                document.getElementById('selectedMatchClaros').textContent = match.teamClaros.join(", ");
-                document.getElementById('selectedMatchOscuros').textContent = match.teamOscuros.join(", ");
-                document.getElementById('matchRegistrationForm').style.display = 'block';
-            } else {
-                document.getElementById('matchRegistrationForm').style.display = 'none';
-            }
-        });
-
-        // Register match result
-        document.getElementById('registrarResultadoBtn').addEventListener('click', async () => {
-            const selectedMatchId = document.getElementById('pendingMatchesSelect').value;
-            if (!selectedMatchId) {
-                showMessage("Primero selecciona un partido.", "error");
-                return;
-            }
-
-            const winnerRadios = document.querySelectorAll('input[name="ganador"]');
-            let winner = null;
-            for (const radio of winnerRadios) {
-                if (radio.checked) {
-                    winner = radio.value;
-                    break;
-                }
-            }
-
-            if (!winner) {
-                showMessage("Por favor, selecciona un ganador o empate.", "error");
-                return;
-            }
-
-            try {
-                const matchRef = doc(db, `artifacts/${appId}/public/data/matches`, selectedMatchId);
-                await updateDoc(matchRef, {
-                    winner: winner,
-                    registered: true
-                });
-
-                showMessage("Resultado registrado con éxito.", "success");
-                resetMatchRegistrationForm();
-                loadPendingMatches(); // Refresh pending matches list
-                loadPointsTable(); // Refresh points table
-            } catch (error) {
-                console.error("Error al registrar resultado:", error);
-                showMessage("Error al registrar el resultado. Inténtalo de nuevo.", "error");
-            }
-        });
-
-        // Cancel match registration
-        document.getElementById('cancelarRegistroBtn').addEventListener('click', () => {
-            resetMatchRegistrationForm();
-        });
-
-        // Reset match registration form
-        function resetMatchRegistrationForm() {
-            document.getElementById('pendingMatchesSelect').value = "";
-            document.getElementById('matchRegistrationForm').style.display = 'none';
-            const winnerRadios = document.querySelectorAll('input[name="ganador"]');
-            winnerRadios.forEach(radio => radio.checked = false);
-        }
-
-        // Populate filter years dropdown
-        async function populateFilterYears() {
-            if (!db) return;
-            const filterYearSelect = document.getElementById('filterYear');
-            filterYearSelect.innerHTML = '<option value="all">Todos</option>'; // Reset options
-
-            try {
-                const q = collection(db, `artifacts/${appId}/public/data/matches`);
-                const querySnapshot = await getDocs(q);
-                const years = new Set();
-                querySnapshot.forEach(doc => {
-                    const matchDate = doc.data().date;
-                    if (matchDate) {
-                        const year = new Date(matchDate).getFullYear();
-                        years.add(year);
-                    }
-                });
-                Array.from(years).sort((a, b) => b - a).forEach(year => {
-                    const option = document.createElement('option');
-                    option.value = year;
-                    option.textContent = year;
-                    filterYearSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error("Error populating years:", error);
-            }
-        }
-
-        // Load points table based on filters
-        async function loadPointsTable() {
-            if (!db || !userId) {
-                console.log("Firestore or userId not ready for loading points table.");
-                return;
-            }
-
-            const puntosTableBody = document.querySelector('#puntosTable tbody');
-            puntosTableBody.innerHTML = '<tr><td colspan="8" class="centered-cell">Cargando puntos...</td></tr>';
-
-            const filterYear = document.getElementById('filterYear').value;
-            const filterMonth = document.getElementById('filterMonth').value;
-            const periodRadios = document.querySelectorAll('input[name="period"]');
-            let selectedPeriod = 'all';
-            for (const radio of periodRadios) {
-                if (radio.checked) {
-                    selectedPeriod = radio.value;
-                    break;
-                }
-            }
-
-            let q = collection(db, `artifacts/${appId}/public/data/matches`);
-            let matches = [];
-
-            try {
-                const querySnapshot = await getDocs(q);
-                querySnapshot.forEach(doc => {
-                    const match = doc.data();
-                    if (match.registered) { // Only consider registered matches
-                        matches.push(match);
-                    }
-                });
-
-                // Filter matches based on selected period
-                const filteredMatches = matches.filter(match => {
-                    const matchDate = new Date(match.date);
-                    const matchYear = matchDate.getFullYear().toString();
-                    const matchMonth = (matchDate.getMonth() + 1).toString(); // getMonth is 0-indexed
-
-                    if (selectedPeriod === 'year' && filterYear !== 'all') {
-                        return matchYear === filterYear;
-                    }
-                    if (selectedPeriod === 'month' && filterYear !== 'all' && filterMonth !== 'all') {
-                        return matchYear === filterYear && matchMonth === filterMonth;
-                    }
-                    return true; // 'all' period or no specific year/month filter
-                });
-
-                const playerPoints = {};
-
-                filteredMatches.forEach(match => {
-                    const winner = match.winner;
-                    const teamClaros = match.teamClaros;
-                    const teamOscuros = match.teamOscuros;
-
-                    // Initialize players if they don't exist
-                    [...teamClaros, ...teamOscuros].forEach(player => {
-                        if (!playerPoints[player]) {
-                            playerPoints[player] = {
-                                totalPoints: 0,
-                                played: 0,
-                                won: 0,
-                                lost: 0,
-                                drawn: 0,
-                                chamigoWins: 0 // Initialize Chamigo wins
-                            };
-                        }
-                        playerPoints[player].played++;
-                    });
-
-                    if (winner === 'claros') {
-                        teamClaros.forEach(player => playerPoints[player].won++);
-                        teamOscuros.forEach(player => playerPoints[player].lost++);
-                    } else if (winner === 'oscuros') {
-                        teamOscuros.forEach(player => playerPoints[player].won++);
-                        teamClaros.forEach(player => playerPoints[player].lost++);
-                    } else if (winner === 'empate') {
-                        [...teamClaros, ...teamOscuros].forEach(player => playerPoints[player].drawn++);
-                    }
-                });
-
-                // Calculate total points (simplified for now, can be adjusted)
-                // For example: 3 points for a win, 1 for a draw, 0 for a loss
-                for (const player in playerPoints) {
-                    playerPoints[player].totalPoints = (playerPoints[player].won * 3) + (playerPoints[player].drawn * 1);
-                }
-
-                // Fetch Chamigo wins
-                const chamigoVotesRef = collection(db, `artifacts/${appId}/public/data/chamigoVotes`);
-                const chamigoSnapshot = await getDocs(chamigoVotesRef);
-                chamigoSnapshot.forEach(doc => {
-                    const vote = doc.data();
-                    if (vote.winner && playerPoints[vote.winner]) {
-                        playerPoints[vote.winner].chamigoWins++;
-                    }
-                });
-
-
-                // Convert to array and sort by total points
-                const sortedPlayers = Object.entries(playerPoints).sort(([, a], [, b]) => b.totalPoints - a.totalPoints);
-
-                puntosTableBody.innerHTML = ''; // Clear loading message
-
-                if (sortedPlayers.length === 0) {
-                    puntosTableBody.innerHTML = '<tr><td colspan="8" class="centered-cell">No hay datos de puntos para el período seleccionado.</td></tr>';
-                    return;
-                }
-
-                sortedPlayers.forEach(([player, data], index) => {
-                    const row = puntosTableBody.insertRow();
-                    row.insertCell(0).textContent = index + 1; // Posición
-                    row.cells[0].classList.add('centered-cell');
-                    row.insertCell(1).textContent = player; // Jugador
-                    row.cells[1].classList.add('left-aligned-cell'); // Ensure left alignment for player name
-                    row.insertCell(2).textContent = data.totalPoints; // Puntos Totales
-                    row.cells[2].classList.add('centered-cell');
-                    row.insertCell(3).textContent = data.played; // Jugados
-                    row.cells[3].classList.add('centered-cell');
-                    row.insertCell(4).textContent = data.won; // Ganados
-                    row.cells[4].classList.add('centered-cell');
-                    row.insertCell(5).textContent = data.lost; // Perdidos
-                    row.cells[5].classList.add('centered-cell');
-                    row.insertCell(6).textContent = data.drawn; // Empatados
-                    row.cells[6].classList.add('centered-cell');
-                    row.insertCell(7).textContent = data.chamigoWins; // Chamigo Ganados
-                    row.cells[7].classList.add('centered-cell');
-                });
-
-            } catch (error) {
-                console.error("Error loading points table:", error);
-                puntosTableBody.innerHTML = '<tr><td colspan="8" class="centered-cell">Error al cargar la tabla de puntos.</td></tr>';
-                showMessage("Error al cargar la tabla de puntos. Inténtalo de nuevo.", "error");
-            }
-        }
-
-        // Event listeners for filters and refresh button
-        document.getElementById('applyFilterBtn').addEventListener('click', loadPointsTable);
-        document.getElementById('refreshPointsBtn').addEventListener('click', loadPointsTable);
-
-        // Initial load on window load
-        window.onload = () => {
-            initializeFirebase();
-            document.getElementById('htmlVersion').textContent = 'HTML Version: 1.0.0';
-            document.getElementById('scriptVersion').textContent = 'Script Version: 1.0.0';
-        };
-    </script>
+    <!-- Enlaza el archivo JavaScript principal. -->
+    <script src="script.js"></script>
 </body>
 </html>
