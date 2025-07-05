@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v2.5"; // Reverted to v2.5: Period filter requires year to be selected
+const SCRIPT_VERSION = "v2.6"; // Added ABM for players in admin.html
 
 // Variable global para almacenar partidos pendientes para fácil acceso
 let currentPendingMatches = [];
@@ -11,6 +11,9 @@ let currentPendingMatches = [];
 let allMatches = [];
 // Variable global para almacenar todos los jugadores con sus datos originales
 let allPlayersData = [];
+// Variable global para almacenar el nombre del jugador actualmente seleccionado para modificación
+let selectedPlayerForModification = null;
+
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
@@ -918,7 +921,7 @@ function applyFilters() {
 }
 
 
-// --- Funciones para administrador.html ---
+// --- Funciones para administrador.html (Gestión de Partidos y Jugadores) ---
 
 /**
  * Carga todos los partidos de la hoja "Partidos" y los muestra en el select de administración.
@@ -1402,6 +1405,291 @@ async function submitChamigoVotes() {
     }
 }
 
+// --- Funciones ABM para Jugadores en administrador.html ---
+
+/**
+ * Carga la lista de jugadores en la tabla de administración.
+ */
+async function cargarJugadoresAdmin() {
+    const playersTableBody = document.getElementById('playersTable').querySelector('tbody');
+    const mensajeElem = document.getElementById('mensajeJugadoresAdmin');
+
+    if (!playersTableBody || !mensajeElem) {
+        console.error("Error: Elementos HTML para la tabla de jugadores no encontrados.");
+        return;
+    }
+
+    playersTableBody.innerHTML = ''; // Limpiar filas existentes
+    mensajeElem.textContent = 'Cargando jugadores...';
+    mensajeElem.style.backgroundColor = '#f0f8ff';
+    mensajeElem.style.color = '#0056b3';
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}.`);
+        }
+        allPlayersData = await response.json(); // Actualizar la variable global
+
+        if (allPlayersData.length === 0) {
+            mensajeElem.textContent = 'No hay jugadores registrados.';
+            mensajeElem.style.backgroundColor = '#fff3cd';
+            mensajeElem.style.color = '#856404';
+            return;
+        }
+
+        allPlayersData.forEach(player => {
+            const row = playersTableBody.insertRow();
+            row.insertCell(0).textContent = player.Nombre;
+            row.cells[0].classList.add('left-aligned-cell');
+            row.insertCell(1).textContent = player.Tipo;
+            row.cells[1].classList.add('centered-cell');
+
+            const actionCell = row.insertCell(2);
+            actionCell.classList.add('centered-cell');
+
+            const selectButton = document.createElement('button');
+            selectButton.textContent = 'Seleccionar';
+            selectButton.style.marginRight = '5px';
+            selectButton.style.backgroundColor = '#007bff'; // Azul
+            selectButton.style.padding = '5px 10px';
+            selectButton.style.fontSize = '0.8em';
+            selectButton.style.width = 'auto';
+            selectButton.onclick = () => seleccionarJugadorParaModificar(player.Nombre, player.Tipo);
+            actionCell.appendChild(selectButton);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Eliminar';
+            deleteButton.style.backgroundColor = '#dc3545'; // Rojo
+            deleteButton.style.padding = '5px 10px';
+            deleteButton.style.fontSize = '0.8em';
+            deleteButton.style.width = 'auto';
+            deleteButton.onclick = () => eliminarJugador(player.Nombre);
+            actionCell.appendChild(deleteButton);
+        });
+
+        mensajeElem.textContent = 'Jugadores cargados exitosamente.';
+        mensajeElem.style.backgroundColor = '#e2f0cb';
+        mensajeElem.style.color = '#28a745';
+
+    } catch (error) {
+        console.error('Error al cargar jugadores para administración:', error);
+        mensajeElem.textContent = `Error al cargar jugadores: ${error.message}.`;
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+    }
+}
+
+/**
+ * Selecciona un jugador de la tabla para cargar sus datos en el formulario de modificación.
+ * @param {string} playerName - Nombre del jugador.
+ * @param {string} playerType - Tipo del jugador ('Titular' o 'Suplente').
+ */
+function seleccionarJugadorParaModificar(playerName, playerType) {
+    document.getElementById('playerNameInput').value = playerName;
+    selectedPlayerForModification = playerName; // Almacenar el nombre original para la modificación
+
+    const playerTypeRadios = document.querySelectorAll('input[name="playerType"]');
+    playerTypeRadios.forEach(radio => {
+        if (radio.value === playerType) {
+            radio.checked = true;
+        } else {
+            radio.checked = false;
+        }
+    });
+    document.getElementById('mensajeJugadoresAdmin').textContent = `Jugador "${playerName}" seleccionado para modificar.`;
+    document.getElementById('mensajeJugadoresAdmin').style.backgroundColor = '#e2f0cb';
+    document.getElementById('mensajeJugadoresAdmin').style.color = '#28a745';
+}
+
+/**
+ * Limpia el formulario de agregar/modificar jugador.
+ */
+function clearPlayerForm() {
+    document.getElementById('playerNameInput').value = '';
+    selectedPlayerForModification = null;
+    document.querySelectorAll('input[name="playerType"]').forEach(radio => radio.checked = false);
+    document.getElementById('mensajeJugadoresAdmin').textContent = 'Formulario de jugador limpio.';
+    document.getElementById('mensajeJugadoresAdmin').style.backgroundColor = '#f0f8ff';
+    document.getElementById('mensajeJugadoresAdmin').style.color = '#0056b3';
+}
+
+/**
+ * Agrega un nuevo jugador a la hoja "Jugadores".
+ */
+async function addPlayer() {
+    const playerName = document.getElementById('playerNameInput').value.trim();
+    const playerType = document.querySelector('input[name="playerType"]:checked')?.value;
+    const mensajeElem = document.getElementById('mensajeJugadoresAdmin');
+
+    if (!playerName) {
+        mensajeElem.textContent = 'Por favor, ingresa el nombre del jugador.';
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+        return;
+    }
+    if (!playerType) {
+        mensajeElem.textContent = 'Por favor, selecciona el tipo de jugador (Titular o Suplente).';
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+        return;
+    }
+
+    // Check for duplicate player name
+    if (allPlayersData.some(p => p.Nombre.toLowerCase() === playerName.toLowerCase())) {
+        mensajeElem.textContent = `Error: Ya existe un jugador con el nombre "${playerName}".`;
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+        return;
+    }
+
+    mensajeElem.textContent = 'Agregando jugador...';
+    mensajeElem.style.backgroundColor = '#f0f8ff';
+    mensajeElem.style.color = '#0056b3';
+
+    const data = {
+        playerName: playerName,
+        playerType: playerType,
+        action: 'addPlayer'
+    };
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}`, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        mensajeElem.textContent = `Jugador "${playerName}" agregado exitosamente.`;
+        mensajeElem.style.backgroundColor = '#e2f0cb';
+        mensajeElem.style.color = '#28a745';
+        clearPlayerForm();
+        cargarJugadoresAdmin(); // Recargar la tabla de jugadores
+        cargarJugadores(); // Recargar en index.html si es necesario
+    } catch (error) {
+        console.error('Error al agregar jugador:', error);
+        mensajeElem.textContent = `Error al agregar jugador: ${error.message}.`;
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+    }
+}
+
+/**
+ * Modifica un jugador existente en la hoja "Jugadores".
+ */
+async function modifyPlayer() {
+    const newPlayerName = document.getElementById('playerNameInput').value.trim();
+    const newPlayerType = document.querySelector('input[name="playerType"]:checked')?.value;
+    const mensajeElem = document.getElementById('mensajeJugadoresAdmin');
+
+    if (!selectedPlayerForModification) {
+        mensajeElem.textContent = 'Por favor, selecciona un jugador de la lista para modificar.';
+        mensajeElem.style.backgroundColor = '#fff3cd';
+        mensajeElem.style.color = '#856404';
+        return;
+    }
+    if (!newPlayerName) {
+        mensajeElem.textContent = 'Por favor, ingresa el nuevo nombre del jugador.';
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+        return;
+    }
+    if (!newPlayerType) {
+        mensajeElem.textContent = 'Por favor, selecciona el nuevo tipo de jugador (Titular o Suplente).';
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+        return;
+    }
+
+    // Check for duplicate new player name, excluding the player being modified
+    if (allPlayersData.some(p => p.Nombre.toLowerCase() === newPlayerName.toLowerCase() && p.Nombre !== selectedPlayerForModification)) {
+        mensajeElem.textContent = `Error: Ya existe otro jugador con el nombre "${newPlayerName}".`;
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensaje.style.color = '#721c24';
+        return;
+    }
+
+    mensajeElem.textContent = 'Modificando jugador...';
+    mensajeElem.style.backgroundColor = '#f0f8ff';
+    mensajeElem.style.color = '#0056b3';
+
+    const data = {
+        originalPlayerName: selectedPlayerForModification,
+        newPlayerName: newPlayerName,
+        newPlayerType: newPlayerType,
+        action: 'updatePlayer'
+    };
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}`, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        mensajeElem.textContent = `Jugador "${selectedPlayerForModification}" modificado a "${newPlayerName}" exitosamente.`;
+        mensajeElem.style.backgroundColor = '#e2f0cb';
+        mensajeElem.style.color = '#28a745';
+        clearPlayerForm();
+        cargarJugadoresAdmin(); // Recargar la tabla de jugadores
+        cargarJugadores(); // Recargar en index.html si es necesario
+    } catch (error) {
+        console.error('Error al modificar jugador:', error);
+        mensajeElem.textContent = `Error al modificar jugador: ${error.message}.`;
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+    }
+}
+
+/**
+ * Elimina un jugador de la hoja "Jugadores".
+ * @param {string} playerName - Nombre del jugador a eliminar.
+ */
+async function eliminarJugador(playerName) {
+    const mensajeElem = document.getElementById('mensajeJugadoresAdmin');
+
+    const confirmDelete = await showCustomConfirm(`¿Estás seguro de que quieres eliminar al jugador "${playerName}"? Esta acción es irreversible.`);
+
+    if (!confirmDelete) {
+        mensajeElem.textContent = 'Eliminación de jugador cancelada.';
+        mensajeElem.style.backgroundColor = '#fff3cd';
+        mensajeElem.style.color = '#856404';
+        return;
+    }
+
+    mensajeElem.textContent = `Eliminando jugador "${playerName}"...`;
+    mensajeElem.style.backgroundColor = '#f0f8ff';
+    mensajeElem.style.color = '#0056b3';
+
+    const data = {
+        playerName: playerName,
+        action: 'deletePlayer'
+    };
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}`, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        mensajeElem.textContent = `Jugador "${playerName}" eliminado exitosamente.`;
+        mensajeElem.style.backgroundColor = '#e2f0cb';
+        mensajeElem.style.color = '#28a745';
+        clearPlayerForm();
+        cargarJugadoresAdmin(); // Recargar la tabla de jugadores
+        cargarJugadores(); // Recargar en index.html si es necesario
+    } catch (error) {
+        console.error('Error al eliminar jugador:', error);
+        mensajeElem.textContent = `Error al eliminar jugador: ${error.message}.`;
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+    }
+}
+
 
 // Lógica de inicialización para cada página
 document.addEventListener('DOMContentLoaded', () => {
@@ -1438,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let defaultPeriod = 'Total'; // Default to total if no specific period is required initially
             if (currentMonth >= 0 && currentMonth <= 5) {
                 defaultPeriod = 'Apertura';
-            } else if (currentMonth >= 6 && currentMonth <= 11) { // Fixed: should be <= 11
+            } else if (currentMonth >= 6 && currentMonth <= 11) {
                 defaultPeriod = 'Clausura';
             }
 
@@ -1467,7 +1755,8 @@ document.addEventListener('DOMContentLoaded', () => {
             applyFilters();
         });
     } else if (window.location.pathname.includes('administrador.html')) {
-        cargarTodosLosPartidos();
+        cargarTodosLosPartidos(); // Carga los partidos para la sección de administración de partidos
+        cargarJugadoresAdmin(); // Carga los jugadores para la nueva sección de administración de jugadores
     } else if (window.location.pathname.includes('chamigo.html')) { // New condition for Chamigo page
         cargarPartidosParaChamigo();
     }
