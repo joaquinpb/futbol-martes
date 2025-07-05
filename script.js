@@ -340,9 +340,21 @@ async function guardarPartido() {
  */
 async function cargarPartidosPendientes() {
     const partidosSelect = document.getElementById('seleccionarPartido');
+    // **CORRECCIÓN AQUÍ:** Verifica si el elemento existe antes de intentar manipularlo
+    if (!partidosSelect) {
+        console.error("Elemento 'seleccionarPartido' no encontrado. Asegúrate de que estás en la página correcta (resultados.html) y el ID es correcto.");
+        return; // Sale de la función si el elemento no existe
+    }
+
     // Limpia las opciones existentes y añade una opción por defecto
     partidosSelect.innerHTML = '<option value="">Selecciona un partido...</option>';
     const mensajeElem = document.getElementById('mensajeResultados');
+
+    // **CORRECCIÓN AQUÍ:** Verifica si el elemento existe antes de intentar manipularlo
+    if (!mensajeElem) {
+        console.error("Elemento 'mensajeResultados' no encontrado.");
+        return; // Sale de la función si el elemento no existe
+    }
 
     // Mensaje de depuración inicial
     mensajeElem.textContent = 'Intentando cargar partidos pendientes...';
