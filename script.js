@@ -4,10 +4,14 @@
 // ¡Esta URL es la que me proporcionaste y es crucial para la comunicación!
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMfXQc7qi6YgSQkK23gDDZxalyF60NkWTJpNXIejBqMBg7UQa59JlF4-qgpyBeXRNX/exec'; // ¡URL ACTUALIZADA!
 
-// Helper function to format date from YYYY-MM-DD to DD/MM/YYYY
+// Helper function to format date from ISO string to DD/MM/YYYY
 function formatDateToDDMMYYYY(dateString) {
     if (!dateString) return '';
-    const [year, month, day] = dateString.split('-');
+    const date = new Date(dateString);
+    // Get day, month, year. Pad with leading zeros if necessary.
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const year = date.getFullYear();
     return `${day}/${month}/${year}`;
 }
 
