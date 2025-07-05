@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v1.5"; // Updated version
+const SCRIPT_VERSION = "v1.6"; // Updated version
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
@@ -228,6 +228,7 @@ function moveFromTeam(teamType) {
             mensajeElem.textContent = `Error interno al determinar lista de destino para ${option.textContent}.`;
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
+            return;
         }
 
         const destinationSelect = document.getElementById(destinationSelectId);
@@ -559,8 +560,8 @@ async function mostrarTablaPuntos() {
             <table class="puntos-table">
                 <thead>
                     <tr>
-                        <th>Posición</th>
-                        <th>Jugador</th>
+                        <th class="left-aligned-cell">Posición</th>
+                        <th class="left-aligned-cell">Jugador</th>
                         <th class="centered-cell">Puntos Totales</th>
                         <th class="centered-cell">Jugados</th>
                         <th class="centered-cell">Ganados</th>
@@ -575,14 +576,14 @@ async function mostrarTablaPuntos() {
         jugadoresValidos.forEach((jugador, index) => {
             tablaHTML += `
                 <tr>
-                    <td>${index + 1}</td>
-                    <td>${jugador.Nombre}</td>
-                    <td class="centered-cell">${jugador.Puntos}</td>
-                    <td class="centered-cell">${jugador.PartidosJugados}</td>
-                    <td class="centered-cell">${jugador.Ganados}</td>
-                    <td class="centered-cell">${jugador.Perdidos}</td>
-                    <td class="centered-cell">${jugador.Empatados}</td>
-                    <td class="centered-cell">${jugador.PuntosChamigo}</td>
+                    <td class="left-aligned-cell" data-label="Posición">${index + 1}</td>
+                    <td class="left-aligned-cell" data-label="Jugador">${jugador.Nombre}</td>
+                    <td class="centered-cell" data-label="Puntos Totales">${jugador.Puntos}</td>
+                    <td class="centered-cell" data-label="Jugados">${jugador.PartidosJugados}</td>
+                    <td class="centered-cell" data-label="Ganados">${jugador.Ganados}</td>
+                    <td class="centered-cell" data-label="Perdidos">${jugador.Perdidos}</td>
+                    <td class="centered-cell" data-label="Empatados">${jugador.Empatados}</td>
+                    <td class="centered-cell" data-label="Puntos Chamigo">${jugador.PuntosChamigo}</td>
                 </tr>
             `;
         });
@@ -925,6 +926,8 @@ function cargarJugadoresDelPartidoParaChamigo() {
     currentChamigoMatchPlayers = [...equipoClaros, ...equipoOscuros]; // Store for submission
 
     let playersHTML = '<h3>Vota por el Chamigo (0-10 puntos por jugador)</h3>';
+    // Utiliza la clase chamigo-vote-items para el contenedor y player-vote-item para cada jugador
+    // El estilo flexbox en style.css se encargará de la alineación
     currentChamigoMatchPlayers.forEach(player => {
         playersHTML += `
             <div class="player-vote-item">
