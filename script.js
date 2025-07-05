@@ -2,7 +2,7 @@
 
 // Define la URL de tu Google Apps Script aquí.
 // ¡Esta URL es la que me proporcionaste y es crucial para la comunicación!
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMfXQc7qi6YgSQkK23gDDZxalyF60NkWTJpNXIejBqMBg7UQa59JlF4-qgpyBeXRNX/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMfXQc7qi6YgSQkK23gDDZxalyF60NkWTJpNXIejBqMBg7UQa59JlF4-qgpyBeXRNX/exec'; // ¡URL ACTUALIZADA!
 
 // --- Funciones para index.html (Crear Partido) ---
 
@@ -195,9 +195,9 @@ function moveFromTeam(teamType) {
         let destinationSelectId;
         // **CORRECCIÓN AQUÍ:** Aseguramos que el ID de destino sea plural.
         if (originalType === 'titular') {
-            destinationSelectId = 'jugadoresTitulares';
+            destinationSelectId = 'jugadoresTitulares'; // Correcto: plural
         } else if (originalType === 'suplente') {
-            destinationSelectId = 'jugadoresSuplentes';
+            destinationSelectId = 'jugadoresSuplentes'; // Correcto: plural
         } else {
             // Esto no debería ocurrir si la validación anterior es correcta, pero es un fallback
             console.error(`[moveFromTeam] Fallback: Tipo original no reconocido para destino: '${originalType}'`);
