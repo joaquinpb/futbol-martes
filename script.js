@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v1.3"; // Updated version
+const SCRIPT_VERSION = "v1.4"; // Updated version
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
@@ -702,7 +702,7 @@ function cargarDetallesPartidoAdmin() {
         adminForm.style.display = 'none';
         mensajeAdminElem.textContent = 'Error: No se encontraron los detalles del partido seleccionado.';
         mensajeAdminElem.style.backgroundColor = '#f8d7da';
-        mensajeElem.style.color = '#721c24';
+        mensajeAdminElem.style.color = '#721c24';
     }
 }
 
@@ -717,7 +717,7 @@ async function actualizarPartido() {
     if (selectedIndex === "") {
         mensajeAdminElem.textContent = 'Por favor, selecciona un partido para actualizar.';
         mensajeAdminElem.style.backgroundColor = '#f8d7da';
-        mensajeElem.style.color = '#721c24';
+        mensajeAdminElem.style.color = '#721c24';
         return;
     }
 
@@ -735,7 +735,7 @@ async function actualizarPartido() {
     if (isDuplicateDate) {
         mensajeAdminElem.textContent = 'Ya existe otro partido programado para esta fecha. Por favor, elige otra fecha.';
         mensajeAdminElem.style.backgroundColor = '#f8d7da';
-        mensajeElem.style.color = '#721c24';
+        mensajeAdminElem.style.color = '#721c24';
         return;
     }
 
@@ -750,7 +750,7 @@ async function actualizarPartido() {
 
     mensajeAdminElem.textContent = 'Guardando cambios...';
     mensajeAdminElem.style.backgroundColor = '#f0f8ff';
-    mensajeElem.style.color = '#0056b3';
+    mensajeAdminElem.style.color = '#0056b3';
 
     try {
         const response = await fetch(`${SCRIPT_URL}`, {
@@ -764,13 +764,13 @@ async function actualizarPartido() {
 
         mensajeAdminElem.textContent = 'Partido actualizado exitosamente.';
         mensajeAdminElem.style.backgroundColor = '#e2f0cb';
-        mensajeElem.style.color = '#28a745';
+        mensajeAdminElem.style.color = '#28a745';
         cargarTodosLosPartidos();
     } catch (error) {
         console.error('Error al actualizar partido:', error);
         mensajeAdminElem.textContent = `Error al actualizar partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
         mensajeAdminElem.style.backgroundColor = '#f8d7da';
-        mensajeElem.style.color = '#721c24';
+        mensajeAdminElem.style.color = '#721c24';
     }
 }
 
@@ -786,7 +786,7 @@ async function eliminarPartido() {
     if (selectedIndex === "") {
         mensajeAdminElem.textContent = 'Por favor, selecciona un partido para eliminar.';
         mensajeAdminElem.style.backgroundColor = '#f8d7da';
-        mensajeElem.style.color = '#721c24';
+        mensajeAdminElem.style.color = '#721c24';
         return;
     }
 
@@ -795,7 +795,7 @@ async function eliminarPartido() {
     if (!confirm(`¿Estás seguro de que quieres eliminar el partido del ${formatDateToDDMMYYYY(matchToDelete.Fecha)}? Esta acción es irreversible.`)) {
         mensajeAdminElem.textContent = 'Eliminación cancelada.';
         mensajeAdminElem.style.backgroundColor = '#fff3cd';
-        mensajeElem.style.color = '#856404';
+        mensajeAdminElem.style.color = '#856404';
         return;
     }
 
@@ -806,7 +806,7 @@ async function eliminarPartido() {
 
     mensajeAdminElem.textContent = 'Eliminando partido...';
     mensajeAdminElem.style.backgroundColor = '#f0f8ff';
-    mensajeElem.style.color = '#0056b3';
+    mensajeAdminElem.style.color = '#0056b3';
 
     try {
         const response = await fetch(`${SCRIPT_URL}`, {
@@ -820,7 +820,7 @@ async function eliminarPartido() {
 
         mensajeAdminElem.textContent = 'Partido eliminado exitosamente.';
         mensajeAdminElem.style.backgroundColor = '#e2f0cb';
-        mensajeElem.style.color = '#28a745';
+        mensajeAdminElem.style.color = '#28a745';
 
         adminForm.style.display = 'none';
         cargarTodosLosPartidos();
@@ -828,7 +828,7 @@ async function eliminarPartido() {
         console.error('Error al eliminar partido:', error);
         mensajeAdminElem.textContent = `Error al eliminar partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
         mensajeAdminElem.style.backgroundColor = '#f8d7da';
-        mensajeElem.style.color = '#721c24';
+        mensajeAdminElem.style.color = '#721c24';
     }
 }
 
