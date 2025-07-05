@@ -1,9 +1,9 @@
 // Define la URL de tu Google Apps Script aquí.
-// ¡ESTA URL ES CRUCIAL! Asegúrate de que sea la URL de tu despliegue de aplicación web.
+// ¡Esta URL es la que me proporcionaste y es crucial para la comunicación!
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v1.4"; // Updated version
+const SCRIPT_VERSION = "v1.5"; // Updated version
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
@@ -228,7 +228,6 @@ function moveFromTeam(teamType) {
             mensajeElem.textContent = `Error interno al determinar lista de destino para ${option.textContent}.`;
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
-            return;
         }
 
         const destinationSelect = document.getElementById(destinationSelectId);
@@ -548,8 +547,13 @@ async function mostrarTablaPuntos() {
                                             PuntosChamigo: parseInt(j.PuntosChamigo || 0)
                                         }));
 
-        // Ordena los jugadores por puntos de mayor a menor
-        jugadoresValidos.sort((a, b) => b.Puntos - a.Puntos);
+        // Ordena los jugadores por puntos de mayor a menor, luego por partidos jugados de mayor a menor
+        jugadoresValidos.sort((a, b) => {
+            if (b.Puntos !== a.Puntos) {
+                return b.Puntos - a.Puntos; // Puntos Totales (DESC)
+            }
+            return b.PartidosJugados - a.PartidosJugados; // Jugados (DESC)
+        });
 
         let tablaHTML = `
             <table class="puntos-table">
@@ -557,12 +561,12 @@ async function mostrarTablaPuntos() {
                     <tr>
                         <th>Posición</th>
                         <th>Jugador</th>
-                        <th>Puntos Totales</th>
-                        <th>Jugados</th>
-                        <th>Ganados</th>
-                        <th>Perdidos</th>
-                        <th>Empatados</th>
-                        <th>Puntos Chamigo</th>
+                        <th class="centered-cell">Puntos Totales</th>
+                        <th class="centered-cell">Jugados</th>
+                        <th class="centered-cell">Ganados</th>
+                        <th class="centered-cell">Perdidos</th>
+                        <th class="centered-cell">Empatados</th>
+                        <th class="centered-cell">Puntos Chamigo</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -573,12 +577,12 @@ async function mostrarTablaPuntos() {
                 <tr>
                     <td>${index + 1}</td>
                     <td>${jugador.Nombre}</td>
-                    <td>${jugador.Puntos}</td>
-                    <td>${jugador.PartidosJugados}</td>
-                    <td>${jugador.Ganados}</td>
-                    <td>${jugador.Perdidos}</td>
-                    <td>${jugador.Empatados}</td>
-                    <td>${jugador.PuntosChamigo}</td>
+                    <td class="centered-cell">${jugador.Puntos}</td>
+                    <td class="centered-cell">${jugador.PartidosJugados}</td>
+                    <td class="centered-cell">${jugador.Ganados}</td>
+                    <td class="centered-cell">${jugador.Perdidos}</td>
+                    <td class="centered-cell">${jugador.Empatados}</td>
+                    <td class="centered-cell">${jugador.PuntosChamigo}</td>
                 </tr>
             `;
         });
