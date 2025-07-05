@@ -1,17 +1,15 @@
 // Define la URL de tu Google Apps Script aquí.
-// ¡Esta URL es la que me proporcionaste y es crucial para la comunicación!
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHgezrkEPvQYPGIlV2rcMne9d4px1ZfJ_60rVR4CsGunuyKFazNypVmGtYVYZwsuF6/exec'; // ¡URL ACTUALIZADA!
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHgezrkEPvQYPGIlV2rcMne9d4px1ZfJ_60rVR4CsGunuyKFazNypVmGtYVYZwsuF6/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v0.9";
+const SCRIPT_VERSION = "v1.0";
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
-    // Obtiene día, mes, año. Rellena con ceros a la izquierda, si es necesario.
     const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // El mes es indexado en 0
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
 }
@@ -23,7 +21,7 @@ function formatDateToYYYYMMDD(dateString) {
     if (parts.length === 3) {
         return `${parts[2]}-${parts[1]}-${parts[0]}`;
     }
-    return dateString; // Si ya está en YYYY-MM-DD o es otro formato, lo devuelve tal cual
+    return dateString;
 }
 
 
@@ -39,14 +37,12 @@ let allMatches = [];
  * los clasifica como Titulares o Suplentes y los muestra en sus respectivas listas.
  */
 async function cargarJugadores() {
-    // Obtiene referencias a todos los elementos <select> y al elemento de mensaje
     const jugadoresTitularesSelect = document.getElementById('jugadoresTitulares');
     const jugadoresSuplentesSelect = document.getElementById('jugadoresSuplentes');
     const equipoClarosSelect = document.getElementById('equipoClaros');
     const equipoOscurosSelect = document.getElementById('equipoOscuros');
     const mensajeElem = document.getElementById('mensaje');
 
-    // **VERIFICACIÓN CRÍTICA: Asegura que todos los elementos HTML existan antes de usarlos.**
     if (!jugadoresTitularesSelect || !jugadoresSuplentesSelect || !equipoClarosSelect || !equipoOscurosSelect || !mensajeElem) {
         const missingElements = [];
         if (!jugadoresTitularesSelect) missingElements.push('jugadoresTitulares');
@@ -68,13 +64,11 @@ async function cargarJugadores() {
         return;
     }
 
-    // Limpia las opciones existentes en todos los selects
     jugadoresTitularesSelect.innerHTML = '';
     jugadoresSuplentesSelect.innerHTML = '';
     equipoClarosSelect.innerHTML = '';
     equipoOscurosSelect.innerHTML = '';
 
-    // Mensaje de depuración inicial
     mensajeElem.textContent = 'Intentando cargar jugadores (Titulares/Suplentes)...';
     mensajeElem.style.backgroundColor = '#f0f8ff';
     mensajeElem.style.color = '#0056b3';
@@ -89,7 +83,7 @@ async function cargarJugadores() {
         const jugadores = await response.json();
 
         if (jugadores.length === 0) {
-            mensajeElem.textContent = 'No se encontraron jugadores en la hoja "Jugadores". Asegúrate de que la hoja no está vacía y los encabezados son correctos (Nombre, Puntos, Tipo).';
+            mensajeElem.textContent = 'No se encontraron jugadores en la hoja "Jugadores". Asegúrate de que la hoja no está vacía y los encabezados son correctos (Nombre, Puntos, Tipo, PartidosJugados, Ganados, Perdidos, Empatados, PuntosChamigo).';
             mensajeElem.style.backgroundColor = '#fff3cd';
             mensajeElem.style.color = '#856404';
             return;
@@ -99,10 +93,15 @@ async function cargarJugadores() {
             if (jugador.Nombre && jugador.Tipo) {
                 const option = document.createElement('option');
                 option.value = jugador.Nombre;
-                option.textContent = jugador.Nombre; // Mostrar solo el nombre
-                // Guarda el tipo original y lo recorta para evitar espacios extras
+                option.textContent = jugador.Nombre;
                 option.dataset.originalType = jugador.Tipo.toLowerCase().trim();
-                option.dataset.puntos = jugador.Puntos; // Guarda los puntos para referencia
+                option.dataset.puntos = jugador.Puntos;
+                // Store other stats as well if needed for client-side logic later
+                option.dataset.partidosJugados = jugador.PartidosJugados || 0;
+                option.dataset.ganados = jugador.Ganados || 0;
+                option.dataset.perdidos = jugador.Perdidos || 0;
+                option.dataset.empatados = jugador.Empatados || 0;
+                option.dataset.puntosChamigo = jugador.PuntosChamigo || 0;
 
                 if (option.dataset.originalType === 'titular') {
                     jugadoresTitularesSelect.appendChild(option);
@@ -155,7 +154,7 @@ function moveToTeam(sourceListType, teamType) {
 
     let movedCount = 0;
     selectedOptions.forEach(option => {
-        if (teamSelect.options.length < 5) { // Límite de 5 jugadores por equipo
+        if (teamSelect.options.length < 5) {
             teamSelect.appendChild(option);
             movedCount++;
         } else {
@@ -207,27 +206,23 @@ function moveFromTeam(teamType) {
 
     let movedCount = 0;
     selectedOptions.forEach(option => {
-        // Obtiene el tipo original (titular/suplente) del atributo data-originalType
         const originalType = option.dataset.originalType;
         console.log(`[moveFromTeam] Moviendo jugador: ${option.textContent}, Tipo Original (dataset): '${originalType}'`);
 
-        // Valida que el tipo original sea 'titular' o 'suplente'
         if (!originalType || (originalType !== 'titular' && originalType !== 'suplente')) {
             console.error(`[moveFromTeam] Error: Tipo original inesperado para el jugador ${option.textContent}: '${originalType}'. No se pudo mover de vuelta.`);
             mensajeElem.textContent = `Error: Tipo de jugador desconocido al intentar mover de vuelta a ${option.textContent}.`;
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
-            return; // Salta esta opción si el tipo es inválido
+            return;
         }
 
         let destinationSelectId;
-        // Aseguramos que el ID de destino sea plural.
         if (originalType === 'titular') {
-            destinationSelectId = 'jugadoresTitulares'; // Correcto: plural
+            destinationSelectId = 'jugadoresTitulares';
         } else if (originalType === 'suplente') {
-            destinationSelectId = 'jugadoresSuplentes'; // Correcto: plural
+            destinationSelectId = 'jugadoresSuplentes';
         } else {
-            // Esto no debería ocurrir si la validación anterior es correcta, pero es un fallback
             console.error(`[moveFromTeam] Fallback: Tipo original no reconocido para destino: '${originalType}'`);
             mensajeElem.textContent = `Error interno al determinar lista de destino para ${option.textContent}.`;
             mensajeElem.style.backgroundColor = '#f8d7da';
@@ -253,7 +248,6 @@ function moveFromTeam(teamType) {
         mensajeElem.style.backgroundColor = '#e2f0cb';
         mensajeElem.style.color = '#28a745';
     } else {
-        // Este mensaje solo se muestra si no se movió NINGÚN jugador y no hubo un error específico de "lista no encontrada"
         mensajeElem.textContent = `No se pudo mover ningún jugador de vuelta.`;
         mensajeElem.style.backgroundColor = '#fff3cd';
         mensajeElem.style.color = '#856404';
@@ -270,7 +264,6 @@ async function guardarPartido() {
     const equipoOscurosSelect = document.getElementById('equipoOscuros');
     const mensajeElem = document.getElementById('mensaje');
 
-    // Validaciones básicas antes de guardar
     if (!fecha) {
         mensajeElem.textContent = 'Por favor, selecciona la fecha del partido.';
         mensajeElem.style.backgroundColor = '#f8d7da';
@@ -286,7 +279,6 @@ async function guardarPartido() {
     }
 
     try {
-        // **VALIDACIÓN:** No se pueden agregar 2 partidos con la misma fecha
         const existingMatchesResponse = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
         if (!existingMatchesResponse.ok) {
             throw new Error(`Error HTTP al verificar partidos existentes: ${existingMatchesResponse.status} ${existingMatchesResponse.statusText || ''}.`);
@@ -294,31 +286,29 @@ async function guardarPartido() {
         const existingMatches = await existingMatchesResponse.json();
 
         const isDuplicateDate = existingMatches.some(match => {
-            // Extrae solo la parte de la fecha (YYYY-MM-DD) de la string ISO del Apps Script
             const matchDateOnly = match.Fecha.split('T')[0];
-            return matchDateOnly === fecha; // Compara solo la parte de la fecha
+            return matchDateOnly === fecha;
         });
 
         if (isDuplicateDate) {
             mensajeElem.textContent = 'Ya existe un partido programado para esta fecha. Por favor, elige otra fecha.';
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
-            return; // Detiene la ejecución si la fecha es duplicada
+            return;
         }
 
-        // Convierte las listas de jugadores de cada equipo en cadenas separadas por comas
         const equipoClaros = Array.from(equipoClarosSelect.options).map(opt => opt.value).join(',');
         const equipoOscuros = Array.from(equipoOscurosSelect.options).map(opt => opt.value).join(',');
 
-        // Prepara los datos a enviar a Google Apps Script
         const data = {
             fecha: fecha,
             equipoClaros: equipoClaros,
             equipoOscuros: equipoOscuros,
-            ganador: 'PENDIENTE' // Marca el partido como pendiente de resultado
+            ganador: 'PENDIENTE',
+            action: 'addMatch' // Explicit action for adding a new match
         };
 
-        const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`, {
+        const response = await fetch(`${SCRIPT_URL}`, { // Send to base URL for doPost
             method: 'POST',
             mode: 'no-cors',
             headers: {
@@ -331,11 +321,10 @@ async function guardarPartido() {
         mensajeElem.style.backgroundColor = '#e2f0cb';
         mensajeElem.style.color = '#28a745';
 
-        // Limpiar los equipos y recargar la lista de jugadores Titulares/Suplentes
         equipoClarosSelect.innerHTML = '';
         equipoOscurosSelect.innerHTML = '';
-        cargarJugadores(); // Recarga la lista de jugadores con sus roles fijos
-        document.getElementById('fechaPartido').valueAsDate = new Date(); // Restablece la fecha actual
+        cargarJugadores();
+        document.getElementById('fechaPartido').valueAsDate = new Date();
     } catch (error) {
         console.error('Error al guardar partido:', error);
         mensajeElem.textContent = `Error al guardar el partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
@@ -353,23 +342,19 @@ async function guardarPartido() {
  */
 async function cargarPartidosPendientes() {
     const partidosSelect = document.getElementById('seleccionarPartido');
-    // Verifica si el elemento existe antes de intentar manipularlo
     if (!partidosSelect) {
         console.error("Elemento 'seleccionarPartido' no encontrado. Asegúrate de que estás en la página correcta (resultados.html) y el ID es correcto.");
-        return; // Sale de la función si el elemento no existe
+        return;
     }
 
-    // Limpia las opciones existentes y añade una opción por defecto
     partidosSelect.innerHTML = '<option value="">Selecciona un partido...</option>';
     const mensajeElem = document.getElementById('mensajeResultados');
 
-    // Verifica si el elemento existe antes de intentar manipularlo
     if (!mensajeElem) {
         console.error("Elemento 'mensajeResultados' no encontrado.");
-        return; // Sale de la función si el elemento no existe
+        return;
     }
 
-    // Mensaje de depuración inicial
     mensajeElem.textContent = 'Intentando cargar partidos pendientes...';
     mensajeElem.style.backgroundColor = '#f0f8ff';
     mensajeElem.style.color = '#0056b3';
@@ -382,7 +367,7 @@ async function cargarPartidosPendientes() {
         }
 
         const partidos = await response.json();
-        currentPendingMatches = partidos.filter(p => p.Ganador === 'PENDIENTE'); // Almacena partidos pendientes globalmente
+        currentPendingMatches = partidos.filter(p => p.Ganador === 'PENDIENTE');
 
         if (currentPendingMatches.length === 0) {
             mensajeElem.textContent = 'No hay partidos pendientes de registrar resultados.';
@@ -391,12 +376,9 @@ async function cargarPartidosPendientes() {
             return;
         }
 
-        // Añade cada partido pendiente como una opción en el select
         currentPendingMatches.forEach(partido => {
             const option = document.createElement('option');
-            // Almacena la fecha ISO completa en el valor para poder recuperarla después
             option.value = partido.Fecha;
-            // Formatea la fecha para mostrarla en el menú desplegable
             const formattedDate = formatDateToDDMMYYYY(partido.Fecha);
             option.textContent = formattedDate;
             partidosSelect.appendChild(option);
@@ -421,7 +403,7 @@ function mostrarDetallesPartido() {
     const equipoOscurosDetalle = document.getElementById('equipoOscurosDetalle');
     const mensajeElem = document.getElementById('mensajeResultados');
 
-    const selectedDateValue = partidosSelect.value; // Este valor es la fecha ISO completa
+    const selectedDateValue = partidosSelect.value;
 
     if (!selectedDateValue) {
         equipoClarosDetalle.value = '';
@@ -432,13 +414,12 @@ function mostrarDetallesPartido() {
         return;
     }
 
-    // Busca el partido usando el valor completo (fecha ISO)
     const selectedMatch = currentPendingMatches.find(match => match.Fecha === selectedDateValue);
 
     if (selectedMatch) {
         equipoClarosDetalle.value = selectedMatch.EquipoClaros.split(',').join('\n');
         equipoOscurosDetalle.value = selectedMatch.EquipoOscuros.split(',').join('\n');
-        mensajeElem.textContent = ''; // Limpia el mensaje al cargar con éxito
+        mensajeElem.textContent = '';
     } else {
         equipoClarosDetalle.value = '';
         equipoOscurosDetalle.value = '';
@@ -451,14 +432,13 @@ function mostrarDetallesPartido() {
 
 /**
  * Registra el resultado de un partido seleccionado y actualiza los puntos
- * de los jugadores en la hoja "Jugadores".
+ * y estadísticas de los jugadores en la hoja "Jugadores" a través del Apps Script.
  */
 async function registrarResultado() {
     const partidosSelect = document.getElementById('seleccionarPartido');
-    const fechaPartido = partidosSelect.value; // Este valor es la fecha ISO completa
+    const fechaPartido = partidosSelect.value;
     const mensajeElem = document.getElementById('mensajeResultados');
 
-    // Validaciones
     if (!fechaPartido) {
         mensajeElem.textContent = 'Por favor, selecciona un partido de la lista.';
         mensajeElem.style.backgroundColor = '#f8d7da';
@@ -473,9 +453,8 @@ async function registrarResultado() {
         mensajeElem.style.color = '#721c24';
         return;
     }
-    const ganador = ganadorRadio.value; // 'Claros', 'Oscuros', o 'Empate'
+    const ganador = ganadorRadio.value;
 
-    // Encuentra el partido seleccionado de las partidas pendientes almacenadas globalmente
     const selectedMatch = currentPendingMatches.find(match => match.Fecha === fechaPartido);
 
     if (!selectedMatch) {
@@ -485,14 +464,13 @@ async function registrarResultado() {
         return;
     }
 
-    // Prepara los datos para la actualización del partido y los puntos de los jugadores
     const data = {
-        originalFecha: selectedMatch.Fecha, // Fecha original del partido para identificarlo en el Apps Script
-        nuevaFecha: selectedMatch.Fecha.split('T')[0], // Mantenemos la misma fecha, solo formato YYYY-MM-DD
+        originalFecha: selectedMatch.Fecha,
+        nuevaFecha: selectedMatch.Fecha.split('T')[0],
         equipoClaros: selectedMatch.EquipoClaros,
         equipoOscuros: selectedMatch.EquipoOscuros,
-        ganador: ganador, // El nuevo ganador
-        action: 'updateMatch' // Acción específica para que el Apps Script actualice el partido y los puntos
+        ganador: ganador,
+        action: 'updateMatch'
     };
 
     mensajeElem.textContent = 'Registrando resultado y actualizando puntos...';
@@ -502,21 +480,18 @@ async function registrarResultado() {
     try {
         const response = await fetch(`${SCRIPT_URL}`, {
             method: 'POST',
-            mode: 'no-cors', // Necesario para Apps Script
+            mode: 'no-cors',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(data),
         });
-        // Como es no-cors, asumimos éxito. La verdadera confirmación vendría de una respuesta CORS.
 
         mensajeElem.textContent = 'Resultado registrado y puntos de jugadores actualizados exitosamente.';
         mensajeElem.style.backgroundColor = '#e2f0cb';
         mensajeElem.style.color = '#28a745';
 
-        // Recargar la lista de partidos pendientes para que el partido recién registrado desaparezca.
         cargarPartidosPendientes();
-        // Limpiar los detalles del equipo después del registro
         document.getElementById('equipoClarosDetalle').value = '';
         document.getElementById('equipoOscurosDetalle').value = '';
 
@@ -560,24 +535,32 @@ async function mostrarTablaPuntos() {
             return;
         }
 
-        // Filtra jugadores que tienen un nombre y puntos válidos, y los convierte a un formato numérico seguro
         const jugadoresValidos = jugadores.filter(j => j.Nombre && !isNaN(parseInt(j.Puntos)))
                                         .map(j => ({
                                             Nombre: j.Nombre,
-                                            Puntos: parseInt(j.Puntos) // Asegura que Puntos sea un número
+                                            Puntos: parseInt(j.Puntos),
+                                            PartidosJugados: parseInt(j.PartidosJugados || 0),
+                                            Ganados: parseInt(j.Ganados || 0),
+                                            Perdidos: parseInt(j.Perdidos || 0),
+                                            Empatados: parseInt(j.Empatados || 0),
+                                            PuntosChamigo: parseInt(j.PuntosChamigo || 0)
                                         }));
 
         // Ordena los jugadores por puntos de mayor a menor
         jugadoresValidos.sort((a, b) => b.Puntos - a.Puntos);
 
-        // Crea la tabla HTML dinámicamente
         let tablaHTML = `
             <table class="puntos-table">
                 <thead>
                     <tr>
                         <th>Posición</th>
                         <th>Jugador</th>
-                        <th>Puntos</th>
+                        <th>Puntos Totales</th>
+                        <th>Jugados</th>
+                        <th>Ganados</th>
+                        <th>Perdidos</th>
+                        <th>Empatados</th>
+                        <th>Puntos Chamigo</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -589,6 +572,11 @@ async function mostrarTablaPuntos() {
                     <td>${index + 1}</td>
                     <td>${jugador.Nombre}</td>
                     <td>${jugador.Puntos}</td>
+                    <td>${jugador.PartidosJugados}</td>
+                    <td>${jugador.Ganados}</td>
+                    <td>${jugador.Perdidos}</td>
+                    <td>${jugador.Empatados}</td>
+                    <td>${jugador.PuntosChamigo}</td>
                 </tr>
             `;
         });
@@ -621,14 +609,13 @@ async function cargarTodosLosPartidos() {
     const mensajeAdminElem = document.getElementById('mensajeAdmin');
     const adminForm = document.getElementById('adminForm');
 
-    // Verifica si los elementos existen antes de intentar manipularlos
     if (!partidosAdminSelect || !mensajeAdminElem || !adminForm) {
         console.error("Error: Elementos HTML para la administración de partidos no encontrados. Asegúrate de que estás en la página correcta (administrador.html) y los IDs son correctos.");
         return;
     }
 
     partidosAdminSelect.innerHTML = '<option value="">Selecciona un partido...</option>';
-    adminForm.style.display = 'none'; // Oculta el formulario de edición por defecto
+    adminForm.style.display = 'none';
     mensajeAdminElem.textContent = 'Cargando todos los partidos...';
     mensajeAdminElem.style.backgroundColor = '#f0f8ff';
     mensajeAdminElem.style.color = '#0056b3';
@@ -638,7 +625,7 @@ async function cargarTodosLosPartidos() {
         if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}.`);
         }
-        allMatches = await response.json(); // Almacena todos los partidos globalmente
+        allMatches = await response.json();
 
         if (allMatches.length === 0) {
             mensajeAdminElem.textContent = 'No hay partidos registrados para administrar.';
@@ -647,7 +634,6 @@ async function cargarTodosLosPartidos() {
             return;
         }
 
-        // Ordenar los partidos por fecha de forma creciente
         allMatches.sort((a, b) => {
             const dateA = new Date(a.Fecha);
             const dateB = new Date(b.Fecha);
@@ -656,8 +642,8 @@ async function cargarTodosLosPartidos() {
 
         allMatches.forEach((partido, index) => {
             const option = document.createElement('option');
-            option.value = index; // Usamos el índice como valor para acceder fácilmente al objeto en allMatches
-            const formattedDate = formatDateToDDMMYYYY(partido.Fecha); // Usar el formato DD/MM/AAAA
+            option.value = index;
+            const formattedDate = formatDateToDDMMYYYY(partido.Fecha);
             option.textContent = `${formattedDate} - Claros: ${partido.EquipoClaros} vs Oscuros: ${partido.EquipoOscuros} (${partido.Ganador})`;
             partidosAdminSelect.appendChild(option);
         });
@@ -695,11 +681,10 @@ function cargarDetallesPartidoAdmin() {
     const selectedMatch = allMatches[selectedIndex];
 
     if (selectedMatch) {
-        document.getElementById('fechaPartidoAdmin').value = selectedMatch.Fecha.split('T')[0]; // Solo la parte de la fecha
+        document.getElementById('fechaPartidoAdmin').value = selectedMatch.Fecha.split('T')[0];
         document.getElementById('equipoClarosAdmin').value = selectedMatch.EquipoClaros.split(',').join('\n');
         document.getElementById('equipoOscurosAdmin').value = selectedMatch.EquipoOscuros.split(',').join('\n');
 
-        // Seleccionar el radio button del ganador
         const ganadorRadios = document.querySelectorAll('input[name="ganadorAdmin"]');
         ganadorRadios.forEach(radio => {
             if (radio.value === selectedMatch.Ganador) {
@@ -709,8 +694,8 @@ function cargarDetallesPartidoAdmin() {
             }
         });
 
-        adminForm.style.display = 'block'; // Muestra el formulario
-        mensajeAdminElem.textContent = ''; // Limpia el mensaje
+        adminForm.style.display = 'block';
+        mensajeAdminElem.textContent = '';
     } else {
         adminForm.style.display = 'none';
         mensajeAdminElem.textContent = 'Error: No se encontraron los detalles del partido seleccionado.';
@@ -740,9 +725,8 @@ async function actualizarPartido() {
     const nuevosOscuros = document.getElementById('equipoOscurosAdmin').value.split('\n').map(s => s.trim()).filter(s => s !== '').join(',');
     const nuevoGanador = document.querySelector('input[name="ganadorAdmin"]:checked')?.value || 'PENDIENTE';
 
-    // Validación de fecha duplicada (excluyendo el propio partido que se está editando)
     const isDuplicateDate = allMatches.some((match, idx) => {
-        if (idx === parseInt(selectedIndex)) return false; // Ignorar el partido actual
+        if (idx === parseInt(selectedIndex)) return false;
         return match.Fecha.split('T')[0] === nuevaFecha;
     });
 
@@ -753,15 +737,13 @@ async function actualizarPartido() {
         return;
     }
 
-    // Prepara los datos para la actualización
-    // Necesitamos la fecha original para identificar la fila en el Apps Script
     const data = {
-        originalFecha: originalMatch.Fecha, // Usamos la fecha original como identificador único
+        originalFecha: originalMatch.Fecha,
         nuevaFecha: nuevaFecha,
         equipoClaros: nuevosClaros,
         equipoOscuros: nuevosOscuros,
         ganador: nuevoGanador,
-        action: 'updateMatch' // Acción específica para el Apps Script
+        action: 'updateMatch'
     };
 
     mensajeAdminElem.textContent = 'Guardando cambios...';
@@ -777,13 +759,11 @@ async function actualizarPartido() {
             },
             body: JSON.stringify(data),
         });
-        // Como es no-cors, asumimos éxito. La verdadera confirmación vendría de una respuesta CORS.
-        // Por ahora, recargamos la lista para reflejar los cambios.
 
         mensajeAdminElem.textContent = 'Partido actualizado exitosamente.';
         mensajeAdminElem.style.backgroundColor = '#e2f0cb';
         mensajeAdminElem.style.color = '#28a745';
-        cargarTodosLosPartidos(); // Recarga la lista para ver los cambios
+        cargarTodosLosPartidos();
     } catch (error) {
         console.error('Error al actualizar partido:', error);
         mensajeAdminElem.textContent = `Error al actualizar partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
@@ -810,7 +790,6 @@ async function eliminarPartido() {
 
     const matchToDelete = allMatches[selectedIndex];
 
-    // Confirmación antes de eliminar
     if (!confirm(`¿Estás seguro de que quieres eliminar el partido del ${formatDateToDDMMYYYY(matchToDelete.Fecha)}? Esta acción es irreversible.`)) {
         mensajeAdminElem.textContent = 'Eliminación cancelada.';
         mensajeAdminElem.style.backgroundColor = '#fff3cd';
@@ -819,8 +798,8 @@ async function eliminarPartido() {
     }
 
     const data = {
-        fecha: matchToDelete.Fecha, // Usamos la fecha original como identificador
-        action: 'deleteMatch' // Acción específica para el Apps Script
+        fecha: matchToDelete.Fecha,
+        action: 'deleteMatch'
     };
 
     mensajeAdminElem.textContent = 'Eliminando partido...';
@@ -836,14 +815,13 @@ async function eliminarPartido() {
             },
             body: JSON.stringify(data),
         });
-        // Como es no-cors, asumimos éxito.
 
         mensajeAdminElem.textContent = 'Partido eliminado exitosamente.';
         mensajeAdminElem.style.backgroundColor = '#e2f0cb';
         mensajeAdminElem.style.color = '#28a745';
 
-        adminForm.style.display = 'none'; // Oculta el formulario después de eliminar
-        cargarTodosLosPartidos(); // Recarga la lista para reflejar la eliminación
+        adminForm.style.display = 'none';
+        cargarTodosLosPartidos();
     } catch (error) {
         console.error('Error al eliminar partido:', error);
         mensajeAdminElem.textContent = `Error al eliminar partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
@@ -852,13 +830,197 @@ async function eliminarPartido() {
     }
 }
 
+// --- Funciones para chamigo.html (Votar Chamigo) ---
+
+let currentChamigoMatchPlayers = []; // To store players of the selected match for voting
+
+/**
+ * Carga los partidos que NO están pendientes y NO han sido votados para Chamigo.
+ */
+async function cargarPartidosParaChamigo() {
+    const partidosChamigoSelect = document.getElementById('seleccionarPartidoChamigo');
+    const mensajeChamigoElem = document.getElementById('mensajeChamigo');
+
+    if (!partidosChamigoSelect || !mensajeChamigoElem) {
+        console.error("Error: Elementos HTML para Chamigo no encontrados. Asegúrate de que estás en la página correcta (chamigo.html) y los IDs son correctos.");
+        return;
+    }
+
+    partidosChamigoSelect.innerHTML = '<option value="">Selecciona un partido...</option>';
+    mensajeChamigoElem.textContent = 'Cargando partidos disponibles para votar Chamigo...';
+    mensajeChamigoElem.style.backgroundColor = '#f0f8ff';
+    mensajeChamigoElem.style.color = '#0056b3';
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}.`);
+        }
+        const partidos = await response.json();
+
+        const availableMatches = partidos.filter(p => p.Ganador !== 'PENDIENTE' && p.ChamigoVotado !== true);
+
+        if (availableMatches.length === 0) {
+            mensajeChamigoElem.textContent = 'No hay partidos disponibles para votar Chamigo.';
+            mensajeChamigoElem.style.backgroundColor = '#fff3cd';
+            mensajeChamigoElem.style.color = '#856404';
+            return;
+        }
+
+        availableMatches.sort((a, b) => {
+            const dateA = new Date(a.Fecha);
+            const dateB = new Date(b.Fecha);
+            return dateA - dateB;
+        });
+
+        availableMatches.forEach((partido, index) => {
+            const option = document.createElement('option');
+            // Store the full match object in value (stringified) for easy retrieval
+            option.value = JSON.stringify(partido);
+            const formattedDate = formatDateToDDMMYYYY(partido.Fecha);
+            option.textContent = `${formattedDate} - Ganador: ${partido.Ganador}`;
+            partidosChamigoSelect.appendChild(option);
+        });
+
+        mensajeChamigoElem.textContent = 'Partidos disponibles cargados exitosamente.';
+        mensajeChamigoElem.style.backgroundColor = '#e2f0cb';
+        mensajeChamigoElem.style.color = '#28a745';
+
+    } catch (error) {
+        console.error('Error al cargar partidos para Chamigo:', error);
+        mensajeChamigoElem.textContent = `Error al cargar partidos para Chamigo: ${error.message}. Verifica tu conexión y el Apps Script.`;
+        mensajeChamigoElem.style.backgroundColor = '#f8d7da';
+        mensajeChamigoElem.style.color = '#721c24';
+    }
+}
+
+/**
+ * Carga los 10 jugadores del partido seleccionado en el formulario de votación Chamigo.
+ */
+function cargarJugadoresDelPartidoParaChamigo() {
+    const partidosChamigoSelect = document.getElementById('seleccionarPartidoChamigo');
+    const chamigoPlayersContainer = document.getElementById('chamigoPlayersContainer');
+    const mensajeChamigoElem = document.getElementById('mensajeChamigo');
+
+    chamigoPlayersContainer.innerHTML = ''; // Clear previous players
+
+    const selectedMatchValue = partidosChamigoSelect.value;
+    if (!selectedMatchValue) {
+        mensajeChamigoElem.textContent = 'Selecciona un partido para ver los jugadores.';
+        mensajeChamigoElem.style.backgroundColor = '#f0f8ff';
+        mensajeChamigoElem.style.color = '#0056b3';
+        return;
+    }
+
+    const selectedMatch = JSON.parse(selectedMatchValue);
+    const equipoClaros = selectedMatch.EquipoClaros.split(',').map(name => name.trim());
+    const equipoOscuros = selectedMatch.EquipoOscuros.split(',').map(name => name.trim());
+
+    currentChamigoMatchPlayers = [...equipoClaros, ...equipoOscuros]; // Store for submission
+
+    let playersHTML = '<h3>Vota por el Chamigo (0-10 puntos por jugador)</h3>';
+    currentChamigoMatchPlayers.forEach(player => {
+        playersHTML += `
+            <div class="player-vote-item">
+                <label for="vote-${player}">${player}:</label>
+                <input type="number" id="vote-${player}" name="vote-${player}" min="0" max="10" value="0">
+            </div>
+        `;
+    });
+    chamigoPlayersContainer.innerHTML = playersHTML;
+    document.getElementById('chamigoVoteForm').style.display = 'block'; // Show the form
+    mensajeChamigoElem.textContent = ''; // Clear message
+}
+
+/**
+ * Envía los votos de Chamigo al Apps Script.
+ */
+async function submitChamigoVotes() {
+    const partidosChamigoSelect = document.getElementById('seleccionarPartidoChamigo');
+    const mensajeChamigoElem = document.getElementById('mensajeChamigo');
+
+    const selectedMatchValue = partidosChamigoSelect.value;
+    if (!selectedMatchValue) {
+        mensajeChamigoElem.textContent = 'Por favor, selecciona un partido antes de votar.';
+        mensajeChamigoElem.style.backgroundColor = '#f8d7da';
+        mensajeChamigoElem.style.color = '#721c24';
+        return;
+    }
+
+    const selectedMatch = JSON.parse(selectedMatchValue);
+    const matchFechaISO = selectedMatch.Fecha;
+
+    const playerVotes = [];
+    let totalVotes = 0;
+    currentChamigoMatchPlayers.forEach(player => {
+        const input = document.getElementById(`vote-${player}`);
+        const score = parseInt(input.value);
+        if (!isNaN(score) && score >= 0 && score <= 10) {
+            playerVotes.push({ playerName: player, score: score });
+            totalVotes += score;
+        } else {
+            mensajeChamigoElem.textContent = `Error: El voto para ${player} debe ser un número entre 0 y 10.`;
+            mensajeChamigoElem.style.backgroundColor = '#f8d7da';
+            mensajeChamigoElem.style.color = '#721c24';
+            return; // Exit if invalid vote
+        }
+    });
+
+    if (totalVotes === 0) {
+        mensajeChamigoElem.textContent = 'No se puede enviar la votación si todos los votos son 0. Por favor, asigna al menos un punto.';
+        mensajeChamigoElem.style.backgroundColor = '#fff3cd';
+        mensajeChamigoElem.style.color = '#856404';
+        return;
+    }
+
+    const data = {
+        matchFechaISO: matchFechaISO,
+        playerVotes: playerVotes,
+        action: 'voteChamigo'
+    };
+
+    mensajeChamigoElem.textContent = 'Enviando votos de Chamigo...';
+    mensajeChamigoElem.style.backgroundColor = '#f0f8ff';
+    mensajeChamigoElem.style.color = '#0056b3';
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}`, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        // Since it's no-cors, we can't read response.
+        // Assume success and clear form, reload matches.
+        mensajeChamigoElem.textContent = 'Voto de Chamigo registrado exitosamente. La tabla de puntos se actualizará.';
+        mensajeChamigoElem.style.backgroundColor = '#e2f0cb';
+        mensajeChamigoElem.style.color = '#28a745';
+
+        // Clear form and reload available matches
+        document.getElementById('chamigoVoteForm').style.display = 'none';
+        partidosChamigoSelect.innerHTML = '<option value="">Selecciona un partido...</option>';
+        cargarPartidosParaChamigo(); // Reload to remove the just-voted match
+        // Also reload points table if on that page, or suggest user to check
+        if (window.location.pathname.includes('puntuaciones.html')) {
+            mostrarTablaPuntos();
+        }
+
+    } catch (error) {
+        console.error('Error al enviar votos de Chamigo:', error);
+        mensajeChamigoElem.textContent = `Error al enviar votos de Chamigo: ${error.message}. Verifica tu conexión y el Apps Script.`;
+        mensajeChamigoElem.style.backgroundColor = '#f8d7da';
+        mensajeChamigoElem.style.color = '#721c24';
+    }
+}
+
 
 // Lógica de inicialización para cada página
 document.addEventListener('DOMContentLoaded', () => {
-    // Determina qué página se está cargando para ejecutar la función de inicialización correcta
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '/futbol-martes/') {
         cargarJugadores();
-        // Establece la fecha actual por defecto en el campo de fecha
         const fechaInput = document.getElementById('fechaPartido');
         if (fechaInput) {
             fechaInput.valueAsDate = new Date();
@@ -867,11 +1029,12 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarPartidosPendientes();
     } else if (window.location.pathname.includes('puntuaciones.html')) {
         mostrarTablaPuntos();
-    } else if (window.location.pathname.includes('administrador.html')) { // Nueva condición para la página de administración
+    } else if (window.location.pathname.includes('administrador.html')) {
         cargarTodosLosPartidos();
+    } else if (window.location.pathname.includes('chamigo.html')) { // New condition for Chamigo page
+        cargarPartidosParaChamigo();
     }
 
-    // Mostrar la versión del script
     const scriptVersionDiv = document.getElementById('scriptVersion');
     if (scriptVersionDiv) {
         scriptVersionDiv.textContent = `Script: ${SCRIPT_VERSION}`;
