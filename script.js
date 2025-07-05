@@ -3,7 +3,14 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v1.9"; // Updated version
+const SCRIPT_VERSION = "v2.0"; // Updated version for filtering feature
+
+// Variable global para almacenar partidos pendientes para fácil acceso
+let currentPendingMatches = [];
+// Variable global para almacenar TODOS los partidos para la página de administración
+let allMatches = [];
+// Variable global para almacenar todos los jugadores con sus datos originales
+let allPlayersData = [];
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
@@ -25,11 +32,6 @@ function formatDateToYYYYMMDD(dateString) {
     return dateString;
 }
 
-
-// Variable global para almacenar partidos pendientes para fácil acceso
-let currentPendingMatches = [];
-// Variable global para almacenar TODOS los partidos para la página de administración
-let allMatches = [];
 
 // --- Funciones para index.html (Crear Partido) ---
 
@@ -82,6 +84,7 @@ async function cargarJugadores() {
         }
 
         const jugadores = await response.json();
+        allPlayersData = jugadores; // Store all players data globally
 
         if (jugadores.length === 0) {
             mensajeElem.textContent = 'No se encontraron jugadores en la hoja "Jugadores". Asegúrate de que la hoja no está vacía y los encabezados son correctos (Nombre, Puntos, Tipo, PartidosJugados, Ganados, Perdidos, Empatados, PuntosChamigo).';
@@ -507,8 +510,10 @@ async function registrarResultado() {
 
 /**
  * Muestra la tabla de puntos de los jugadores, ordenada de mayor a menor.
+ * @param {number} [filterYear=null] - Año para filtrar los partidos.
+ * @param {string} [filterPeriod='Total'] - Período para filtrar ('Apertura', 'Clausura', 'Total').
  */
-async function mostrarTablaPuntos() {
+async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
     const puntosTablaContainer = document.getElementById('puntosTablaContainer');
     const mensajePuntosElem = document.getElementById('mensajePuntos');
 
@@ -522,34 +527,123 @@ async function mostrarTablaPuntos() {
     mensajePuntosElem.style.color = '#0056b3';
 
     try {
-        const response = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
+        // Fetch all players data (for initial stats and Chamigo points)
+        const playersResponse = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
+        if (!playersResponse.ok) {
+            throw new Error(`Error HTTP al cargar jugadores: ${playersResponse.status} ${playersResponse.statusText || ''}.`);
+        }
+        const allPlayers = await playersResponse.json();
 
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}. Posible problema con el despliegue del Apps Script o permisos.`);
+        // Fetch all matches data
+        const matchesResponse = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
+        if (!matchesResponse.ok) {
+            throw new Error(`Error HTTP al cargar partidos: ${matchesResponse.status} ${matchesResponse.statusText || ''}.`);
+        }
+        const allMatchesData = await matchesResponse.json();
+
+        // Initialize player stats with default values (including Chamigo points from allPlayers)
+        const playerStats = {};
+        allPlayers.forEach(player => {
+            playerStats[player.Nombre] = {
+                Puntos: 0,
+                PartidosJugados: 0,
+                Ganados: 0,
+                Perdidos: 0,
+                Empatados: 0,
+                PuntosChamigo: parseInt(player.PuntosChamigo || 0) // Chamigo points are total, not filtered by match date
+            };
+        });
+
+        // Filter matches based on year and period
+        let filteredMatches = allMatchesData.filter(match => match.Ganador !== 'PENDIENTE'); // Only count finished matches
+
+        if (filterYear) {
+            filteredMatches = filteredMatches.filter(match => {
+                const matchDate = new Date(match.Fecha);
+                return matchDate.getFullYear() === filterYear;
+            });
+
+            if (filterPeriod === 'Apertura') {
+                filteredMatches = filteredMatches.filter(match => {
+                    const matchDate = new Date(match.Fecha);
+                    return matchDate.getMonth() >= 0 && matchDate.getMonth() <= 5; // Enero (0) a Junio (5)
+                });
+            } else if (filterPeriod === 'Clausura') {
+                filteredMatches = filteredMatches.filter(match => {
+                    const matchDate = new Date(match.Fecha);
+                    return matchDate.getMonth() >= 6 && matchDate.getMonth() <= 11; // Julio (6) a Diciembre (11)
+                });
+            }
+            // If 'Total', no further date filtering is needed beyond the year
         }
 
-        const jugadores = await response.json();
+        // Calculate points and stats from filtered matches
+        filteredMatches.forEach(match => {
+            const equipoClaros = match.EquipoClaros.split(',').map(name => name.trim());
+            const equipoOscuros = match.EquipoOscuros.split(',').map(name => name.trim());
 
-        if (jugadores.length === 0) {
-            mensajePuntosElem.textContent = 'No hay jugadores registrados para mostrar la tabla de puntos.';
-            mensajePuntosElem.style.backgroundColor = '#fff3cd';
-            mensajePuntosElem.style.color = '#856404';
-            return;
+            const winner = match.Ganador;
+
+            // Update stats for all players in the match
+            [...equipoClaros, ...equipoOscuros].forEach(playerName => {
+                if (!playerStats[playerName]) {
+                    // This player was in a filtered match but not in allPlayers (e.g., new player not in initial load)
+                    // This scenario should ideally not happen if allPlayers is comprehensive.
+                    playerStats[playerName] = {
+                        Puntos: 0,
+                        PartidosJugados: 0,
+                        Ganados: 0,
+                        Perdidos: 0,
+                        Empatados: 0,
+                        PuntosChamigo: 0
+                    };
+                }
+                playerStats[playerName].PartidosJugados++;
+            });
+
+            if (winner === 'Claros') {
+                equipoClaros.forEach(playerName => {
+                    playerStats[playerName].Puntos += 3;
+                    playerStats[playerName].Ganados++;
+                });
+                equipoOscuros.forEach(playerName => {
+                    playerStats[playerName].Perdidos++;
+                });
+            } else if (winner === 'Oscuros') {
+                equipoOscuros.forEach(playerName => {
+                    playerStats[playerName].Puntos += 3;
+                    playerStats[playerName].Ganados++;
+                });
+                equipoClaros.forEach(playerName => {
+                    playerStats[playerName].Perdidos++;
+                });
+            } else if (winner === 'Empate') {
+                [...equipoClaros, ...equipoOscuros].forEach(playerName => {
+                    playerStats[playerName].Puntos += 1;
+                    playerStats[playerName].Empatados++;
+                });
+            }
+        });
+
+        // Convert playerStats object to an array for sorting and display
+        let jugadoresParaTabla = Object.keys(playerStats).map(name => ({
+            Nombre: name,
+            Puntos: playerStats[name].Puntos,
+            PartidosJugados: playerStats[name].PartidosJugados,
+            Ganados: playerStats[name].Ganados,
+            Perdidos: playerStats[name].Perdidos,
+            Empatados: playerStats[name].Empatados,
+            PuntosChamigo: playerStats[name].PuntosChamigo
+        }));
+
+        // Filter out players who didn't play any filtered matches if a filter is applied
+        if (filterYear) {
+             jugadoresParaTabla = jugadoresParaTabla.filter(j => j.PartidosJugados > 0 || j.PuntosChamigo > 0);
         }
 
-        const jugadoresValidos = jugadores.filter(j => j.Nombre && !isNaN(parseInt(j.Puntos)))
-                                        .map(j => ({
-                                            Nombre: j.Nombre,
-                                            Puntos: parseInt(j.Puntos),
-                                            PartidosJugados: parseInt(j.PartidosJugados || 0),
-                                            Ganados: parseInt(j.Ganados || 0),
-                                            Perdidos: parseInt(j.Perdidos || 0),
-                                            Empatados: parseInt(j.Empatados || 0),
-                                            PuntosChamigo: parseInt(j.PuntosChamigo || 0)
-                                        }));
 
         // Ordena los jugadores por puntos de mayor a menor, luego por partidos jugados de mayor a menor
-        jugadoresValidos.sort((a, b) => {
+        jugadoresParaTabla.sort((a, b) => {
             if (b.Puntos !== a.Puntos) {
                 return b.Puntos - a.Puntos; // Puntos Totales (DESC)
             }
@@ -573,7 +667,7 @@ async function mostrarTablaPuntos() {
                 <tbody>
         `;
 
-        jugadoresValidos.forEach((jugador, index) => {
+        jugadoresParaTabla.forEach((jugador, index) => {
             tablaHTML += `
                 <tr>
                     <td class="left-aligned-cell" data-label="Posición">${index + 1}</td>
@@ -605,6 +699,57 @@ async function mostrarTablaPuntos() {
         mensajePuntosElem.style.color = '#721c24';
     }
 }
+
+/**
+ * Carga los años disponibles en el selector de filtro.
+ * Obtiene los años de los partidos registrados.
+ */
+async function loadFilterYears() {
+    const filterYearSelect = document.getElementById('filterYear');
+    if (!filterYearSelect) return;
+
+    filterYearSelect.innerHTML = '<option value="">Todos los Años</option>'; // Default option
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}.`);
+        }
+        const partidos = await response.json();
+
+        const years = new Set();
+        partidos.forEach(partido => {
+            if (partido.Fecha) {
+                const date = new Date(partido.Fecha);
+                years.add(date.getFullYear());
+            }
+        });
+
+        const sortedYears = Array.from(years).sort((a, b) => b - a); // Sort descending
+
+        sortedYears.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            filterYearSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error al cargar años para el filtro:', error);
+        // Optionally show a message to the user
+    }
+}
+
+/**
+ * Aplica los filtros seleccionados a la tabla de puntos.
+ */
+function applyFilters() {
+    const filterYearSelect = document.getElementById('filterYear');
+    const selectedYear = filterYearSelect.value ? parseInt(filterYearSelect.value) : null;
+    const selectedPeriod = document.querySelector('input[name="filterPeriod"]:checked').value;
+
+    mostrarTablaPuntos(selectedYear, selectedPeriod);
+}
+
 
 // --- Funciones para administrador.html ---
 
@@ -811,7 +956,7 @@ async function eliminarPartido() {
 
     mensajeAdminElem.textContent = 'Eliminando partido...';
     mensajeAdminElem.style.backgroundColor = '#f0f8ff';
-    mensajeElem.style.color = '#0056b3';
+    mensajeAdminElem.style.color = '#0056b3';
 
     try {
         const response = await fetch(`${SCRIPT_URL}`, {
@@ -1051,7 +1196,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (window.location.pathname.includes('resultados.html')) {
         cargarPartidosPendientes();
     } else if (window.location.pathname.includes('puntuaciones.html')) {
-        mostrarTablaPuntos();
+        loadFilterYears(); // Load years for filter dropdown
+        applyFilters(); // Apply filters on initial load (shows total for current year by default)
     } else if (window.location.pathname.includes('administrador.html')) {
         cargarTodosLosPartidos();
     } else if (window.location.pathname.includes('chamigo.html')) { // New condition for Chamigo page
