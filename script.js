@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v2.8"; // Fixed error when calling cargarJugadores() from admin.html
+const SCRIPT_VERSION = "v2.9"; // Added style.css version display and improved version display layout
 
 // Variable global para almacenar partidos pendientes para fácil acceso
 let currentPendingMatches = [];
@@ -1679,19 +1679,30 @@ async function eliminarJugador(playerName) {
 
 // Lógica de inicialización para cada página
 document.addEventListener('DOMContentLoaded', () => {
-    // Mostrar la versión del HTML
-    const htmlElement = document.documentElement;
-    const htmlVersion = htmlElement.getAttribute('data-version');
+    // Contenedor de versiones
+    const versionInfoContainer = document.getElementById('versionInfoContainer');
     const htmlVersionDiv = document.getElementById('htmlVersion');
-    if (htmlVersionDiv && htmlVersion) {
-        htmlVersionDiv.textContent = `HTML: v${htmlVersion}`;
+    const scriptVersionDiv = document.getElementById('scriptVersion');
+    const styleVersionDiv = document.getElementById('styleVersion');
+
+    if (versionInfoContainer && htmlVersionDiv && scriptVersionDiv && styleVersionDiv) {
+        // Mostrar la versión del HTML
+        const htmlElement = document.documentElement;
+        const htmlVersion = htmlElement.getAttribute('data-version');
+        if (htmlVersion) {
+            htmlVersionDiv.textContent = `HTML: v${htmlVersion}`;
+        }
+
+        // Mostrar la versión del script
+        scriptVersionDiv.textContent = `Script: ${SCRIPT_VERSION}`;
+
+        // Mostrar la versión del style.css
+        const styleVersion = htmlElement.getAttribute('data-style-version');
+        if (styleVersion) {
+            styleVersionDiv.textContent = `CSS: v${styleVersion}`;
+        }
     }
 
-    // Mostrar la versión del script
-    const scriptVersionDiv = document.getElementById('scriptVersion');
-    if (scriptVersionDiv) {
-        scriptVersionDiv.textContent = `Script: ${SCRIPT_VERSION}`;
-    }
 
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '/futbol-martes/') {
         cargarJugadores();
