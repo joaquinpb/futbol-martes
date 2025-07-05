@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html lang="es" data-version="1.1">
+<html lang="es" data-version="1.2">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Futbol 5 - Administrador</title>
+    <title>Futbol 5 - Administración</title>
     <!-- Enlaza el archivo de estilos CSS -->
     <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <h1>Administrador de Partidos</h1>
+        <h1>Administración de la Liga</h1>
         <!-- Enlaces de navegación -->
         <p>
             <a href="index.html">Ir a Crear Partido</a> |
@@ -18,59 +20,104 @@
             <a href="chamigo.html">Ir a Votar Chamigo</a>
         </p>
 
-        <label for="seleccionarPartidoAdmin">Seleccionar Partido a Administrar:</label>
+        <hr>
+
+        <!-- Sección de Gestión de Partidos -->
+        <h2>Gestión de Partidos</h2>
+        <label for="seleccionarPartidoAdmin">Seleccionar Partido para Administrar:</label>
         <select id="seleccionarPartidoAdmin" onchange="cargarDetallesPartidoAdmin()">
-            <option value="">Selecciona un partido...</option>
-            <!-- Los partidos se cargarán aquí dinámicamente -->
+            <option value="">Cargando partidos...</option>
         </select>
+        <p id="mensajeAdmin" class="mensaje"></p>
 
         <div id="adminForm" style="display: none;">
-            <h2>Detalles del Partido</h2>
+            <h3>Detalles del Partido</h3>
             <label for="fechaPartidoAdmin">Fecha del Partido:</label>
-            <input type="date" id="fechaPartidoAdmin" required>
+            <input type="date" id="fechaPartidoAdmin">
 
-            <div class="admin-teams-container">
-                <div>
-                    <h3>Equipo Claros</h3>
-                    <textarea id="equipoClarosAdmin" rows="5"></textarea>
-                </div>
-                <div>
-                    <h3>Equipo Oscuros</h3>
-                    <textarea id="equipoOscurosAdmin" rows="5"></textarea>
-                </div>
-            </div>
+            <label for="equipoClarosAdmin">Equipo Claros (un jugador por línea):</label>
+            <textarea id="equipoClarosAdmin" rows="5"></textarea>
 
-            <h3>Ganador</h3>
+            <label for="equipoOscurosAdmin">Equipo Oscuros (un jugador por línea):</label>
+            <textarea id="equipoOscurosAdmin" rows="5"></textarea>
+
+            <label>Ganador:</label>
             <div class="admin-winner-options">
                 <div class="radio-option">
-                    <input type="radio" id="ganaronClarosAdmin" name="ganadorAdmin" value="Claros">
-                    <label for="ganaronClarosAdmin">Ganaron Claros</label>
+                    <input type="radio" id="ganadorClarosAdmin" name="ganadorAdmin" value="Claros">
+                    <label for="ganadorClarosAdmin">Claros</label>
                 </div>
                 <div class="radio-option">
-                    <input type="radio" id="ganaronOscurosAdmin" name="ganadorAdmin" value="Oscuros">
-                    <label for="ganaronOscurosAdmin">Ganaron Oscuros</label>
+                    <input type="radio" id="ganadorOscurosAdmin" name="ganadorAdmin" value="Oscuros">
+                    <label for="ganadorOscurosAdmin">Oscuros</label>
                 </div>
                 <div class="radio-option">
-                    <input type="radio" id="empateAdmin" name="ganadorAdmin" value="Empate">
-                    <label for="empateAdmin">Empate</label>
+                    <input type="radio" id="ganadorEmpateAdmin" name="ganadorAdmin" value="Empate">
+                    <label for="ganadorEmpateAdmin">Empate</label>
                 </div>
                 <div class="radio-option">
-                    <input type="radio" id="pendienteAdmin" name="ganadorAdmin" value="PENDIENTE">
-                    <label for="pendienteAdmin">PENDIENTE</label>
+                    <input type="radio" id="ganadorPendienteAdmin" name="ganadorAdmin" value="PENDIENTE">
+                    <label for="ganadorPendienteAdmin">PENDIENTE</label>
                 </div>
             </div>
 
             <button onclick="actualizarPartido()">Actualizar Partido</button>
-            <button onclick="eliminarPartido()" class="delete-button">Eliminar Partido</button>
+            <button onclick="eliminarPartido()">Eliminar Partido</button>
         </div>
 
-        <p id="mensajeAdmin" class="mensaje"></p>
+        <hr>
+
+        <!-- Nueva Sección de Gestión de Jugadores (ABM) -->
+        <h2>Gestión de Jugadores (ABM)</h2>
+        <p id="mensajeJugadoresAdmin" class="mensaje"></p>
+
+        <div class="player-management-form">
+            <h3>Agregar / Modificar Jugador</h3>
+            <label for="playerNameInput">Nombre del Jugador:</label>
+            <input type="text" id="playerNameInput" placeholder="Nombre completo del jugador">
+
+            <label>Tipo de Jugador:</label>
+            <div class="radio-group">
+                <div class="radio-option">
+                    <input type="radio" id="playerTypeTitular" name="playerType" value="Titular">
+                    <label for="playerTypeTitular">Titular</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="playerTypeSuplente" name="playerType" value="Suplente">
+                    <label for="playerTypeSuplente">Suplente</label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button onclick="addPlayer()">Agregar Jugador</button>
+                <button onclick="modifyPlayer()">Modificar Jugador</button>
+                <button onclick="clearPlayerForm()">Limpiar Formulario</button>
+            </div>
+        </div>
+
+        <h3>Lista de Jugadores Actuales</h3>
+        <div class="table-container">
+            <table id="playersTable" class="puntos-table">
+                <thead>
+                    <tr>
+                        <th class="left-aligned-cell">Nombre</th>
+                        <th class="centered-cell">Tipo</th>
+                        <th class="centered-cell">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los jugadores se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+
 
         <!-- Elementos para mostrar la versión del HTML y del script -->
         <p id="htmlVersion" class="version-info"></p>
         <p id="scriptVersion" class="version-info"></p>
     </div>
 
+    <!-- Enlaza el archivo JavaScript principal. -->
     <script src="script.js"></script>
 </body>
 </html>
