@@ -16,10 +16,30 @@ async function cargarJugadores() {
     document.getElementById('equipoOscuros').innerHTML = '';
     const mensajeElem = document.getElementById('mensaje');
 
+    // Mensaje de depuración inicial
+    mensajeElem.textContent = 'Intentando cargar jugadores...';
+    mensajeElem.style.backgroundColor = '#f0f8ff'; // Azul claro para información
+    mensajeElem.style.color = '#0056b3';
+
     try {
         // Realiza una petición GET a tu Apps Script para obtener los datos de la hoja "Jugadores"
         const response = await fetch(`${SCRIPT_URL}?sheet=Jugadores`);
+
+        // Verifica si la respuesta HTTP fue exitosa (código 200-299)
+        // Aunque 'no-cors' no permite ver el cuerpo del error, sí podemos ver el estado.
+        if (!response.ok) {
+            // Si la respuesta no es OK, lanza un error con el estado HTTP
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}. Posible problema con el despliegue del Apps Script o permisos.`);
+        }
+
         const jugadores = await response.json(); // Parsea la respuesta JSON
+
+        if (jugadores.length === 0) {
+            mensajeElem.textContent = 'No se encontraron jugadores en la hoja "Jugadores". Asegúrate de que la hoja no está vacía y los encabezados son correctos (Nombre, Puntos).';
+            mensajeElem.style.backgroundColor = '#fff3cd'; // Amarillo claro para advertencia
+            mensajeElem.style.color = '#856404';
+            return;
+        }
 
         // Itera sobre cada jugador obtenido y crea una opción en el select
         jugadores.forEach(jugador => {
@@ -31,13 +51,15 @@ async function cargarJugadores() {
                 jugadoresSelect.appendChild(option); // Añade la opción al select
             }
         });
-        mensajeElem.textContent = ''; // Limpia cualquier mensaje anterior
+        mensajeElem.textContent = 'Jugadores cargados exitosamente.';
+        mensajeElem.style.backgroundColor = '#e2f0cb'; // Verde claro para éxito
+        mensajeElem.style.color = '#28a745'; // Verde oscuro para éxito
     } catch (error) {
         // Manejo de errores si la carga de jugadores falla
         console.error('Error al cargar jugadores:', error);
-        mensajeElem.textContent = 'Error al cargar jugadores. Asegúrate de que la hoja "Jugadores" existe y el Apps Script está desplegado correctamente.';
-        mensajeElem.style.backgroundColor = '#f8d7da'; // Color de fondo para error
-        mensajeElem.style.color = '#721c24'; // Color de texto para error
+        mensajeElem.textContent = `Error al cargar jugadores: ${error.message}. Por favor, verifica: 1) Tu conexión a internet. 2) Que la URL del Apps Script en script.js sea EXACTA. 3) Que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona". 4) Los nombres de las hojas ("Jugadores", "Partidos") y columnas ("Nombre", "Puntos", etc.) en Google Sheets.`;
+        mensajeElem.style.backgroundColor = '#f8d7da'; // Rojo claro para error
+        mensajeElem.style.color = '#721c24'; // Rojo oscuro para error
     }
 }
 
@@ -143,7 +165,7 @@ async function guardarPartido() {
     } catch (error) {
         // Manejo de errores si la petición falla
         console.error('Error al guardar partido:', error);
-        mensajeElem.textContent = 'Error al guardar el partido. Verifica tu conexión y el Apps Script.';
+        mensajeElem.textContent = `Error al guardar el partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
         mensajeElem.style.backgroundColor = '#f8d7da';
         mensajeElem.style.color = '#721c24';
     }
@@ -162,12 +184,22 @@ async function cargarPartidosPendientes() {
     partidosSelect.innerHTML = '<option value="">Selecciona un partido...</option>';
     const mensajeElem = document.getElementById('mensajeResultados');
 
+    // Mensaje de depuración inicial
+    mensajeElem.textContent = 'Intentando cargar partidos pendientes...';
+    mensajeElem.style.backgroundColor = '#f0f8ff'; // Azul claro para información
+    mensajeElem.style.color = '#0056b3';
+
     try {
         // Realiza una petición GET a tu Apps Script para obtener los datos de la hoja "Partidos"
         const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
+
+        // Verifica si la respuesta HTTP fue exitosa (código 200-299)
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status} ${response.statusText || ''}. Posible problema con el despliegue del Apps Script o permisos.`);
+        }
+
         const partidos = await response.json();
 
-        // Filtra los partidos que aún no tienen un ganador registrado ('PENDIENTE')
         const partidosPendientes = partidos.filter(p => p.Ganador === 'PENDIENTE');
 
         if (partidosPendientes.length === 0) {
@@ -188,11 +220,13 @@ async function cargarPartidosPendientes() {
             option.dataset.equipoOscuros = partido.EquipoOscuros;
             partidosSelect.appendChild(option);
         });
-        mensajeElem.textContent = ''; // Limpia mensajes anteriores
+        mensajeElem.textContent = 'Partidos pendientes cargados exitosamente.';
+        mensajeElem.style.backgroundColor = '#e2f0cb'; // Verde claro para éxito
+        mensajeElem.style.color = '#28a745'; // Verde oscuro para éxito
     } catch (error) {
         // Manejo de errores si la carga de partidos falla
         console.error('Error al cargar partidos:', error);
-        mensajeElem.textContent = 'Error al cargar partidos pendientes. Verifica tu conexión y el Apps Script.';
+        mensajeElem.textContent = `Error al cargar partidos pendientes: ${error.message}. Por favor, verifica: 1) Tu conexión a internet. 2) Que la URL del Apps Script en script.js sea EXACTA. 3) Que el Apps Script esté desplegado como "Aplicación web" con acceso "Cualquier persona". 4) Los nombres de las hojas ("Jugadores", "Partidos") y columnas ("Nombre", "Puntos", etc.) en Google Sheets.`;
         mensajeElem.style.backgroundColor = '#f8d7da';
         mensajeElem.style.color = '#721c24';
     }
@@ -299,7 +333,7 @@ async function registrarResultado() {
     } catch (error) {
         // Manejo de errores si el registro del resultado o la actualización de puntos falla
         console.error('Error al registrar resultado o actualizar puntos:', error);
-        mensajeElem.textContent = 'Error al registrar el resultado o actualizar puntos. Verifica tu conexión y el Apps Script.';
+        mensajeElem.textContent = `Error al registrar el resultado o actualizar puntos: ${error.message}. Verifica tu conexión y el Apps Script.`;
         mensajeElem.style.backgroundColor = '#f8d7da';
         mensajeElem.style.color = '#721c24';
     }
@@ -308,7 +342,7 @@ async function registrarResultado() {
 // Lógica de inicialización para ambas páginas
 document.addEventListener('DOMContentLoaded', () => {
     // Determina qué página se está cargando para ejecutar la función de inicialización correcta
-    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+    if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '/futbol-martes/') {
         cargarJugadores();
         // Establece la fecha actual por defecto en el campo de fecha
         const fechaInput = document.getElementById('fechaPartido');
