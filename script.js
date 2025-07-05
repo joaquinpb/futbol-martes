@@ -2,6 +2,9 @@
 // ¡Esta URL es la que me proporcionaste y es crucial para la comunicación!
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHgezrkEPvQYPGIlV2rcMne9d4px1ZfJ_60rVR4CsGunuyKFazNypVmGtYVYZwsuF6/exec'; // ¡URL ACTUALIZADA!
 
+// Versión del script
+const SCRIPT_VERSION = "v0.7";
+
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
     if (!dateString) return '';
@@ -288,7 +291,7 @@ async function guardarPartido() {
         if (!existingMatchesResponse.ok) {
             throw new Error(`Error HTTP al verificar partidos existentes: ${existingMatchesResponse.status} ${existingMatchesResponse.statusText || ''}.`);
         }
-        const existingMatches = await existingMatchesResponse.json();
+        const existingMatches = await response.json();
 
         const isDuplicateDate = existingMatches.some(match => {
             // Extrae solo la parte de la fecha (YYYY-MM-DD) de la string ISO del Apps Script
@@ -832,7 +835,7 @@ async function actualizarPartido() {
 async function eliminarPartido() {
     const partidosAdminSelect = document.getElementById('seleccionarPartidoAdmin');
     const selectedIndex = partidosAdminSelect.value;
-    const mensajeAdminElem = document.getElementById('mensajeAdmin'); // Corrected variable name
+    const mensajeAdminElem = document.getElementById('mensajeAdmin');
     const adminForm = document.getElementById('adminForm');
 
     if (selectedIndex === "") {
@@ -874,15 +877,15 @@ async function eliminarPartido() {
 
         mensajeAdminElem.textContent = 'Partido eliminado exitosamente.';
         mensajeAdminElem.style.backgroundColor = '#e2f0cb';
-        mensajeAdminElem.style.color = '#28a745'; // Corrected variable name
+        mensajeAdminElem.style.color = '#28a745';
 
         adminForm.style.display = 'none'; // Oculta el formulario después de eliminar
         cargarTodosLosPartidos(); // Recarga la lista para reflejar la eliminación
     } catch (error) {
         console.error('Error al eliminar partido:', error);
-        mensajeAdminElem.textContent = `Error al eliminar partido: ${error.message}. Verifica tu conexión y el Apps Script.` // Corrected variable name
+        mensajeAdminElem.textContent = `Error al eliminar partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
         mensajeAdminElem.style.backgroundColor = '#f8d7da';
-        mensajeAdminElem.style.color = '#721c24'; // Corrected variable name
+        mensajeAdminElem.style.color = '#721c24';
     }
 }
 
@@ -903,5 +906,11 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarTablaPuntos();
     } else if (window.location.pathname.includes('administrador.html')) { // Nueva condición para la página de administración
         cargarTodosLosPartidos();
+    }
+
+    // Mostrar la versión del script
+    const scriptVersionDiv = document.getElementById('scriptVersion');
+    if (scriptVersionDiv) {
+        scriptVersionDiv.textContent = `Script: ${SCRIPT_VERSION}`;
     }
 });
