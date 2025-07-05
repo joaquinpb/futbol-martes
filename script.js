@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHgezrkEPvQYPGIlV2rcMne9d4px1ZfJ_60rVR4CsGunuyKFazNypVmGtYVYZwsuF6/exec'; // ¡URL ACTUALIZADA!
 
 // Versión del script
-const SCRIPT_VERSION = "v0.7";
+const SCRIPT_VERSION = "v0.8";
 
 // Función auxiliar para formatear la fecha de string ISO a DD/MM/AAAA
 function formatDateToDDMMYYYY(dateString) {
@@ -291,7 +291,8 @@ async function guardarPartido() {
         if (!existingMatchesResponse.ok) {
             throw new Error(`Error HTTP al verificar partidos existentes: ${existingMatchesResponse.status} ${existingMatchesResponse.statusText || ''}.`);
         }
-        const existingMatches = await response.json();
+        // CORRECCIÓN: Usar existingMatchesResponse.json() en lugar de response.json()
+        const existingMatches = await existingMatchesResponse.json();
 
         const isDuplicateDate = existingMatches.some(match => {
             // Extrae solo la parte de la fecha (YYYY-MM-DD) de la string ISO del Apps Script
