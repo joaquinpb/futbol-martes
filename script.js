@@ -14,17 +14,15 @@ async function cargarJugadores() {
     // Obtiene referencias a todos los elementos <select> y al elemento de mensaje
     const jugadoresTitularesSelect = document.getElementById('jugadoresTitulares');
     const jugadoresSuplentesSelect = document.getElementById('jugadoresSuplentes');
-    const jugadoresPartidoSelect = document.getElementById('jugadoresPartido'); // Nueva lista
     const equipoClarosSelect = document.getElementById('equipoClaros');
     const equipoOscurosSelect = document.getElementById('equipoOscuros');
     const mensajeElem = document.getElementById('mensaje');
 
     // **VERIFICACIÓN CRÍTICA: Asegura que todos los elementos HTML existen antes de usarlos.**
-    if (!jugadoresTitularesSelect || !jugadoresSuplentesSelect || !jugadoresPartidoSelect || !equipoClarosSelect || !equipoOscurosSelect || !mensajeElem) {
+    if (!jugadoresTitularesSelect || !jugadoresSuplentesSelect || !equipoClarosSelect || !equipoOscurosSelect || !mensajeElem) {
         const missingElements = [];
         if (!jugadoresTitularesSelect) missingElements.push('jugadoresTitulares');
         if (!jugadoresSuplentesSelect) missingElements.push('jugadoresSuplentes');
-        if (!jugadoresPartidoSelect) missingElements.push('jugadoresPartido');
         if (!equipoClarosSelect) missingElements.push('equipoClaros');
         if (!equipoOscurosSelect) missingElements.push('equipoOscuros');
         if (!mensajeElem) missingElements.push('mensaje');
@@ -45,7 +43,6 @@ async function cargarJugadores() {
     // Limpia las opciones existentes en todos los selects
     jugadoresTitularesSelect.innerHTML = '';
     jugadoresSuplentesSelect.innerHTML = '';
-    jugadoresPartidoSelect.innerHTML = ''; // Limpia la nueva lista
     equipoClarosSelect.innerHTML = '';
     equipoOscurosSelect.innerHTML = '';
 
@@ -74,11 +71,9 @@ async function cargarJugadores() {
             if (jugador.Nombre && jugador.Tipo) {
                 const option = document.createElement('option');
                 option.value = jugador.Nombre;
-                // Mostrar solo el nombre en las listas de Titulares/Suplentes/Partido
-                option.textContent = jugador.Nombre;
-                // Almacenar el tipo original en un dataset para futuras referencias si es necesario
-                option.dataset.originalType = jugador.Tipo.toLowerCase();
-                option.dataset.puntos = jugador.Puntos; // Guardar puntos para referencia futura
+                option.textContent = jugador.Nombre; // Mostrar solo el nombre
+                option.dataset.originalType = jugador.Tipo.toLowerCase(); // Guarda el tipo original
+                option.dataset.puntos = jugador.Puntos; // Guarda los puntos para referencia
 
                 if (jugador.Tipo.toLowerCase() === 'titular') {
                     jugadoresTitularesSelect.appendChild(option);
@@ -99,33 +94,31 @@ async function cargarJugadores() {
 }
 
 /**
- * Transfiere jugadores seleccionados de una lista a otra.
- * @param {string} sourceId - ID del elemento <select> de origen.
- * @param {string} destinationId - ID del elemento <select> de destino.
- * @param {number} [limit=-1] - Límite de jugadores en la lista de destino. -1 para sin límite.
+ * Mueve jugadores seleccionados de una lista de origen (Titulares/Suplentes) a un equipo (Claros/Oscuros).
+ * @param {string} sourceListType - 'titulares' o 'suplentes'.
+ * @param {string} teamType - 'claros' o 'oscuros'.
  */
-function transferPlayers(sourceId, destinationId, limit = -1) {
-    const sourceSelect = document.getElementById(sourceId);
-    const destinationSelect = document.getElementById(destinationId);
+function moveToTeam(sourceListType, teamType) {
+    const sourceSelectId = `jugadores${sourceListType.charAt(0).toUpperCase() + sourceListType.slice(1)}`;
+    const teamSelectId = `equipo${teamType.charAt(0).toUpperCase() + teamType.slice(1)}`;
+
+    const sourceSelect = document.getElementById(sourceSelectId);
+    const teamSelect = document.getElementById(teamSelectId);
     const mensajeElem = document.getElementById('mensaje');
 
-    if (!sourceSelect || !destinationSelect || !mensajeElem) {
-        const errorMessage = `Error: Elementos de transferencia no encontrados (Origen: ${sourceId}, Destino: ${destinationId}).`;
-        console.error(errorMessage);
+    if (!sourceSelect || !teamSelect || !mensajeElem) {
+        console.error(`Error: Elementos no encontrados para moveToTeam (Origen: ${sourceSelectId}, Destino: ${teamSelectId}).`);
         if (mensajeElem) {
-            mensajeElem.textContent = errorMessage;
+            mensajeElem.textContent = 'Error interno: Elementos de la interfaz no encontrados.';
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
-        } else {
-            alert(errorMessage);
         }
         return;
     }
 
     const selectedOptions = Array.from(sourceSelect.selectedOptions);
-
     if (selectedOptions.length === 0) {
-        mensajeElem.textContent = 'Por favor, selecciona al menos un jugador para mover.';
+        mensajeElem.textContent = 'Por favor, selecciona al menos un jugador para mover al equipo.';
         mensajeElem.style.backgroundColor = '#f8d7da';
         mensajeElem.style.color = '#721c24';
         return;
@@ -133,27 +126,128 @@ function transferPlayers(sourceId, destinationId, limit = -1) {
 
     let movedCount = 0;
     selectedOptions.forEach(option => {
-        if (limit === -1 || destinationSelect.options.length < limit) {
-            destinationSelect.appendChild(option); // Mueve la opción al nuevo select
+        if (teamSelect.options.length < 5) { // Límite de 5 jugadores por equipo
+            teamSelect.appendChild(option);
             movedCount++;
         } else {
-            // Mensaje específico si se intenta mover más jugadores de los permitidos
-            if (limit !== -1) {
-                mensajeElem.textContent = `No se pudo mover a ${option.textContent}. Límite de ${limit} jugadores alcanzado en la lista de destino.`;
-                mensajeElem.style.backgroundColor = '#fff3cd';
-                mensajeElem.style.color = '#856404';
-            }
+            mensajeElem.textContent = `No se pudo mover a ${option.textContent}. El equipo ${teamType} ya tiene 5 jugadores.`;
+            mensajeElem.style.backgroundColor = '#fff3cd';
+            mensajeElem.style.color = '#856404';
         }
     });
 
     if (movedCount > 0) {
-        mensajeElem.textContent = `Se movieron ${movedCount} jugador(es) a la lista.`;
+        mensajeElem.textContent = `Se movieron ${movedCount} jugador(es) al equipo ${teamType}.`;
         mensajeElem.style.backgroundColor = '#e2f0cb';
         mensajeElem.style.color = '#28a745';
-    } else if (selectedOptions.length > 0 && limit !== -1 && destinationSelect.options.length >= limit) {
-        // Ya se mostró un mensaje de límite para un jugador específico, no es necesario otro general
+    } else if (selectedOptions.length > 0 && teamSelect.options.length >= 5) {
+        // Mensaje de límite ya mostrado
     } else {
-        mensajeElem.textContent = `No se pudo mover ningún jugador.`;
+        mensajeElem.textContent = `No se pudo mover ningún jugador al equipo ${teamType}.`;
+        mensajeElem.style.backgroundColor = '#fff3cd';
+        mensajeElem.style.color = '#856404';
+    }
+}
+
+/**
+ * Mueve jugadores seleccionados de un equipo (Claros/Oscuros) de vuelta a su lista original (Titulares/Suplentes).
+ * @param {string} teamType - 'claros' o 'oscuros'.
+ */
+function moveFromTeam(teamType) {
+    const teamSelectId = `equipo${teamType.charAt(0).toUpperCase() + teamType.slice(1)}`;
+    const teamSelect = document.getElementById(teamSelectId);
+    const mensajeElem = document.getElementById('mensaje');
+
+    if (!teamSelect || !mensajeElem) {
+        console.error(`Error: Elementos no encontrados para moveFromTeam (Origen: ${teamSelectId}).`);
+        if (mensajeElem) {
+            mensajeElem.textContent = 'Error interno: Elementos de la interfaz no encontrados.';
+            mensajeElem.style.backgroundColor = '#f8d7da';
+            mensajeElem.style.color = '#721c24';
+        }
+        return;
+    }
+
+    const selectedOptions = Array.from(teamSelect.selectedOptions);
+    if (selectedOptions.length === 0) {
+        mensajeElem.textContent = 'Por favor, selecciona al menos un jugador para mover de vuelta.';
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+        return;
+    }
+
+    let movedCount = 0;
+    selectedOptions.forEach(option => {
+        const originalType = option.dataset.originalType; // Obtiene el tipo original (titular/suplente)
+        const destinationSelectId = `jugadores${originalType.charAt(0).toUpperCase() + originalType.slice(1)}`;
+        const destinationSelect = document.getElementById(destinationSelectId);
+
+        if (destinationSelect) {
+            destinationSelect.appendChild(option);
+            movedCount++;
+        } else {
+            console.error(`Error: Lista de destino '${destinationSelectId}' no encontrada para el jugador ${option.textContent}.`);
+            mensajeElem.textContent = `Error: No se pudo mover a ${option.textContent}. Lista de destino no encontrada.`;
+            mensajeElem.style.backgroundColor = '#f8d7da';
+            mensajeElem.style.color = '#721c24';
+        }
+    });
+
+    if (movedCount > 0) {
+        mensajeElem.textContent = `Se movieron ${movedCount} jugador(es) de vuelta desde el equipo ${teamType}.`;
+        mensajeElem.style.backgroundColor = '#e2f0cb';
+        mensajeElem.style.color = '#28a745';
+    } else {
+        mensajeElem.textContent = `No se pudo mover ningún jugador de vuelta.`;
+        mensajeElem.style.backgroundColor = '#fff3cd';
+        mensajeElem.style.color = '#856404';
+    }
+}
+
+/**
+ * Cambia el rol de un jugador seleccionado entre Titular y Suplente.
+ * @param {string} sourceListType - 'titulares' o 'suplentes'.
+ */
+function togglePlayerRole(sourceListType) {
+    const sourceSelectId = `jugadores${sourceListType.charAt(0).toUpperCase() + sourceListType.slice(1)}`;
+    const destinationListType = sourceListType === 'titulares' ? 'suplentes' : 'titulares';
+    const destinationSelectId = `jugadores${destinationListType.charAt(0).toUpperCase() + destinationListType.slice(1)}`;
+
+    const sourceSelect = document.getElementById(sourceSelectId);
+    const destinationSelect = document.getElementById(destinationSelectId);
+    const mensajeElem = document.getElementById('mensaje');
+
+    if (!sourceSelect || !destinationSelect || !mensajeElem) {
+        console.error(`Error: Elementos no encontrados para togglePlayerRole (Origen: ${sourceSelectId}, Destino: ${destinationSelectId}).`);
+        if (mensajeElem) {
+            mensajeElem.textContent = 'Error interno: Elementos de la interfaz no encontrados.';
+            mensajeElem.style.backgroundColor = '#f8d7da';
+            mensajeElem.style.color = '#721c24';
+        }
+        return;
+    }
+
+    const selectedOptions = Array.from(sourceSelect.selectedOptions);
+    if (selectedOptions.length === 0) {
+        mensajeElem.textContent = 'Por favor, selecciona al menos un jugador para cambiar de rol.';
+        mensajeElem.style.backgroundColor = '#f8d7da';
+        mensajeElem.style.color = '#721c24';
+        return;
+    }
+
+    let movedCount = 0;
+    selectedOptions.forEach(option => {
+        option.dataset.originalType = destinationListType; // Actualiza el tipo original del jugador
+        destinationSelect.appendChild(option);
+        movedCount++;
+    });
+
+    if (movedCount > 0) {
+        mensajeElem.textContent = `Se cambiaron ${movedCount} jugador(es) a ${destinationListType}.`;
+        mensajeElem.style.backgroundColor = '#e2f0cb';
+        mensajeElem.style.color = '#28a745';
+    } else {
+        mensajeElem.textContent = `No se pudo cambiar el rol de ningún jugador.`;
         mensajeElem.style.backgroundColor = '#fff3cd';
         mensajeElem.style.color = '#856404';
     }
@@ -166,7 +260,6 @@ function transferPlayers(sourceId, destinationId, limit = -1) {
  */
 async function guardarPartido() {
     const fecha = document.getElementById('fechaPartido').value;
-    const jugadoresPartidoSelect = document.getElementById('jugadoresPartido'); // Fuente para armar equipos
     const equipoClarosSelect = document.getElementById('equipoClaros');
     const equipoOscurosSelect = document.getElementById('equipoOscuros');
     const mensajeElem = document.getElementById('mensaje');
@@ -179,16 +272,8 @@ async function guardarPartido() {
         return;
     }
 
-    // Validar que la lista de Jugadores del Partido tenga 10 jugadores
-    if (jugadoresPartidoSelect.options.length !== 10) {
-        mensajeElem.textContent = 'La lista de "Jugadores del Partido" debe contener exactamente 10 jugadores antes de formar los equipos.';
-        mensajeElem.style.backgroundColor = '#f8d7da';
-        mensajeElem.style.color = '#721c24';
-        return;
-    }
-
     if (equipoClarosSelect.options.length !== 5 || equipoOscurosSelect.options.length !== 5) {
-        mensajeElem.textContent = 'Ambos equipos (Claros y Oscuros) deben tener exactamente 5 jugadores cada uno.';
+        mensajeElem.textContent = 'Ambos equipos (Claros y Oscuros) deben tener exactamente 5 jugadores cada uno para guardar el partido.';
         mensajeElem.style.backgroundColor = '#f8d7da';
         mensajeElem.style.color = '#721c24';
         return;
@@ -221,7 +306,6 @@ async function guardarPartido() {
         mensajeElem.style.color = '#28a745';
 
         // Limpiar los equipos y recargar la lista de jugadores Titulares/Suplentes
-        jugadoresPartidoSelect.innerHTML = '';
         equipoClarosSelect.innerHTML = '';
         equipoOscurosSelect.innerHTML = '';
         cargarJugadores(); // Recarga la lista de jugadores con sus roles fijos
