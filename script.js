@@ -181,11 +181,12 @@ function moveFromTeam(teamType) {
     selectedOptions.forEach(option => {
         // Obtiene el tipo original (titular/suplente) del atributo data-originalType
         const originalType = option.dataset.originalType;
-        console.log(`Moviendo jugador: ${option.textContent}, Tipo Original: ${originalType}`); // Log de depuración
+        // *** ESTE console.log ES CLAVE PARA LA DEPURACIÓN ***
+        console.log(`[moveFromTeam] Moviendo jugador: ${option.textContent}, Tipo Original (dataset): '${originalType}'`);
 
         // Valida que el tipo original sea 'titular' o 'suplente'
         if (!originalType || (originalType !== 'titular' && originalType !== 'suplente')) {
-            console.error(`Error: Tipo original inesperado para el jugador ${option.textContent}: '${originalType}'. No se pudo mover de vuelta.`);
+            console.error(`[moveFromTeam] Error: Tipo original inesperado para el jugador ${option.textContent}: '${originalType}'. No se pudo mover de vuelta.`);
             mensajeElem.textContent = `Error: Tipo de jugador desconocido al intentar mover de vuelta a ${option.textContent}.`;
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
@@ -199,7 +200,7 @@ function moveFromTeam(teamType) {
             destinationSelect.appendChild(option);
             movedCount++;
         } else {
-            console.error(`Error: Lista de destino '${destinationSelectId}' no encontrada para el jugador ${option.textContent}. Tipo Original era: ${originalType}`);
+            console.error(`[moveFromTeam] Error: Lista de destino '${destinationSelectId}' no encontrada para el jugador ${option.textContent}. Tipo Original era: ${originalType}`);
             mensajeElem.textContent = `Error: No se pudo mover a ${option.textContent}. Lista de destino no encontrada.`;
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
