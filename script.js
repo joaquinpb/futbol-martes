@@ -1,5 +1,3 @@
-// https://script.google.com/macros/s/AKfycbxHgezrkEPvQYPGIlV2rcMne9d4px1ZfJ_60rVR4CsGunuyKFazNypVmGtYVYZwsuF6/exec
-
 // Define la URL de tu Google Apps Script aquí.
 // ¡Esta URL es la que me proporcionaste y es crucial para la comunicación!
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHgezrkEPvQYPGIlV2rcMne9d4px1ZfJ_60rVR4CsGunuyKFazNypVmGtYVYZwsuF6/exec'; // ¡URL ACTUALIZADA!
@@ -834,7 +832,7 @@ async function actualizarPartido() {
 async function eliminarPartido() {
     const partidosAdminSelect = document.getElementById('seleccionarPartidoAdmin');
     const selectedIndex = partidosAdminSelect.value;
-    const mensajeAdminElem = document.getElementById('mensajeAdmin');
+    const mensajeAdminElem = document.getElementById('mensajeAdmin'); // Corrected variable name
     const adminForm = document.getElementById('adminForm');
 
     if (selectedIndex === "") {
@@ -876,15 +874,15 @@ async function eliminarPartido() {
 
         mensajeAdminElem.textContent = 'Partido eliminado exitosamente.';
         mensajeAdminElem.style.backgroundColor = '#e2f0cb';
-        mensajeElem.style.color = '#28a745';
+        mensajeAdminElem.style.color = '#28a745'; // Corrected variable name
 
         adminForm.style.display = 'none'; // Oculta el formulario después de eliminar
         cargarTodosLosPartidos(); // Recarga la lista para reflejar la eliminación
     } catch (error) {
         console.error('Error al eliminar partido:', error);
-        mensajeAdminElem.textContent = `Error al eliminar partido: ${error.message}. Verifica tu conexión y el Apps Script.`;
+        mensajeAdminElem.textContent = `Error al eliminar partido: ${error.message}. Verifica tu conexión y el Apps Script.` // Corrected variable name
         mensajeAdminElem.style.backgroundColor = '#f8d7da';
-        mensajeElem.style.color = '#721c24';
+        mensajeAdminElem.style.color = '#721c24'; // Corrected variable name
     }
 }
 
