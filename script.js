@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v2.5"; // Updated version for Chamigo filtering by period and accurate stats
+const SCRIPT_VERSION = "v2.6"; // Year required for period filter, auto-select year/period on load
 
 // Variable global para almacenar partidos pendientes para fácil acceso
 let currentPendingMatches = [];
@@ -231,7 +231,6 @@ function moveFromTeam(teamType) {
             mensajeElem.textContent = `Error interno al determinar lista de destino para ${option.textContent}.`;
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
-            return;
         }
 
         const destinationSelect = document.getElementById(destinationSelectId);
@@ -586,6 +585,16 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
         return;
     }
 
+    // Clear previous content
+    puntosTablaContainer.innerHTML = '';
+
+    if (!filterYear) {
+        mensajePuntosElem.textContent = 'Por favor, selecciona un año para visualizar los datos de la tabla de puntos.';
+        mensajePuntosElem.style.backgroundColor = '#fff3cd';
+        mensajePuntosElem.style.color = '#856404';
+        return; // Exit if no year is selected
+    }
+
     mensajePuntosElem.textContent = 'Cargando tabla de puntos...';
     mensajePuntosElem.style.backgroundColor = '#f0f8ff';
     mensajePuntosElem.style.color = '#0056b3';
@@ -635,6 +644,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
                 return matchDate.getFullYear() === filterYear;
             });
 
+            // Apply period filter ONLY if a year is selected
             if (filterPeriod === 'Apertura') {
                 filteredMatches = filteredMatches.filter(match => {
                     const matchDate = new Date(match.Fecha);
@@ -648,6 +658,14 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             }
         }
 
+        // --- DEBUG LOG: Mostrar los partidos filtrados ---
+        console.log(`[DEBUG - Tabla Puntos] Partidos filtrados para Año: ${filterYear || 'Todos'}, Período: ${filterPeriod}:`);
+        filteredMatches.forEach(match => {
+            console.log(`  - Fecha: ${match.Fecha}, Ganador: ${match.Ganador}, Claros: ${match.EquipoClaros}, Oscuros: ${match.EquipoOscuros}`);
+        });
+        // --- FIN DEBUG LOG ---
+
+
         // Calculate general points and stats from filtered matches
         filteredMatches.forEach(match => {
             // Ensure unique players from team strings to prevent double counting if data is malformed
@@ -657,7 +675,10 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             const winner = match.Ganador;
 
             // Update stats for all players in the match
-            [...equipoClaros, ...equipoOscuros].forEach(playerName => {
+            // Create a combined set of unique players for the current match to increment PartidosJugados only once
+            const playersInCurrentMatch = new Set([...equipoClaros, ...equipoOscuros]);
+
+            playersInCurrentMatch.forEach(playerName => {
                 // Ensure player exists in playerStats, if not, initialize them (should already be done by allPlayers.forEach)
                 if (!playerStats[playerName]) {
                     playerStats[playerName] = {
@@ -689,7 +710,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
                     playerStats[playerName].Perdidos++;
                 });
             } else if (winner === 'Empate') {
-                [...equipoClaros, ...equipoOscuros].forEach(playerName => {
+                playersInCurrentMatch.forEach(playerName => { // For empate, all players get 1 point and 1 tie
                     playerStats[playerName].Puntos += 1;
                     playerStats[playerName].Empatados++;
                 });
@@ -711,14 +732,14 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             const matchDate = new Date(matchDateString);
             let shouldIncludeMatchForChamigo = true;
 
-            // Apply filters for Chamigo wins
+            // Apply filters for Chamigo wins (same logic as general stats)
             if (filterYear && matchDate.getFullYear() !== filterYear) {
                 shouldIncludeMatchForChamigo = false;
             }
 
-            if (filterPeriod === 'Apertura' && (matchDate.getMonth() < 0 || matchDate.getMonth() > 5)) {
+            if (filterYear && filterPeriod === 'Apertura' && (matchDate.getMonth() < 0 || matchDate.getMonth() > 5)) {
                 shouldIncludeMatchForChamigo = false;
-            } else if (filterPeriod === 'Clausura' && (matchDate.getMonth() < 6 || matchDate.getMonth() > 11)) {
+            } else if (filterYear && filterPeriod === 'Clausura' && (matchDate.getMonth() < 6 || matchDate.getMonth() > 11)) {
                 shouldIncludeMatchForChamigo = false;
             }
 
@@ -775,6 +796,13 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
              jugadoresParaTabla = jugadoresParaTabla.filter(j => j.PartidosJugados > 0 || j.PuntosChamigo > 0);
         }
 
+        // --- DEBUG LOG: Mostrar las estadísticas finales de los jugadores ---
+        console.log(`[DEBUG - Tabla Puntos] Estadísticas finales de jugadores (filtrado):`);
+        jugadoresParaTabla.forEach(player => {
+            console.log(`  - ${player.Nombre}: Jugados=${player.PartidosJugados}, Ganados=${player.Ganados}, Empatados=${player.Empatados}, Perdidos=${player.Perdidos}, Puntos=${player.Puntos}, ChamigoGanados=${player.PuntosChamigo}`);
+        });
+        // --- FIN DEBUG LOG ---
+
 
         // Ordena los jugadores por puntos de mayor a menor, luego por Chamigo Ganados de mayor a menor,
         // luego por partidos jugados de mayor a menor.
@@ -829,7 +857,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
         puntosTablaContainer.innerHTML = tablaHTML;
         mensajePuntosElem.textContent = 'Tabla de puntos cargada exitosamente.';
         mensajePuntosElem.style.backgroundColor = '#e2f0cb';
-        mensajePuntosElem.style.color = '#28a745';
+        mensajePuntosElem.color = '#28a745';
 
     } catch (error) {
         console.error('Error al cargar la tabla de puntos:', error);
@@ -847,7 +875,7 @@ async function loadFilterYears() {
     const filterYearSelect = document.getElementById('filterYear');
     if (!filterYearSelect) return;
 
-    filterYearSelect.innerHTML = '<option value="">Todos los Años</option>'; // Default option
+    filterYearSelect.innerHTML = '<option value="">Selecciona un Año</option>'; // Default option changed
 
     try {
         const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
@@ -1400,8 +1428,44 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (window.location.pathname.includes('resultados.html')) {
         cargarPartidosPendientes();
     } else if (window.location.pathname.includes('puntuaciones.html')) {
-        loadFilterYears(); // Load years for filter dropdown
-        applyFilters(); // Apply filters on initial load (shows total for current year by default)
+        loadFilterYears().then(() => { // Ensure years are loaded before setting selection
+            const filterYearSelect = document.getElementById('filterYear');
+            const filterPeriodRadios = document.querySelectorAll('input[name="filterPeriod"]');
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth(); // 0-11
+
+            let defaultPeriod = 'Total'; // Default to total if no specific period is required initially
+            if (currentMonth >= 0 && currentMonth <= 5) {
+                defaultPeriod = 'Apertura';
+            } else if (currentMonth >= 6 && currentMonth <= 11) {
+                defaultPeriod = 'Clausura';
+            }
+
+            // Set the year
+            if (filterYearSelect) {
+                // Check if the current year is available in the options
+                const yearOptionExists = Array.from(filterYearSelect.options).some(option => parseInt(option.value) === currentYear);
+                if (yearOptionExists) {
+                    filterYearSelect.value = currentYear;
+                } else {
+                    // If current year is not in options, default to 'Selecciona un Año'
+                    filterYearSelect.value = '';
+                }
+            }
+
+            // Set the period
+            filterPeriodRadios.forEach(radio => {
+                if (radio.value === defaultPeriod) {
+                    radio.checked = true;
+                } else {
+                    radio.checked = false; // Ensure others are unchecked
+                }
+            });
+
+            // Apply filters with the automatically selected values
+            applyFilters();
+        });
     } else if (window.location.pathname.includes('administrador.html')) {
         cargarTodosLosPartidos();
     } else if (window.location.pathname.includes('chamigo.html')) { // New condition for Chamigo page
