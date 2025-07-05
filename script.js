@@ -585,6 +585,16 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
         return;
     }
 
+    // Clear previous content
+    puntosTablaContainer.innerHTML = '';
+
+    if (!filterYear) {
+        mensajePuntosElem.textContent = 'Por favor, selecciona un año para visualizar los datos de la tabla de puntos.';
+        mensajePuntosElem.style.backgroundColor = '#fff3cd';
+        mensajePuntosElem.style.color = '#856404';
+        return; // Exit if no year is selected
+    }
+
     mensajePuntosElem.textContent = 'Cargando tabla de puntos...';
     mensajePuntosElem.style.backgroundColor = '#f0f8ff';
     mensajePuntosElem.style.color = '#0056b3';
@@ -865,7 +875,7 @@ async function loadFilterYears() {
     const filterYearSelect = document.getElementById('filterYear');
     if (!filterYearSelect) return;
 
-    filterYearSelect.innerHTML = '<option value="">Todos los Años</option>'; // Default option
+    filterYearSelect.innerHTML = '<option value="">Selecciona un Año</option>'; // Default option changed
 
     try {
         const response = await fetch(`${SCRIPT_URL}?sheet=Partidos`);
@@ -1418,8 +1428,44 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (window.location.pathname.includes('resultados.html')) {
         cargarPartidosPendientes();
     } else if (window.location.pathname.includes('puntuaciones.html')) {
-        loadFilterYears(); // Load years for filter dropdown
-        applyFilters(); // Apply filters on initial load (shows total for current year by default)
+        loadFilterYears().then(() => { // Ensure years are loaded before setting selection
+            const filterYearSelect = document.getElementById('filterYear');
+            const filterPeriodRadios = document.querySelectorAll('input[name="filterPeriod"]');
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth(); // 0-11
+
+            let defaultPeriod = 'Total'; // Default to total if no specific period is required initially
+            if (currentMonth >= 0 && currentMonth <= 5) {
+                defaultPeriod = 'Apertura';
+            } else if (currentMonth >= 6 && currentMonth <= 11) { // Fixed: should be <= 11
+                defaultPeriod = 'Clausura';
+            }
+
+            // Set the year
+            if (filterYearSelect) {
+                // Check if the current year is available in the options
+                const yearOptionExists = Array.from(filterYearSelect.options).some(option => parseInt(option.value) === currentYear);
+                if (yearOptionExists) {
+                    filterYearSelect.value = currentYear;
+                } else {
+                    // If current year is not in options, default to 'Selecciona un Año'
+                    filterYearSelect.value = '';
+                }
+            }
+
+            // Set the period
+            filterPeriodRadios.forEach(radio => {
+                if (radio.value === defaultPeriod) {
+                    radio.checked = true;
+                } else {
+                    radio.checked = false; // Ensure others are unchecked
+                }
+            });
+
+            // Apply filters with the automatically selected values
+            applyFilters();
+        });
     } else if (window.location.pathname.includes('administrador.html')) {
         cargarTodosLosPartidos();
     } else if (window.location.pathname.includes('chamigo.html')) { // New condition for Chamigo page
