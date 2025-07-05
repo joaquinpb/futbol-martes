@@ -72,12 +72,13 @@ async function cargarJugadores() {
                 const option = document.createElement('option');
                 option.value = jugador.Nombre;
                 option.textContent = jugador.Nombre; // Mostrar solo el nombre
-                option.dataset.originalType = jugador.Tipo.toLowerCase(); // Guarda el tipo original
+                // Guarda el tipo original y lo recorta para evitar espacios extra
+                option.dataset.originalType = jugador.Tipo.toLowerCase().trim();
                 option.dataset.puntos = jugador.Puntos; // Guarda los puntos para referencia
 
-                if (jugador.Tipo.toLowerCase() === 'titular') {
+                if (option.dataset.originalType === 'titular') {
                     jugadoresTitularesSelect.appendChild(option);
-                } else if (jugador.Tipo.toLowerCase() === 'suplente') {
+                } else if (option.dataset.originalType === 'suplente') {
                     jugadoresSuplentesSelect.appendChild(option);
                 }
             }
@@ -178,7 +179,19 @@ function moveFromTeam(teamType) {
 
     let movedCount = 0;
     selectedOptions.forEach(option => {
-        const originalType = option.dataset.originalType; // Obtiene el tipo original (titular/suplente)
+        // Obtiene el tipo original (titular/suplente) del atributo data-originalType
+        const originalType = option.dataset.originalType;
+        console.log(`Moviendo jugador: ${option.textContent}, Tipo Original: ${originalType}`); // Log de depuración
+
+        // Valida que el tipo original sea 'titular' o 'suplente'
+        if (!originalType || (originalType !== 'titular' && originalType !== 'suplente')) {
+            console.error(`Error: Tipo original inesperado para el jugador ${option.textContent}: '${originalType}'. No se pudo mover de vuelta.`);
+            mensajeElem.textContent = `Error: Tipo de jugador desconocido al intentar mover de vuelta a ${option.textContent}.`;
+            mensajeElem.style.backgroundColor = '#f8d7da';
+            mensajeElem.style.color = '#721c24';
+            return; // Salta esta opción si el tipo es inválido
+        }
+
         const destinationSelectId = `jugadores${originalType.charAt(0).toUpperCase() + originalType.slice(1)}`;
         const destinationSelect = document.getElementById(destinationSelectId);
 
@@ -186,7 +199,7 @@ function moveFromTeam(teamType) {
             destinationSelect.appendChild(option);
             movedCount++;
         } else {
-            console.error(`Error: Lista de destino '${destinationSelectId}' no encontrada para el jugador ${option.textContent}.`);
+            console.error(`Error: Lista de destino '${destinationSelectId}' no encontrada para el jugador ${option.textContent}. Tipo Original era: ${originalType}`);
             mensajeElem.textContent = `Error: No se pudo mover a ${option.textContent}. Lista de destino no encontrada.`;
             mensajeElem.style.backgroundColor = '#f8d7da';
             mensajeElem.style.color = '#721c24';
@@ -198,61 +211,14 @@ function moveFromTeam(teamType) {
         mensajeElem.style.backgroundColor = '#e2f0cb';
         mensajeElem.style.color = '#28a745';
     } else {
+        // Este mensaje solo se muestra si no se movió NINGÚN jugador y no hubo un error específico de "lista no encontrada"
         mensajeElem.textContent = `No se pudo mover ningún jugador de vuelta.`;
         mensajeElem.style.backgroundColor = '#fff3cd';
         mensajeElem.style.color = '#856404';
     }
 }
 
-/**
- * Cambia el rol de un jugador seleccionado entre Titular y Suplente.
- * @param {string} sourceListType - 'titulares' o 'suplentes'.
- */
-function togglePlayerRole(sourceListType) {
-    const sourceSelectId = `jugadores${sourceListType.charAt(0).toUpperCase() + sourceListType.slice(1)}`;
-    const destinationListType = sourceListType === 'titulares' ? 'suplentes' : 'titulares';
-    const destinationSelectId = `jugadores${destinationListType.charAt(0).toUpperCase() + destinationListType.slice(1)}`;
-
-    const sourceSelect = document.getElementById(sourceSelectId);
-    const destinationSelect = document.getElementById(destinationSelectId);
-    const mensajeElem = document.getElementById('mensaje');
-
-    if (!sourceSelect || !destinationSelect || !mensajeElem) {
-        console.error(`Error: Elementos no encontrados para togglePlayerRole (Origen: ${sourceSelectId}, Destino: ${destinationSelectId}).`);
-        if (mensajeElem) {
-            mensajeElem.textContent = 'Error interno: Elementos de la interfaz no encontrados.';
-            mensajeElem.style.backgroundColor = '#f8d7da';
-            mensajeElem.style.color = '#721c24';
-        }
-        return;
-    }
-
-    const selectedOptions = Array.from(sourceSelect.selectedOptions);
-    if (selectedOptions.length === 0) {
-        mensajeElem.textContent = 'Por favor, selecciona al menos un jugador para cambiar de rol.';
-        mensajeElem.style.backgroundColor = '#f8d7da';
-        mensajeElem.style.color = '#721c24';
-        return;
-    }
-
-    let movedCount = 0;
-    selectedOptions.forEach(option => {
-        option.dataset.originalType = destinationListType; // Actualiza el tipo original del jugador
-        destinationSelect.appendChild(option);
-        movedCount++;
-    });
-
-    if (movedCount > 0) {
-        mensajeElem.textContent = `Se cambiaron ${movedCount} jugador(es) a ${destinationListType}.`;
-        mensajeElem.style.backgroundColor = '#e2f0cb';
-        mensajeElem.style.color = '#28a745';
-    } else {
-        mensajeElem.textContent = `No se pudo cambiar el rol de ningún jugador.`;
-        mensajeElem.style.backgroundColor = '#fff3cd';
-        mensajeElem.style.color = '#856404';
-    }
-}
-
+// La función togglePlayerRole ha sido eliminada ya que los botones asociados fueron removidos.
 
 /**
  * Guarda los detalles del partido (fecha, jugadores de cada equipo)
