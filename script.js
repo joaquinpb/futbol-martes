@@ -3,7 +3,7 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwG-Rrj60caUpE8OL90_pmgHMi6VRsp8lw4FKN2eE4z5XEG_fNOiDo8pMI3TgqORc4e/exec';
 
 // Versión del script
-const SCRIPT_VERSION = "v2.3"; // Updated version for Chamigo filtering by period
+const SCRIPT_VERSION = "v2.5"; // Updated version for Chamigo filtering by period and accurate stats
 
 // Variable global para almacenar partidos pendientes para fácil acceso
 let currentPendingMatches = [];
@@ -622,7 +622,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
                 Ganados: 0,
                 Perdidos: 0,
                 Empatados: 0,
-                PuntosChamigo: 0 // Initialize Chamigo points to 0 for dynamic calculation
+                PuntosChamigo: 0 // Initialize Chamigo wins to 0 for dynamic calculation
             };
         });
 
@@ -650,13 +650,15 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
 
         // Calculate general points and stats from filtered matches
         filteredMatches.forEach(match => {
-            const equipoClaros = match.EquipoClaros.split(',').map(name => name.trim());
-            const equipoOscuros = match.EquipoOscuros.split(',').map(name => name.trim());
+            // Ensure unique players from team strings to prevent double counting if data is malformed
+            const equipoClaros = [...new Set(match.EquipoClaros.split(',').map(name => name.trim()))];
+            const equipoOscuros = [...new Set(match.EquipoOscuros.split(',').map(name => name.trim()))];
 
             const winner = match.Ganador;
 
             // Update stats for all players in the match
             [...equipoClaros, ...equipoOscuros].forEach(playerName => {
+                // Ensure player exists in playerStats, if not, initialize them (should already be done by allPlayers.forEach)
                 if (!playerStats[playerName]) {
                     playerStats[playerName] = {
                         Puntos: 0,
@@ -694,34 +696,64 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             }
         });
 
-        // Calculate Chamigo points based on filtered votes
+        // Calculate Chamigo wins based on highest votes per match, considering filters
+        const chamigoVotesByMatch = new Map(); // Key: matchDate (YYYY-MM-DD), Value: Array of {Jugador, PuntosOtorgados}
         allChamigoVotes.forEach(vote => {
-            const voteDate = new Date(vote.FechaPartido); // Assuming FechaPartido is ISO string
-            let shouldIncludeVote = true;
+            const matchDateOnly = vote.FechaPartido.split('T')[0]; // Get YYYY-MM-DD
+            if (!chamigoVotesByMatch.has(matchDateOnly)) {
+                chamigoVotesByMatch.set(matchDateOnly, []);
+            }
+            chamigoVotesByMatch.get(matchDateOnly).push(vote);
+        });
 
-            if (filterYear && voteDate.getFullYear() !== filterYear) {
-                shouldIncludeVote = false;
+        // Iterate through grouped Chamigo votes to find winners per match
+        chamigoVotesByMatch.forEach((votesForMatch, matchDateString) => {
+            const matchDate = new Date(matchDateString);
+            let shouldIncludeMatchForChamigo = true;
+
+            // Apply filters for Chamigo wins
+            if (filterYear && matchDate.getFullYear() !== filterYear) {
+                shouldIncludeMatchForChamigo = false;
             }
 
-            if (filterPeriod === 'Apertura' && (voteDate.getMonth() < 0 || voteDate.getMonth() > 5)) {
-                shouldIncludeVote = false;
-            } else if (filterPeriod === 'Clausura' && (voteDate.getMonth() < 6 || voteDate.getMonth() > 11)) {
-                shouldIncludeVote = false;
+            if (filterPeriod === 'Apertura' && (matchDate.getMonth() < 0 || matchDate.getMonth() > 5)) {
+                shouldIncludeMatchForChamigo = false;
+            } else if (filterPeriod === 'Clausura' && (matchDate.getMonth() < 6 || matchDate.getMonth() > 11)) {
+                shouldIncludeMatchForChamigo = false;
             }
 
-            if (shouldIncludeVote) {
-                if (!playerStats[vote.Jugador]) {
-                    // Add player if they only have Chamigo points in the filtered period and no regular matches
-                    playerStats[vote.Jugador] = {
-                        Puntos: 0,
-                        PartidosJugados: 0,
-                        Ganados: 0,
-                        Perdidos: 0,
-                        Empatados: 0,
-                        PuntosChamigo: 0
-                    };
+            if (shouldIncludeMatchForChamigo) {
+                let maxPointsInMatch = 0;
+                votesForMatch.forEach(vote => {
+                    const points = parseInt(vote.PuntosOtorgados || 0);
+                    if (points > maxPointsInMatch) {
+                        maxPointsInMatch = points;
+                    }
+                });
+
+                // If there are actual points awarded in this match (not all zeros)
+                if (maxPointsInMatch > 0) {
+                    votesForMatch.forEach(vote => {
+                        if (parseInt(vote.PuntosOtorgados || 0) === maxPointsInMatch) {
+                            // Increment Chamigo win count for this player
+                            if (playerStats[vote.Jugador]) {
+                                playerStats[vote.Jugador].PuntosChamigo++;
+                            } else {
+                                // This case means a player received Chamigo points but wasn't in the initial allPlayers list
+                                // (e.g., if they were added to VotosChamigo but not Jugadores).
+                                // Initialize them if they don't exist.
+                                playerStats[vote.Jugador] = {
+                                    Puntos: 0,
+                                    PartidosJugados: 0,
+                                    Ganados: 0,
+                                    Perdidos: 0,
+                                    Empatados: 0,
+                                    PuntosChamigo: 1 // First Chamigo win
+                                };
+                            }
+                        }
+                    });
                 }
-                playerStats[vote.Jugador].PuntosChamigo += parseInt(vote.PuntosOtorgados || 0);
             }
         });
 
@@ -734,21 +766,23 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
             Ganados: playerStats[name].Ganados,
             Perdidos: playerStats[name].Perdidos,
             Empatados: playerStats[name].Empatados,
-            PuntosChamigo: playerStats[name].PuntosChamigo
+            PuntosChamigo: playerStats[name].PuntosChamigo // This now holds Chamigo wins
         }));
 
         // Filter out players who didn't play any filtered matches AND have no Chamigo points in the filtered period
+        // This ensures only relevant players appear in the filtered view
         if (filterYear || filterPeriod !== 'Total') {
              jugadoresParaTabla = jugadoresParaTabla.filter(j => j.PartidosJugados > 0 || j.PuntosChamigo > 0);
         }
 
 
-        // Ordena los jugadores por puntos de mayor a menor, luego por partidos jugados de mayor a menor
+        // Ordena los jugadores por puntos de mayor a menor, luego por Chamigo Ganados de mayor a menor,
+        // luego por partidos jugados de mayor a menor.
         jugadoresParaTabla.sort((a, b) => {
             if (b.Puntos !== a.Puntos) {
                 return b.Puntos - a.Puntos; // Puntos Totales (DESC)
             }
-            // If total points are equal, sort by Chamigo points (DESC)
+            // If total points are equal, sort by Chamigo wins (DESC)
             if (b.PuntosChamigo !== a.PuntosChamigo) {
                 return b.PuntosChamigo - a.PuntosChamigo;
             }
@@ -766,7 +800,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
                         <th class="centered-cell">Ganados</th>
                         <th class="centered-cell">Perdidos</th>
                         <th class="centered-cell">Empatados</th>
-                        <th class="centered-cell">Puntos Chamigo</th>
+                        <th class="centered-cell">Chamigo Ganados</th> <!-- Updated header for clarity -->
                     </tr>
                 </thead>
                 <tbody>
@@ -782,7 +816,7 @@ async function mostrarTablaPuntos(filterYear = null, filterPeriod = 'Total') {
                     <td class="centered-cell" data-label="Ganados">${jugador.Ganados}</td>
                     <td class="centered-cell" data-label="Perdidos">${jugador.Perdidos}</td>
                     <td class="centered-cell" data-label="Empatados">${jugador.Empatados}</td>
-                    <td class="centered-cell" data-label="Puntos Chamigo">${jugador.PuntosChamigo}</td>
+                    <td class="centered-cell" data-label="Chamigo Ganados">${jugador.PuntosChamigo}</td>
                 </tr>
             `;
         });
