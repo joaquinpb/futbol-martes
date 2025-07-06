@@ -471,6 +471,7 @@
             renderAvailablePlayersForTeams();
             populateMatchSelects();
             populateLeaderboardYearSelect(); // Llama a la función para la tabla de posiciones
+            setInitialLeaderboardPeriod(); // Establece el período inicial para la tabla de posiciones
             renderLeaderboard(); // Renderiza la tabla de posiciones inicial
         }
 
@@ -514,6 +515,7 @@
                     } else if (button.dataset.tab === 'leaderboard-tab') {
                         // Al activar la pestaña de la tabla de posiciones, renderizarla
                         populateLeaderboardYearSelect();
+                        setInitialLeaderboardPeriod(); // Asegurarse de que el período se establezca al cambiar de pestaña
                         renderLeaderboard();
                     }
                 });
@@ -1207,6 +1209,7 @@
 
         /**
          * Rellena el selector de año con los años disponibles en los partidos.
+         * Selecciona el año actual por defecto si existe, o el más reciente.
          */
         function populateLeaderboardYearSelect() {
             const years = new Set();
@@ -1240,6 +1243,21 @@
                 option.value = new Date().getFullYear(); // Año actual si no hay datos
                 option.textContent = new Date().getFullYear();
                 leaderboardYearSelect.appendChild(option);
+            }
+        }
+
+        /**
+         * Establece el período inicial (Apertura/Clausura/Totales) para la tabla de posiciones
+         * basado en la fecha actual.
+         */
+        function setInitialLeaderboardPeriod() {
+            const currentMonth = new Date().getMonth(); // 0-indexed (Enero es 0)
+            if (currentMonth >= 0 && currentMonth <= 5) { // Enero a Junio
+                leaderboardPeriodSelect.value = 'apertura';
+            } else if (currentMonth >= 6 && currentMonth <= 11) { // Julio a Diciembre
+                leaderboardPeriodSelect.value = 'clausura';
+            } else {
+                leaderboardPeriodSelect.value = 'totales'; // Por defecto, si no cae en Apertura/Clausura
             }
         }
 
