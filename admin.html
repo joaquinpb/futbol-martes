@@ -270,7 +270,7 @@
         const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
         const registerTtButton = document.getElementById('register-tt-button');
 
-        // --- Funciones de Autenticación ---
+        // --- Funciones de Autenticación (Desactivadas temporalmente para desarrollo) ---
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -369,6 +369,12 @@
 
         async function loadAllData() {
             try {
+                // Añadir un log para verificar si gapi.client.sheets está disponible
+                if (!gapi.client.sheets) {
+                    console.error("gapi.client.sheets no está disponible. ¿Se inicializó correctamente el cliente de la API de Google?");
+                    throw new Error("API de Google Sheets no cargada correctamente.");
+                }
+
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
                     range: 'Jugadores!A:G',
@@ -1011,7 +1017,7 @@
             if (selectedMatchId) {
                 const match = allMatchesData.find(m => m[0] === selectedMatchId);
                 if (match) {
-                    // Ahora renderiza TODOS los jugadores activos para TT, no solo los del partido
+                    // Ahora renderiza TODOS los jugadores activos para TT
                     renderTtAttendancePlayers(allPlayersData.filter(p => p[2] === 'Activo').map(p => ({id: p[0], name: p[1]})));
 
                     // Precargar asistencia si ya existe para este partido
@@ -1064,6 +1070,10 @@
             const currentMatch = allMatchesData[matchIndex];
             const ttAttendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
 
+            // Obtener asistentes TT previos para evitar doble conteo de puntos
+            const prevTtAttendees = currentMatch[6] ? currentMatch[6].split(',') : [];
+            const newAttendeesForPoints = ttAttendees.filter(id => !prevTtAttendees.includes(id));
+
             // Actualizar la columna Asistencia_TT_IDs del partido
             currentMatch[6] = ttAttendees.join(','); // Columna G (Asistencia_TT_IDs)
 
@@ -1077,15 +1087,11 @@
 
                 // Actualizar el contador de TT_Asistencias en la hoja de Jugadores
                 const updateRequests = [];
-                ttAttendees.forEach(playerId => {
+                newAttendeesForPoints.forEach(playerId => { // Solo para los nuevos asistentes
                     const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
                         const currentTtAsistencias = parseInt(currentPlayer[6] || 0); // Columna TT_Asistencias
-                        // Solo incrementamos si el jugador no estaba ya registrado para este TT en el partido
-                        // Para evitar doble conteo si se edita el TT del mismo partido
-                        // Para simplificar, asumimos que cada vez que se registra TT, es un nuevo registro
-                        // Si se necesita evitar doble conteo, se debería verificar si el ID ya está en match[6]
                         currentPlayer[6] = currentTtAsistencias + 1; // Incrementar TT_Asistencias
 
                         updateRequests.push({
@@ -1107,8 +1113,8 @@
                 }
 
                 alert('Asistencia al Tercer Tiempo registrada exitosamente.');
-                // Limpiar checkboxes
-                document.querySelectorAll('.tt-checkbox').forEach(cb => cb.checked = false);
+                // Limpiar checkboxes (se recargarán con loadAndDisplayAllData)
+                // document.querySelectorAll('.tt-checkbox').forEach(cb => cb.checked = false);
                 await loadAndDisplayAllData(); // Recargar todos los datos
             } catch (err) {
                 console.error('Error al registrar asistencia TT:', err);
