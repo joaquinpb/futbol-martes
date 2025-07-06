@@ -72,7 +72,7 @@
         const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E'; // Asegúrate de que este sea tu ID real
         // La API Key es necesaria para llamadas públicas sin autenticación de usuario.
         // Asegúrate de que la API Key esté restringida a la API de Google Sheets y a tu dominio de GitHub Pages.
-        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; // ¡Necesitas una API Key válida aquí!
+        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; // ¡Tu API Key real!
 
         let gapiInited = false;
         let allPlayersData = []; // Para almacenar todos los datos de jugadores una vez
@@ -138,6 +138,7 @@
                 allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : []; // Ignorar encabezados
 
                 populateYearSelect(); // Rellenar el selector de año
+                setInitialPeriod(); // Establecer el período inicial
                 renderLeaderboard(); // Renderizar la tabla inicial
             } catch (err) {
                 console.error('Error al cargar todos los datos:', err);
@@ -156,6 +157,7 @@
 
         /**
          * Rellena el selector de año con los años disponibles en los partidos.
+         * Selecciona el año actual por defecto si existe, o el más reciente.
          */
         function populateYearSelect() {
             const years = new Set();
@@ -189,6 +191,20 @@
                 option.value = new Date().getFullYear(); // Año actual si no hay datos
                 option.textContent = new Date().getFullYear();
                 yearSelect.appendChild(option);
+            }
+        }
+
+        /**
+         * Establece el período inicial (Apertura/Clausura/Totales) basado en la fecha actual.
+         */
+        function setInitialPeriod() {
+            const currentMonth = new Date().getMonth(); // 0-indexed (Enero es 0)
+            if (currentMonth >= 0 && currentMonth <= 5) { // Enero a Junio
+                periodSelect.value = 'apertura';
+            } else if (currentMonth >= 6 && currentMonth <= 11) { // Julio a Diciembre
+                periodSelect.value = 'clausura';
+            } else {
+                periodSelect.value = 'totales'; // Por defecto, si no cae en Apertura/Clausura
             }
         }
 
@@ -366,8 +382,7 @@
         // Carga la librería de Google API cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Tabla de Posiciones de Fútbol 5 cargada!');
-            // La función gapiLoaded() ahora se llama a través del atributo 'onload' del script tag de la API de Google.
-            // Esto asegura que 'gapi' esté definido cuando se intente usar.
+            gapiLoaded();
         });
     </script>
 </body>
