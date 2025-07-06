@@ -65,11 +65,12 @@
     </div>
 
     <!-- Script de la API de Google -->
-    <script async defer src="https://apis.google.com/js/api.js"></script>
+    <!-- Se ha eliminado 'defer' y se ha añadido 'onload' para asegurar que gapi esté definido -->
+    <script async src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 
     <script>
         // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet "Base de Datos".
-        const SPREADSHEET_ID = 'TU_ID_DE_HOJA_DE_CALCULO';
+        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E'; // Asegúrate de que este sea tu ID real
         // La API Key es necesaria para llamadas públicas sin autenticación de usuario.
         // Asegúrate de que la API Key esté restringida a la API de Google Sheets y a tu dominio de GitHub Pages.
         const API_KEY = 'TU_API_KEY'; // ¡Necesitas una API Key válida aquí!
@@ -92,6 +93,7 @@
         }
 
         // Función que se ejecuta cuando la librería gapi (API de Google) está cargada
+        // Esta función ahora es llamada directamente por el atributo 'onload' del script tag
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
         }
@@ -140,7 +142,16 @@
                 renderLeaderboard(); // Renderizar la tabla inicial
             } catch (err) {
                 console.error('Error al cargar todos los datos:', err);
-                loadingMessage.textContent = `Error al cargar datos: ${err.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
+                // Mejorar el mensaje de error para el usuario en la interfaz
+                let userErrorMessage = 'Error desconocido al cargar datos.';
+                if (err && err.result && err.result.error && err.result.error.message) {
+                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
+                } else if (err && err.message) {
+                    userErrorMessage = `Error al cargar datos: ${err.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
+                }
+                loadingMessage.textContent = userErrorMessage;
+                loadingMessage.classList.remove('hidden');
+                leaderboardTable.classList.add('hidden');
             }
         }
 
@@ -356,7 +367,8 @@
         // Carga la librería de Google API cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Tabla de Posiciones de Fútbol 5 cargada!');
-            gapiLoaded();
+            // La función gapiLoaded() ahora se llama a través del atributo 'onload' del script tag de la API de Google.
+            // Esto asegura que 'gapi' esté definido cuando se intente usar.
         });
     </script>
 </body>
