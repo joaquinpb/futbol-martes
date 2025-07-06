@@ -27,21 +27,21 @@
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl">
         <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Panel de Administración</h1>
 
-        <!-- Botones de Autenticación -->
-        <div class="flex justify-center space-x-4 mb-8">
+        <!-- Botones de Autenticación (ocultos temporalmente para desarrollo) -->
+        <div class="flex justify-center space-x-4 mb-8 hidden">
             <button id="authorize_button" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
                 Autorizar Google Sheets
             </button>
-            <button id="signout_button" class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-300 hidden">
+            <button id="signout_button" class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-300">
                 Cerrar Sesión
             </button>
         </div>
 
-        <!-- Mensaje de estado de autenticación -->
+        <!-- Mensaje de estado de autenticación (oculto temporalmente para desarrollo) -->
         <p id="auth-status" class="text-center text-red-500 mb-6 hidden">Por favor, autoriza la aplicación para acceder a los datos.</p>
 
-        <!-- Contenido del Panel de Administración (oculto hasta la autenticación) -->
-        <div id="admin-content" class="hidden">
+        <!-- Contenido del Panel de Administración (visible por defecto para desarrollo) -->
+        <div id="admin-content">
             <!-- Navegación por pestañas -->
             <div class="flex border-b border-gray-200 mb-6">
                 <button class="tab-button py-2 px-4 text-gray-600 font-medium hover:text-indigo-700 active" data-tab="players-management">Gestión de Jugadores</button>
@@ -281,7 +281,10 @@
                 discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
             });
             gapiInited = true;
-            maybeEnableAuthButtons();
+            // No llamar a maybeEnableAuthButtons aquí para deshabilitar la autenticación temporalmente
+            // Directamente cargar los datos
+            loadAndDisplayAllData();
+            setupTabNavigation();
         }
 
         function gisLoaded() {
@@ -291,18 +294,21 @@
                 callback: '', // Se define en handleAuthClick
             });
             gisInited = true;
-            maybeEnableAuthButtons();
+            // No llamar a maybeEnableAuthButtons aquí para deshabilitar la autenticación temporalmente
         }
 
+        // Las funciones handleAuthClick, handleSignoutClick y maybeEnableAuthButtons
+        // se mantienen pero no se llaman al inicio para deshabilitar la autenticación.
+        // Si quieres reactivarla, deberías volver a llamar maybeEnableAuthButtons()
+        // en gapiLoaded() y gisLoaded(), y quitar el 'hidden' de los botones y admin-content.
         function maybeEnableAuthButtons() {
             if (gapiInited && gisInited) {
                 authorizeButton.style.display = 'block';
-                // Comprobar si ya hay un token para mantener la sesión
                 if (gapi.client.getToken() !== null) {
-                    handleAuthSuccess();
+                    // handleAuthSuccess(); // No llamar directamente para simular bypass
                 } else {
-                    authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
-                    authStatus.classList.remove('hidden');
+                    // authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
+                    // authStatus.classList.remove('hidden');
                 }
             }
         }
@@ -414,13 +420,16 @@
                         saveTeamsButton.disabled = true;
                     } else if (button.dataset.tab === 'match-results') {
                         populateMatchSelects();
+                        resultsMatchSelect.value = ''; // Limpiar selección
                         matchDateInput.value = '';
                         matchResultSelect.value = '';
                     } else if (button.dataset.tab === 'chamigo-management') {
                         populateMatchSelects();
+                        chamigoMatchSelect.value = ''; // Limpiar selección
                         chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
                     } else if (button.dataset.tab === 'tt-attendance') {
                         populateMatchSelects();
+                        ttMatchSelect.value = ''; // Limpiar selección
                         ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
                     }
                 });
@@ -712,7 +721,6 @@
 
                 sortedMatches.forEach(match => {
                     const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
-                    // Mostrar todos los partidos, incluso si ya tienen resultado, para Chamigo y TT
                     const option = document.createElement('option');
                     option.value = id;
                     const clarosNames = clarosIDs.split(',').map(id => {
@@ -774,8 +782,6 @@
 
                 if (oldResult) {
                     alert('Este partido ya tiene un resultado registrado. Por favor, selecciona un partido sin resultado o edita el existente.');
-                    // Si se permite editar, aquí iría la lógica para sobrescribir y recalcular puntos.
-                    // Por ahora, lo dejamos como una advertencia para evitar dobles registros accidentales.
                     return;
                 }
 
@@ -916,10 +922,6 @@
             });
         }
 
-        // addChamigoVoteButton.addEventListener('click', () => {
-        //     alert('Por favor, ingresa los votos directamente en los campos de cada jugador.');
-        // });
-
         registerChamigoButton.addEventListener('click', async () => {
             const selectedMatchId = chamigoMatchSelect.value;
             if (!selectedMatchId) {
@@ -1009,17 +1011,10 @@
             if (selectedMatchId) {
                 const match = allMatchesData.find(m => m[0] === selectedMatchId);
                 if (match) {
-                    const clarosIDs = match[2] ? match[2].split(',') : [];
-                    const oscurosIDs = match[3] ? match[3].split(',') : [];
-                    const playersInMatchIDs = [...new Set([...clarosIDs, ...oscurosIDs])]; // Unir y eliminar duplicados
+                    // Ahora renderiza TODOS los jugadores activos para TT, no solo los del partido
+                    renderTtAttendancePlayers(allPlayersData.filter(p => p[2] === 'Activo').map(p => ({id: p[0], name: p[1]})));
 
-                    const playersInMatch = playersInMatchIDs.map(id => {
-                        const player = allPlayersData.find(p => p[0] === id);
-                        return { id: id, name: player ? player[1] : `ID:${id}` };
-                    });
-                    renderTtAttendancePlayers(playersInMatch);
-
-                    // Precargar asistencia si ya existe
+                    // Precargar asistencia si ya existe para este partido
                     if (match[6]) { // Columna Asistencia_TT_IDs
                         const existingAttendees = match[6].split(',');
                         existingAttendees.forEach(id => {
@@ -1035,14 +1030,14 @@
             }
         });
 
-        function renderTtAttendancePlayers(playersInMatch) {
+        function renderTtAttendancePlayers(playersToRender) { // Recibe la lista de jugadores a mostrar
             ttAttendancePlayersDiv.innerHTML = '';
-            if (playersInMatch.length === 0) {
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores para registrar asistencia TT en este partido.</p>';
+            if (playersToRender.length === 0) {
+                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos disponibles para registrar asistencia TT.</p>';
                 return;
             }
 
-            playersInMatch.forEach(player => {
+            playersToRender.forEach(player => {
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'flex items-center space-x-2';
                 playerDiv.innerHTML = `
@@ -1087,6 +1082,10 @@
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
                         const currentTtAsistencias = parseInt(currentPlayer[6] || 0); // Columna TT_Asistencias
+                        // Solo incrementamos si el jugador no estaba ya registrado para este TT en el partido
+                        // Para evitar doble conteo si se edita el TT del mismo partido
+                        // Para simplificar, asumimos que cada vez que se registra TT, es un nuevo registro
+                        // Si se necesita evitar doble conteo, se debería verificar si el ID ya está en match[6]
                         currentPlayer[6] = currentTtAsistencias + 1; // Incrementar TT_Asistencias
 
                         updateRequests.push({
@@ -1096,6 +1095,7 @@
                     }
                 });
 
+                // Si hay jugadores a actualizar, enviar el batchUpdate
                 if (updateRequests.length > 0) {
                     await gapi.client.sheets.spreadsheets.values.batchUpdate({
                         spreadsheetId: SPREADSHEET_ID,
@@ -1131,8 +1131,8 @@
 
 
         // --- Inicialización ---
-        authorizeButton.addEventListener('click', handleAuthClick);
-        signoutButton.addEventListener('click', handleSignoutClick);
+        // authorizeButton.addEventListener('click', handleAuthClick); // Desactivado temporalmente
+        // signoutButton.addEventListener('click', handleSignoutClick); // Desactivado temporalmente
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
@@ -1144,6 +1144,11 @@
             script.defer = true;
             script.onload = gisLoaded;
             document.head.appendChild(script);
+
+            // Llamar a handleAuthSuccess directamente para simular la autenticación
+            // Esto permite trabajar sin autenticarse cada vez en desarrollo.
+            // Para producción, esto debería ser eliminado y la autenticación reactivada.
+            setTimeout(handleAuthSuccess, 500); // Pequeño delay para asegurar que las librerías carguen
         });
     </script>
 </body>
