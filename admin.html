@@ -27,21 +27,21 @@
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl">
         <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Panel de Administración</h1>
 
-        <!-- Botones de Autenticación (ocultos temporalmente para desarrollo) -->
-        <div class="flex justify-center space-x-4 mb-8 hidden">
+        <!-- Botones de Autenticación (ahora visibles) -->
+        <div class="flex justify-center space-x-4 mb-8">
             <button id="authorize_button" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
                 Autorizar Google Sheets
             </button>
-            <button id="signout_button" class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-300">
+            <button id="signout_button" class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-300 hidden">
                 Cerrar Sesión
             </button>
         </div>
 
-        <!-- Mensaje de estado de autenticación (oculto temporalmente para desarrollo) -->
-        <p id="auth-status" class="text-center text-red-500 mb-6 hidden">Por favor, autoriza la aplicación para acceder a los datos.</p>
+        <!-- Mensaje de estado de autenticación (visible hasta autorizar) -->
+        <p id="auth-status" class="text-center text-red-500 mb-6">Por favor, autoriza la aplicación para acceder a los datos.</p>
 
-        <!-- Contenido del Panel de Administración (visible por defecto para desarrollo) -->
-        <div id="admin-content">
+        <!-- Contenido del Panel de Administración (oculto hasta la autenticación) -->
+        <div id="admin-content" class="hidden">
             <!-- Navegación por pestañas -->
             <div class="flex border-b border-gray-200 mb-6">
                 <button class="tab-button py-2 px-4 text-gray-600 font-medium hover:text-indigo-700 active" data-tab="players-management">Gestión de Jugadores</button>
@@ -270,21 +270,24 @@
         const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
         const registerTtButton = document.getElementById('register-tt-button');
 
-        // --- Funciones de Autenticación (Desactivadas temporalmente para desarrollo) ---
+        // --- Funciones de Autenticación ---
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
         }
 
         async function initializeGapiClient() {
-            await gapi.client.init({
-                discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-            });
-            gapiInited = true;
-            // No llamar a maybeEnableAuthButtons aquí para deshabilitar la autenticación temporalmente
-            // Directamente cargar los datos
-            loadAndDisplayAllData();
-            setupTabNavigation();
+            try {
+                await gapi.client.init({
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                });
+                gapiInited = true;
+                maybeEnableAuthButtons(); // Ahora sí, llamamos a esta función
+            } catch (err) {
+                console.error("Error al inicializar gapi.client:", err);
+                authStatus.textContent = `Error al inicializar la API de Google: ${err.message || err.error_description || JSON.stringify(err)}. Revisa la consola.`;
+                authStatus.classList.remove('hidden');
+            }
         }
 
         function gisLoaded() {
@@ -294,21 +297,18 @@
                 callback: '', // Se define en handleAuthClick
             });
             gisInited = true;
-            // No llamar a maybeEnableAuthButtons aquí para deshabilitar la autenticación temporalmente
+            maybeEnableAuthButtons(); // Ahora sí, llamamos a esta función
         }
 
-        // Las funciones handleAuthClick, handleSignoutClick y maybeEnableAuthButtons
-        // se mantienen pero no se llaman al inicio para deshabilitar la autenticación.
-        // Si quieres reactivarla, deberías volver a llamar maybeEnableAuthButtons()
-        // en gapiLoaded() y gisLoaded(), y quitar el 'hidden' de los botones y admin-content.
         function maybeEnableAuthButtons() {
             if (gapiInited && gisInited) {
                 authorizeButton.style.display = 'block';
+                // Si ya hay un token (sesión previa), intentamos cargar los datos
                 if (gapi.client.getToken() !== null) {
-                    // handleAuthSuccess(); // No llamar directamente para simular bypass
+                    handleAuthSuccess();
                 } else {
-                    // authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
-                    // authStatus.classList.remove('hidden');
+                    authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
+                    authStatus.classList.remove('hidden');
                 }
             }
         }
@@ -324,6 +324,9 @@
                 handleAuthSuccess();
             };
 
+            // Solicitar token de acceso
+            // 'prompt: consent' fuerza la pantalla de consentimiento cada vez
+            // 'prompt: '' ' intenta usar un token existente o refrescarlo sin consentimiento
             if (gapi.client.getToken() === null) {
                 tokenClient.requestAccessToken({prompt: 'consent'});
             } else {
@@ -331,12 +334,12 @@
             }
         }
 
-        function handleAuthSuccess() {
+        async function handleAuthSuccess() {
             authorizeButton.style.display = 'none';
             signoutButton.style.display = 'block';
             authStatus.classList.add('hidden');
             adminContent.classList.remove('hidden');
-            loadAndDisplayAllData(); // Cargar todos los datos una vez autenticado
+            await loadAndDisplayAllData(); // Cargar todos los datos una vez autenticado
             setupTabNavigation();
         }
 
@@ -389,7 +392,14 @@
 
             } catch (err) {
                 console.error('Error al cargar todos los datos:', err);
-                alert(`Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`);
+                // Mejorar el mensaje de error para el usuario
+                let userErrorMessage = 'Error desconocido al cargar datos.';
+                if (err && err.result && err.result.error && err.result.error.message) {
+                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Revisa la consola para más detalles.`;
+                } else if (err && err.message) {
+                    userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
+                }
+                alert(userErrorMessage);
             }
         }
 
@@ -1137,8 +1147,8 @@
 
 
         // --- Inicialización ---
-        // authorizeButton.addEventListener('click', handleAuthClick); // Desactivado temporalmente
-        // signoutButton.addEventListener('click', handleSignoutClick); // Desactivado temporalmente
+        authorizeButton.addEventListener('click', handleAuthClick); // Activado
+        signoutButton.addEventListener('click', handleSignoutClick); // Activado
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
@@ -1151,10 +1161,8 @@
             script.onload = gisLoaded;
             document.head.appendChild(script);
 
-            // Llamar a handleAuthSuccess directamente para simular la autenticación
-            // Esto permite trabajar sin autenticarse cada vez en desarrollo.
-            // Para producción, esto debería ser eliminado y la autenticación reactivada.
-            setTimeout(handleAuthSuccess, 500); // Pequeño delay para asegurar que las librerías carguen
+            // No se llama a handleAuthSuccess directamente aquí.
+            // La carga de datos y el panel se activarán una vez que el usuario se autentique.
         });
     </script>
 </body>
