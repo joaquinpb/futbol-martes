@@ -54,6 +54,13 @@
         .match-item.selected {
             @apply bg-indigo-100 border-l-4 border-indigo-500;
         }
+        /* Nuevos estilos para el sombreado de partidos */
+        .match-item.no-result {
+            background-color: #fee2e2; /* bg-red-100 */
+        }
+        .match-item.has-result {
+            background-color: #dcfce7; /* bg-green-100 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -1085,7 +1092,12 @@
             sortedMatches.forEach(match => {
                 const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
                 const matchItem = document.createElement('div');
-                matchItem.className = 'match-item'; // Clase para estilo y clickeable
+                // Apply color based on result
+                if (resultado && resultado.trim() !== '') {
+                    matchItem.className = 'match-item has-result'; // Green if result exists
+                } else {
+                    matchItem.className = 'match-item no-result'; // Red if no result
+                }
                 matchItem.dataset.matchId = id; // Guardar el ID del partido
 
                 const clarosNames = clarosIDs.split(',').map(id => {
@@ -1207,7 +1219,12 @@
             sortedMatches.forEach(match => {
                 const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
                 const matchItem = document.createElement('div');
-                matchItem.className = 'match-item'; // Clase para estilo y clickeable
+                // Apply color based on result
+                if (resultado && resultado.trim() !== '') {
+                    matchItem.className = 'match-item has-result'; // Green if result exists
+                } else {
+                    matchItem.className = 'match-item no-result'; // Red if no result
+                }
                 matchItem.dataset.matchId = id; // Guardar el ID del partido
 
                 const clarosNames = clarosIDs.split(',').map(id => {
@@ -1287,7 +1304,7 @@
                 const [id, oldDate, clarosIDsStr, oscurosIDsStr, oldResult, chamigoVotosStr, ttAttendeesStr] = currentMatch;
 
                 // Revertir puntos y PJ si ya había un resultado
-                if (oldResult && oldResult !== 'Suspendido') { // Solo si había un resultado válido antes
+                if (oldResult && oldResult.trim() !== '' && oldResult !== 'Suspendido') { // Solo si había un resultado válido antes
                     const playersInOldMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
                     const oldPlayerUpdates = {};
 
@@ -1452,7 +1469,7 @@
                 const playerUpdates = {}; // {playerId: {pointsChange: X, gamesChange: Y, chamigoChange: Z, ttChange: W}}
 
                 // Revertir Partidos Jugados (PJ) solo si el partido tuvo un resultado válido (no vacío y no 'Suspendido')
-                if (result && result !== 'Suspendido') {
+                if (result && result.trim() !== '' && result !== 'Suspendido') {
                     playersInMatchIDs.forEach(pId => {
                         playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
                         playerUpdates[pId].gamesChange -= 1; // Restar 1 PJ
@@ -1962,7 +1979,7 @@
 
                 // Contar partidos jugados (PJ) y ajustar Ausente
                 // Solo si el partido tiene un resultado y no está suspendido
-                if (resultado && resultado !== 'Suspendido') {
+                if (resultado && resultado.trim() !== '' && resultado !== 'Suspendido') {
                     allPlayersInMatch.forEach(playerId => {
                         if (playerStats[playerId]) {
                             playerStats[playerId].partidos++;
