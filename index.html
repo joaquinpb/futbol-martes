@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fútbol 5 - Estadísticas de Jugadores</title>
+    <title>Tabla de Posiciones Fútbol 5</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -12,72 +12,80 @@
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5; /* Un gris claro para el fondo */
         }
-        /* Estilos base para tablas */
-        table {
-            @apply min-w-full bg-white rounded-lg shadow-md;
-        }
-        th, td {
-            @apply py-3 px-6 text-left;
-        }
-        thead th {
-            @apply bg-gray-200 text-gray-700 uppercase text-sm leading-normal;
-        }
-        tbody tr {
-            @apply border-b border-gray-200 hover:bg-gray-100;
-        }
-        tbody tr:last-child {
-            @apply border-b-0;
-        }
     </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-6xl my-8">
-        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Fútbol 5 - Estadísticas de Jugadores</h1>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Tabla de Posiciones</h1>
 
-        <!-- Sección de Jugadores con Estadísticas -->
-        <section class="mb-10">
-            <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-l-4 border-blue-500 pl-4">Tabla de Posiciones</h2>
-            <div id="players-list-container" class="overflow-x-auto">
-                <p id="players-loading" class="text-gray-500 text-center py-4">Cargando estadísticas de jugadores...</p>
-                <table id="players-stats-table" class="hidden">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th class="text-center">Puntos</th>
-                            <th class="text-center">PJ</th>
-                            <th class="text-center">Ausente</th>
-                            <th class="text-center">Chamigo</th>
-                            <th class="text-center">TT</th>
-                            <th class="text-center">Efectividad</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Las estadísticas de los jugadores se cargarán aquí dinámicamente -->
-                    </tbody>
-                </table>
+        <!-- Controles de Filtro -->
+        <div class="flex flex-wrap justify-center gap-4 mb-8">
+            <div>
+                <label for="year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                <select id="year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                    <!-- Opciones de año se generarán dinámicamente -->
+                </select>
             </div>
-        </section>
+            <div>
+                <label for="period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                <select id="period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                    <option value="totales">Totales</option>
+                    <option value="apertura">Apertura</option>
+                    <option value="clausura">Clausura</option>
+                </select>
+            </div>
+            <div>
+                <label for="criterion-select" class="block text-sm font-medium text-gray-700">Criterio:</label>
+                <select id="criterion-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                    <option value="puntos">Puntos</option>
+                    <option value="presentismo">Presentismo</option>
+                    <option value="ausentismo">Ausentismo</option>
+                    <option value="chamigos">Chamigo</option>
+                    <option value="tt">TT</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="leaderboard-container" class="overflow-x-auto">
+            <p id="loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
+            <table id="leaderboard-table" class="min-w-full bg-white rounded-lg shadow hidden">
+                <thead>
+                    <!-- Los encabezados se generarán dinámicamente según el criterio -->
+                </thead>
+                <tbody class="text-gray-600 text-sm font-light">
+                    <!-- Filas de jugadores se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <!-- Script de la API de Google -->
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-
     <script>
-        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
-        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E'; // Asegúrate de que esta es tu ID de hoja de cálculo
+        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet "Base de Datos".
+        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E'; // Asegúrate de que este sea tu ID real
+        // La API Key es necesaria para llamadas públicas sin autenticación de usuario.
+        // Asegúrate de que la API Key esté restringida a la API de Google Sheets y a tu dominio de GitHub Pages.
+        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; // ¡Tu API Key real!
 
         let gapiInited = false;
-        let allPlayersData = []; // Cache para datos de jugadores
-        let allMatchesData = []; // Cache para datos de partidos
+        let allPlayersData = []; // Para almacenar todos los datos de jugadores una vez
+        let allMatchesData = []; // Para almacenar todos los datos de partidos una vez
 
-        // Elementos del DOM
-        const playersStatsTableBody = document.querySelector('#players-stats-table tbody');
-        const playersLoading = document.getElementById('players-loading');
-        const playersStatsTable = document.getElementById('players-stats-table');
+        const loadingMessage = document.getElementById('loading-message');
+        const leaderboardTable = document.getElementById('leaderboard-table');
+        const leaderboardTableHead = leaderboardTable.querySelector('thead'); // Referencia al thead
+        const leaderboardTableBody = leaderboardTable.querySelector('tbody');
+        const yearSelect = document.getElementById('year-select');
+        const periodSelect = document.getElementById('period-select');
+        const criterionSelect = document.getElementById('criterion-select');
+
+        // Función para parsear fechas DD/MM/YYYY a objetos Date
+        function parseDate(dateString) {
+            const [day, month, year] = dateString.split('/').map(Number);
+            return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
+        }
 
         // Función que se ejecuta cuando la librería gapi (API de Google) está cargada
-        // Esta función ahora es llamada por el atributo 'onload' del script de gapi.js
+        // ¡IMPORTANTE! Esta función debe estar definida ANTES del script de la API de Google.
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
         }
@@ -86,115 +94,174 @@
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
-                    // ¡ATENCIÓN! Debes reemplazar 'TU_API_KEY' con tu clave de API real de Google Cloud Console.
-                    // Asegúrate de que la API de Google Sheets esté habilitada en tu proyecto de Google Cloud.
-                    // Y que tu hoja de cálculo tenga permisos de lectura públicos ("Cualquiera con el enlace").
-                    apiKey: 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM', 
+                    apiKey: API_KEY,
                     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
                 });
                 gapiInited = true;
-                await loadAllDataAndDisplayStats();
+                await loadAllDataAndRenderLeaderboard(); // Carga todos los datos y renderiza
             } catch (err) {
-                console.error("Error al inicializar gapi.client:", err);
-                playersLoading.textContent = `Error al cargar datos: ${err.message || JSON.stringify(err)}. Asegúrate de que la API Key es correcta y la hoja es pública.`;
+                console.error('Error al inicializar cliente GAPI:', err);
+                loadingMessage.textContent = `Error al cargar la tabla: ${err.message}. Asegúrate de que la API Key sea válida y la hoja esté compartida públicamente como "Lector".`;
+                loadingMessage.classList.remove('hidden');
+                leaderboardTable.classList.add('hidden');
             }
         }
 
         /**
-         * Carga todos los datos necesarios (jugadores y partidos) y luego muestra las estadísticas.
+         * Carga todos los datos de jugadores y partidos de Google Sheets.
          */
-        async function loadAllDataAndDisplayStats() {
-            playersLoading.classList.remove('hidden');
-            playersStatsTable.classList.add('hidden');
-            playersStatsTableBody.innerHTML = '';
+        async function loadAllDataAndRenderLeaderboard() {
+            loadingMessage.textContent = 'Cargando datos...';
+            loadingMessage.classList.remove('hidden');
+            leaderboardTable.classList.add('hidden');
 
             try {
-                // Cargar datos de Jugadores
+                // Cargar jugadores
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:G', // Rango completo de la hoja "Jugadores"
+                    range: 'Jugadores!A:G', // ID_Jugador, Nombre, Estado, Puntos_Totales, Partidos_Jugados, Chamigos_Ganados, TT_Asistencias
                 });
-                allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
+                allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : []; // Ignorar encabezados
 
-                // Cargar datos de Partidos
+                // Cargar partidos
                 const matchesResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G', // Rango completo de la hoja "Partidos"
+                    range: 'Partidos!A:G', // ID_Partido, Fecha, Equipo_Claros_IDs, Equipo_Oscuros_IDs, Resultado, Chamigo_Votos, Asistencia_TT_IDs
                 });
-                allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : [];
+                allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : []; // Ignorar encabezados
 
-                if (allPlayersData.length === 0) {
-                    playersLoading.textContent = 'No hay jugadores registrados para mostrar estadísticas.';
-                    return;
-                }
-
-                // Calcular y renderizar estadísticas
-                renderPlayerStatsTable();
-
+                populateYearSelect(); // Rellenar el selector de año
+                setInitialPeriod(); // Establecer el período inicial
+                renderLeaderboard(); // Renderizar la tabla inicial
             } catch (err) {
-                playersLoading.textContent = `Error al cargar datos: ${err.message}. Revisa la consola y los permisos de tu Google Sheet.`;
-                console.error('Error al cargar datos para estadísticas:', err);
+                console.error('Error al cargar todos los datos:', err);
+                // Mejorar el mensaje de error para el usuario en la interfaz
+                let userErrorMessage = 'Error desconocido al cargar datos.';
+                if (err && err.result && err.result.error && err.result.error.message) {
+                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
+                } else if (err && err.message) {
+                    userErrorMessage = `Error al cargar datos: ${err.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
+                }
+                loadingMessage.textContent = userErrorMessage;
+                loadingMessage.classList.remove('hidden');
+                leaderboardTable.classList.add('hidden');
             }
         }
 
         /**
-         * Parsea una cadena de fecha en formato DD/MM/YYYY a un objeto Date.
-         * Asume la zona horaria local.
-         * @param {string} dateString - La cadena de fecha en formato DD/MM/YYYY.
-         * @returns {Date} El objeto Date.
+         * Rellena el selector de año con los años disponibles en los partidos.
+         * Selecciona el año actual por defecto si existe, o el más reciente.
          */
-        function parseDate(dateString) {
-            const [day, month, year] = dateString.split('/').map(Number);
-            return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
+        function populateYearSelect() {
+            const years = new Set();
+            allMatchesData.forEach(match => {
+                const dateString = match[1]; // Columna 'Fecha'
+                if (dateString) {
+                    const date = parseDate(dateString);
+                    years.add(date.getFullYear());
+                }
+            });
+
+            const sortedYears = Array.from(years).sort((a, b) => b - a); // Ordenar de más reciente a más antiguo
+
+            yearSelect.innerHTML = ''; // Limpiar opciones existentes
+            if (sortedYears.length > 0) {
+                sortedYears.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    yearSelect.appendChild(option);
+                });
+                // Seleccionar el año actual por defecto si existe, o el más reciente
+                const currentYear = new Date().getFullYear();
+                if (sortedYears.includes(currentYear)) {
+                    yearSelect.value = currentYear;
+                } else {
+                    yearSelect.value = sortedYears[0];
+                }
+            } else {
+                const option = document.createElement('option');
+                option.value = new Date().getFullYear(); // Año actual si no hay datos
+                option.textContent = new Date().getFullYear();
+                yearSelect.appendChild(option);
+            }
+        }
+
+        /**
+         * Establece el período inicial (Apertura/Clausura/Totales) basado en la fecha actual.
+         */
+        function setInitialPeriod() {
+            const currentMonth = new Date().getMonth(); // 0-indexed (Enero es 0)
+            if (currentMonth >= 0 && currentMonth <= 5) { // Enero a Junio
+                periodSelect.value = 'apertura';
+            } else if (currentMonth >= 6 && currentMonth <= 11) { // Julio a Diciembre
+                periodSelect.value = 'clausura';
+            } else {
+                periodSelect.value = 'totales'; // Por defecto, si no cae en Apertura/Clausura
+            }
+        }
+
+        /**
+         * Filtra los partidos según el año y el período seleccionados.
+         */
+        function filterMatches(matches, selectedYear, selectedPeriod) {
+            return matches.filter(match => {
+                const dateString = match[1]; // Columna 'Fecha'
+                if (!dateString) return false;
+
+                const matchDate = parseDate(dateString);
+                const matchYear = matchDate.getFullYear();
+                const matchMonth = matchDate.getMonth(); // 0-indexed
+
+                if (selectedYear !== 'all' && matchYear !== parseInt(selectedYear)) {
+                    return false;
+                }
+
+                if (selectedPeriod === 'apertura') {
+                    return matchMonth >= 0 && matchMonth <= 5; // Enero (0) a Junio (5)
+                } else if (selectedPeriod === 'clausura') {
+                    return matchMonth >= 6 && matchMonth <= 11; // Julio (6) a Diciembre (11)
+                }
+                return true; // "totales" o si no hay período seleccionado
+            });
         }
 
         /**
          * Calcula las estadísticas de los jugadores basándose en los partidos filtrados.
          * Incluye cálculo de Efectividad y Ausente.
          */
-        function calculatePlayerStatsForPublicLeaderboard(players, matches) {
+        function calculatePlayerStats(players, filteredMatches) {
             const playerStats = {};
-            // Filtrar partidos que tienen fecha y no están suspendidos para contar el total de partidos válidos
-            const validMatches = matches.filter(match => match[1] && match[1].trim() !== '' && match[4] !== 'Suspendido');
-            const totalMatchesInPeriod = validMatches.length; // Total de partidos para calcular ausentismo
+            const totalMatchesInPeriod = filteredMatches.length;
 
             // Inicializar estadísticas para todos los jugadores activos
             players.forEach(player => {
                 const [id, nombre, estado] = player;
-                if (estado === 'Activo') { // Solo considerar jugadores activos
+                if (estado === 'Activo') {
                     playerStats[id] = {
                         id,
                         nombre,
                         puntos: 0,
-                        partidosJugados: 0, // PJ
-                        chamigosGanados: 0, // Chamigo
-                        asistenciasTT: 0, // TT
-                        efectividad: '0.00%',
-                        ausente: totalMatchesInPeriod // Inicialmente, ausente en todos los partidos válidos
+                        partidos: 0, // PJ
+                        chamigos: 0, // Chamigo
+                        tt: 0,
+                        efectividad: '0.00%', // Nueva columna
+                        ausente: totalMatchesInPeriod // Nueva columna, se ajustará
                     };
                 }
             });
 
-            validMatches.forEach(match => { // Iterar solo sobre los partidos válidos
-                // Desestructuración con valores por defecto para mayor robustez
-                const [
-                    idPartido,
-                    fecha,
-                    equipoClarosIDsStr = '',
-                    equipoOscurosIDsStr = '',
-                    resultado,
-                    chamigoVotosStr = '',
-                    asistenciaTTIDsStr = ''
-                ] = match;
+            filteredMatches.forEach(match => {
+                const [idPartido, fecha, equipoClarosIDsStr, equipoOscurosIDsStr, resultado, chamigoVotosStr, asistenciaTTIDsStr] = match;
 
-                const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean);
-                const equipoOscurosIDs = oscurosIDsStr.split(',').filter(Boolean);
+                const equipoClarosIDs = equipoClarosIDsStr ? equipoClarosIDsStr.split(',') : [];
+                const equipoOscurosIDs = equipoOscurosIDsStr ? equipoOscurosIDsStr.split(',') : [];
                 const allPlayersInMatch = new Set([...equipoClarosIDs, ...equipoOscurosIDs]);
 
                 // Contar partidos jugados (PJ) y ajustar Ausente
                 allPlayersInMatch.forEach(playerId => {
                     if (playerStats[playerId]) {
-                        playerStats[playerId].partidosJugados++;
+                        playerStats[playerId].partidos++;
                         playerStats[playerId].ausente--; // Restar 1 por cada partido jugado
                     }
                 });
@@ -202,6 +269,8 @@
                 // Asignar puntos por resultado
                 if (resultado === 'Claros' || resultado === 'Oscuros') {
                     const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
+                    // const losingTeam = resultado === 'Claros' ? equipoOscurosIDs : equipoClarosIDs; // No se usa para puntos aquí
+
                     winningTeam.forEach(playerId => {
                         if (playerStats[playerId]) playerStats[playerId].puntos += 3;
                     });
@@ -215,11 +284,12 @@
                 if (chamigoVotosStr) {
                     try {
                         const chamigoVotos = JSON.parse(chamigoVotosStr);
+                        // Encontrar el/los chamigo(s) con más votos para este partido
                         if (chamigoVotos.length > 0) {
                             const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
                             const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
                             chamigosDelPartido.forEach(chamigo => {
-                                if (playerStats[chamigo.id]) playerStats[chamigo.id].chamigosGanados++;
+                                if (playerStats[chamigo.id]) playerStats[chamigo.id].chamigos++;
                             });
                         }
                     } catch (e) {
@@ -229,16 +299,16 @@
 
                 // Contar asistencias a TT
                 if (asistenciaTTIDsStr) {
-                    const ttAttendees = asistenciaTTIDsStr.split(',').filter(Boolean);
+                    const ttAttendees = asistenciaTTIDsStr.split(',');
                     ttAttendees.forEach(playerId => {
-                        if (playerStats[playerId]) playerStats[playerId].asistenciasTT++;
+                        if (playerStats[playerId]) playerStats[playerId].tt++;
                     });
                 }
             });
 
             // Calcular Efectividad después de contar todos los puntos y PJ
             Object.values(playerStats).forEach(player => {
-                const maxPossiblePoints = player.partidosJugados * 3;
+                const maxPossiblePoints = player.partidos * 3;
                 if (maxPossiblePoints > 0) {
                     player.efectividad = ((player.puntos / maxPossiblePoints) * 100).toFixed(2) + '%';
                 } else {
@@ -246,43 +316,160 @@
                 }
             });
 
-            // Ordenar por puntos (descendente) para la tabla de posiciones
-            return Object.values(playerStats).sort((a, b) => b.puntos - a.puntos);
+            return Object.values(playerStats); // Convertir a array de objetos
         }
 
         /**
-         * Renderiza la tabla de estadísticas de jugadores.
+         * Renderiza la tabla de posiciones con los datos filtrados y ordenados,
+         * adaptando las columnas según el criterio seleccionado.
          */
-        function renderPlayerStatsTable() {
-            playersStatsTableBody.innerHTML = ''; // Limpiar tabla
-            playersLoading.classList.add('hidden');
-            playersStatsTable.classList.remove('hidden');
+        function renderLeaderboard() {
+            loadingMessage.textContent = 'Calculando posiciones...';
+            loadingMessage.classList.remove('hidden');
+            leaderboardTable.classList.add('hidden');
+            leaderboardTableBody.innerHTML = ''; // Limpiar tabla
 
-            const playersWithStats = calculatePlayerStatsForPublicLeaderboard(allPlayersData, allMatchesData);
+            const selectedYear = yearSelect.value;
+            const selectedPeriod = periodSelect.value;
+            const selectedCriterion = criterionSelect.value;
 
-            if (playersWithStats.length === 0) {
-                playersLoading.textContent = 'No hay estadísticas disponibles para mostrar.';
-                playersLoading.classList.remove('hidden');
-                playersStatsTable.classList.add('hidden');
-                return;
+            // 1. Filtrar partidos
+            const filteredMatches = filterMatches(allMatchesData, selectedYear, selectedPeriod);
+
+            // 2. Calcular estadísticas de jugadores (incluye Efectividad y Ausente)
+            let playersWithStats = calculatePlayerStats(allPlayersData, filteredMatches);
+
+            // Filtrar jugadores con 0 partidos jugados si el criterio es puntos, chamigo o TT
+            if (selectedCriterion === 'puntos' || selectedCriterion === 'chamigos' || selectedCriterion === 'tt' || selectedCriterion === 'presentismo') {
+                playersWithStats = playersWithStats.filter(player => player.partidos > 0);
             }
+            // Para 'Ausentismo', no filtramos por PJ > 0, ya que queremos ver a los ausentes.
 
-            playersWithStats.forEach(player => {
-                const row = `
-                    <tr>
-                        <td>${player.id}</td>
-                        <td>${player.nombre}</td>
-                        <td class="text-center">${player.puntos}</td>
-                        <td class="text-center">${player.partidosJugados}</td>
-                        <td class="text-center">${player.ausente}</td>
-                        <td class="text-center">${player.chamigosGanados}</td>
-                        <td class="text-center">${player.asistenciasTT}</td>
-                        <td class="text-center">${player.efectividad}</td>
+            // 3. Ordenar jugadores
+            playersWithStats.sort((a, b) => {
+                if (selectedCriterion === 'puntos') {
+                    return b.puntos - a.puntos;
+                } else if (selectedCriterion === 'presentismo') {
+                    return b.partidos - a.partidos; // Ordenar por PJ DESC
+                } else if (selectedCriterion === 'ausentismo') {
+                    return b.ausente - a.ausente; // Ordenar por Ausente DESC
+                } else if (selectedCriterion === 'chamigos') {
+                    return b.chamigos - a.chamigos;
+                } else if (selectedCriterion === 'tt') {
+                    return b.tt - a.tt;
+                }
+                return 0; // Por defecto no ordena si el criterio no es reconocido
+            });
+
+            // 4. Actualizar encabezados de la tabla (<thead>)
+            let headerRowHTML = '';
+            if (selectedCriterion === 'puntos') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">Puntos</th>
+                        <th class="py-3 px-6 text-center">PJ</th>
+                        <th class="py-3 px-6 text-center">Efectividad</th>
                     </tr>
                 `;
-                playersStatsTableBody.innerHTML += row;
-            });
+            } else if (selectedCriterion === 'presentismo') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">PJ</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'ausentismo') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">Ausente</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'chamigos') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">Chamigo</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'tt') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">TT</th>
+                    </tr>
+                `;
+            }
+            leaderboardTableHead.innerHTML = headerRowHTML;
+
+            // 5. Llenar el cuerpo de la tabla (<tbody>)
+            if (playersWithStats.length > 0) {
+                playersWithStats.forEach((player, index) => {
+                    let rowHTML = '';
+                    if (selectedCriterion === 'puntos') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
+                            <td class="py-3 px-6 text-center">${player.puntos}</td>
+                            <td class="py-3 px-6 text-center">${player.partidos}</td>
+                            <td class="py-3 px-6 text-center">${player.efectividad}</td>
+                        `;
+                    } else if (selectedCriterion === 'presentismo') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
+                            <td class="py-3 px-6 text-center">${player.partidos}</td>
+                        `;
+                    } else if (selectedCriterion === 'ausentismo') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
+                            <td class="py-3 px-6 text-center">${player.ausente}</td>
+                        `;
+                    } else if (selectedCriterion === 'chamigos') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
+                            <td class="py-3 px-6 text-center">${player.chamigos}</td>
+                        `;
+                    } else if (selectedCriterion === 'tt') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
+                            <td class="py-3 px-6 text-center">${player.tt}</td>
+                        `;
+                    }
+                    leaderboardTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+                });
+                loadingMessage.classList.add('hidden');
+                leaderboardTable.classList.remove('hidden');
+            } else {
+                loadingMessage.textContent = 'No hay datos disponibles para los filtros seleccionados.';
+                loadingMessage.classList.remove('hidden');
+                leaderboardTable.classList.add('hidden');
+            }
         }
+
+        // Event Listeners para los selectores
+        yearSelect.addEventListener('change', renderLeaderboard);
+        periodSelect.addEventListener('change', renderLeaderboard);
+        criterionSelect.addEventListener('change', renderLeaderboard);
+
+        // Carga la librería de Google API cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Tabla de Posiciones de Fútbol 5 cargada!');
+            // La función gapiLoaded() ahora se llama a través del atributo 'onload' del script tag de la API de Google.
+            // Esto asegura que 'gapi' esté definido cuando se intente usar.
+        });
     </script>
+    <!-- Script de la API de Google -->
+    <!-- Este script debe estar DESPUÉS de la definición de gapiLoaded() -->
+    <script async src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 </body>
 </html>
