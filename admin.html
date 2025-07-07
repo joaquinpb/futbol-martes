@@ -361,6 +361,7 @@
         let gisInited = false;
         let allPlayersData = []; // Cache de todos los jugadores
         let allMatchesData = []; // Cache de todos los partidos
+        let sheetIds = {}; // Nuevo: Almacena los sheetIds por nombre de hoja
 
         // Elementos del DOM
         const authorizeButton = document.getElementById('authorize_button');
@@ -568,6 +569,25 @@
                     console.error("gapi.client.sheets no está disponible. ¿Se inicializó correctamente el cliente de la API de Google?");
                     throw new Error("API de Google Sheets no cargada correctamente.");
                 }
+
+                // --- NUEVO: Obtener los sheetIds dinámicamente ---
+                const metadataResponse = await gapi.client.sheets.spreadsheets.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    fields: 'sheets.properties', // Solicitar solo las propiedades de las hojas
+                });
+
+                if (metadataResponse.result && metadataResponse.result.sheets) {
+                    metadataResponse.result.sheets.forEach(sheet => {
+                        sheetIds[sheet.properties.title] = sheet.properties.sheetId;
+                    });
+                    console.log("IDs de hojas cargados:", sheetIds); // Para depuración
+                } else {
+                    console.warn("No se pudo recuperar la metadata de las hojas. Usando IDs por defecto (0).");
+                    // Fallback si no se puede obtener la metadata (menos robusto)
+                    sheetIds['Partidos'] = 0;
+                    sheetIds['Jugadores'] = 0;
+                }
+                // --- FIN NUEVO ---
 
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
@@ -1360,13 +1380,19 @@
                 // Convertir el índice del array (0-based) a índice de fila de la hoja (1-based), y sumar 1 por el encabezado.
                 const sheetRowIndex = matchIndex + 2; // +1 por 1-based, +1 por fila de encabezado
 
+                if (sheetIds['Partidos'] === undefined) {
+                    console.error("Sheet ID for 'Partidos' not found. Cannot delete row.");
+                    alert("Error: No se pudo encontrar la hoja 'Partidos'. Por favor, recarga la página e intenta de nuevo.");
+                    return;
+                }
+
                 await gapi.client.sheets.spreadsheets.batchUpdate({
                     spreadsheetId: SPREADSHEET_ID,
                     resource: {
                         requests: [{
                             deleteDimension: {
                                 range: {
-                                    sheetId: 0, // Generalmente 0 para la primera hoja, pero es mejor obtenerlo dinámicamente si hay muchas hojas. Para 'Partidos', asumimos que es la primera o que su sheetId es 0.
+                                    sheetId: sheetIds['Partidos'], // Usar el sheetId dinámico para 'Partidos'
                                     dimension: 'ROWS',
                                     startIndex: sheetRowIndex - 1, // Sheets API es 0-indexed para startIndex
                                     endIndex: sheetRowIndex // endIndex es exclusivo
