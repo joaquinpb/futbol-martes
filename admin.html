@@ -173,6 +173,30 @@
                 </div>
 
                 <h3 class="text-xl font-medium text-gray-800 mb-3">Listado de Jugadores</h3>
+                <!-- Nuevos filtros para la tabla de jugadores -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label for="player-list-name-filter" class="block text-sm font-medium text-gray-700">Buscar por Nombre:</label>
+                        <input type="text" id="player-list-name-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Ej: Mati">
+                    </div>
+                    <div>
+                        <label for="player-list-status-filter" class="block text-sm font-medium text-gray-700">Filtrar por Estado:</label>
+                        <select id="player-list-status-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <option value="Todos">Todos</option>
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="player-list-role-filter" class="block text-sm font-medium text-gray-700">Filtrar por Rol:</label>
+                        <select id="player-list-role-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <option value="Todos">Todos</option>
+                            <option value="Titular">Titular</option>
+                            <option value="Suplente">Suplente</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div id="players-list-admin" class="overflow-x-auto">
                     <p id="players-loading-message-admin" class="text-gray-500 text-center">Cargando jugadores...</p>
                     <table class="min-w-full bg-white rounded-lg shadow hidden">
@@ -501,6 +525,11 @@
         const deletePlayerButton = document.getElementById('delete-player-button');
         const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
         const playersLoadingMessageAdmin = document.getElementById('players-loading-message-admin'); // Mensaje de carga
+        // Nuevos filtros de Gestión de Jugadores
+        const playerListNameFilter = document.getElementById('player-list-name-filter');
+        const playerListStatusFilter = document.getElementById('player-list-status-filter');
+        const playerListRoleFilter = document.getElementById('player-list-role-filter');
+
 
         // Armar Equipos
         const teamMatchDateInput = document.getElementById('team-match-date'); // Nuevo: Fecha en Armar Equipos
@@ -742,7 +771,7 @@
 
         async function loadAllDataAndDisplayAllContent() {
             await loadAllData();
-            renderPlayersListAdmin();
+            renderPlayersListAdmin(); // Se encarga de los filtros ahora
             renderAvailablePlayersForTeams();
             populateResultsMatchYearSelect(); // Llama a la función para el selector de año de resultados
             populateMatchSelects(); // Se llama después de poblar el año para que use el filtro inicial
@@ -768,7 +797,7 @@
 
                     // Recargar datos específicos de la pestaña si es necesario
                     if (button.dataset.tab === 'players-management') {
-                        renderPlayersListAdmin();
+                        renderPlayersListAdmin(); // Ahora con filtros
                     } else if (button.dataset.tab === 'team-formation') {
                         renderAvailablePlayersForTeams();
                         // Limpiar selecciones de equipos al cambiar de pestaña
@@ -812,15 +841,26 @@
             playersLoadingMessageAdmin.classList.remove('hidden'); // Asegurarse de que el mensaje de carga sea visible
             playersLoadingMessageAdmin.textContent = 'Cargando jugadores...'; // Resetear el texto del mensaje
 
-            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo'); // Filtrar solo jugadores activos
+            // Obtener valores de los filtros
+            const nameFilter = playerListNameFilter.value.toLowerCase();
+            const statusFilter = playerListStatusFilter.value;
+            const roleFilter = playerListRoleFilter.value;
 
-            if (activePlayers.length === 0) {
-                playersLoadingMessageAdmin.textContent = 'No hay jugadores activos registrados.'; // Actualizar el mensaje
-                // El mensaje permanece visible, no hay tabla que mostrar
+            // Aplicar filtros
+            const filteredPlayers = allPlayersData.filter(player => {
+                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
+                const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
+                const matchesStatus = statusFilter === 'Todos' || estado === statusFilter;
+                const matchesRole = roleFilter === 'Todos' || rol === roleFilter;
+                return matchesName && matchesStatus && matchesRole;
+            });
+
+            if (filteredPlayers.length === 0) {
+                playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.'; // Actualizar el mensaje
                 return;
             }
 
-            activePlayers.forEach((player, index) => {
+            filteredPlayers.forEach((player, index) => {
                 // Asegurarse de que la columna 7 (índice 7) para Rol exista, si no, usar un valor por defecto
                 const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
                 const row = `
@@ -854,6 +894,12 @@
             document.querySelector('#players-list-admin table').classList.remove('hidden'); // Mostrar tabla
         }
 
+        // Event Listeners para los nuevos filtros de Gestión de Jugadores
+        playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
+        playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
+        playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
+
+
         savePlayerButton.addEventListener('click', async () => {
             const id = playerIdInput.value.trim();
             const name = playerNameInput.value.trim();
@@ -864,6 +910,23 @@
                 alert('El nombre del jugador no puede estar vacío.');
                 return;
             }
+
+            // --- Validación de Nombre Único ---
+            const normalizedNewName = name.toLowerCase();
+            const isEditingExistingPlayer = id !== '';
+
+            const duplicatePlayer = allPlayersData.find(p => {
+                const existingId = p[0];
+                const existingName = p[1].toLowerCase();
+                // Si estamos editando, ignorar el propio jugador en la búsqueda de duplicados
+                return existingName === normalizedNewName && (!isEditingExistingPlayer || existingId !== id);
+            });
+
+            if (duplicatePlayer) {
+                alert(`Ya existe un jugador con el nombre "${name}". Por favor, elige un nombre diferente.`);
+                return;
+            }
+            // --- Fin Validación de Nombre Único ---
 
             try {
                 let rowToUpdateIndex = allPlayersData.findIndex(p => p[0] === id); // Buscar por ID
@@ -961,7 +1024,8 @@
             titularesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando titulares...</p>';
             suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando suplentes...</p>';
 
-            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo'); // Filtrar solo jugadores activos
+            // Filtrar solo jugadores Activos para Armar Equipos
+            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
 
             if (activePlayers.length === 0) {
                 titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos.</p>';
@@ -2095,14 +2159,14 @@
                     idPartido,
                     fecha,
                     equipoClarosIDsStr = '',
-                    equipoOscurosIDsStr = '', // Corregido: Asegurarse de usar esta variable
+                    equipoOscurosIDsStr = '',
                     resultado, // Resultado del partido
                     chamigoVotosStr = '',
                     asistenciaTTIDsStr = ''
                 ] = match;
 
                 const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
-                const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean); // Corregido: Usar equipoOscurosIDsStr
+                const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean);
                 const allPlayersInMatchForPJ = new Set([...equipoClarosIDs, ...equipoOscurosIDs]); // Jugadores que participaron en este partido
 
                 // --- Calcular Puntos y PJ (solo para partidos con resultado válido y no suspendidos) ---
