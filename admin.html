@@ -177,8 +177,9 @@
         @media (min-width: 768px) {
             #hamburger-button,
             #overlay,
-            #close-side-menu-button {
-                display: none !important; /* Hide hamburger, overlay, close button on desktop */
+            #close-side-menu-button,
+            #signout_button_mobile_sidebar { /* Hide mobile signout button on desktop */
+                display: none !important; /* Hide hamburger, overlay, close button, and mobile signout button on desktop */
             }
 
             body {
@@ -244,12 +245,12 @@
 </head>
 <body class="bg-gray-100 flex md:flex-row items-start justify-center min-h-screen p-4 md:p-0">
     <!-- Hamburger Button (visible on small screens, hidden on md and up) -->
-    <button id="hamburger-button" class="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
+    <button id="hamburger-button" class="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
     <!-- Side Navigation Menu (mobile: fixed, slides; desktop: static, flex-col) -->
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden
                                 md:relative md:transform-none md:w-64 md:h-auto md:bg-white md:border-r md:border-gray-200 md:shadow-lg md:rounded-l-xl md:flex md:flex-col md:py-8">
         <div class="p-4 text-right md:hidden">
             <button id="close-side-menu-button" class="text-white text-2xl">&times;</button>
@@ -263,7 +264,11 @@
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-attendance">TT</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-tab">Tabla de Posiciones</button>
         </div>
-        <!-- Signout button inside sidebar for desktop, hidden on mobile -->
+        <!-- Signout button for mobile sidebar -->
+        <button id="signout_button_mobile_sidebar" class="md:hidden mt-auto mx-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 hidden">
+            Cerrar Sesión
+        </button>
+        <!-- Signout button inside sidebar for desktop -->
         <button id="signout_button_sidebar" class="hidden md:block mt-auto mx-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300">
             Cerrar Sesión
         </button>
@@ -661,7 +666,8 @@
 
         // Elementos del DOM
         const authorizeButton = document.getElementById('authorize_button');
-        const signoutButtonSidebar = document.getElementById('signout_button_sidebar'); // Nuevo botón de cerrar sesión en sidebar
+        const signoutButtonSidebar = document.getElementById('signout_button_sidebar'); // Nuevo botón de cerrar sesión en sidebar (desktop)
+        const signoutButtonMobileSidebar = document.getElementById('signout_button_mobile_sidebar'); // Nuevo botón de cerrar sesión en sidebar (mobile)
         const authStatus = document.getElementById('auth-status');
         const adminContent = document.getElementById('admin-content');
 
@@ -776,6 +782,9 @@
                 } else {
                     authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
                     authStatus.classList.remove('hidden');
+                    // Asegurarse de que el menú y el botón estén ocultos si no hay token
+                    sideMenu.classList.add('hidden');
+                    hamburgerButton.classList.add('hidden');
                 }
             }
         }
@@ -802,13 +811,14 @@
 
         async function handleAuthSuccess() {
             authorizeButton.style.display = 'none';
-            signoutButtonSidebar.classList.remove('hidden'); // Show sidebar signout button
+            signoutButtonSidebar.classList.remove('hidden'); // Show desktop sidebar signout button
+            signoutButtonMobileSidebar.classList.remove('hidden'); // Show mobile sidebar signout button
             authStatus.classList.add('hidden');
             adminContent.classList.remove('hidden');
             
-            // Show side menu and hamburger button
-            sideMenu.style.display = 'flex'; // Use flex for desktop, it's already flex-col
-            hamburgerButton.style.display = 'block'; // Block for mobile hamburger
+            // Show side menu and hamburger button by removing 'hidden' class
+            sideMenu.classList.remove('hidden');
+            hamburgerButton.classList.remove('hidden');
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
             setupTabNavigation();
@@ -835,12 +845,13 @@
                 google.accounts.oauth2.revoke(token.access_token);
                 gapi.client.setToken('');
                 authorizeButton.style.display = 'block';
-                signoutButtonSidebar.classList.add('hidden'); // Hide sidebar signout button
+                signoutButtonSidebar.classList.add('hidden'); // Hide desktop sidebar signout button
+                signoutButtonMobileSidebar.classList.add('hidden'); // Hide mobile sidebar signout button
                 adminContent.classList.add('hidden');
                 
-                // Hide side menu and hamburger button
-                sideMenu.style.display = 'none';
-                hamburgerButton.style.display = 'none';
+                // Hide side menu and hamburger button by adding 'hidden' class
+                sideMenu.classList.add('hidden');
+                hamburgerButton.classList.add('hidden');
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
                 authStatus.classList.remove('hidden');
@@ -2721,7 +2732,8 @@
 
         // --- Inicialización ---
         authorizeButton.addEventListener('click', handleAuthClick);
-        signoutButtonSidebar.addEventListener('click', handleSignoutClick); // Asignar handler al nuevo botón de cerrar sesión en sidebar
+        signoutButtonSidebar.addEventListener('click', handleSignoutClick); // Asignar handler al botón de cerrar sesión (desktop)
+        signoutButtonMobileSidebar.addEventListener('click', handleSignoutClick); // Asignar handler al botón de cerrar sesión (mobile)
         deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler); // Asignar handler al nuevo botón
 
         // Event Listeners para el menú lateral
@@ -2736,10 +2748,6 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
-            // Ocultar el menú lateral y el botón de hamburguesa al inicio
-            sideMenu.style.display = 'none';
-            hamburgerButton.style.display = 'none';
-
             // Cargar las librerías de Google
             gapiLoaded();
             const script = document.createElement('script');
