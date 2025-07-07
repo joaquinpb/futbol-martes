@@ -184,7 +184,7 @@
             body {
                 display: flex; /* Use flexbox for body to arrange sidebar and main content */
                 justify-content: center;
-                /* Removed align-items: flex-start to allow stretching */
+                align-items: stretch; /* Allow flex items to stretch to fill height */
                 min-height: 100vh;
                 padding: 0; /* Remove body padding as content will be inside a flex container */
             }
@@ -244,12 +244,12 @@
 </head>
 <body class="bg-gray-100 flex md:flex-row items-start justify-center min-h-screen p-4 md:p-0">
     <!-- Hamburger Button (visible on small screens, hidden on md and up) -->
-    <button id="hamburger-button" class="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
+    <button id="hamburger-button" class="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
     <!-- Side Navigation Menu (mobile: fixed, slides; desktop: static, flex-col) -->
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40
                                 md:relative md:transform-none md:w-64 md:h-auto md:bg-white md:border-r md:border-gray-200 md:shadow-lg md:rounded-l-xl md:flex md:flex-col md:py-8">
         <div class="p-4 text-right md:hidden">
             <button id="close-side-menu-button" class="text-white text-2xl">&times;</button>
@@ -299,21 +299,14 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Disponibles</h3>
-                        <div class="grid grid-cols-1 gap-4">
-                            <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Titulares</h4>
-                                <div id="titulares-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
-                                    <!-- Jugadores titulares se cargarán aquí -->
-                                    <p class="text-gray-500">Cargando titulares...</p>
-                                </div>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Suplentes</h4>
-                                <div id="suplentes-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
-                                    <!-- Jugadores suplentes se cargarán aquí -->
-                                    <p class="text-gray-500">Cargando suplentes...</p>
-                                </div>
-                            </div>
+                        <div id="titulares-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
+                            <!-- Jugadores titulares se cargarán aquí -->
+                            <p class="text-gray-500">Cargando titulares...</p>
+                        </div>
+                        <h4 class="font-semibold text-gray-700 mb-2 mt-4">Suplentes</h4>
+                        <div id="suplentes-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
+                            <!-- Jugadores suplentes se cargarán aquí -->
+                            <p class="text-gray-500">Cargando suplentes...</p>
                         </div>
                     </div>
                     <div>
@@ -812,8 +805,11 @@
             signoutButtonSidebar.classList.remove('hidden'); // Show sidebar signout button
             authStatus.classList.add('hidden');
             adminContent.classList.remove('hidden');
-            sideMenu.classList.remove('hidden'); // Show the side menu
-            hamburgerButton.classList.remove('hidden'); // Show the hamburger button
+            
+            // Show side menu and hamburger button
+            sideMenu.style.display = 'flex'; // Use flex for desktop, it's already flex-col
+            hamburgerButton.style.display = 'block'; // Block for mobile hamburger
+
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
             setupTabNavigation();
             
@@ -841,8 +837,11 @@
                 authorizeButton.style.display = 'block';
                 signoutButtonSidebar.classList.add('hidden'); // Hide sidebar signout button
                 adminContent.classList.add('hidden');
-                sideMenu.classList.add('hidden'); // Hide the side menu
-                hamburgerButton.classList.add('hidden'); // Hide the hamburger button
+                
+                // Hide side menu and hamburger button
+                sideMenu.style.display = 'none';
+                hamburgerButton.style.display = 'none';
+
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
                 authStatus.classList.remove('hidden');
                 // Limpiar todas las interfaces
@@ -2737,6 +2736,10 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
+            // Ocultar el menú lateral y el botón de hamburguesa al inicio
+            sideMenu.style.display = 'none';
+            hamburgerButton.style.display = 'none';
+
             // Cargar las librerías de Google
             gapiLoaded();
             const script = document.createElement('script');
