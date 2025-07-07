@@ -125,7 +125,7 @@
             transform: translateX(0); /* Show when open */
         }
 
-        /* Styles for overlay (applies to both mobile and desktop) */
+        /* Styles for overlay (only for mobile) */
         #overlay {
             position: fixed;
             inset: 0; /* top:0, right:0, bottom:0, left:0 */
@@ -135,7 +135,7 @@
         }
 
         #overlay.open {
-            display: block; /* Show when side menu is open */
+            display: block; /* Show when side menu is open (mobile only) */
         }
 
         /* Hamburger button (visible on all screens now) */
@@ -179,6 +179,15 @@
             background-color: #4f46e5; /* indigo-600 */
         }
 
+        /* --- Ajustes para el botón de cerrar sesión --- */
+        #signout_button_sidebar { /* Desktop */
+            margin-bottom: 2rem; /* Más separado del borde inferior */
+        }
+
+        #signout_button_mobile_sidebar { /* Mobile */
+            margin-bottom: 0.5rem; /* Más cerca del borde inferior */
+        }
+
         /* Media query for medium screens and up (md: 768px) */
         @media (min-width: 768px) {
             /* Styles for desktop sidebar when open */
@@ -188,6 +197,7 @@
                 color: #4a5568; /* text-gray-600 */
                 border-right: 1px solid #e2e8f0; /* border-gray-200 */
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+                transform: translateX(0) !important; /* Always open on desktop when 'open' class is present */
             }
 
             /* Adjust tab buttons for desktop sidebar when open */
@@ -215,6 +225,11 @@
             /* Show desktop signout button */
             #signout_button_sidebar {
                 display: block !important;
+            }
+
+            /* Hide overlay on desktop */
+            #overlay {
+                display: none !important;
             }
         }
     </style>
@@ -249,7 +264,7 @@
         </button>
     </nav>
 
-    <!-- Overlay for when side menu is open (visible on all screens) -->
+    <!-- Overlay for when side menu is open (visible on mobile only) -->
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
     <!-- Main Content Area -->
@@ -983,10 +998,11 @@
             clickedButton.classList.add('active');
             document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
 
-            // Cierra el menú lateral si está abierto (no lo "togglea" para que no se abra si ya estaba cerrado)
-            if (sideMenu.classList.contains('open')) {
+            // Cierra el menú lateral si es mobile
+            if (window.innerWidth < 768) { // Si es mobile
                 toggleSideMenu();
             }
+            // Si es desktop, el menú permanece abierto.
 
             // Recargar datos específicos de la pestaña si es necesario
             if (clickedButton.dataset.tab === 'players-management') {
@@ -1027,8 +1043,11 @@
         // --- Toggle Side Menu Functionality ---
         function toggleSideMenu() {
             sideMenu.classList.toggle('open');
-            overlay.classList.toggle('open');
-            document.body.classList.toggle('overflow-hidden'); // Prevenir el scroll cuando el menú está abierto
+            // El overlay solo se activa en mobile
+            if (window.innerWidth < 768) {
+                overlay.classList.toggle('open');
+                document.body.classList.toggle('overflow-hidden'); // Prevenir el scroll cuando el menú está abierto
+            }
         }
 
         // --- Gestión de Jugadores (AMB) ---
@@ -1292,6 +1311,13 @@
 
             console.log('Drop event (Desktop) on', e.currentTarget.id, 'for player:', data.name);
 
+            // Restricción: No permitir arrastrar entre Titulares y Suplentes
+            if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
+                (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
+                console.log('Arrastre no permitido entre Titulares y Suplentes.');
+                return; // No hacer nada si el arrastre no está permitido
+            }
+
             if (sourceId === targetId) return;
 
             const draggedElement = document.querySelector(`#${sourceId} .player-draggable[data-id="${playerId}"]`);
@@ -1401,6 +1427,17 @@
             const targetId = dropZone.id;
 
             console.log('Touch Drop event on', targetId, 'for player:', draggedElement.dataset.name);
+
+            // Restricción: No permitir arrastrar entre Titulares y Suplentes
+            if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
+                (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
+                console.log('Arrastre no permitido entre Titulares y Suplentes.');
+                // Regresar el elemento a su contenedor original
+                if (originalParentOfDraggedPlayer) {
+                    originalParentOfDraggedPlayer.appendChild(draggedElement);
+                }
+                return;
+            }
 
             if (sourceId === targetId) {
                 // If dropped back into the same zone, just reset styles and return
@@ -2720,7 +2757,12 @@
         // Event Listeners para el menú lateral
         hamburgerButton.addEventListener('click', toggleSideMenu);
         closeSideMenuButton.addEventListener('click', toggleSideMenu);
-        overlay.addEventListener('click', toggleSideMenu);
+        // El overlay solo cierra el menú si es mobile
+        overlay.addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                toggleSideMenu();
+            }
+        });
 
         // Event Listeners para los selectores de la tabla de posiciones
         leaderboardYearSelect.addEventListener('change', renderLeaderboard);
