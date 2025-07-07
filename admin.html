@@ -1092,7 +1092,7 @@
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDate = matchDateInput.value; // Formato YYYY-MM-DD (del input readonly)
+            const matchDate = matchDateInput.value; // Formatoレンダー-MM-DD (del input readonly)
 
             if (!selectedMatchId || !result || !matchDate) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
@@ -1197,7 +1197,7 @@
             }
         });
 
-        deleteMatchButton.addEventListener('click', async () => {
+        async function deleteMatchButtonClickHandler() {
             const selectedMatchItem = document.querySelector('.match-item.selected');
             if (!selectedMatchItem) {
                 alert('Por favor, selecciona un partido de la lista para eliminar.');
@@ -1222,10 +1222,11 @@
                 }
 
                 const matchToDelete = allMatchesData[matchIndex];
-                const [id, date, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = matchToDelete;
+                // Asegurarse de que las variables estén definidas, incluso si las celdas están vacías
+                const [id, date, clarosIDsStr = '', oscurosIDsStr = '', result, chamigoVotosStr = '', ttAttendeesStr = ''] = matchToDelete;
 
                 // --- Revertir Estadísticas de Jugadores ---
-                const playersInMatchIDs = [...new Set([...(clarosIDsStr ? clarosIDsStr.split(',') : []), ...(oscurosIDsStr ? oscurosIDsStr.split(',') : [])])];
+                const playersInMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
                 const playerUpdates = {}; // {playerId: {pointsChange: X, gamesChange: Y, chamigoChange: Z, ttChange: W}}
 
                 // Revertir Partidos Jugados (PJ)
@@ -1236,12 +1237,12 @@
 
                 // Revertir Puntos
                 if (result === 'Claros') {
-                    (clarosIDsStr ? clarosIDsStr.split(',') : []).forEach(pId => {
+                    (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
                         playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
                         playerUpdates[pId].pointsChange -= 3;
                     });
                 } else if (result === 'Oscuros') {
-                    (oscurosIDsStr ? oscurosIDsStr.split(',') : []).forEach(pId => {
+                    (oscurosIDsStr.split(',').filter(Boolean)).forEach(pId => {
                         playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
                         playerUpdates[pId].pointsChange -= 3;
                     });
@@ -1269,7 +1270,7 @@
 
                 // Revertir TT Asistencia
                 if (ttAttendeesStr) {
-                    const ttAttendees = ttAttendeesStr.split(',');
+                    const ttAttendees = ttAttendeesStr.split(',').filter(Boolean);
                     ttAttendees.forEach(pId => {
                         playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
                         playerUpdates[pId].ttChange -= 1;
@@ -1335,7 +1336,7 @@
                 console.error('Error al eliminar partido:', err);
                 alert(`Error al eliminar partido: ${err.message}. Revisa la consola.`);
             }
-        });
+        }
 
 
         // --- Funciones de Chamigo ---
