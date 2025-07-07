@@ -1217,14 +1217,28 @@
             }
 
             sortedMatches.forEach(match => {
-                const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
+                const [id, fecha, clarosIDs, oscurosIDs, resultado, chamigoVotos, ttAttendees] = match;
                 const matchItem = document.createElement('div');
-                // Apply color based on result
-                if (resultado && resultado.trim() !== '') {
-                    matchItem.className = 'match-item has-result'; // Green if result exists
+                
+                // Determine coloring based on the tabName
+                let shouldBeGreen = false;
+                if (tabName === 'chamigo') {
+                    // Chamigo should be green if chamigoVotos is assigned (not empty)
+                    shouldBeGreen = (chamigoVotos && chamigoVotos.trim() !== '');
+                } else if (tabName === 'tt') {
+                    // TT should be green if ttAttendees is assigned (not empty)
+                    shouldBeGreen = (ttAttendees && ttAttendees.trim() !== '');
                 } else {
-                    matchItem.className = 'match-item no-result'; // Red if no result
+                    // For other tabs (like 'results'), use the existing logic (based on 'resultado')
+                    shouldBeGreen = (resultado && resultado.trim() !== '');
                 }
+
+                if (shouldBeGreen) {
+                    matchItem.className = 'match-item has-result'; // Green if relevant data exists
+                } else {
+                    matchItem.className = 'match-item no-result'; // Red if relevant data does not exist
+                }
+
                 matchItem.dataset.matchId = id; // Guardar el ID del partido
 
                 const clarosNames = clarosIDs.split(',').map(id => {
@@ -1286,7 +1300,7 @@
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDateInputVal = matchDateInput.value; // Formato YYYY-MM-DD (del input readonly)
+            const matchDateInputVal = matchDateInput.value; // Formatoレンダー-MM-DD (del input readonly)
 
             if (!selectedMatchId || !result || !matchDateInputVal) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
@@ -2199,9 +2213,9 @@
         }
 
         /**
-         * Parsea una cadena de fecha en formato YYYY-MM-DD (de input type="date") a un objeto Date.
+         * Parsea una cadena de fecha en formatoレンダー-MM-DD (de input type="date") a un objeto Date.
          * Asegura que se interprete en la zona horaria local para evitar problemas de desfase.
-         * @param {string} dateString - La cadena de fecha en formato YYYY-MM-DD.
+         * @param {string} dateString - La cadena de fecha en formatoレンダー-MM-DD.
          * @returns {Date} El objeto Date en la zona horaria local.
          */
         function parseYYYYMMDDToLocalDate(dateString) {
@@ -2217,7 +2231,7 @@
         function formatDateToDDMMYYYY(date) {
             const dd = String(date.getDate()).padStart(2, '0');
             const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const yyyy = date.getFullYear();
+            constレンダー = date.getFullYear();
             return `${dd}/${mm}/${yyyy}`;
         }
 
