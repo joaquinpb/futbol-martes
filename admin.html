@@ -61,6 +61,44 @@
         .match-item.has-result {
             background-color: #dcfce7; /* bg-green-100 pastel */
         }
+
+        /* Estilos para la tabla de posiciones (tomados de index.html) */
+        #leaderboard-table-admin {
+            @apply min-w-full bg-white rounded-lg shadow-md;
+        }
+        #leaderboard-table-admin th, #leaderboard-table-admin td {
+            @apply py-3 px-6 text-left;
+        }
+        /* Encabezado de la tabla: fondo negro, texto blanco */
+        #leaderboard-table-admin thead th {
+            background-color: #1a202c !important; /* Fondo negro (bg-gray-900) */
+            color: #ffffff !important; /* Texto blanco (text-white) */
+            text-transform: uppercase;
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.25rem; /* leading-normal */
+        }
+        /* Filas del cuerpo de la tabla: alternar entre dos tonos de gris */
+        #leaderboard-table-admin tbody tr:nth-child(odd) {
+            background-color: #f7fafc !important; /* Gris muy claro (bg-gray-100) */
+        }
+        #leaderboard-table-admin tbody tr:nth-child(even) {
+            background-color: #edf2f7 !important; /* Gris ligeramente más oscuro (bg-gray-200) */
+        }
+        #leaderboard-table-admin tbody tr {
+            /* Borde inferior para separar filas y efecto hover */
+            border-bottom: 1px solid #cbd5e0; /* border-gray-300 */
+            transition: background-color 150ms ease-in-out; /* transition duration-150 ease-in-out */
+        }
+        #leaderboard-table-admin tbody tr:hover {
+            background-color: #e2e8f0 !important; /* Tono de gris al pasar el cursor (hover:bg-gray-300) */
+        }
+        #leaderboard-table-admin tbody tr:last-child {
+            border-bottom: 0; /* Eliminar borde inferior de la última fila */
+        }
+        /* Asegurar color de texto para las celdas del cuerpo para legibilidad */
+        #leaderboard-table-admin tbody td {
+            color: #4a5568; /* text-gray-600 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -346,7 +384,7 @@
             <div id="leaderboard-tab" class="tab-content">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Posiciones</h2>
                 <!-- Controles de Filtro para la tabla de posiciones -->
-                <div class="flex flex-wrap justify-center gap-4 mb-8">
+                <div class="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
                     <div>
                         <label for="leaderboard-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
                         <select id="leaderboard-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
@@ -1929,26 +1967,28 @@
 
         /**
          * Filtra los partidos según el año y el período seleccionados.
+         * Esta función ahora solo filtra por fecha, sin considerar el resultado o suspensión.
          */
         function filterMatchesForLeaderboard(matches, selectedYear, selectedPeriod) {
             return matches.filter(match => {
                 const dateString = match[1]; // Columna 'Fecha'
-                if (!dateString) return false;
+                if (!dateString || dateString.trim() === '') return false; // Asegura que la fecha exista
 
                 const matchDate = parseDate(dateString);
                 const matchYear = matchDate.getFullYear();
                 const matchMonth = matchDate.getMonth(); // 0-indexed
 
-                if (selectedYear !== 'all' && matchYear !== parseInt(selectedYear)) {
-                    return false;
-                }
+                const yearMatch = (selectedYear === 'all' || matchYear === parseInt(selectedYear));
+                let periodMatch = true;
 
                 if (selectedPeriod === 'apertura') {
-                    return matchMonth >= 0 && matchMonth <= 5; // Enero (0) a Junio (5)
+                    periodMatch = (matchMonth >= 0 && matchMonth <= 5); // Enero (0) a Junio (5)
                 } else if (selectedPeriod === 'clausura') {
-                    return matchMonth >= 6 && matchMonth <= 11; // Julio (6) a Diciembre (11)
+                    periodMatch = (matchMonth >= 6 && matchMonth <= 11); // Julio (6) a Diciembre (11)
                 }
-                return true; // "totales" o si no hay período seleccionado
+                // Si selectedPeriod es 'totales', periodMatch sigue siendo true (no se filtra por mes)
+
+                return yearMatch && periodMatch;
             });
         }
 
@@ -1958,6 +1998,8 @@
          */
         function calculatePlayerStatsForLeaderboard(players, filteredMatches) {
             const playerStats = {};
+            // totalMatchesInPeriod es el número de partidos en el período seleccionado,
+            // incluyendo suspendidos o sin resultado, ya que Chamigo y TT se cuentan de todos.
             const totalMatchesInPeriod = filteredMatches.length;
 
             // Inicializar estadísticas para todos los jugadores activos
@@ -1968,11 +2010,11 @@
                         id,
                         nombre,
                         puntos: 0,
-                        partidos: 0, // PJ
-                        chamigos: 0, // Chamigo
-                        tt: 0,
+                        partidos: 0, // PJ (partidos jugados que cuentan para puntos)
+                        chamigos: 0, // Chamigo (total en el período)
+                        tt: 0,       // TT (total en el período)
                         efectividad: '0.00%', // Nueva columna
-                        ausente: totalMatchesInPeriod // Nueva columna, se ajustará
+                        ausente: 0 // Se calculará al final
                     };
                 }
             });
@@ -1984,41 +2026,39 @@
                     fecha,
                     equipoClarosIDsStr = '',
                     equipoOscurosIDsStr = '',
-                    resultado,
+                    resultado, // Resultado del partido
                     chamigoVotosStr = '',
                     asistenciaTTIDsStr = ''
                 ] = match;
 
                 const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
                 const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
-                const allPlayersInMatch = new Set([...equipoClarosIDs, ...equipoOscurosIDs]);
+                const allPlayersInMatchForPJ = new Set([...equipoClarosIDs, ...equipoOscurosIDs]); // Jugadores que participaron en este partido
 
-                // Contar partidos jugados (PJ) y ajustar Ausente
-                // Solo si el partido tiene un resultado y no está suspendido
-                if (resultado && resultado.trim() !== '' && resultado !== 'Suspendido') {
-                    allPlayersInMatch.forEach(playerId => {
+                // --- Calcular Puntos y PJ (solo para partidos con resultado válido y no suspendidos) ---
+                const matchHasValidResult = (resultado && resultado.trim() !== '' && resultado !== 'Suspendido');
+
+                if (matchHasValidResult) {
+                    allPlayersInMatchForPJ.forEach(playerId => {
                         if (playerStats[playerId]) {
-                            playerStats[playerId].partidos++;
-                            playerStats[playerId].ausente--; // Restar 1 por cada partido jugado
+                            playerStats[playerId].partidos++; // Incrementar PJ
                         }
                     });
+
+                    if (resultado === 'Claros' || resultado === 'Oscuros') {
+                        const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
+
+                        winningTeam.forEach(playerId => {
+                            if (playerStats[playerId]) playerStats[playerId].puntos += 3; // Añadir puntos por victoria
+                        });
+                    } else if (resultado === 'Empate') {
+                        allPlayersInMatchForPJ.forEach(playerId => {
+                            if (playerStats[playerId]) playerStats[playerId].puntos += 1; // Añadir puntos por empate
+                        });
+                    }
                 }
 
-
-                // Asignar puntos por resultado
-                if (resultado === 'Claros' || resultado === 'Oscuros') {
-                    const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
-
-                    winningTeam.forEach(playerId => {
-                        if (playerStats[playerId]) playerStats[playerId].puntos += 3;
-                    });
-                } else if (resultado === 'Empate') {
-                    allPlayersInMatch.forEach(playerId => {
-                        if (playerStats[playerId]) playerStats[playerId].puntos += 1;
-                    });
-                }
-
-                // Contar Chamigos
+                // --- Calcular Chamigos (de cualquier partido en el período, independientemente del resultado) ---
                 if (chamigoVotosStr) {
                     try {
                         const chamigoVotos = JSON.parse(chamigoVotosStr);
@@ -2027,7 +2067,7 @@
                             const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
                             const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
                             chamigosDelPartido.forEach(chamigo => {
-                                if (playerStats[chamigo.id]) playerStats[chamigo.id].chamigos++;
+                                if (playerStats[chamigo.id]) playerStats[chamigo.id].chamigos++; // Incrementar Chamigo
                             });
                         }
                     } catch (e) {
@@ -2035,17 +2075,22 @@
                     }
                 }
 
-                // Contar asistencias a TT
+                // --- Contar asistencias a TT (de cualquier partido en el período, independientemente del resultado) ---
                 if (asistenciaTTIDsStr) {
                     const ttAttendees = asistenciaTTIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
                     ttAttendees.forEach(playerId => {
-                        if (playerStats[playerId]) playerStats[playerId].tt++;
+                        if (playerStats[playerId]) playerStats[playerId].tt++; // Incrementar TT
                     });
                 }
             });
 
-            // Calcular Efectividad después de contar todos los puntos y PJ
+            // --- Calcular Ausente y Efectividad para cada jugador ---
             Object.values(playerStats).forEach(player => {
+                // Ausente: total de partidos en el período - partidos jugados (PJ) en el período
+                // PJ ya solo cuenta los partidos con resultado válido.
+                player.ausente = totalMatchesInPeriod - player.partidos;
+
+                // Efectividad
                 const maxPossiblePoints = player.partidos * 3;
                 if (maxPossiblePoints > 0) {
                     player.efectividad = ((player.puntos / maxPossiblePoints) * 100).toFixed(2) + '%';
@@ -2071,17 +2116,14 @@
             const selectedPeriod = leaderboardPeriodSelect.value;
             const selectedCriterion = leaderboardCriterionSelect.value;
 
-            // 1. Filtrar partidos
+            // 1. Filtrar partidos (solo por año y período, sin importar resultado/suspensión)
             const filteredMatches = filterMatchesForLeaderboard(allMatchesData, selectedYear, selectedPeriod);
 
             // 2. Calcular estadísticas de jugadores (incluye Efectividad y Ausente)
             let playersWithStats = calculatePlayerStatsForLeaderboard(allPlayersData, filteredMatches);
 
-            // Filtrar jugadores con 0 partidos jugados si el criterio es puntos, chamigo o TT
-            if (selectedCriterion === 'puntos' || selectedCriterion === 'chamigos' || selectedCriterion === 'tt' || selectedCriterion === 'presentismo') {
-                playersWithStats = playersWithStats.filter(player => player.partidos > 0);
-            }
-            // Para 'Ausentismo', no filtramos por PJ > 0, ya que queremos ver a los ausentes.
+            // Se muestran TODOS los jugadores activos, sin filtrar por PJ > 0
+            // como se solicitó en la última interacción.
 
             // 3. Ordenar jugadores
             playersWithStats.sort((a, b) => {
@@ -2185,20 +2227,14 @@
                     }
                     leaderboardTableBodyAdmin.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
                 });
-                leaderboardLoadingMessage.classList.add('hidden');
+                loadingMessage.classList.add('hidden');
                 leaderboardTableAdmin.classList.remove('hidden');
             } else {
-                leaderboardLoadingMessage.textContent = 'No hay datos disponibles para los filtros seleccionados.';
-                leaderboardLoadingMessage.classList.remove('hidden');
+                loadingMessage.textContent = 'No hay datos disponibles para los filtros seleccionados.';
+                loadingMessage.classList.remove('hidden');
                 leaderboardTableAdmin.classList.add('hidden');
             }
         }
-
-        // Event Listeners para los selectores de la tabla de posiciones
-        leaderboardYearSelect.addEventListener('change', renderLeaderboard);
-        leaderboardPeriodSelect.addEventListener('change', renderLeaderboard);
-        leaderboardCriterionSelect.addEventListener('change', renderLeaderboard);
-
 
         // --- Utilidades ---
         /**
@@ -2240,6 +2276,11 @@
         authorizeButton.addEventListener('click', handleAuthClick);
         signoutButton.addEventListener('click', handleSignoutClick);
         deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler); // Asignar handler al nuevo botón
+
+        // Event Listeners para los selectores de la tabla de posiciones
+        leaderboardYearSelect.addEventListener('change', renderLeaderboard);
+        leaderboardPeriodSelect.addEventListener('change', renderLeaderboard);
+        leaderboardCriterionSelect.addEventListener('change', renderLeaderboard);
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
