@@ -184,7 +184,7 @@
             body {
                 display: flex; /* Use flexbox for body to arrange sidebar and main content */
                 justify-content: center;
-                align-items: flex-start; /* Align items to the top */
+                /* Removed align-items: flex-start to allow stretching */
                 min-height: 100vh;
                 padding: 0; /* Remove body padding as content will be inside a flex container */
             }
@@ -194,6 +194,7 @@
                 transform: translateX(0); /* Always visible */
                 width: 200px; /* Fixed width for desktop sidebar */
                 height: auto; /* Adjust height based on content */
+                min-height: 100%; /* Ensure it stretches to parent height */
                 background-color: white; /* White background for desktop sidebar */
                 color: #4a5568; /* text-gray-600 */
                 flex-direction: column; /* Keep vertical layout for tabs */
@@ -236,6 +237,7 @@
                 width: auto; /* Allow flex-grow to manage width */
                 max-width: 100%; /* Override max-w-5xl for flex behavior */
                 position: relative; /* Needed for absolute positioning children if any */
+                min-height: 100%; /* Ensure it stretches to parent height */
             }
         }
     </style>
@@ -253,9 +255,9 @@
             <button id="close-side-menu-button" class="text-white text-2xl">&times;</button>
         </div>
         <div class="flex flex-col p-4 md:p-0 md:space-y-2">
-            <!-- Existing tab buttons -->
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700 active" data-tab="players-management">Gestión de Jugadores</button>
+            <!-- Reordered tab buttons -->
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="team-formation">Armar Equipos</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="players-management">Gestionar Jugadores</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="match-results">Resultados</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-management">Chamigo</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-attendance">TT</button>
@@ -287,8 +289,58 @@
         <!-- Admin Content -->
         <div id="admin-content" class="hidden">
             <!-- Tab contents go here -->
-            <div id="players-management" class="tab-content active">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Gestión de Jugadores</h2>
+            <div id="team-formation" class="tab-content hidden"> <!-- Default active tab -->
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Armar Equipos</h2>
+                <div class="mb-4">
+                    <label for="team-match-date" class="block text-sm font-medium text-gray-700">Fecha del Partido:</label>
+                    <input type="date" id="team-match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                </div>
+                <p class="text-gray-500 mb-4">Selecciona 10 jugadores para formar los equipos Claros y Oscuros.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Disponibles</h3>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Titulares</h4>
+                                <div id="titulares-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
+                                    <!-- Jugadores titulares se cargarán aquí -->
+                                    <p class="text-gray-500">Cargando titulares...</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Suplentes</h4>
+                                <div id="suplentes-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
+                                    <!-- Jugadores suplentes se cargarán aquí -->
+                                    <p class="text-gray-500">Cargando suplentes...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-medium text-gray-800 mb-3">Equipos Seleccionados (10/10)</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Claros (<span id="claros-count">0</span>)</h4>
+                                <div id="team-claros" class="border border-blue-300 rounded-lg p-3 bg-blue-50 flex flex-wrap content-start gap-2 min-h-[120px]">
+                                    <!-- Jugadores del equipo Claros -->
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
+                                <div id="team-oscuros" class="border border-red-300 rounded-lg p-3 bg-red-50 flex flex-wrap content-start gap-2 min-h-[120px]">
+                                    <!-- Jugadores del equipo Oscuros -->
+                                </div>
+                            </div>
+                        </div>
+                        <button id="save-teams-button" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 w-full" disabled>
+                            Guardar Equipos para Partido
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="players-management" class="tab-content hidden">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Gestionar Jugadores</h2>
                 <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
                     <h3 class="text-xl font-medium text-gray-800 mb-3">Añadir/Modificar Jugador</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -367,56 +419,6 @@
                             <!-- Filas de jugadores se cargarán aquí -->
                         </tbody>
                     </table>
-                </div>
-            </div>
-
-            <div id="team-formation" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Armar Equipos</h2>
-                <div class="mb-4">
-                    <label for="team-match-date" class="block text-sm font-medium text-gray-700">Fecha del Partido:</label>
-                    <input type="date" id="team-match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                </div>
-                <p class="text-gray-500 mb-4">Selecciona 10 jugadores para formar los equipos Claros y Oscuros.</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Disponibles</h3>
-                        <div class="grid grid-cols-1 gap-4">
-                            <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Titulares</h4>
-                                <div id="titulares-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
-                                    <!-- Jugadores titulares se cargarán aquí -->
-                                    <p class="text-gray-500">Cargando titulares...</p>
-                                </div>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Suplentes</h4>
-                                <div id="suplentes-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
-                                    <!-- Jugadores suplentes se cargarán aquí -->
-                                    <p class="text-gray-500">Cargando suplentes...</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-medium text-gray-800 mb-3">Equipos Seleccionados (10/10)</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Claros (<span id="claros-count">0</span>)</h4>
-                                <div id="team-claros" class="border border-blue-300 rounded-lg p-3 bg-blue-50 flex flex-wrap content-start gap-2 min-h-[120px]">
-                                    <!-- Jugadores del equipo Claros -->
-                                </div>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
-                                <div id="team-oscuros" class="border border-red-300 rounded-lg p-3 bg-red-50 flex flex-wrap content-start gap-2 min-h-[120px]">
-                                    <!-- Jugadores del equipo Oscuros -->
-                                </div>
-                            </div>
-                        </div>
-                        <button id="save-teams-button" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 w-full" disabled>
-                            Guardar Equipos para Partido
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -814,9 +816,21 @@
             hamburgerButton.classList.remove('hidden'); // Show the hamburger button
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
             setupTabNavigation();
-            // Ensure the first tab is active and visible on load
-            tabButtons[0].classList.add('active');
-            tabContents[0].classList.remove('hidden');
+            
+            // Set "Armar Equipos" as the default active tab
+            const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
+            const defaultTabContent = document.getElementById('team-formation');
+
+            // Hide all tab contents first
+            tabContents.forEach(content => content.classList.add('hidden'));
+            // Remove active class from all tab buttons
+            tabButtons.forEach(button => button.classList.remove('active'));
+
+            // Activate the default tab
+            if (defaultTabButton && defaultTabContent) {
+                defaultTabButton.classList.add('active');
+                defaultTabContent.classList.remove('hidden');
+            }
         }
 
         function handleSignoutClick() {
