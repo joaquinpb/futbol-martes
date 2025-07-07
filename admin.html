@@ -1094,7 +1094,7 @@
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDateInputVal = matchDateInput.value; // Formato YYYY-MM-DD (del input readonly)
+            const matchDateInputVal = matchDateInput.value; // Formatoレンダー-MM-DD (del input readonly)
 
             if (!selectedMatchId || !result || !matchDateInputVal) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
@@ -1110,12 +1110,6 @@
 
                 const currentMatch = allMatchesData[matchIndex];
                 const [id, oldDate, clarosIDsStr, oscurosIDsStr, oldResult, chamigoVotosStr, ttAttendeesStr] = currentMatch;
-
-                // NO SE NECESITA MÁS ESTA VALIDACIÓN PARA PERMITIR EDICIÓN
-                // if (oldResult) {
-                //     alert('Este partido ya tiene un resultado registrado. Por favor, selecciona un partido sin resultado o edita el existente.');
-                //     return;
-                // }
 
                 // Revertir puntos y PJ si ya había un resultado
                 if (oldResult && oldResult !== 'Suspendido') { // Solo si había un resultado válido antes
@@ -1282,8 +1276,8 @@
                 const playersInMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
                 const playerUpdates = {}; // {playerId: {pointsChange: X, gamesChange: Y, chamigoChange: Z, ttChange: W}}
 
-                // Revertir Partidos Jugados (PJ) si el partido no estaba suspendido
-                if (result !== 'Suspendido') {
+                // Revertir Partidos Jugados (PJ) solo si el partido tuvo un resultado válido (no vacío y no 'Suspendido')
+                if (result && result !== 'Suspendido') {
                     playersInMatchIDs.forEach(pId => {
                         playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
                         playerUpdates[pId].gamesChange -= 1; // Restar 1 PJ
