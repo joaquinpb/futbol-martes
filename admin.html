@@ -877,9 +877,9 @@
         saveTeamsButton.addEventListener('click', async () => {
             const clarosPlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
             const oscurosPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
-            const matchDate = teamMatchDateInput.value; // Obtener la fecha del input
+            const matchDateInputVal = teamMatchDateInput.value; // Obtener la fecha del input (YYYY-MM-DD)
 
-            if (!matchDate) {
+            if (!matchDateInputVal) {
                 alert('Por favor, selecciona la fecha del partido.');
                 return;
             }
@@ -889,8 +889,8 @@
                 return;
             }
 
-            // Formatear la fecha a DD/MM/YYYY para comparación
-            const formattedDate = formatDateToDDMMYYYY(new Date(matchDate));
+            // Convertir la fecha del input a un objeto Date local y luego formatear a DD/MM/YYYY
+            const formattedDate = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal));
 
             // Validar si ya existe un partido con la misma fecha
             const existingMatch = allMatchesData.find(match => match[1] === formattedDate);
@@ -1039,6 +1039,7 @@
                     if (selectedMatch) {
                         const [mId, mFecha, mClarosIDs, mOscurosIDs, mResultado] = selectedMatch;
                         const [day, month, year] = mFecha.split('/');
+                        // Formatear la fecha para el input type="date" (YYYY-MM-DD)
                         matchDateInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                         matchResultSelect.value = mResultado || '';
                     }
@@ -1093,9 +1094,9 @@
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDate = matchDateInput.value; // Formatoレンダー-MM-DD (del input readonly)
+            const matchDateInputVal = matchDateInput.value; // Formato YYYY-MM-DD (del input readonly)
 
-            if (!selectedMatchId || !result || !matchDate) {
+            if (!selectedMatchId || !result || !matchDateInputVal) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
                 return;
             }
@@ -1110,13 +1111,65 @@
                 const currentMatch = allMatchesData[matchIndex];
                 const [id, oldDate, clarosIDsStr, oscurosIDsStr, oldResult, chamigoVotosStr, ttAttendeesStr] = currentMatch;
 
-                if (oldResult) {
-                    alert('Este partido ya tiene un resultado registrado. Por favor, selecciona un partido sin resultado o edita el existente.');
-                    return;
+                // NO SE NECESITA MÁS ESTA VALIDACIÓN PARA PERMITIR EDICIÓN
+                // if (oldResult) {
+                //     alert('Este partido ya tiene un resultado registrado. Por favor, selecciona un partido sin resultado o edita el existente.');
+                //     return;
+                // }
+
+                // Revertir puntos y PJ si ya había un resultado
+                if (oldResult && oldResult !== 'Suspendido') { // Solo si había un resultado válido antes
+                    const playersInOldMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
+                    const oldPlayerUpdates = {};
+
+                    // Revertir PJ
+                    playersInOldMatchIDs.forEach(pId => {
+                        oldPlayerUpdates[pId] = oldPlayerUpdates[pId] || { pointsChange: 0, gamesChange: 0 };
+                        oldPlayerUpdates[pId].gamesChange -= 1;
+                    });
+
+                    // Revertir Puntos
+                    if (oldResult === 'Claros') {
+                        (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
+                            oldPlayerUpdates[pId].pointsChange -= 3;
+                        });
+                    } else if (oldResult === 'Oscuros') {
+                        (oscurosIDsStr.split(',').filter(Boolean)).forEach(pId => {
+                            oldPlayerUpdates[pId].pointsChange -= 3;
+                        });
+                    } else if (oldResult === 'Empate') {
+                        playersInOldMatchIDs.forEach(pId => {
+                            oldPlayerUpdates[pId].pointsChange -= 1;
+                        });
+                    }
+
+                    const batchRevertRequests = [];
+                    for (const playerId in oldPlayerUpdates) {
+                        const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
+                        if (playerGlobalIndex !== -1) {
+                            const currentPlayer = allPlayersData[playerGlobalIndex];
+                            currentPlayer[3] = parseInt(currentPlayer[3] || 0) + oldPlayerUpdates[playerId].pointsChange; // Puntos_Totales
+                            currentPlayer[4] = parseInt(currentPlayer[4] || 0) + oldPlayerUpdates[playerId].gamesChange; // Partidos_Jugados
+
+                            batchRevertRequests.push({
+                                range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`,
+                                values: [[currentPlayer[3], currentPlayer[4]]]
+                            });
+                        }
+                    }
+                    if (batchRevertRequests.length > 0) {
+                        await gapi.client.sheets.spreadsheets.values.batchUpdate({
+                            spreadsheetId: SPREADSHEET_ID,
+                            resource: {
+                                data: batchRevertRequests,
+                                valueInputOption: 'RAW'
+                            }
+                        });
+                    }
                 }
 
                 // Actualizar el resultado y la fecha en el array en memoria
-                currentMatch[1] = formatDateToDDMMYYYY(new Date(matchDate)); // Actualizar fecha a DD/MM/YYYY
+                currentMatch[1] = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal)); // Actualizar fecha a DD/MM/YYYY
                 currentMatch[4] = result; // Actualizar resultado
 
                 // Actualizar la hoja de cálculo para el partido
@@ -1127,54 +1180,53 @@
                     resource: { values: [currentMatch] },
                 });
 
-                // --- Lógica de Puntos ---
-                const clarosPlayers = clarosIDsStr.split(',');
-                const oscurosPlayers = oscurosIDsStr.split(',');
+                // --- Lógica de Puntos (Aplicar nuevos puntos) ---
+                const clarosPlayers = clarosIDsStr.split(',').filter(Boolean);
+                const oscurosPlayers = oscurosIDsStr.split(',').filter(Boolean);
 
-                let playersToUpdate = []; // [{id: 'J001', points: 3, games: 1}]
+                let playersToUpdate = {}; // {id: {points: X, games: Y}}
 
-                // Incrementar partidos jugados para todos los participantes
-                [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
-                    const player = allPlayersData.find(pl => pl[0] === pId);
-                    if (player) {
-                        const currentGames = parseInt(player[4] || 0); // Columna Partidos_Jugados
-                        playersToUpdate.push({ id: pId, games: currentGames + 1, points: 0 }); // Puntos se añadirán después
-                    }
-                });
+                // Incrementar partidos jugados para todos los participantes (solo si el resultado no es "Suspendido")
+                if (result !== 'Suspendido') {
+                    [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
+                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
+                        playersToUpdate[pId].games += 1;
+                    });
+                }
 
                 if (result === 'Claros') {
                     clarosPlayers.forEach(pId => {
-                        const player = playersToUpdate.find(pu => pu.id === pId);
-                        if (player) player.points += 3;
+                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
+                        playersToUpdate[pId].points += 3;
                     });
                 } else if (result === 'Oscuros') {
                     oscurosPlayers.forEach(pId => {
-                        const player = playersToUpdate.find(pu => pu.id === pId);
-                        if (player) player.points += 3;
+                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
+                        playersToUpdate[pId].points += 3;
                     });
                 } else if (result === 'Empate') {
                     [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
-                        const player = playersToUpdate.find(pu => pu.id === pId);
-                        if (player) player.points += 1;
+                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
+                        playersToUpdate[pId].points += 1;
                     });
                 }
 
                 // Actualizar puntos y partidos jugados en la hoja de Jugadores
                 const updateRequests = [];
-                playersToUpdate.forEach(playerUpdate => {
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerUpdate.id);
+                for (const pId in playersToUpdate) {
+                    const playerUpdate = playersToUpdate[pId];
+                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === pId);
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentPuntos = parseInt(currentPlayer[3] || 0); // Columna Puntos_Totales
-                        currentPlayer[3] = currentPuntos + playerUpdate.points; // Sumar puntos
-                        currentPlayer[4] = playerUpdate.games; // Actualizar partidos jugados
+                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.points; // Sumar puntos
+                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.games; // Sumar partidos jugados
 
                         updateRequests.push({
                             range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`, // Columnas D (Puntos_Totales) y E (Partidos_Jugados)
                             values: [[currentPlayer[3], currentPlayer[4]]]
                         });
                     }
-                });
+                }
 
                 if (updateRequests.length > 0) {
                     await gapi.client.sheets.spreadsheets.values.batchUpdate({
@@ -1230,11 +1282,13 @@
                 const playersInMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
                 const playerUpdates = {}; // {playerId: {pointsChange: X, gamesChange: Y, chamigoChange: Z, ttChange: W}}
 
-                // Revertir Partidos Jugados (PJ)
-                playersInMatchIDs.forEach(pId => {
-                    playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                    playerUpdates[pId].gamesChange -= 1; // Restar 1 PJ
-                });
+                // Revertir Partidos Jugados (PJ) si el partido no estaba suspendido
+                if (result !== 'Suspendido') {
+                    playersInMatchIDs.forEach(pId => {
+                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
+                        playerUpdates[pId].gamesChange -= 1; // Restar 1 PJ
+                    });
+                }
 
                 // Revertir Puntos
                 if (result === 'Claros') {
@@ -1539,8 +1593,10 @@
             const ttAttendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
 
             // Obtener asistentes TT previos para evitar doble conteo de puntos
-            const prevTtAttendees = currentMatch[6] ? currentMatch[6].split(',') : [];
+            const prevTtAttendees = currentMatch[6] ? currentMatch[6].split(',').filter(Boolean) : [];
             const newAttendeesForPoints = ttAttendees.filter(id => !prevTtAttendees.includes(id));
+            const removedAttendeesForPoints = prevTtAttendees.filter(id => !ttAttendees.includes(id));
+
 
             // Actualizar la columna Asistencia_TT_IDs del partido
             currentMatch[6] = ttAttendees.join(','); // Columna G (Asistencia_TT_IDs)
@@ -1568,6 +1624,21 @@
                         });
                     }
                 });
+
+                removedAttendeesForPoints.forEach(playerId => { // Para los asistentes que se desmarcaron
+                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
+                    if (playerGlobalIndex !== -1) {
+                        const currentPlayer = allPlayersData[playerGlobalIndex];
+                        const currentTtAsistencias = parseInt(currentPlayer[6] || 0);
+                        currentPlayer[6] = currentTtAsistencias - 1; // Decrementar TT_Asistencias
+
+                        updateRequests.push({
+                            range: `Jugadores!G${playerGlobalIndex + 2}`,
+                            values: [[currentPlayer[6]]]
+                        });
+                    }
+                });
+
 
                 if (updateRequests.length > 0) {
                     await gapi.client.sheets.spreadsheets.values.batchUpdate({
@@ -1713,12 +1784,16 @@
                 const allPlayersInMatch = new Set([...equipoClarosIDs, ...equipoOscurosIDs]);
 
                 // Contar partidos jugados (PJ) y ajustar Ausente
-                allPlayersInMatch.forEach(playerId => {
-                    if (playerStats[playerId]) {
-                        playerStats[playerId].partidos++;
-                        playerStats[playerId].ausente--; // Restar 1 por cada partido jugado
-                    }
-                });
+                // Solo si el partido tiene un resultado y no está suspendido
+                if (resultado && resultado !== 'Suspendido') {
+                    allPlayersInMatch.forEach(playerId => {
+                        if (playerStats[playerId]) {
+                            playerStats[playerId].partidos++;
+                            playerStats[playerId].ausente--; // Restar 1 por cada partido jugado
+                        }
+                    });
+                }
+
 
                 // Asignar puntos por resultado
                 if (resultado === 'Claros' || resultado === 'Oscuros') {
@@ -1916,11 +1991,33 @@
 
 
         // --- Utilidades ---
+        /**
+         * Parsea una cadena de fecha en formato DD/MM/YYYY a un objeto Date.
+         * Asume la zona horaria local.
+         * @param {string} dateString - La cadena de fecha en formato DD/MM/YYYY.
+         * @returns {Date} El objeto Date.
+         */
         function parseDate(dateString) {
             const [day, month, year] = dateString.split('/').map(Number);
             return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
         }
 
+        /**
+         * Parsea una cadena de fecha en formato YYYY-MM-DD (de input type="date") a un objeto Date.
+         * Asegura que se interprete en la zona horaria local para evitar problemas de desfase.
+         * @param {string} dateString - La cadena de fecha en formato YYYY-MM-DD.
+         * @returns {Date} El objeto Date en la zona horaria local.
+         */
+        function parseYYYYMMDDToLocalDate(dateString) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day); // Crea un objeto Date en la zona horaria local
+        }
+
+        /**
+         * Formatea un objeto Date a una cadena en formato DD/MM/YYYY.
+         * @param {Date} date - El objeto Date a formatear.
+         * @returns {string} La cadena de fecha en formato DD/MM/YYYY.
+         */
         function formatDateToDDMMYYYY(date) {
             const dd = String(date.getDate()).padStart(2, '0');
             const mm = String(date.getMonth() + 1).padStart(2, '0');
