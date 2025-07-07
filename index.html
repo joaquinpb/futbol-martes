@@ -38,6 +38,8 @@
                 <label for="criterion-select" class="block text-sm font-medium text-gray-700">Criterio:</label>
                 <select id="criterion-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
                     <option value="puntos">Puntos</option>
+                    <option value="presentismo">Presentismo</option>
+                    <option value="ausentismo">Ausentismo</option>
                     <option value="chamigos">Chamigo</option>
                     <option value="tt">TT</option>
                 </select>
@@ -48,14 +50,7 @@
             <p id="loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
             <table id="leaderboard-table" class="min-w-full bg-white rounded-lg shadow hidden">
                 <thead>
-                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">Puntos</th>
-                        <th class="py-3 px-6 text-center">Partidos</th>
-                        <th class="py-3 px-6 text-center">Chamigos</th>
-                        <th class="py-3 px-6 text-center">TT</th>
-                    </tr>
+                    <!-- Los encabezados se generarán dinámicamente según el criterio -->
                 </thead>
                 <tbody class="text-gray-600 text-sm font-light">
                     <!-- Filas de jugadores se cargarán aquí -->
@@ -77,6 +72,7 @@
 
         const loadingMessage = document.getElementById('loading-message');
         const leaderboardTable = document.getElementById('leaderboard-table');
+        const leaderboardTableHead = leaderboardTable.querySelector('thead'); // Referencia al thead
         const leaderboardTableBody = leaderboardTable.querySelector('tbody');
         const yearSelect = document.getElementById('year-select');
         const periodSelect = document.getElementById('period-select');
@@ -232,9 +228,11 @@
 
         /**
          * Calcula las estadísticas de los jugadores basándose en los partidos filtrados.
+         * Incluye cálculo de Efectividad y Ausente.
          */
         function calculatePlayerStats(players, filteredMatches) {
             const playerStats = {};
+            const totalMatchesInPeriod = filteredMatches.length;
 
             // Inicializar estadísticas para todos los jugadores activos
             players.forEach(player => {
@@ -244,9 +242,11 @@
                         id,
                         nombre,
                         puntos: 0,
-                        partidos: 0,
-                        chamigos: 0,
-                        tt: 0
+                        partidos: 0, // PJ
+                        chamigos: 0, // Chamigo
+                        tt: 0,
+                        efectividad: '0.00%', // Nueva columna
+                        ausente: totalMatchesInPeriod // Nueva columna, se ajustará
                     };
                 }
             });
@@ -258,23 +258,21 @@
                 const equipoOscurosIDs = equipoOscurosIDsStr ? equipoOscurosIDsStr.split(',') : [];
                 const allPlayersInMatch = new Set([...equipoClarosIDs, ...equipoOscurosIDs]);
 
-                // Contar partidos jugados
+                // Contar partidos jugados (PJ) y ajustar Ausente
                 allPlayersInMatch.forEach(playerId => {
                     if (playerStats[playerId]) {
                         playerStats[playerId].partidos++;
+                        playerStats[playerId].ausente--; // Restar 1 por cada partido jugado
                     }
                 });
 
                 // Asignar puntos por resultado
                 if (resultado === 'Claros' || resultado === 'Oscuros') {
                     const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
-                    const losingTeam = resultado === 'Claros' ? equipoOscurosIDs : equipoClarosIDs;
+                    // const losingTeam = resultado === 'Claros' ? equipoOscurosIDs : equipoClarosIDs; // No se usa para puntos aquí
 
                     winningTeam.forEach(playerId => {
                         if (playerStats[playerId]) playerStats[playerId].puntos += 3;
-                    });
-                    losingTeam.forEach(playerId => {
-                        // Los perdedores no suman puntos
                     });
                 } else if (resultado === 'Empate') {
                     allPlayersInMatch.forEach(playerId => {
@@ -308,11 +306,22 @@
                 }
             });
 
+            // Calcular Efectividad después de contar todos los puntos y PJ
+            Object.values(playerStats).forEach(player => {
+                const maxPossiblePoints = player.partidos * 3;
+                if (maxPossiblePoints > 0) {
+                    player.efectividad = ((player.puntos / maxPossiblePoints) * 100).toFixed(2) + '%';
+                } else {
+                    player.efectividad = '0.00%';
+                }
+            });
+
             return Object.values(playerStats); // Convertir a array de objetos
         }
 
         /**
-         * Renderiza la tabla de posiciones con los datos filtrados y ordenados.
+         * Renderiza la tabla de posiciones con los datos filtrados y ordenados,
+         * adaptando las columnas según el criterio seleccionado.
          */
         function renderLeaderboard() {
             loadingMessage.textContent = 'Calculando posiciones...';
@@ -327,13 +336,23 @@
             // 1. Filtrar partidos
             const filteredMatches = filterMatches(allMatchesData, selectedYear, selectedPeriod);
 
-            // 2. Calcular estadísticas de jugadores
+            // 2. Calcular estadísticas de jugadores (incluye Efectividad y Ausente)
             let playersWithStats = calculatePlayerStats(allPlayersData, filteredMatches);
+
+            // Filtrar jugadores con 0 partidos jugados si el criterio es puntos, chamigo o TT
+            if (selectedCriterion === 'puntos' || selectedCriterion === 'chamigos' || selectedCriterion === 'tt' || selectedCriterion === 'presentismo') {
+                playersWithStats = playersWithStats.filter(player => player.partidos > 0);
+            }
+            // Para 'Ausentismo', no filtramos por PJ > 0, ya que queremos ver a los ausentes.
 
             // 3. Ordenar jugadores
             playersWithStats.sort((a, b) => {
                 if (selectedCriterion === 'puntos') {
                     return b.puntos - a.puntos;
+                } else if (selectedCriterion === 'presentismo') {
+                    return b.partidos - a.partidos; // Ordenar por PJ DESC
+                } else if (selectedCriterion === 'ausentismo') {
+                    return b.ausente - a.ausente; // Ordenar por Ausente DESC
                 } else if (selectedCriterion === 'chamigos') {
                     return b.chamigos - a.chamigos;
                 } else if (selectedCriterion === 'tt') {
@@ -342,25 +361,91 @@
                 return 0; // Por defecto no ordena si el criterio no es reconocido
             });
 
-            // Filtrar jugadores con 0 partidos jugados si el criterio es puntos, chamigos o tt
-            if (selectedCriterion === 'puntos' || selectedCriterion === 'chamigos' || selectedCriterion === 'tt') {
-                playersWithStats = playersWithStats.filter(player => player.partidos > 0);
+            // 4. Actualizar encabezados de la tabla (<thead>)
+            let headerRowHTML = '';
+            if (selectedCriterion === 'puntos') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">Puntos</th>
+                        <th class="py-3 px-6 text-center">PJ</th>
+                        <th class="py-3 px-6 text-center">Efectividad</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'presentismo') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">PJ</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'ausentismo') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">Ausente</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'chamigos') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">Chamigo</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'tt') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">TT</th>
+                    </tr>
+                `;
             }
+            leaderboardTableHead.innerHTML = headerRowHTML;
 
-
+            // 5. Llenar el cuerpo de la tabla (<tbody>)
             if (playersWithStats.length > 0) {
                 playersWithStats.forEach((player, index) => {
-                    const row = `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                    let rowHTML = '';
+                    if (selectedCriterion === 'puntos') {
+                        rowHTML = `
                             <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
                             <td class="py-3 px-6 text-left">${player.nombre}</td>
                             <td class="py-3 px-6 text-center">${player.puntos}</td>
                             <td class="py-3 px-6 text-center">${player.partidos}</td>
+                            <td class="py-3 px-6 text-center">${player.efectividad}</td>
+                        `;
+                    } else if (selectedCriterion === 'presentismo') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
+                            <td class="py-3 px-6 text-center">${player.partidos}</td>
+                        `;
+                    } else if (selectedCriterion === 'ausentismo') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
+                            <td class="py-3 px-6 text-center">${player.ausente}</td>
+                        `;
+                    } else if (selectedCriterion === 'chamigos') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
                             <td class="py-3 px-6 text-center">${player.chamigos}</td>
+                        `;
+                    } else if (selectedCriterion === 'tt') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
                             <td class="py-3 px-6 text-center">${player.tt}</td>
-                        </tr>
-                    `;
-                    leaderboardTableBody.innerHTML += row;
+                        `;
+                    }
+                    leaderboardTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
                 });
                 loadingMessage.classList.add('hidden');
                 leaderboardTable.classList.remove('hidden');
