@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fútbol 5 - Estadísticas y Partidos</title>
+    <title>Fútbol 5 - Estadísticas de Jugadores</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -32,87 +32,52 @@
 </head>
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-6xl my-8">
-        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Fútbol 5 - Estadísticas</h1>
+        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Fútbol 5 - Estadísticas de Jugadores</h1>
 
-        <!-- Sección de Jugadores -->
+        <!-- Sección de Jugadores con Estadísticas -->
         <section class="mb-10">
-            <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-l-4 border-blue-500 pl-4">Jugadores</h2>
+            <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-l-4 border-blue-500 pl-4">Tabla de Posiciones</h2>
             <div id="players-list-container" class="overflow-x-auto">
-                <p id="players-loading" class="text-gray-500 text-center py-4">Cargando jugadores...</p>
-                <table id="players-table" class="hidden">
+                <p id="players-loading" class="text-gray-500 text-center py-4">Cargando estadísticas de jugadores...</p>
+                <table id="players-stats-table" class="hidden">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Nombre</th>
-                            <th>Estado</th>
-                            <th class="text-center">Puntos Totales</th>
-                            <th class="text-center">Partidos Jugados</th>
-                            <th class="text-center">Chamigos Ganados</th>
-                            <th class="text-center">Asistencias TT</th>
+                            <th class="text-center">Puntos</th>
+                            <th class="text-center">PJ</th>
+                            <th class="text-center">Ausente</th>
+                            <th class="text-center">Chamigo</th>
+                            <th class="text-center">TT</th>
+                            <th class="text-center">Efectividad</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Los jugadores se cargarán aquí dinámicamente -->
+                        <!-- Las estadísticas de los jugadores se cargarán aquí dinámicamente -->
                     </tbody>
                 </table>
-            </div>
-        </section>
-
-        <!-- Sección de Partidos -->
-        <section class="mb-10">
-            <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-l-4 border-purple-500 pl-4">Partidos</h2>
-            <div id="matches-list-container" class="overflow-x-auto">
-                <p id="matches-loading" class="text-gray-500 text-center py-4">Cargando partidos...</p>
-                <table id="matches-table" class="hidden">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Fecha</th>
-                            <th>Equipo Claros</th>
-                            <th>Equipo Oscuros</th>
-                            <th class="text-center">Resultado</th>
-                            <th class="text-center">Chamigo Votos</th>
-                            <th class="text-center">Asistencia TT</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Los partidos se cargarán aquí dinámicamente -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Sección de Pagos (Resumen) -->
-        <section>
-            <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-l-4 border-yellow-500 pl-4">Resumen de Pagos</h2>
-            <div id="payments-summary" class="bg-yellow-50 p-6 rounded-lg shadow-md">
-                <p class="text-xl font-medium text-gray-900 mb-2">Total recaudado: <span id="total-recaudado" class="font-bold text-green-700">$0</span></p>
-                <p class="text-xl font-medium text-gray-900">Pagos pendientes: <span id="pagos-pendientes" class="font-bold text-red-700">$0</span></p>
-                <p class="text-sm text-gray-600 mt-4">Nota: Este resumen es solo ilustrativo. Para la gestión completa de pagos, utiliza el panel de administración.</p>
             </div>
         </section>
     </div>
 
     <!-- Script de la API de Google -->
-    <script async defer src="https://apis.google.com/js/api.js"></script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 
     <script>
         // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
         const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E'; // Asegúrate de que esta es tu ID de hoja de cálculo
 
         let gapiInited = false;
+        let allPlayersData = []; // Cache para datos de jugadores
+        let allMatchesData = []; // Cache para datos de partidos
 
         // Elementos del DOM
-        const playersTableBody = document.querySelector('#players-table tbody');
-        const matchesTableBody = document.querySelector('#matches-table tbody');
+        const playersStatsTableBody = document.querySelector('#players-stats-table tbody');
         const playersLoading = document.getElementById('players-loading');
-        const matchesLoading = document.getElementById('matches-loading');
-        const playersTable = document.getElementById('players-table');
-        const matchesTable = document.getElementById('matches-table');
-        const totalRecaudadoSpan = document.getElementById('total-recaudado');
-        const pagosPendientesSpan = document.getElementById('pagos-pendientes');
+        const playersStatsTable = document.getElementById('players-stats-table');
 
         // Función que se ejecuta cuando la librería gapi (API de Google) está cargada
+        // Esta función ahora es llamada por el atributo 'onload' del script de gapi.js
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
         }
@@ -127,195 +92,200 @@
                     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
                 });
                 gapiInited = true;
-                // Cargar datos automáticamente al inicializar
-                await listPlayers();
-                await listMatches();
-                await getPaymentsSummary();
+                await loadAllDataAndDisplayStats();
             } catch (err) {
                 console.error("Error al inicializar gapi.client:", err);
-                playersLoading.textContent = `Error al cargar datos de jugadores: ${err.message || JSON.stringify(err)}`;
-                matchesLoading.textContent = `Error al cargar datos de partidos: ${err.message || JSON.stringify(err)}`;
-                totalRecaudadoSpan.textContent = `Error`;
-                pagosPendientesSpan.textContent = `Error`;
+                playersLoading.textContent = `Error al cargar datos: ${err.message || JSON.stringify(err)}. Asegúrate de que la API Key es correcta y la hoja es pública.`;
             }
         }
 
         /**
-         * Carga y muestra los jugadores de la hoja de cálculo.
+         * Carga todos los datos necesarios (jugadores y partidos) y luego muestra las estadísticas.
          */
-        async function listPlayers() {
+        async function loadAllDataAndDisplayStats() {
             playersLoading.classList.remove('hidden');
-            playersTable.classList.add('hidden');
-            playersTableBody.innerHTML = ''; // Limpiar tabla
+            playersStatsTable.classList.add('hidden');
+            playersStatsTableBody.innerHTML = '';
 
             try {
-                const response = await gapi.client.sheets.spreadsheets.values.get({
+                // Cargar datos de Jugadores
+                const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
                     range: 'Jugadores!A:G', // Rango completo de la hoja "Jugadores"
                 });
-                const range = response.result;
-                if (range.values && range.values.length > 1) { // Ignorar la primera fila (encabezados)
-                    const players = range.values.slice(1);
-                    playersLoading.classList.add('hidden');
-                    playersTable.classList.remove('hidden');
+                allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
 
-                    players.forEach(player => {
-                        const [id, nombre, estado, puntosTotales, partidosJugados, chamigosGanados, asistenciasTT] = player;
-                        const row = `
-                            <tr>
-                                <td>${id || ''}</td>
-                                <td>${nombre || ''}</td>
-                                <td>${estado || ''}</td>
-                                <td class="text-center">${puntosTotales || '0'}</td>
-                                <td class="text-center">${partidosJugados || '0'}</td>
-                                <td class="text-center">${chamigosGanados || '0'}</td>
-                                <td class="text-center">${asistenciasTT || '0'}</td>
-                            </tr>
-                        `;
-                        playersTableBody.innerHTML += row;
-                    });
-                } else {
-                    playersLoading.textContent = 'No hay jugadores registrados.';
-                }
-            } catch (err) {
-                playersLoading.textContent = `Error al cargar jugadores: ${err.message}`;
-                console.error('Error al cargar jugadores:', err);
-            }
-        }
-
-        /**
-         * Carga y muestra los partidos de la hoja de cálculo.
-         */
-        async function listMatches() {
-            matchesLoading.classList.remove('hidden');
-            matchesTable.classList.add('hidden');
-            matchesTableBody.innerHTML = ''; // Limpiar tabla
-
-            try {
-                const response = await gapi.client.sheets.spreadsheets.values.get({
+                // Cargar datos de Partidos
+                const matchesResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
                     range: 'Partidos!A:G', // Rango completo de la hoja "Partidos"
                 });
-                const range = response.result;
-                if (range.values && range.values.length > 1) { // Ignorar la primera fila (encabezados)
-                    const matches = range.values.slice(1);
-                    matchesLoading.classList.add('hidden');
-                    matchesTable.classList.remove('hidden');
+                allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : [];
 
-                    matches.forEach(match => {
-                        const [id, fecha, clarosIDs, oscurosIDs, resultado, chamigoVotos, asistenciaTTIDs] = match;
-                        
-                        // Convertir IDs a nombres para Chamigo y TT si es necesario
-                        let chamigoDisplay = 'N/A';
-                        if (chamigoVotos) {
-                            try {
-                                const parsedVotes = JSON.parse(chamigoVotos);
-                                if (parsedVotes.length > 0) {
-                                    const maxVotes = Math.max(...parsedVotes.map(v => v.votos));
-                                    const chamigos = parsedVotes.filter(v => v.votos === maxVotes).map(v => {
-                                        const player = allPlayersData.find(p => p[0] === v.id);
-                                        return player ? player[1] : `ID:${v.id}`;
-                                    });
-                                    chamigoDisplay = chamigos.join(', ');
-                                }
-                            } catch (e) {
-                                console.warn("Error parsing chamigoVotos:", chamigoVotos, e);
-                                chamigoDisplay = 'Error';
-                            }
-                        }
-
-                        let ttDisplay = 'N/A';
-                        if (asistenciaTTIDs) {
-                            const ttAttendees = asistenciaTTIDs.split(',').filter(Boolean).map(id => {
-                                const player = allPlayersData.find(p => p[0] === id);
-                                return player ? player[1] : `ID:${id}`;
-                            });
-                            ttDisplay = ttAttendees.join(', ');
-                        }
-
-                        const row = `
-                            <tr>
-                                <td>${id || ''}</td>
-                                <td>${fecha || ''}</td>
-                                <td>${clarosIDs ? clarosIDs.split(',').map(id => {
-                                    const player = allPlayersData.find(p => p[0] === id);
-                                    return player ? player[1] : `ID:${id}`;
-                                }).join(', ') : ''}</td>
-                                <td>${oscurosIDs ? oscurosIDs.split(',').map(id => {
-                                    const player = allPlayersData.find(p => p[0] === id);
-                                    return player ? player[1] : `ID:${id}`;
-                                }).join(', ') : ''}</td>
-                                <td class="text-center">${resultado || 'Pendiente'}</td>
-                                <td class="text-center">${chamigoDisplay}</td>
-                                <td class="text-center">${ttDisplay}</td>
-                            </tr>
-                        `;
-                        matchesTableBody.innerHTML += row;
-                    });
-                } else {
-                    matchesLoading.textContent = 'No hay partidos programados.';
+                if (allPlayersData.length === 0) {
+                    playersLoading.textContent = 'No hay jugadores registrados para mostrar estadísticas.';
+                    return;
                 }
+
+                // Calcular y renderizar estadísticas
+                renderPlayerStatsTable();
+
             } catch (err) {
-                matchesLoading.textContent = `Error al cargar partidos: ${err.message}`;
-                console.error('Error al cargar partidos:', err);
+                playersLoading.textContent = `Error al cargar datos: ${err.message}. Revisa la consola y los permisos de tu Google Sheet.`;
+                console.error('Error al cargar datos para estadísticas:', err);
             }
         }
 
         /**
-         * Obtiene y muestra el resumen de pagos.
-         * Esta función es ilustrativa y necesitaría una hoja de cálculo 'Pagos' real
-         * con columnas para 'Monto' y 'Estado' (ej. 'Pagado', 'Pendiente').
+         * Parsea una cadena de fecha en formato DD/MM/YYYY a un objeto Date.
+         * Asume la zona horaria local.
+         * @param {string} dateString - La cadena de fecha en formato DD/MM/YYYY.
+         * @returns {Date} El objeto Date.
          */
-        async function getPaymentsSummary() {
-            try {
-                // Aquí deberías tener una hoja de cálculo 'Pagos' con columnas como 'Monto' y 'Estado'
-                // Por simplicidad, usaremos datos simulados o una lógica básica.
-                // Si tienes una hoja de 'Pagos', ajusta el rango y la lógica.
-                // Ejemplo: Asumimos que los jugadores tienen un estado de pago en su fila (columna F)
-                // y cada partido tiene un costo (esto es más complejo de calcular aquí sin una hoja de pagos detallada).
-
-                // Para esta versión pública, simplemente mostraremos un resumen estático o muy básico.
-                // Si quieres un resumen real, necesitarías una hoja de pagos dedicada y permisos para leerla.
-
-                // Simulación de datos para el resumen de pagos
-                let totalRecaudado = 0;
-                let pagosPendientes = 0;
-
-                // Si `allPlayersData` está disponible y tiene la columna de estado de pago (asumimos columna F, índice 5)
-                if (window.allPlayersData && window.allPlayersData.length > 0) {
-                    window.allPlayersData.forEach(player => {
-                        const estadoPago = player[5]; // Asumiendo que la columna F (índice 5) es el estado de pago
-                        if (estadoPago === 'Al día') {
-                            // Para un cálculo real, necesitarías un "monto a pagar" por jugador o partido
-                            // Aquí, solo estamos contando los que están "Al día" vs "Pendiente"
-                            totalRecaudado += 100; // Valor de ejemplo por jugador "Al día"
-                        } else {
-                            pagosPendientes += 100; // Valor de ejemplo por jugador "Pendiente"
-                        }
-                    });
-                } else {
-                    // Si no hay datos de jugadores, o no se han cargado, mostrar valores por defecto
-                    totalRecaudado = 1200; // Ejemplo
-                    pagosPendientes = 300; // Ejemplo
-                }
-
-
-                totalRecaudadoSpan.textContent = `$${totalRecaudado.toFixed(2)}`;
-                pagosPendientesSpan.textContent = `$${pagosPendientes.toFixed(2)}`;
-
-            } catch (err) {
-                console.error('Error al obtener resumen de pagos:', err);
-                totalRecaudadoSpan.textContent = `Error`;
-                pagosPendientesSpan.textContent = `Error`;
-            }
+        function parseDate(dateString) {
+            const [day, month, year] = dateString.split('/').map(Number);
+            return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
         }
 
+        /**
+         * Calcula las estadísticas de los jugadores basándose en los partidos filtrados.
+         * Incluye cálculo de Efectividad y Ausente.
+         */
+        function calculatePlayerStatsForPublicLeaderboard(players, matches) {
+            const playerStats = {};
+            // Filtrar partidos que tienen fecha y no están suspendidos para contar el total de partidos válidos
+            const validMatches = matches.filter(match => match[1] && match[1].trim() !== '' && match[4] !== 'Suspendido');
+            const totalMatchesInPeriod = validMatches.length; // Total de partidos para calcular ausentismo
 
-        // Carga la librería de Google API cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Página pública de Fútbol 5 cargada!');
-            gapiLoaded();
-        });
+            // Inicializar estadísticas para todos los jugadores activos
+            players.forEach(player => {
+                const [id, nombre, estado] = player;
+                if (estado === 'Activo') { // Solo considerar jugadores activos
+                    playerStats[id] = {
+                        id,
+                        nombre,
+                        puntos: 0,
+                        partidosJugados: 0, // PJ
+                        chamigosGanados: 0, // Chamigo
+                        asistenciasTT: 0, // TT
+                        efectividad: '0.00%',
+                        ausente: totalMatchesInPeriod // Inicialmente, ausente en todos los partidos válidos
+                    };
+                }
+            });
+
+            validMatches.forEach(match => { // Iterar solo sobre los partidos válidos
+                // Desestructuración con valores por defecto para mayor robustez
+                const [
+                    idPartido,
+                    fecha,
+                    equipoClarosIDsStr = '',
+                    equipoOscurosIDsStr = '',
+                    resultado,
+                    chamigoVotosStr = '',
+                    asistenciaTTIDsStr = ''
+                ] = match;
+
+                const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean);
+                const equipoOscurosIDs = oscurosIDsStr.split(',').filter(Boolean);
+                const allPlayersInMatch = new Set([...equipoClarosIDs, ...equipoOscurosIDs]);
+
+                // Contar partidos jugados (PJ) y ajustar Ausente
+                allPlayersInMatch.forEach(playerId => {
+                    if (playerStats[playerId]) {
+                        playerStats[playerId].partidosJugados++;
+                        playerStats[playerId].ausente--; // Restar 1 por cada partido jugado
+                    }
+                });
+
+                // Asignar puntos por resultado
+                if (resultado === 'Claros' || resultado === 'Oscuros') {
+                    const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
+                    winningTeam.forEach(playerId => {
+                        if (playerStats[playerId]) playerStats[playerId].puntos += 3;
+                    });
+                } else if (resultado === 'Empate') {
+                    allPlayersInMatch.forEach(playerId => {
+                        if (playerStats[playerId]) playerStats[playerId].puntos += 1;
+                    });
+                }
+
+                // Contar Chamigos
+                if (chamigoVotosStr) {
+                    try {
+                        const chamigoVotos = JSON.parse(chamigoVotosStr);
+                        if (chamigoVotos.length > 0) {
+                            const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
+                            const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
+                            chamigosDelPartido.forEach(chamigo => {
+                                if (playerStats[chamigo.id]) playerStats[chamigo.id].chamigosGanados++;
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('Error al parsear votos de chamigo:', chamigoVotosStr, e);
+                    }
+                }
+
+                // Contar asistencias a TT
+                if (asistenciaTTIDsStr) {
+                    const ttAttendees = asistenciaTTIDsStr.split(',').filter(Boolean);
+                    ttAttendees.forEach(playerId => {
+                        if (playerStats[playerId]) playerStats[playerId].asistenciasTT++;
+                    });
+                }
+            });
+
+            // Calcular Efectividad después de contar todos los puntos y PJ
+            Object.values(playerStats).forEach(player => {
+                const maxPossiblePoints = player.partidosJugados * 3;
+                if (maxPossiblePoints > 0) {
+                    player.efectividad = ((player.puntos / maxPossiblePoints) * 100).toFixed(2) + '%';
+                } else {
+                    player.efectividad = '0.00%';
+                }
+            });
+
+            // Ordenar por puntos (descendente) para la tabla de posiciones
+            return Object.values(playerStats).sort((a, b) => b.puntos - a.puntos);
+        }
+
+        /**
+         * Renderiza la tabla de estadísticas de jugadores.
+         */
+        function renderPlayerStatsTable() {
+            playersStatsTableBody.innerHTML = ''; // Limpiar tabla
+            playersLoading.classList.add('hidden');
+            playersStatsTable.classList.remove('hidden');
+
+            const playersWithStats = calculatePlayerStatsForPublicLeaderboard(allPlayersData, allMatchesData);
+
+            if (playersWithStats.length === 0) {
+                playersLoading.textContent = 'No hay estadísticas disponibles para mostrar.';
+                playersLoading.classList.remove('hidden');
+                playersStatsTable.classList.add('hidden');
+                return;
+            }
+
+            playersWithStats.forEach(player => {
+                const row = `
+                    <tr>
+                        <td>${player.id}</td>
+                        <td>${player.nombre}</td>
+                        <td class="text-center">${player.puntos}</td>
+                        <td class="text-center">${player.partidosJugados}</td>
+                        <td class="text-center">${player.ausente}</td>
+                        <td class="text-center">${player.chamigosGanados}</td>
+                        <td class="text-center">${player.asistenciasTT}</td>
+                        <td class="text-center">${player.efectividad}</td>
+                    </tr>
+                `;
+                playersStatsTableBody.innerHTML += row;
+            });
+        }
+
+        // No es necesario un DOMContentLoaded separado para gapiLoaded
+        // ya que el script de gapi.js lo llama directamente.
+        // console.log('Página pública de Fútbol 5 cargada!'); // Este log se puede mantener si se desea.
     </script>
 </body>
 </html>
