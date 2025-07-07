@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fútbol 5 - Martes Noche</title>
+    <title>Fútbol 5 - Estadísticas y Partidos</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -12,137 +12,105 @@
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5; /* Un gris claro para el fondo */
         }
-        /* Estilos personalizados para iconos de estado de pago */
-        .icon-paid {
-            color: #10B981; /* green-500 */
+        /* Estilos base para tablas */
+        table {
+            @apply min-w-full bg-white rounded-lg shadow-md;
         }
-        .icon-pending {
-            color: #EF4444; /* red-500 */
+        th, td {
+            @apply py-3 px-6 text-left;
         }
-        /* Estilos para el estado del partido */
-        .match-card.has-result {
-            background-color: #dcfce7; /* green-100 pastel */
+        thead th {
+            @apply bg-gray-200 text-gray-700 uppercase text-sm leading-normal;
         }
-        .match-card.no-result {
-            background-color: #fee2e2; /* red-100 pastel */
+        tbody tr {
+            @apply border-b border-gray-200 hover:bg-gray-100;
         }
-        .match-card.suspended {
-            background-color: #e0e7ff; /* indigo-100 pastel */
+        tbody tr:last-child {
+            @apply border-b-0;
         }
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg w-full max-w-4xl space-y-8">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-6xl my-8">
+        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Fútbol 5 - Estadísticas</h1>
 
-        <!-- Hero Section / Encabezado Principal -->
-        <header class="text-center mb-8">
-            <h1 class="text-5xl md:text-6xl font-extrabold text-indigo-800 leading-tight mb-2">
-                Fútbol 5
-            </h1>
-            <p class="text-xl md:text-2xl text-gray-600 font-light">
-                ¡La pasión de los martes por la noche!
-            </p>
-        </header>
+        <!-- Sección de Jugadores -->
+        <section class="mb-10">
+            <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-l-4 border-blue-500 pl-4">Jugadores</h2>
+            <div id="players-list-container" class="overflow-x-auto">
+                <p id="players-loading" class="text-gray-500 text-center py-4">Cargando jugadores...</p>
+                <table id="players-table" class="hidden">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Estado</th>
+                            <th class="text-center">Puntos Totales</th>
+                            <th class="text-center">Partidos Jugados</th>
+                            <th class="text-center">Chamigos Ganados</th>
+                            <th class="text-center">Asistencias TT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los jugadores se cargarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-        <!-- Botones de Autenticación -->
-        <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
-            <button id="authorize_button" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 transform hover:scale-105">
-                Autorizar Google Sheets
-            </button>
-            <button id="signout_button" class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-300 transform hover:scale-105 hidden">
-                Cerrar Sesión
-            </button>
-        </div>
+        <!-- Sección de Partidos -->
+        <section class="mb-10">
+            <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-l-4 border-purple-500 pl-4">Partidos</h2>
+            <div id="matches-list-container" class="overflow-x-auto">
+                <p id="matches-loading" class="text-gray-500 text-center py-4">Cargando partidos...</p>
+                <table id="matches-table" class="hidden">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Equipo Claros</th>
+                            <th>Equipo Oscuros</th>
+                            <th class="text-center">Resultado</th>
+                            <th class="text-center">Chamigo Votos</th>
+                            <th class="text-center">Asistencia TT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los partidos se cargarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-        <!-- Mensaje de estado de autenticación -->
-        <p id="auth-status" class="text-center text-red-500 mb-6 hidden">Por favor, autoriza la aplicación para acceder a los datos.</p>
-
-
-        <!-- Contenido de la Aplicación (oculto hasta la autenticación) -->
-        <div id="app-content" class="hidden space-y-8">
-            <!-- Sección de Jugadores -->
-            <section class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-b pb-3 border-gray-200">Nuestros Jugadores</h2>
-                <div id="players-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Los jugadores se cargarán aquí dinámicamente -->
-                    <p id="players-loading" class="text-gray-500 text-center col-span-full">Cargando jugadores...</p>
-                </div>
-                <button id="add-player-button" class="mt-8 w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300 transform hover:scale-105" disabled>
-                    Añadir Nuevo Jugador
-                </button>
-            </section>
-
-            <!-- Sección de Próximos Partidos -->
-            <section class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-b pb-3 border-gray-200">Próximos Partidos</h2>
-                <div id="matches-list" class="space-y-4">
-                    <!-- Los partidos se cargarán aquí dinámicamente -->
-                    <p id="matches-loading" class="text-gray-500 text-center">Cargando partidos...</p>
-                </div>
-                <button id="schedule-match-button" class="mt-8 w-full px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300 transform hover:scale-105" disabled>
-                    Programar Nuevo Partido
-                </button>
-            </section>
-
-            <!-- Sección de Resumen de Pagos -->
-            <section class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-b pb-3 border-gray-200">Resumen de Pagos</h2>
-                <div id="payments-summary" class="bg-yellow-50 p-6 rounded-lg shadow-inner flex flex-col md:flex-row justify-around items-center space-y-4 md:space-y-0 md:space-x-4">
-                    <div class="text-center">
-                        <p class="text-xl font-medium text-gray-900">Total Recaudado:</p>
-                        <p class="text-3xl font-bold text-green-700 mt-1" id="total-recaudado">$0</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-xl font-medium text-gray-900">Pagos Pendientes:</p>
-                        <p class="text-3xl font-bold text-red-700 mt-1" id="pagos-pendientes">$0</p>
-                    </div>
-                </div>
-                <button id="register-payment-button" class="mt-8 w-full px-6 py-3 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 transition duration-300 transform hover:scale-105" disabled>
-                    Registrar Nuevo Pago
-                </button>
-            </section>
-        </div>
+        <!-- Sección de Pagos (Resumen) -->
+        <section>
+            <h2 class="text-3xl font-semibold text-gray-700 mb-6 border-l-4 border-yellow-500 pl-4">Resumen de Pagos</h2>
+            <div id="payments-summary" class="bg-yellow-50 p-6 rounded-lg shadow-md">
+                <p class="text-xl font-medium text-gray-900 mb-2">Total recaudado: <span id="total-recaudado" class="font-bold text-green-700">$0</span></p>
+                <p class="text-xl font-medium text-gray-900">Pagos pendientes: <span id="pagos-pendientes" class="font-bold text-red-700">$0</span></p>
+                <p class="text-sm text-gray-600 mt-4">Nota: Este resumen es solo ilustrativo. Para la gestión completa de pagos, utiliza el panel de administración.</p>
+            </div>
+        </section>
     </div>
 
     <!-- Script de la API de Google -->
     <script async defer src="https://apis.google.com/js/api.js"></script>
-    <script async defer src="https://accounts.google.com/gsi/client"></script>
 
     <script>
-        // Configuración de la API de Google
-        // ¡IMPORTANTE! Reemplaza 'TU_CLIENT_ID' con tu ID de Cliente de OAuth 2.0 de Google Cloud Console.
-        const CLIENT_ID = '490772160476-4cmd0dse3b74o65g1n9s1q5itlbjavbb.apps.googleusercontent.com';
-        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet "Base de Datos".
-        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E';
-        // La API_KEY no es necesaria para operaciones que requieren OAuth (como acceder a hojas privadas).
-        // const API_KEY = 'TU_API_KEY'; // Opcional, pero puede ser útil para ciertas llamadas públicas
+        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
+        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E'; // Asegúrate de que esta es tu ID de hoja de cálculo
 
-        // Ámbitos de autorización necesarios para leer y escribir en Google Sheets
-        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-
-        let tokenClient;
         let gapiInited = false;
-        let gisInited = false;
-
-        // Cache de datos
-        let allPlayersData = [];
-        let allMatchesData = [];
-        let allPaymentsData = [];
 
         // Elementos del DOM
-        const authorizeButton = document.getElementById('authorize_button');
-        const signoutButton = document.getElementById('signout_button');
-        const authStatus = document.getElementById('auth-status');
-        const appContent = document.getElementById('app-content');
-
-        const playersListDiv = document.getElementById('players-list');
-        const matchesListDiv = document.getElementById('matches-list');
-        const addPlayerButton = document.getElementById('add-player-button');
-        const scheduleMatchButton = document.getElementById('schedule-match-button');
-        const registerPaymentButton = document.getElementById('register-payment-button');
+        const playersTableBody = document.querySelector('#players-table tbody');
+        const matchesTableBody = document.querySelector('#matches-table tbody');
+        const playersLoading = document.getElementById('players-loading');
+        const matchesLoading = document.getElementById('matches-loading');
+        const playersTable = document.getElementById('players-table');
+        const matchesTable = document.getElementById('matches-table');
         const totalRecaudadoSpan = document.getElementById('total-recaudado');
         const pagosPendientesSpan = document.getElementById('pagos-pendientes');
-
 
         // Función que se ejecuta cuando la librería gapi (API de Google) está cargada
         function gapiLoaded() {
@@ -153,421 +121,201 @@
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
+                    apiKey: 'TU_API_KEY', // Si tu hoja es pública, puedes usar solo la API Key. Si no, necesitarás OAuth.
+                                         // Para esta versión pública, asumo que la hoja tendrá permisos de lectura públicos.
+                                         // Si no es pública, esta página no funcionará sin autenticación.
                     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
                 });
                 gapiInited = true;
-                maybeEnableAuthButtons();
+                // Cargar datos automáticamente al inicializar
+                await listPlayers();
+                await listMatches();
+                await getPaymentsSummary();
             } catch (err) {
                 console.error("Error al inicializar gapi.client:", err);
-                authStatus.textContent = `Error al inicializar la API de Google: ${err.message || err.error_description || JSON.stringify(err)}. Revisa la consola.`;
-                authStatus.classList.remove('hidden');
+                playersLoading.textContent = `Error al cargar datos de jugadores: ${err.message || JSON.stringify(err)}`;
+                matchesLoading.textContent = `Error al cargar datos de partidos: ${err.message || JSON.stringify(err)}`;
+                totalRecaudadoSpan.textContent = `Error`;
+                pagosPendientesSpan.textContent = `Error`;
             }
-        }
-
-        // Función que se ejecuta cuando la librería gis (Google Identity Services) está cargada
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: '', // Se define en handleAuthClick
-            });
-            gisInited = true;
-            maybeEnableAuthButtons();
-        }
-
-        // Habilita los botones de autenticación cuando ambas librerías están cargadas
-        function maybeEnableAuthButtons() {
-            if (gapiInited && gisInited) {
-                authorizeButton.style.display = 'block';
-                if (gapi.client.getToken() !== null) {
-                    handleAuthSuccess();
-                } else {
-                    authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
-                    authStatus.classList.remove('hidden');
-                }
-            }
-        }
-
-        // Maneja el clic del botón de autorización
-        function handleAuthClick() {
-            tokenClient.callback = async (resp) => {
-                if (resp.error) {
-                    console.error('Error de autenticación:', resp);
-                    authStatus.textContent = `Error de autenticación: ${resp.error_description || resp.error}`;
-                    authStatus.classList.remove('hidden');
-                    return;
-                }
-                handleAuthSuccess();
-            };
-
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                tokenClient.requestAccessToken({prompt: ''});
-            }
-        }
-
-        async function handleAuthSuccess() {
-            authorizeButton.style.display = 'none';
-            signoutButton.style.display = 'block';
-            authStatus.classList.add('hidden');
-            appContent.classList.remove('hidden');
-            await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
-            enableAppButtons();
-        }
-
-        // Maneja el clic del botón de cerrar sesión
-        function handleSignoutClick() {
-            const token = gapi.client.getToken();
-            if (token !== null) {
-                google.accounts.oauth2.revoke(token.access_token);
-                gapi.client.setToken('');
-                authorizeButton.style.display = 'block';
-                signoutButton.style.display = 'none';
-                appContent.classList.add('hidden');
-                authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
-                authStatus.classList.remove('hidden');
-                // Limpia la interfaz y deshabilita los botones
-                playersListDiv.innerHTML = '<p id="players-loading" class="text-gray-500 text-center col-span-full">Cargando jugadores...</p>';
-                matchesListDiv.innerHTML = '<p id="matches-loading" class="text-gray-500 text-center">Cargando partidos...</p>';
-                totalRecaudadoSpan.textContent = '$0';
-                pagosPendientesSpan.textContent = '$0';
-                disableAppButtons();
-            }
-        }
-
-        // Habilita los botones de la aplicación después de la autenticación
-        function enableAppButtons() {
-            addPlayerButton.disabled = false;
-            scheduleMatchButton.disabled = false;
-            registerPaymentButton.disabled = false;
-        }
-
-        // Deshabilita los botones de la aplicación
-        function disableAppButtons() {
-            addPlayerButton.disabled = true;
-            scheduleMatchButton.disabled = true;
-            registerPaymentButton.disabled = true;
-        }
-
-        // --- Funciones de Carga de Datos ---
-
-        async function loadAllData() {
-            try {
-                if (!gapi.client.sheets) {
-                    console.error("gapi.client.sheets no está disponible. ¿Se inicializó correctamente el cliente de la API de Google?");
-                    throw new Error("API de Google Sheets no cargada correctamente.");
-                }
-
-                const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:G', // Asumiendo que ahora hay 7 columnas (ID, Nombre, Estado, Puntos, PJ, Chamigo, TT)
-                });
-                allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
-
-                const matchesResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G', // Rango de la hoja "Partidos"
-                });
-                allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : [];
-
-                const paymentsResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Pagos!A:C', // Rango de la hoja "Pagos" (ID, Monto, Fecha)
-                });
-                allPaymentsData = paymentsResponse.result.values ? paymentsResponse.result.values.slice(1) : [];
-
-            } catch (err) {
-                console.error('Error al cargar todos los datos:', err);
-                let userErrorMessage = 'Error desconocido al cargar datos.';
-                if (err && err.result && err.result.error && err.result.error.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Revisa la consola para más detalles.`;
-                } else if (err && err.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
-                }
-                alert(userErrorMessage);
-            }
-        }
-
-        async function loadAllDataAndDisplayAllContent() {
-            await loadAllData();
-            renderPlayersList();
-            renderMatchesList();
-            updatePaymentsSummary();
         }
 
         /**
          * Carga y muestra los jugadores de la hoja de cálculo.
          */
-        function renderPlayersList() {
-            playersListDiv.innerHTML = ''; // Limpiar el contenido existente
-            if (allPlayersData.length === 0) {
-                playersListDiv.innerHTML = '<p class="text-gray-500 text-center col-span-full">No hay jugadores registrados.</p>';
-                return;
+        async function listPlayers() {
+            playersLoading.classList.remove('hidden');
+            playersTable.classList.add('hidden');
+            playersTableBody.innerHTML = ''; // Limpiar tabla
+
+            try {
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'Jugadores!A:G', // Rango completo de la hoja "Jugadores"
+                });
+                const range = response.result;
+                if (range.values && range.values.length > 1) { // Ignorar la primera fila (encabezados)
+                    const players = range.values.slice(1);
+                    playersLoading.classList.add('hidden');
+                    playersTable.classList.remove('hidden');
+
+                    players.forEach(player => {
+                        const [id, nombre, estado, puntosTotales, partidosJugados, chamigosGanados, asistenciasTT] = player;
+                        const row = `
+                            <tr>
+                                <td>${id || ''}</td>
+                                <td>${nombre || ''}</td>
+                                <td>${estado || ''}</td>
+                                <td class="text-center">${puntosTotales || '0'}</td>
+                                <td class="text-center">${partidosJugados || '0'}</td>
+                                <td class="text-center">${chamigosGanados || '0'}</td>
+                                <td class="text-center">${asistenciasTT || '0'}</td>
+                            </tr>
+                        `;
+                        playersTableBody.innerHTML += row;
+                    });
+                } else {
+                    playersLoading.textContent = 'No hay jugadores registrados.';
+                }
+            } catch (err) {
+                playersLoading.textContent = `Error al cargar jugadores: ${err.message}`;
+                console.error('Error al cargar jugadores:', err);
             }
-
-            allPlayersData.forEach(player => {
-                const [id, nombre, estado, puntos, pj, chamigos, tt] = player;
-                // Asumiendo que el estado de pago está en la columna 'Estado' (índice 2)
-                // y que 'Activo' implica 'Al día' y 'Inactivo' implica 'Pendiente' para este ejemplo.
-                // Si tienes una columna de estado de pago real, úsala.
-                const isPaid = estado === 'Activo'; // O tu lógica real para el estado de pago
-
-                const playerCard = `
-                    <div class="bg-white p-4 rounded-lg shadow-md flex items-center space-x-4 transition transform hover:scale-105 hover:shadow-lg">
-                        <div class="flex-shrink-0">
-                            ${isPaid ? `
-                                <svg class="h-8 w-8 icon-paid" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                ` : `
-                                <svg class="h-8 w-8 icon-pending" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            `}
-                        </div>
-                        <div>
-                            <p class="text-lg font-semibold text-gray-900">${nombre}</p>
-                            <p class="text-sm text-gray-600">Estado: ${estado}</p>
-                            <p class="text-xs text-gray-500">Puntos: ${puntos || 0} | PJ: ${pj || 0}</p>
-                        </div>
-                    </div>
-                `;
-                playersListDiv.innerHTML += playerCard;
-            });
         }
 
         /**
          * Carga y muestra los partidos de la hoja de cálculo.
          */
-        function renderMatchesList() {
-            matchesListDiv.innerHTML = ''; // Limpiar el contenido existente
+        async function listMatches() {
+            matchesLoading.classList.remove('hidden');
+            matchesTable.classList.add('hidden');
+            matchesTableBody.innerHTML = ''; // Limpiar tabla
 
-            // Filtrar y ordenar partidos: solo próximos partidos (fecha futura) y los más recientes
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Para comparar solo la fecha
-
-            const upcomingMatches = allMatchesData.filter(match => {
-                const matchDate = parseDate(match[1]); // match[1] es la fecha
-                return matchDate >= today;
-            }).sort((a, b) => {
-                const dateA = parseDate(a[1]);
-                const dateB = parseDate(b[1]);
-                return dateA - dateB; // Ordenar de más antiguo (próximo) a más reciente
-            });
-
-            const pastMatches = allMatchesData.filter(match => {
-                const matchDate = parseDate(match[1]);
-                return matchDate < today;
-            }).sort((a, b) => {
-                const dateA = parseDate(a[1]);
-                const dateB = parseDate(b[1]);
-                return dateB - dateA; // Ordenar de más reciente a más antiguo
-            });
-
-            if (upcomingMatches.length === 0 && pastMatches.length === 0) {
-                matchesListDiv.innerHTML = '<p class="text-gray-500 text-center">No hay partidos programados ni registrados.</p>';
-                return;
-            }
-
-            // Renderizar Próximos Partidos
-            if (upcomingMatches.length > 0) {
-                matchesListDiv.innerHTML += '<h3 class="text-xl font-medium text-gray-800 mb-3 mt-4">Próximos</h3>';
-                upcomingMatches.forEach(match => {
-                    const [id, fecha, clarosIDs, oscurosIDs, resultado, chamigoVotos, ttAttendees] = match;
-                    const clarosNames = clarosIDs.split(',').map(id => {
-                        const player = allPlayersData.find(p => p[0] === id);
-                        return player ? player[1] : `ID:${id}`;
-                    }).join(', ');
-                    const oscurosNames = oscurosIDs.split(',').map(id => {
-                        const player = allPlayersData.find(p => p[0] === id);
-                        return player ? player[1] : `ID:${id}`;
-                    }).join(', ');
-
-                    let cardClass = 'match-card';
-                    let resultIcon = '';
-                    if (resultado && resultado.trim() !== '') {
-                        cardClass += ' has-result';
-                        resultIcon = `
-                            <svg class="h-5 w-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        `;
-                    } else {
-                        cardClass += ' no-result';
-                        resultIcon = `
-                            <svg class="h-5 w-5 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        `;
-                    }
-                    if (resultado === 'Suspendido') {
-                        cardClass = 'match-card suspended'; // Override for suspended
-                        resultIcon = `
-                            <svg class="h-5 w-5 text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        `;
-                    }
-
-                    const matchCard = `
-                        <div class="${cardClass} p-4 rounded-lg shadow-md flex items-center space-x-4 transition transform hover:scale-105 hover:shadow-lg">
-                            <div class="flex-shrink-0">
-                                ${resultIcon}
-                            </div>
-                            <div>
-                                <p class="text-lg font-semibold text-gray-900">${fecha}</p>
-                                <p class="text-sm text-gray-700">Claros: ${clarosNames}</p>
-                                <p class="text-sm text-gray-700">Oscuros: ${oscurosNames}</p>
-                                ${resultado ? `<p class="text-xs text-gray-600">Resultado: ${resultado}</p>` : '<p class="text-xs text-gray-600">Sin resultado</p>'}
-                            </div>
-                        </div>
-                    `;
-                    matchesListDiv.innerHTML += matchCard;
+            try {
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'Partidos!A:G', // Rango completo de la hoja "Partidos"
                 });
-            } else {
-                matchesListDiv.innerHTML += '<p class="text-gray-500 text-center">No hay próximos partidos programados.</p>';
-            }
+                const range = response.result;
+                if (range.values && range.values.length > 1) { // Ignorar la primera fila (encabezados)
+                    const matches = range.values.slice(1);
+                    matchesLoading.classList.add('hidden');
+                    matchesTable.classList.remove('hidden');
 
-            // Renderizar Partidos Anteriores
-            if (pastMatches.length > 0) {
-                matchesListDiv.innerHTML += '<h3 class="text-xl font-medium text-gray-800 mb-3 mt-8">Anteriores</h3>';
-                pastMatches.forEach(match => {
-                    const [id, fecha, clarosIDs, oscurosIDs, resultado, chamigoVotos, ttAttendees] = match;
-                    const clarosNames = clarosIDs.split(',').map(id => {
-                        const player = allPlayersData.find(p => p[0] === id);
-                        return player ? player[1] : `ID:${id}`;
-                    }).join(', ');
-                    const oscurosNames = oscurosIDs.split(',').map(id => {
-                        const player = allPlayersData.find(p => p[0] === id);
-                        return player ? player[1] : `ID:${id}`;
-                    }).join(', ');
+                    matches.forEach(match => {
+                        const [id, fecha, clarosIDs, oscurosIDs, resultado, chamigoVotos, asistenciaTTIDs] = match;
+                        
+                        // Convertir IDs a nombres para Chamigo y TT si es necesario
+                        let chamigoDisplay = 'N/A';
+                        if (chamigoVotos) {
+                            try {
+                                const parsedVotes = JSON.parse(chamigoVotos);
+                                if (parsedVotes.length > 0) {
+                                    const maxVotes = Math.max(...parsedVotes.map(v => v.votos));
+                                    const chamigos = parsedVotes.filter(v => v.votos === maxVotes).map(v => {
+                                        const player = allPlayersData.find(p => p[0] === v.id);
+                                        return player ? player[1] : `ID:${v.id}`;
+                                    });
+                                    chamigoDisplay = chamigos.join(', ');
+                                }
+                            } catch (e) {
+                                console.warn("Error parsing chamigoVotos:", chamigoVotos, e);
+                                chamigoDisplay = 'Error';
+                            }
+                        }
 
-                    let cardClass = 'match-card';
-                    let resultIcon = '';
-                    if (resultado && resultado.trim() !== '') {
-                        cardClass += ' has-result';
-                        resultIcon = `
-                            <svg class="h-5 w-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        `;
-                    } else {
-                        cardClass += ' no-result';
-                        resultIcon = `
-                            <svg class="h-5 w-5 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        `;
-                    }
-                    if (resultado === 'Suspendido') {
-                        cardClass = 'match-card suspended'; // Override for suspended
-                        resultIcon = `
-                            <svg class="h-5 w-5 text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        `;
-                    }
+                        let ttDisplay = 'N/A';
+                        if (asistenciaTTIDs) {
+                            const ttAttendees = asistenciaTTIDs.split(',').filter(Boolean).map(id => {
+                                const player = allPlayersData.find(p => p[0] === id);
+                                return player ? player[1] : `ID:${id}`;
+                            });
+                            ttDisplay = ttAttendees.join(', ');
+                        }
 
-                    const matchCard = `
-                        <div class="${cardClass} p-4 rounded-lg shadow-md flex items-center space-x-4 transition transform hover:scale-105 hover:shadow-lg">
-                            <div class="flex-shrink-0">
-                                ${resultIcon}
-                            </div>
-                            <div>
-                                <p class="text-lg font-semibold text-gray-900">${fecha}</p>
-                                <p class="text-sm text-gray-700">Claros: ${clarosNames}</p>
-                                <p class="text-sm text-gray-700">Oscuros: ${oscurosNames}</p>
-                                ${resultado ? `<p class="text-xs text-gray-600">Resultado: ${resultado}</p>` : '<p class="text-xs text-gray-600">Sin resultado</p>'}
-                            </div>
-                        </div>
-                    `;
-                    matchesListDiv.innerHTML += matchCard;
-                });
+                        const row = `
+                            <tr>
+                                <td>${id || ''}</td>
+                                <td>${fecha || ''}</td>
+                                <td>${clarosIDs ? clarosIDs.split(',').map(id => {
+                                    const player = allPlayersData.find(p => p[0] === id);
+                                    return player ? player[1] : `ID:${id}`;
+                                }).join(', ') : ''}</td>
+                                <td>${oscurosIDs ? oscurosIDs.split(',').map(id => {
+                                    const player = allPlayersData.find(p => p[0] === id);
+                                    return player ? player[1] : `ID:${id}`;
+                                }).join(', ') : ''}</td>
+                                <td class="text-center">${resultado || 'Pendiente'}</td>
+                                <td class="text-center">${chamigoDisplay}</td>
+                                <td class="text-center">${ttDisplay}</td>
+                            </tr>
+                        `;
+                        matchesTableBody.innerHTML += row;
+                    });
+                } else {
+                    matchesLoading.textContent = 'No hay partidos programados.';
+                }
+            } catch (err) {
+                matchesLoading.textContent = `Error al cargar partidos: ${err.message}`;
+                console.error('Error al cargar partidos:', err);
             }
         }
-
 
         /**
-         * Actualiza el resumen de pagos.
+         * Obtiene y muestra el resumen de pagos.
+         * Esta función es ilustrativa y necesitaría una hoja de cálculo 'Pagos' real
+         * con columnas para 'Monto' y 'Estado' (ej. 'Pagado', 'Pendiente').
          */
-        function updatePaymentsSummary() {
-            let totalRecaudado = 0;
-            let pagosPendientes = 0;
+        async function getPaymentsSummary() {
+            try {
+                // Aquí deberías tener una hoja de cálculo 'Pagos' con columnas como 'Monto' y 'Estado'
+                // Por simplicidad, usaremos datos simulados o una lógica básica.
+                // Si tienes una hoja de 'Pagos', ajusta el rango y la lógica.
+                // Ejemplo: Asumimos que los jugadores tienen un estado de pago en su fila (columna F)
+                // y cada partido tiene un costo (esto es más complejo de calcular aquí sin una hoja de pagos detallada).
 
-            // Suponiendo que 'Pagos' tiene Monto en columna B (index 1)
-            allPaymentsData.forEach(payment => {
-                const amount = parseFloat(payment[1] || 0); // Columna 'Monto'
-                totalRecaudado += amount;
-            });
+                // Para esta versión pública, simplemente mostraremos un resumen estático o muy básico.
+                // Si quieres un resumen real, necesitarías una hoja de pagos dedicada y permisos para leerla.
 
-            // Para pagos pendientes, necesitaríamos una lógica más compleja
-            // que compare jugadores con partidos, o una columna específica en la hoja de jugadores.
-            // Por ahora, lo dejaremos como un valor de ejemplo o basado en una lógica simple.
-            // Ejemplo simple: si hay 10 jugadores activos, y el costo por partido es X,
-            // y no se ha registrado un pago para un partido reciente, se podría estimar.
-            // Para este ejemplo, lo dejaremos en 0 o un valor fijo si no hay datos.
-            pagosPendientes = 0; // Se necesitaría una lógica más robusta para calcular esto
+                // Simulación de datos para el resumen de pagos
+                let totalRecaudado = 0;
+                let pagosPendientes = 0;
 
-            totalRecaudadoSpan.textContent = `$${totalRecaudado.toFixed(2)}`;
-            pagosPendientesSpan.textContent = `$${pagosPendientes.toFixed(2)}`;
+                // Si `allPlayersData` está disponible y tiene la columna de estado de pago (asumimos columna F, índice 5)
+                if (window.allPlayersData && window.allPlayersData.length > 0) {
+                    window.allPlayersData.forEach(player => {
+                        const estadoPago = player[5]; // Asumiendo que la columna F (índice 5) es el estado de pago
+                        if (estadoPago === 'Al día') {
+                            // Para un cálculo real, necesitarías un "monto a pagar" por jugador o partido
+                            // Aquí, solo estamos contando los que están "Al día" vs "Pendiente"
+                            totalRecaudado += 100; // Valor de ejemplo por jugador "Al día"
+                        } else {
+                            pagosPendientes += 100; // Valor de ejemplo por jugador "Pendiente"
+                        }
+                    });
+                } else {
+                    // Si no hay datos de jugadores, o no se han cargado, mostrar valores por defecto
+                    totalRecaudado = 1200; // Ejemplo
+                    pagosPendientes = 300; // Ejemplo
+                }
+
+
+                totalRecaudadoSpan.textContent = `$${totalRecaudado.toFixed(2)}`;
+                pagosPendientesSpan.textContent = `$${pagosPendientes.toFixed(2)}`;
+
+            } catch (err) {
+                console.error('Error al obtener resumen de pagos:', err);
+                totalRecaudadoSpan.textContent = `Error`;
+                pagosPendientesSpan.textContent = `Error`;
+            }
         }
 
 
-        // Event Listeners para los botones de la aplicación (funcionalidad placeholder)
-        addPlayerButton.addEventListener('click', () => {
-            alert('Esta funcionalidad se gestiona desde el panel de administración.');
-        });
-
-        scheduleMatchButton.addEventListener('click', () => {
-            alert('Esta funcionalidad se gestiona desde el panel de administración.');
-        });
-
-        registerPaymentButton.addEventListener('click', () => {
-            alert('Esta funcionalidad se gestiona desde el panel de administración.');
-        });
-
-
-        // Event Listeners para los botones de autenticación
-        authorizeButton.addEventListener('click', handleAuthClick);
-        signoutButton.addEventListener('click', handleSignoutClick);
-
-        // Carga las librerías de Google Identity Services (GIS) y gapi
+        // Carga la librería de Google API cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Aplicación de Fútbol 5 cargada!');
-            // Cargar las librerías de Google
+            console.log('Página pública de Fútbol 5 cargada!');
             gapiLoaded();
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.defer = true;
-            script.onload = gisLoaded;
-            document.head.appendChild(script);
         });
-
-        // --- Utilidades ---
-        /**
-         * Parsea una cadena de fecha en formato DD/MM/YYYY a un objeto Date.
-         * Asume la zona horaria local.
-         * @param {string} dateString - La cadena de fecha en formato DD/MM/YYYY.
-         * @returns {Date} El objeto Date.
-         */
-        function parseDate(dateString) {
-            const [day, month, year] = dateString.split('/').map(Number);
-            return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
-        }
-
-        /**
-         * Formatea un objeto Date a una cadena en formato DD/MM/YYYY.
-         * @param {Date} date - El objeto Date a formatear.
-         * @returns {string} La cadena de fecha en formato DD/MM/YYYY.
-         */
-        function formatDateToDDMMYYYY(date) {
-            const dd = String(date.getDate()).padStart(2, '0');
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const yyyy = date.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
-        }
     </script>
 </body>
 </html>
