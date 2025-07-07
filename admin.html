@@ -807,14 +807,16 @@
         // --- Gestión de Jugadores (AMB) ---
 
         function renderPlayersListAdmin() {
-            playersLoadingMessageAdmin.classList.remove('hidden'); // Mostrar mensaje de carga
-            document.querySelector('#players-list-admin table').classList.add('hidden'); // Ocultar tabla
             playersListAdminTableBody.innerHTML = ''; // Limpiar tabla
+            document.querySelector('#players-list-admin table').classList.add('hidden'); // Ocultar tabla
+            playersLoadingMessageAdmin.classList.remove('hidden'); // Asegurarse de que el mensaje de carga sea visible
+            playersLoadingMessageAdmin.textContent = 'Cargando jugadores...'; // Resetear el texto del mensaje
 
             const activePlayers = allPlayersData.filter(p => p[2] === 'Activo'); // Filtrar solo jugadores activos
 
             if (activePlayers.length === 0) {
-                playersLoadingMessageAdmin.textContent = 'No hay jugadores registrados.';
+                playersLoadingMessageAdmin.textContent = 'No hay jugadores activos registrados.'; // Actualizar el mensaje
+                // El mensaje permanece visible, no hay tabla que mostrar
                 return;
             }
 
@@ -848,7 +850,7 @@
                     playerRoleSelect.value = e.target.dataset.role; // Cargar el rol al editar
                 });
             });
-            playersLoadingMessageAdmin.classList.add('hidden'); // Ocultar mensaje de carga
+            playersLoadingMessageAdmin.classList.add('hidden'); // Ocultar mensaje si la tabla se muestra
             document.querySelector('#players-list-admin table').classList.remove('hidden'); // Mostrar tabla
         }
 
@@ -1406,7 +1408,7 @@
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDateInputVal = matchDateInput.value; // Formato YYYY-MM-DD (del input readonly)
+            const matchDateInputVal = matchDateInput.value; // Formatoولندا-MM-DD (del input readonly)
 
             if (!selectedMatchId || !result || !matchDateInputVal) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
@@ -2093,14 +2095,14 @@
                     idPartido,
                     fecha,
                     equipoClarosIDsStr = '',
-                    equipoOscurosIDsStr = '',
+                    equipoOscurosIDsStr = '', // Corregido: Asegurarse de usar esta variable
                     resultado, // Resultado del partido
                     chamigoVotosStr = '',
                     asistenciaTTIDsStr = ''
                 ] = match;
 
                 const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
-                const equipoOscurosIDs = oscurosIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
+                const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean); // Corregido: Usar equipoOscurosIDsStr
                 const allPlayersInMatchForPJ = new Set([...equipoClarosIDs, ...equipoOscurosIDs]); // Jugadores que participaron en este partido
 
                 // --- Calcular Puntos y PJ (solo para partidos con resultado válido y no suspendidos) ---
@@ -2318,9 +2320,9 @@
         }
 
         /**
-         * Parsea una cadena de fecha en formato YYYY-MM-DD (de input type="date") a un objeto Date.
+         * Parsea una cadena de fecha en formatoYYYY-MM-DD (de input type="date") a un objeto Date.
          * Asegura que se interprete en la zona horaria local para evitar problemas de desfase.
-         * @param {string} dateString - La cadena de fecha en formato YYYY-MM-DD.
+         * @param {string} dateString - La cadena de fecha en formatoYYYY-MM-DD.
          * @returns {Date} El objeto Date en la zona horaria local.
          */
         function parseYYYYMMDDToLocalDate(dateString) {
