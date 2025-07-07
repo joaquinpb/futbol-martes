@@ -12,31 +12,47 @@
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5; /* Un gris claro para el fondo */
         }
+        /* Estilos base para tablas */
+        table {
+            @apply min-w-full bg-white rounded-lg shadow-md;
+        }
+        th, td {
+            @apply py-3 px-6 text-left;
+        }
+        thead th {
+            @apply bg-gray-200 text-gray-700 uppercase text-sm leading-normal;
+        }
+        tbody tr {
+            @apply border-b border-gray-200 hover:bg-gray-100;
+        }
+        tbody tr:last-child {
+            @apply border-b-0;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl">
         <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Tabla de Posiciones</h1>
 
-        <!-- Controles de Filtro -->
-        <div class="flex flex-wrap justify-center gap-4 mb-8">
-            <div>
-                <label for="year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                <select id="year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+        <!-- Controles de Filtro Mejorados -->
+        <div class="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
+            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
+                <label for="year-select" class="block text-sm font-medium text-gray-700 mb-1">Año:</label>
+                <select id="year-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
                     <!-- Opciones de año se generarán dinámicamente -->
                 </select>
             </div>
-            <div>
-                <label for="period-select" class="block text-sm font-medium text-gray-700">Período:</label>
-                <select id="period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
+                <label for="period-select" class="block text-sm font-medium text-gray-700 mb-1">Período:</label>
+                <select id="period-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
                     <option value="totales">Totales</option>
                     <option value="apertura">Apertura</option>
                     <option value="clausura">Clausura</option>
                 </select>
             </div>
-            <div>
-                <label for="criterion-select" class="block text-sm font-medium text-gray-700">Criterio:</label>
-                <select id="criterion-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
+                <label for="criterion-select" class="block text-sm font-medium text-gray-700 mb-1">Criterio:</label>
+                <select id="criterion-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
                     <option value="puntos">Puntos</option>
                     <option value="presentismo">Presentismo</option>
                     <option value="ausentismo">Ausentismo</option>
@@ -205,10 +221,11 @@
          * Filtra los partidos según el año y el período seleccionados.
          */
         function filterMatches(matches, selectedYear, selectedPeriod) {
-            return matches.filter(match => {
-                const dateString = match[1]; // Columna 'Fecha'
-                if (!dateString) return false;
+            // Solo considerar partidos que tienen fecha y no están suspendidos
+            const validMatches = matches.filter(match => match[1] && match[1].trim() !== '' && match[4] !== 'Suspendido');
 
+            return validMatches.filter(match => {
+                const dateString = match[1]; // Columna 'Fecha'
                 const matchDate = parseDate(dateString);
                 const matchYear = matchDate.getFullYear();
                 const matchMonth = matchDate.getMonth(); // 0-indexed
@@ -254,8 +271,8 @@
             filteredMatches.forEach(match => {
                 const [idPartido, fecha, equipoClarosIDsStr, equipoOscurosIDsStr, resultado, chamigoVotosStr, asistenciaTTIDsStr] = match;
 
-                const equipoClarosIDs = equipoClarosIDsStr ? equipoClarosIDsStr.split(',') : [];
-                const equipoOscurosIDs = equipoOscurosIDsStr ? equipoOscurosIDsStr.split(',') : [];
+                const equipoClarosIDs = equipoClarosIDsStr ? equipoClarosIDsStr.split(',').filter(Boolean) : [];
+                const equipoOscurosIDs = equipoOscurosIDsStr ? equipoOscurosIDsStr.split(',').filter(Boolean) : [];
                 const allPlayersInMatch = new Set([...equipoClarosIDs, ...equipoOscurosIDs]);
 
                 // Contar partidos jugados (PJ) y ajustar Ausente
@@ -269,8 +286,6 @@
                 // Asignar puntos por resultado
                 if (resultado === 'Claros' || resultado === 'Oscuros') {
                     const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
-                    // const losingTeam = resultado === 'Claros' ? equipoOscurosIDs : equipoClarosIDs; // No se usa para puntos aquí
-
                     winningTeam.forEach(playerId => {
                         if (playerStats[playerId]) playerStats[playerId].puntos += 3;
                     });
@@ -284,7 +299,6 @@
                 if (chamigoVotosStr) {
                     try {
                         const chamigoVotos = JSON.parse(chamigoVotosStr);
-                        // Encontrar el/los chamigo(s) con más votos para este partido
                         if (chamigoVotos.length > 0) {
                             const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
                             const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
@@ -299,7 +313,7 @@
 
                 // Contar asistencias a TT
                 if (asistenciaTTIDsStr) {
-                    const ttAttendees = asistenciaTTIDsStr.split(',');
+                    const ttAttendees = asistenciaTTIDsStr.split(',').filter(Boolean);
                     ttAttendees.forEach(playerId => {
                         if (playerStats[playerId]) playerStats[playerId].tt++;
                     });
@@ -352,7 +366,7 @@
                 } else if (selectedCriterion === 'presentismo') {
                     return b.partidos - a.partidos; // Ordenar por PJ DESC
                 } else if (selectedCriterion === 'ausentismo') {
-                    return b.ausente - a.ausente; // Ordenar por Ausente DESC
+                    return a.ausente - b.ausente; // Ordenar por Ausente DESC
                 } else if (selectedCriterion === 'chamigos') {
                     return b.chamigos - a.chamigos;
                 } else if (selectedCriterion === 'tt') {
