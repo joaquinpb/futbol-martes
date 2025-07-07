@@ -153,6 +153,14 @@
                                 <option value="Inactivo">Inactivo</option>
                             </select>
                         </div>
+                        <!-- Nuevo campo para el Rol (Titular/Suplente) -->
+                        <div>
+                            <label for="player-role" class="block text-sm font-medium text-gray-700">Rol:</label>
+                            <select id="player-role" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="Titular">Titular</option>
+                                <option value="Suplente">Suplente</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mt-6 flex space-x-3">
                         <button id="save-player-button" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300">
@@ -165,14 +173,39 @@
                 </div>
 
                 <h3 class="text-xl font-medium text-gray-800 mb-3">Listado de Jugadores</h3>
+                <!-- Nuevos filtros para la tabla de jugadores -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label for="player-list-name-filter" class="block text-sm font-medium text-gray-700">Buscar por Nombre:</label>
+                        <input type="text" id="player-list-name-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Ej: Mati">
+                    </div>
+                    <div>
+                        <label for="player-list-status-filter" class="block text-sm font-medium text-gray-700">Filtrar por Estado:</label>
+                        <select id="player-list-status-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <option value="Todos">Todos</option>
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="player-list-role-filter" class="block text-sm font-medium text-gray-700">Filtrar por Rol:</label>
+                        <select id="player-list-role-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <option value="Todos">Todos</option>
+                            <option value="Titular">Titular</option>
+                            <option value="Suplente">Suplente</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div id="players-list-admin" class="overflow-x-auto">
-                    <p class="text-gray-500 text-center">Cargando jugadores...</p>
+                    <p id="players-loading-message-admin" class="text-gray-500 text-center">Cargando jugadores...</p>
                     <table class="min-w-full bg-white rounded-lg shadow hidden">
                         <thead>
                             <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
                                 <th class="py-3 px-6 text-left">ID</th>
                                 <th class="py-3 px-6 text-left">Nombre</th>
                                 <th class="py-3 px-6 text-left">Estado</th>
+                                <th class="py-3 px-6 text-left">Rol</th> <!-- Nueva columna para Rol -->
                                 <th class="py-3 px-6 text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -193,9 +226,21 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Disponibles</h3>
-                        <div id="available-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2">
-                            <!-- Jugadores disponibles se cargarán aquí -->
-                            <p class="text-gray-500">Cargando jugadores...</p>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Titulares</h4>
+                                <div id="titulares-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
+                                    <!-- Jugadores titulares se cargarán aquí -->
+                                    <p class="text-gray-500">Cargando titulares...</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Suplentes</h4>
+                                <div id="suplentes-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
+                                    <!-- Jugadores suplentes se cargarán aquí -->
+                                    <p class="text-gray-500">Cargando suplentes...</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div>
@@ -475,13 +520,21 @@
         const playerIdInput = document.getElementById('player-id');
         const playerNameInput = document.getElementById('player-name');
         const playerStatusSelect = document.getElementById('player-status');
+        const playerRoleSelect = document.getElementById('player-role'); // Nuevo: Selector de Rol
         const savePlayerButton = document.getElementById('save-player-button');
         const deletePlayerButton = document.getElementById('delete-player-button');
         const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
+        const playersLoadingMessageAdmin = document.getElementById('players-loading-message-admin'); // Mensaje de carga
+        // Nuevos filtros de Gestión de Jugadores
+        const playerListNameFilter = document.getElementById('player-list-name-filter');
+        const playerListStatusFilter = document.getElementById('player-list-status-filter');
+        const playerListRoleFilter = document.getElementById('player-list-role-filter');
+
 
         // Armar Equipos
         const teamMatchDateInput = document.getElementById('team-match-date'); // Nuevo: Fecha en Armar Equipos
-        const availablePlayersDiv = document.getElementById('available-players');
+        const titularesPlayersDiv = document.getElementById('titulares-players'); // Nuevo: Jugadores Titulares
+        const suplentesPlayersDiv = document.getElementById('suplentes-players'); // Nuevo: Jugadores Suplentes
         const teamClarosDiv = document.getElementById('team-claros');
         const teamOscurosDiv = document.getElementById('team-oscuros');
         const clarosCountSpan = document.getElementById('claros-count');
@@ -575,8 +628,10 @@
             };
 
             if (gapi.client.getToken() === null) {
+                // Si no hay token, solicita uno
                 tokenClient.requestAccessToken({prompt: 'consent'});
             } else {
+                // Si ya hay token, úsalo para solicitar un nuevo token (refrescar)
                 tokenClient.requestAccessToken({prompt: ''});
             }
         }
@@ -602,7 +657,9 @@
                 authStatus.classList.remove('hidden');
                 // Limpiar todas las interfaces
                 playersListAdminTableBody.innerHTML = '';
-                availablePlayersDiv.innerHTML = '';
+                playersLoadingMessageAdmin.textContent = 'Cargando jugadores...'; // Restablecer mensaje de carga
+                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando titulares...</p>';
+                suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando suplentes...</p>';
                 teamClarosDiv.innerHTML = '';
                 teamOscurosDiv.innerHTML = '';
                 clarosCountSpan.textContent = '0';
@@ -690,7 +747,7 @@
 
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:G',
+                    range: 'Jugadores!A:H', // Rango actualizado para incluir la columna 'Rol' (H)
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
 
@@ -714,7 +771,7 @@
 
         async function loadAllDataAndDisplayAllContent() {
             await loadAllData();
-            renderPlayersListAdmin();
+            renderPlayersListAdmin(); // Se encarga de los filtros ahora
             renderAvailablePlayersForTeams();
             populateResultsMatchYearSelect(); // Llama a la función para el selector de año de resultados
             populateMatchSelects(); // Se llama después de poblar el año para que use el filtro inicial
@@ -740,7 +797,7 @@
 
                     // Recargar datos específicos de la pestaña si es necesario
                     if (button.dataset.tab === 'players-management') {
-                        renderPlayersListAdmin();
+                        renderPlayersListAdmin(); // Ahora con filtros
                     } else if (button.dataset.tab === 'team-formation') {
                         renderAvailablePlayersForTeams();
                         // Limpiar selecciones de equipos al cambiar de pestaña
@@ -780,20 +837,44 @@
 
         function renderPlayersListAdmin() {
             playersListAdminTableBody.innerHTML = ''; // Limpiar tabla
-            if (allPlayersData.length === 0) {
-                playersListAdminTableBody.innerHTML = '<tr><td colspan="4" class="py-3 px-6 text-center text-gray-500">No hay jugadores registrados.</td></tr>';
+            document.querySelector('#players-list-admin table').classList.add('hidden'); // Ocultar tabla
+            playersLoadingMessageAdmin.classList.remove('hidden'); // Asegurarse de que el mensaje de carga sea visible
+            playersLoadingMessageAdmin.textContent = 'Cargando jugadores...'; // Resetear el texto del mensaje
+
+            // Obtener valores de los filtros
+            const nameFilter = playerListNameFilter.value.toLowerCase();
+            const statusFilter = playerListStatusFilter.value;
+            const roleFilter = playerListRoleFilter.value;
+
+            // Aplicar filtros
+            const filteredPlayers = allPlayersData.filter(player => {
+                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
+                const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
+                const matchesStatus = statusFilter === 'Todos' || estado === statusFilter;
+                const matchesRole = roleFilter === 'Todos' || rol === roleFilter;
+                return matchesName && matchesStatus && matchesRole;
+            });
+
+            if (filteredPlayers.length === 0) {
+                playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.'; // Actualizar el mensaje
                 return;
             }
 
-            allPlayersData.forEach((player, index) => {
-                const [id, nombre, estado] = player;
+            filteredPlayers.forEach((player, index) => {
+                // Asegurarse de que la columna 7 (índice 7) para Rol exista, si no, usar un valor por defecto
+                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
                 const row = `
                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                         <td class="py-3 px-6 text-left">${id}</td>
                         <td class="py-3 px-6 text-left">${nombre}</td>
                         <td class="py-3 px-6 text-left">${estado}</td>
+                        <td class="py-3 px-6 text-left">${rol}</td> <!-- Columna para Rol -->
                         <td class="py-3 px-6 text-center">
-                            <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs" data-id="${id}" data-name="${nombre}" data-status="${estado}">Editar</button>
+                            <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs"
+                                data-id="${id}"
+                                data-name="${nombre}"
+                                data-status="${estado}"
+                                data-role="${rol}">Editar</button>
                         </td>
                     </tr>
                 `;
@@ -806,45 +887,73 @@
                     playerIdInput.value = e.target.dataset.id;
                     playerNameInput.value = e.target.dataset.name;
                     playerStatusSelect.value = e.target.dataset.status;
+                    playerRoleSelect.value = e.target.dataset.role; // Cargar el rol al editar
                 });
             });
-            document.querySelector('#players-list-admin table').classList.remove('hidden');
+            playersLoadingMessageAdmin.classList.add('hidden'); // Ocultar mensaje si la tabla se muestra
+            document.querySelector('#players-list-admin table').classList.remove('hidden'); // Mostrar tabla
         }
+
+        // Event Listeners para los nuevos filtros de Gestión de Jugadores
+        playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
+        playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
+        playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
+
 
         savePlayerButton.addEventListener('click', async () => {
             const id = playerIdInput.value.trim();
             const name = playerNameInput.value.trim();
             const status = playerStatusSelect.value;
+            const role = playerRoleSelect.value; // Obtener el rol
 
             if (!name) {
                 alert('El nombre del jugador no puede estar vacío.');
                 return;
             }
 
+            // --- Validación de Nombre Único ---
+            const normalizedNewName = name.toLowerCase();
+            const isEditingExistingPlayer = id !== '';
+
+            const duplicatePlayer = allPlayersData.find(p => {
+                const existingId = p[0];
+                const existingName = p[1].toLowerCase();
+                // Si estamos editando, ignorar el propio jugador en la búsqueda de duplicados
+                return existingName === normalizedNewName && (!isEditingExistingPlayer || existingId !== id);
+            });
+
+            if (duplicatePlayer) {
+                alert(`Ya existe un jugador con el nombre "${name}". Por favor, elige un nombre diferente.`);
+                return;
+            }
+            // --- Fin Validación de Nombre Único ---
+
             try {
-                let rowToUpdate = allPlayersData.findIndex(p => p[0] === id); // Buscar por ID
+                let rowToUpdateIndex = allPlayersData.findIndex(p => p[0] === id); // Buscar por ID
                 let newPlayerId = id;
 
-                if (rowToUpdate === -1) { // Si no se encuentra, es un nuevo jugador
+                if (rowToUpdateIndex === -1) { // Si no se encuentra, es un nuevo jugador
                     // Generar un nuevo ID de jugador (ej. J001, J002...)
                     const maxIdNum = allPlayersData.reduce((max, p) => {
                         const num = parseInt(p[0]?.replace('J', '') || 0);
                         return Math.max(max, num);
                     }, 0);
                     newPlayerId = 'J' + String(maxIdNum + 1).padStart(3, '0');
-                    // Valores iniciales para un nuevo jugador
-                    const newPlayerRow = [newPlayerId, name, status, 0, 0, 0, 0];
+                    // Valores iniciales para un nuevo jugador, incluyendo el nuevo campo 'Rol'
+                    const newPlayerRow = [newPlayerId, name, status, 0, 0, 0, 0, role]; // Añadir 'role'
                     allPlayersData.push(newPlayerRow);
-                    rowToUpdate = allPlayersData.length - 1; // Índice del nuevo jugador
+                    rowToUpdateIndex = allPlayersData.length - 1; // Índice del nuevo jugador
                 } else {
                     // Modificar jugador existente
-                    allPlayersData[rowToUpdate][1] = name; // Nombre
-                    allPlayersData[rowToUpdate][2] = status; // Estado
+                    allPlayersData[rowToUpdateIndex][1] = name; // Nombre
+                    allPlayersData[rowToUpdateIndex][2] = status; // Estado
+                    allPlayersData[rowToUpdateIndex][7] = role; // Actualizar Rol (columna H, índice 7)
                 }
 
                 // Actualizar la hoja de cálculo
-                const values = [allPlayersData[rowToUpdate]];
-                const range = `Jugadores!A${rowToUpdate + 2}:G${rowToUpdate + 2}`; // +2 porque es 1-indexado y hay encabezado
+                // El rango ahora es A:H para incluir el nuevo campo
+                const values = [allPlayersData[rowToUpdateIndex]];
+                const range = `Jugadores!A${rowToUpdateIndex + 2}:H${rowToUpdateIndex + 2}`; // Rango A:H
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -857,6 +966,7 @@
                 playerIdInput.value = '';
                 playerNameInput.value = '';
                 playerStatusSelect.value = 'Activo';
+                playerRoleSelect.value = 'Titular'; // Resetear a valor por defecto
                 await loadAllDataAndDisplayAllContent(); // Recargar y renderizar la lista
             } catch (err) {
                 console.error('Error al guardar jugador:', err);
@@ -885,8 +995,9 @@
 
                 // Opción más segura: cambiar estado a 'Inactivo'
                 allPlayersData[rowIndex][2] = 'Inactivo'; // Cambiar estado a Inactivo
+                // Mantener el Rol actual, no se modifica al inactivar
                 const values = [allPlayersData[rowIndex]];
-                const range = `Jugadores!A${rowIndex + 2}:G${rowIndex + 2}`;
+                const range = `Jugadores!A${rowIndex + 2}:H${rowIndex + 2}`; // Rango A:H
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -899,6 +1010,7 @@
                 playerIdInput.value = '';
                 playerNameInput.value = '';
                 playerStatusSelect.value = 'Activo';
+                playerRoleSelect.value = 'Titular'; // Resetear a valor por defecto
                 await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al eliminar jugador:', err);
@@ -909,16 +1021,24 @@
         // --- Armar Equipos ---
 
         function renderAvailablePlayersForTeams() {
-            availablePlayersDiv.innerHTML = '';
-            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo'); // Filtrar solo jugadores activos
+            titularesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando titulares...</p>';
+            suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando suplentes...</p>';
+
+            // Filtrar solo jugadores Activos para Armar Equipos
+            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
 
             if (activePlayers.length === 0) {
-                availablePlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos disponibles.</p>';
+                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos.</p>';
+                suplentesPlayersDiv.innerHTML = '';
                 return;
             }
+            
+            titularesPlayersDiv.innerHTML = ''; // Limpiar antes de poblar
+            suplentesPlayersDiv.innerHTML = ''; // Limpiar antes de poblar
 
             activePlayers.forEach(player => {
-                const [id, nombre] = player;
+                // Asegurarse de que la columna 7 (índice 7) para Rol exista, si no, usar un valor por defecto
+                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
                 const playerElement = document.createElement('div');
                 playerElement.className = 'player-draggable'; // Usará las clases definidas en <style>
                 playerElement.draggable = true;
@@ -926,8 +1046,21 @@
                 playerElement.dataset.name = nombre;
                 playerElement.textContent = nombre;
                 playerElement.addEventListener('dragstart', handleDragStart);
-                availablePlayersDiv.appendChild(playerElement);
+
+                if (rol === 'Titular') {
+                    titularesPlayersDiv.appendChild(playerElement);
+                } else { // Suplente
+                    suplentesPlayersDiv.appendChild(playerElement);
+                }
             });
+
+            // Si no hay titulares o suplentes, mostrar un mensaje
+            if (titularesPlayersDiv.children.length === 0) {
+                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay titulares activos.</p>';
+            }
+            if (suplentesPlayersDiv.children.length === 0) {
+                suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay suplentes activos.</p>';
+            }
         }
 
         function handleDragStart(e) {
@@ -935,12 +1068,12 @@
             e.dataTransfer.setData('text/plain', JSON.stringify({
                 id: e.target.dataset.id,
                 name: e.target.dataset.name,
-                source: e.target.parentNode.id // 'available-players', 'team-claros', 'team-oscuros'
+                source: e.target.parentNode.id // 'titulares-players', 'suplentes-players', 'team-claros', 'team-oscuros'
             }));
             e.dataTransfer.effectAllowed = 'move';
         }
 
-        [availablePlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(dropZone => {
+        [titularesPlayersDiv, suplentesPlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(dropZone => {
             dropZone.addEventListener('dragover', handleDragOver);
             dropZone.addEventListener('drop', handleDrop);
         });
@@ -1049,7 +1182,8 @@
                 alert(`Equipos guardados para el partido ${newMatchId} en la fecha ${formattedDate}.`);
                 await loadAllDataAndDisplayAllContent(); // Recargar partidos para que aparezca en el selector
                 // Limpiar la selección de equipos
-                availablePlayersDiv.innerHTML = ''; // Se recargará con loadAllDataAndDisplayAllContent
+                titularesPlayersDiv.innerHTML = ''; // Se recargará con loadAllDataAndDisplayAllContent
+                suplentesPlayersDiv.innerHTML = ''; // Se recargará con loadAllDataAndDisplayAllContent
                 teamClarosDiv.innerHTML = '';
                 teamOscurosDiv.innerHTML = '';
                 clarosCountSpan.textContent = '0';
@@ -1338,7 +1472,7 @@
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDateInputVal = matchDateInput.value; // Formato YYYY-MM-DD (del input readonly)
+            const matchDateInputVal = matchDateInput.value; // Formatoولندا-MM-DD (del input readonly)
 
             if (!selectedMatchId || !result || !matchDateInputVal) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
@@ -2032,7 +2166,7 @@
                 ] = match;
 
                 const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
-                const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
+                const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean);
                 const allPlayersInMatchForPJ = new Set([...equipoClarosIDs, ...equipoOscurosIDs]); // Jugadores que participaron en este partido
 
                 // --- Calcular Puntos y PJ (solo para partidos con resultado válido y no suspendidos) ---
@@ -2250,9 +2384,9 @@
         }
 
         /**
-         * Parsea una cadena de fecha en formato YYYY-MM-DD (de input type="date") a un objeto Date.
+         * Parsea una cadena de fecha en formatoYYYY-MM-DD (de input type="date") a un objeto Date.
          * Asegura que se interprete en la zona horaria local para evitar problemas de desfase.
-         * @param {string} dateString - La cadena de fecha en formato YYYY-MM-DD.
+         * @param {string} dateString - La cadena de fecha en formatoYYYY-MM-DD.
          * @returns {Date} El objeto Date en la zona horaria local.
          */
         function parseYYYYMMDDToLocalDate(dateString) {
