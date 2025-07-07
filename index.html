@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración Fútbol 5</title>
+    <title>La Clande - Los Martes</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -11,68 +12,16 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5; /* Un gris claro para el fondo */
-            min-height: 100vh; /* Asegura que el cuerpo ocupe toda la altura del viewport */
-            margin: 0; /* Elimina el margen predeterminado del body */
-            padding: 0; /* Elimina el padding predeterminado del body */
-            display: flex; /* Usa flex para contener el contenido principal y permitir centrado */
-            justify-content: center; /* Centra el contenido principal horizontalmente */
-            align-items: center; /* Centra el contenido principal verticalmente */
         }
-        /* Estilos para el efecto de arrastre */
-        .player-draggable {
-            @apply bg-white p-2 rounded-md shadow-sm mb-2 flex justify-between items-center;
-            cursor: grab; /* Cambia el cursor a una mano al pasar el ratón */
-        }
-        .player-draggable:active {
-            cursor: grabbing; /* Cambia el cursor a una mano agarrando al hacer clic */
-        }
-        /* Nueva clase para feedback visual al arrastrar con toque */
-        .player-draggable.dragging-touch {
-            opacity: 0.7;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        /* Estilo para el botón de cerrar sesión (Cruz) */
-        .close-button {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #ef4444; /* Rojo 500 de Tailwind */
-            cursor: pointer;
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.5rem;
-            border-radius: 9999px; /* Fully rounded */
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        .close-button:hover {
-            background-color: #fecaca; /* Rojo 100 de Tailwind */
-            color: #dc2626; /* Rojo 600 de Tailwind */
-        }
-        /* Estilo para los elementos de la lista de partidos seleccionables */
-        .match-item {
-            @apply bg-white p-3 rounded-md shadow-sm mb-2 cursor-pointer hover:bg-gray-100 transition duration-150 ease-in-out;
-        }
-        .match-item.selected {
-            @apply bg-indigo-100 border-l-4 border-indigo-500;
-        }
-        /* Nuevos estilos para el sombreado de partidos */
-        .match-item.no-result {
-            background-color: #fee2e2; /* bg-red-100 pastel */
-        }
-        .match-item.has-result {
-            background-color: #dcfce7; /* bg-green-100 pastel */
-        }
-
-        /* Estilos para la tabla de posiciones (tomados de index.html) */
-        #leaderboard-table-admin {
+        /* Estilos base para tablas */
+        table {
             @apply min-w-full bg-white rounded-lg shadow-md;
         }
-        #leaderboard-table-admin th, #leaderboard-table-admin td {
+        th, td {
             @apply py-3 px-6 text-left;
         }
         /* Encabezado de la tabla: fondo negro, texto blanco */
-        #leaderboard-table-admin thead th {
+        thead th {
             background-color: #1a202c !important; /* Fondo negro (bg-gray-900) */
             color: #ffffff !important; /* Texto blanco (text-white) */
             text-transform: uppercase;
@@ -80,2314 +29,168 @@
             line-height: 1.25rem; /* leading-normal */
         }
         /* Filas del cuerpo de la tabla: alternar entre dos tonos de gris */
-        #leaderboard-table-admin tbody tr:nth-child(odd) {
+        tbody tr:nth-child(odd) {
             background-color: #f7fafc !important; /* Gris muy claro (bg-gray-100) */
         }
-        #leaderboard-table-admin tbody tr:nth-child(even) {
+        tbody tr:nth-child(even) {
             background-color: #edf2f7 !important; /* Gris ligeramente más oscuro (bg-gray-200) */
         }
-        #leaderboard-table-admin tbody tr {
+        tbody tr {
             /* Borde inferior para separar filas y efecto hover */
             border-bottom: 1px solid #cbd5e0; /* border-gray-300 */
             transition: background-color 150ms ease-in-out; /* transition duration-150 ease-in-out */
         }
-        #leaderboard-table-admin tbody tr:hover {
+        tbody tr:hover {
             background-color: #e2e8f0 !important; /* Tono de gris al pasar el cursor (hover:bg-gray-300) */
         }
-        #leaderboard-table-admin tbody tr:last-child {
+        tbody tr:last-child {
             border-bottom: 0; /* Eliminar borde inferior de la última fila */
         }
         /* Asegurar color de texto para las celdas del cuerpo para legibilidad */
-        #leaderboard-table-admin tbody td {
+        tbody td {
             color: #4a5568; /* text-gray-600 */
-        }
-
-        /* --- Estilos para el menú lateral responsivo --- */
-
-        /* Base styles for side menu (mobile first) */
-        #side-menu {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: 256px; /* w-64 */
-            background-color: #312e81; /* indigo-800 */
-            color: white;
-            transform: translateX(-100%); /* Hidden by default */
-            transition: transform 0.3s ease-in-out;
-            z-index: 40;
-            display: flex; /* Use flex for vertical layout of tabs */
-            flex-direction: column;
-            padding-top: 1rem; /* Add some padding at the top */
-        }
-
-        #side-menu.open {
-            transform: translateX(0); /* Show when open */
-        }
-
-        /* Styles for overlay (mobile first) */
-        #overlay {
-            position: fixed;
-            inset: 0; /* top:0, right:0, bottom:0, left:0 */
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 30;
-            display: none; /* Hidden by default */
-        }
-
-        #overlay.open {
-            display: block; /* Show when side menu is open */
-        }
-
-        /* Hamburger button (mobile only) */
-        #hamburger-button {
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            z-index: 50;
-            padding: 0.5rem;
-            border-radius: 0.375rem; /* rounded-md */
-            background-color: #4f46e5; /* indigo-600 */
-            color: white;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
-        }
-
-        /* Close button inside side menu (mobile only) */
-        #close-side-menu-button {
-            background: none;
-            border: none;
-            font-size: 2rem; /* text-2xl */
-            color: white;
-            cursor: pointer;
-            padding: 0.5rem;
-        }
-
-        /* Adjust tab buttons for mobile sidebar */
-        #side-menu .tab-button {
-            padding-left: 1.5rem; /* px-6 */
-            padding-right: 1.5rem; /* px-6 */
-            text-align: left;
-            width: 100%; /* Full width within sidebar */
-            border-radius: 0; /* No rounded corners for vertical tabs */
-            margin-bottom: 0.25rem; /* mb-1 */
-            color: white; /* Text white for dark sidebar */
-            transition: background-color 0.15s ease-in-out;
-        }
-        #side-menu .tab-button.active {
-            background-color: #4338ca; /* indigo-700 */
-        }
-        #side-menu .tab-button:hover {
-            background-color: #4f46e5; /* indigo-600 */
-        }
-
-        /* Media query for medium screens and up (md: 768px) */
-        @media (min-width: 768px) {
-            #hamburger-button,
-            #overlay,
-            #close-side-menu-button,
-            #signout_button_mobile_sidebar { /* Hide mobile signout button on desktop */
-                display: none !important; /* Hide hamburger, overlay, close button, and mobile signout button on desktop */
-            }
-
-            /* No longer need flex-row on body, as sidebar is fixed */
-            body {
-                display: flex; /* Keep flex for centering main content */
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
-                padding: 0;
-            }
-
-            #side-menu {
-                position: fixed; /* Changed to fixed */
-                top: 0;
-                left: 0;
-                transform: translateX(0); /* Always visible */
-                width: 200px; /* Fixed width for desktop sidebar */
-                height: 100vh; /* Full viewport height */
-                background-color: white; /* White background for desktop sidebar */
-                color: #4a5568; /* text-gray-600 */
-                flex-direction: column; /* Keep vertical layout for tabs */
-                border-right: 1px solid #e2e8f0; /* border-gray-200 */
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
-                /* Removed border-radius as it's fixed and full height */
-                border-top-left-radius: 0;
-                border-bottom-left-radius: 0;
-                padding-top: 2rem; /* p-8 */
-                padding-bottom: 2rem; /* p-8 */
-            }
-
-            /* Adjust tab buttons for desktop sidebar */
-            #side-menu .tab-button {
-                padding-left: 1.5rem; /* px-6 */
-                padding-right: 1.5rem; /* px-6 */
-                text-align: left;
-                width: 100%; /* Full width within sidebar */
-                border-radius: 0; /* No rounded corners for vertical tabs */
-                margin-bottom: 0.25rem; /* mb-1 */
-                color: #4a5568; /* text-gray-600 */
-                transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
-            }
-            #side-menu .tab-button.active {
-                background-color: #e0e7ff; /* indigo-100 */
-                color: #4f46e5; /* indigo-600 */
-                border-left: 4px solid #4f46e5; /* border-indigo-500 */
-            }
-            #side-menu .tab-button:hover {
-                background-color: #edf2f7; /* gray-200 */
-            }
-
-            /* Main content container */
-            .main-admin-content-container { /* The bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl relative div */
-                flex-grow: 1; /* Take remaining space */
-                padding: 2rem; /* p-8 */
-                background-color: white; /* bg-white */
-                border-top-right-radius: 0.75rem; /* rounded-xl */
-                border-bottom-right-radius: 0.75rem;
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
-                width: auto; /* Allow flex-grow to manage width */
-                max-width: 100%; /* Override max-w-5xl for flex behavior */
-                position: relative; /* Needed for absolute positioning children if any */
-                min-height: calc(100vh - 4rem); /* Ensure it stretches, accounting for 2rem top/bottom margin */
-                margin-left: 200px; /* Push content away from the fixed sidebar */
-                margin-right: 2rem; /* Add some right margin for balance */
-                margin-top: 2rem; /* Add some top margin for balance */
-                margin-bottom: 2rem; /* Add some bottom margin for balance */
-            }
         }
     </style>
 </head>
-<body class="bg-gray-100 flex md:flex-row items-start justify-center min-h-screen p-4 md:p-0">
-    <!-- Hamburger Button (visible on small screens, hidden on md and up) -->
-    <button id="hamburger-button" class="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-    </button>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Tabla de Posiciones</h1>
 
-    <!-- Side Navigation Menu (mobile: fixed, slides; desktop: static, flex-col) -->
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden
-                                md:relative md:transform-none md:w-64 md:h-auto md:bg-white md:border-r md:border-gray-200 md:shadow-lg md:rounded-l-xl md:flex md:flex-col md:py-8">
-        <div class="p-4 text-right md:hidden">
-            <button id="close-side-menu-button" class="text-white text-2xl">&times;</button>
-        </div>
-        <div class="flex flex-col p-4 md:p-0 md:space-y-2">
-            <!-- Reordered tab buttons -->
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="team-formation">Armar Equipos</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="players-management">Gestionar Jugadores</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="match-results">Resultados</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-management">Chamigo</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-attendance">TT</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-tab">Tabla de Posiciones</button>
-        </div>
-        <!-- Signout button for mobile sidebar -->
-        <button id="signout_button_mobile_sidebar" class="md:hidden mt-auto mx-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 hidden">
-            Cerrar Sesión
-        </button>
-        <!-- Signout button inside sidebar for desktop -->
-        <button id="signout_button_sidebar" class="hidden md:block mt-auto mx-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300">
-            Cerrar Sesión
-        </button>
-    </nav>
-
-    <!-- Overlay for when side menu is open (visible only on small screens) -->
-    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
-
-    <!-- Main Content Area -->
-    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl relative">
-        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Panel de Administración</h1>
-
-        <!-- Authentication buttons (only authorize button remains here) -->
-        <div class="flex justify-center space-x-4 mb-8">
-            <button id="authorize_button" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
-                Autorizar Google Sheets
-            </button>
+        <!-- Controles de Filtro Mejorados -->
+        <div class="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
+            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
+                <label for="year-select" class="block text-sm font-medium text-gray-700 mb-1">Año:</label>
+                <select id="year-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
+                    <!-- Opciones de año se generarán dinámicamente -->
+                </select>
+            </div>
+            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
+                <label for="period-select" class="block text-sm font-medium text-gray-700 mb-1">Período:</label>
+                <select id="period-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
+                    <option value="totales">Totales</option>
+                    <option value="apertura">Apertura</option>
+                    <option value="clausura">Clausura</option>
+                </select>
+            </div>
+            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
+                <label for="criterion-select" class="block text-sm font-medium text-gray-700 mb-1">Criterio:</label>
+                <select id="criterion-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
+                    <option value="puntos">Puntos</option>
+                    <option value="presentismo">Presentismo</option>
+                    <option value="ausentismo">Ausentismo</option>
+                    <option value="chamigos">Chamigo</option>
+                    <option value="tt">TT</option>
+                </select>
+            </div>
         </div>
 
-        <!-- Message for auth status -->
-        <p id="auth-status" class="text-center text-red-500 mb-6">Por favor, autoriza la aplicación para acceder a los datos.</p>
-
-        <!-- Admin Content -->
-        <div id="admin-content" class="hidden">
-            <!-- Tab contents go here -->
-            <div id="team-formation" class="tab-content hidden"> <!-- Default active tab -->
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Armar Equipos</h2>
-                <div class="mb-4">
-                    <label for="team-match-date" class="block text-sm font-medium text-gray-700">Fecha del Partido:</label>
-                    <input type="date" id="team-match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                </div>
-                <p class="text-gray-500 mb-4">Selecciona 10 jugadores para formar los equipos Claros y Oscuros.</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Disponibles</h3>
-                        <div id="titulares-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
-                            <!-- Jugadores titulares se cargarán aquí -->
-                            <p class="text-gray-500">Cargando titulares...</p>
-                        </div>
-                        <h4 class="font-semibold text-gray-700 mb-2 mt-4">Suplentes</h4>
-                        <div id="suplentes-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
-                            <!-- Jugadores suplentes se cargarán aquí -->
-                            <p class="text-gray-500">Cargando suplentes...</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-medium text-gray-800 mb-3">Equipos Seleccionados (10/10)</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Claros (<span id="claros-count">0</span>)</h4>
-                                <div id="team-claros" class="border border-blue-300 rounded-lg p-3 bg-blue-50 flex flex-wrap content-start gap-2 min-h-[120px]">
-                                    <!-- Jugadores del equipo Claros -->
-                                </div>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
-                                <div id="team-oscuros" class="border border-red-300 rounded-lg p-3 bg-red-50 flex flex-wrap content-start gap-2 min-h-[120px]">
-                                    <!-- Jugadores del equipo Oscuros -->
-                                </div>
-                            </div>
-                        </div>
-                        <button id="save-teams-button" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 w-full" disabled>
-                            Guardar Equipos para Partido
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="players-management" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Gestionar Jugadores</h2>
-                <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-medium text-gray-800 mb-3">Añadir/Modificar Jugador</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="player-id" class="block text-sm font-medium text-gray-700">ID Jugador (para modificar):</label>
-                            <input type="text" id="player-id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Dejar vacío para nuevo">
-                        </div>
-                        <div>
-                            <label for="player-name" class="block text-sm font-medium text-gray-700">Nombre:</label>
-                            <input type="text" id="player-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="player-status" class="block text-sm font-medium text-gray-700">Estado:</label>
-                            <select id="player-status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                                <option value="Activo">Activo</option>
-                                <option value="Inactivo">Inactivo</option>
-                            </select>
-                        </div>
-                        <!-- Nuevo campo para el Rol (Titular/Suplente) -->
-                        <div>
-                            <label for="player-role" class="block text-sm font-medium text-gray-700">Rol:</label>
-                            <select id="player-role" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                                <option value="Titular">Titular</option>
-                                <option value="Suplente">Suplente</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex space-x-3">
-                        <button id="save-player-button" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300">
-                            Guardar Jugador
-                        </button>
-                        <button id="delete-player-button" class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300">
-                            Eliminar Jugador
-                        </button>
-                    </div>
-                </div>
-
-                <h3 class="text-xl font-medium text-gray-800 mb-3">Listado de Jugadores</h3>
-                <!-- Nuevos filtros para la tabla de jugadores -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                        <label for="player-list-name-filter" class="block text-sm font-medium text-gray-700">Buscar por Nombre:</label>
-                        <input type="text" id="player-list-name-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Ej: Mati">
-                    </div>
-                    <div>
-                        <label for="player-list-status-filter" class="block text-sm font-medium text-gray-700">Filtrar por Estado:</label>
-                        <select id="player-list-status-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <option value="Todos">Todos</option>
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="player-list-role-filter" class="block text-sm font-medium text-gray-700">Filtrar por Rol:</label>
-                        <select id="player-list-role-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <option value="Todos">Todos</option>
-                            <option value="Titular">Titular</option>
-                            <option value="Suplente">Suplente</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="players-list-admin" class="overflow-x-auto">
-                    <p id="players-loading-message-admin" class="text-gray-500 text-center">Cargando jugadores...</p>
-                    <table class="min-w-full bg-white rounded-lg shadow hidden">
-                        <thead>
-                            <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                                <th class="py-3 px-6 text-left">ID</th>
-                                <th class="py-3 px-6 text-left">Nombre</th>
-                                <th class="py-3 px-6 text-left">Estado</th>
-                                <th class="py-3 px-6 text-left">Rol</th> <!-- Nueva columna para Rol -->
-                                <th class="py-3 px-6 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-gray-600 text-sm font-light">
-                            <!-- Filas de jugadores se cargarán aquí -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="match-results" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Resultados</h2>
-                <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <!-- Sección de Detalles del Partido Seleccionado - MOVIDA ARRIBA -->
-                    <h3 class="text-xl font-medium text-gray-800 mb-3">Partido Seleccionado</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label for="match-date" class="block text-sm font-medium text-gray-700">Fecha del Partido:</label>
-                            <input type="date" id="match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" readonly>
-                        </div>
-                        <div>
-                            <label for="match-result" class="block text-sm font-medium text-gray-700">Resultado:</label>
-                            <select id="match-result" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                                <option value="">Seleccionar resultado</option>
-                                <option value="Claros">Claros</option>
-                                <option value="Oscuros">Oscuros</option>
-                                <option value="Empate">Empate</option>
-                                <option value="Suspendido">Suspendido</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex space-x-3 mt-6">
-                        <button id="register-match-button" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 flex-1">
-                            Registrar Resultado y Puntos
-                        </button>
-                        <button id="delete-match-button" class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 flex-1">
-                            Eliminar Partido
-                        </button>
-                    </div>
-
-                    <h3 class="text-xl font-medium text-gray-800 mb-3 mt-6">Seleccionar Partido</h3>
-                    <!-- Filtros para seleccionar partido -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label for="results-match-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                            <select id="results-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                                <!-- Opciones de año se generarán dinámicamente -->
-                            </select>
-                        </div>
-                        <div>
-                            <label for="results-match-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
-                            <select id="results-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                                <option value="all">Todos</option>
-                                <option value="0">Enero</option>
-                                <option value="1">Febrero</option>
-                                <option value="2">Marzo</option>
-                                <option value="3">Abril</option>
-                                <option value="4">Mayo</option>
-                                <option value="5">Junio</option>
-                                <option value="6">Julio</option>
-                                <option value="7">Agosto</option>
-                                <option value="8">Septiembre</option>
-                                <option value="9">Octubre</option>
-                                <option value="10">Noviembre</option>
-                                <option value="11">Diciembre</option>
-                            </select>
-                        </div>
-                    </div>
-                    <!-- Este div ahora contendrá la lista de partidos dinámicamente -->
-                    <label class="block text-sm font-medium text-gray-700 mt-4">Partidos Disponibles:</label>
-                    <div id="results-match-list" class="mt-1 border border-gray-300 rounded-md shadow-sm max-h-80 overflow-y-auto p-2 bg-white grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
-                        <!-- Los partidos se cargarán aquí dinámicamente como divs clickeables -->
-                    </div>
-                </div>
-            </div>
-
-            <div id="chamigo-management" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Chamigo</h2>
-                <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-medium text-gray-800 mb-3">Registrar Votos de Chamigo</h3>
-                    <div id="chamigo-voting-players" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                        <!-- Jugadores para votar por Chamigo se cargarán aquí -->
-                        <p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>
-                    </div>
-                    <button id="register-chamigo-button" class="px-6 py-3 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 transition duration-300 w-full">
-                        Registrar Chamigo(s)
-                    </button>
-                </div>
-
-                <h3 class="text-xl font-medium text-gray-800 mb-3 mt-6">Seleccionar Partido</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="chamigo-match-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                        <select id="chamigo-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <!-- Opciones de año se generarán dinámicamente -->
-                        </select>
-                    </div>
-                    <div>
-                        <label for="chamigo-match-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
-                        <select id="chamigo-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                                <option value="all">Todos</option>
-                                <option value="0">Enero</option>
-                                <option value="1">Febrero</option>
-                                <option value="2">Marzo</option>
-                                <option value="3">Abril</option>
-                                <option value="4">Mayo</option>
-                                <option value="5">Junio</option>
-                                <option value="6">Julio</option>
-                                <option value="7">Agosto</option>
-                                <option value="8">Septiembre</option>
-                                <option value="9">Octubre</option>
-                                <option value="10">Noviembre</option>
-                                <option value="11">Diciembre</option>
-                        </select>
-                    </div>
-                </div>
-                <label class="block text-sm font-medium text-gray-700 mt-4">Partidos Disponibles:</label>
-                <div id="chamigo-match-list" class="mt-1 border border-gray-300 rounded-md shadow-sm max-h-80 overflow-y-auto p-2 bg-white grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
-                </div>
-            </div>
-
-            <div id="tt-attendance" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">TT</h2>
-                <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-medium text-gray-800 mb-3">Registrar Asistencia TT</h3>
-                    <div id="tt-attendance-players" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                        <!-- Jugadores para asistencia TT se cargarán aquí -->
-                        <p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>
-                    </div>
-                    <button id="register-tt-button" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300 w-full">
-                        Registrar Asistencia TT
-                    </button>
-                </div>
-
-                <h3 class="text-xl font-medium text-gray-800 mb-3 mt-6">Seleccionar Partido</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="tt-match-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                        <select id="tt-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <!-- Opciones de año se generarán dinámicamente -->
-                        </select>
-                    </div>
-                    <div>
-                        <label for="tt-match-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
-                        <select id="tt-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <option value="all">Todos</option>
-                            <option value="0">Enero</option>
-                            <option value="1">Febrero</option>
-                            <option value="2">Marzo</option>
-                            <option value="3">Abril</option>
-                            <option value="4">Mayo</option>
-                            <option value="5">Junio</option>
-                            <option value="6">Julio</option>
-                            <option value="7">Agosto</option>
-                            <option value="8">Septiembre</option>
-                            <option value="9">Octubre</option>
-                            <option value="10">Noviembre</option>
-                            <option value="11">Diciembre</option>
-                        </select>
-                    </div>
-                </div>
-                <label class="block text-sm font-medium text-gray-700 mt-4">Partidos Disponibles:</label>
-                <div id="tt-match-list" class="mt-1 border border-gray-300 rounded-md shadow-sm max-h-80 overflow-y-auto p-2 bg-white grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
-                </div>
-            </div>
-
-            <!-- Nueva Pestaña: Tabla de Posiciones -->
-            <div id="leaderboard-tab" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Posiciones</h2>
-                <!-- Controles de Filtro para la tabla de posiciones -->
-                <div class="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
-                    <div>
-                        <label for="leaderboard-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                        <select id="leaderboard-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <!-- Opciones de año se generarán dinámicamente -->
-                        </select>
-                    </div>
-                    <div>
-                        <label for="leaderboard-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
-                        <select id="leaderboard-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <option value="totales">Totales</option>
-                            <option value="apertura">Apertura</option>
-                            <option value="clausura">Clausura</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="leaderboard-criterion-select" class="block text-sm font-medium text-gray-700">Criterio:</label>
-                        <select id="leaderboard-criterion-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <option value="puntos">Puntos</option>
-                            <option value="presentismo">Presentismo</option>
-                            <option value="ausentismo">Ausentismo</option>
-                            <option value="chamigos">Chamigo</option>
-                            <option value="tt">TT</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="leaderboard-container-admin" class="overflow-x-auto">
-                    <p id="leaderboard-loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
-                    <table id="leaderboard-table-admin" class="min-w-full bg-white rounded-lg shadow hidden">
-                        <thead>
-                            <!-- Los encabezados se generarán dinámicamente según el criterio -->
-                        </thead>
-                        <tbody class="text-gray-600 text-sm font-light">
-                            <!-- Filas de jugadores se cargarán aquí -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div id="leaderboard-container" class="overflow-x-auto">
+            <p id="loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
+            <table id="leaderboard-table" class="min-w-full bg-white rounded-lg shadow hidden">
+                <thead>
+                    <!-- Los encabezados se generarán dinámicamente según el criterio -->
+                </thead>
+                <tbody class="text-gray-600 text-sm font-light">
+                    <!-- Filas de jugadores se cargarán aquí -->
+                </tbody>
+            </table>
         </div>
     </div>
-
-    <!-- Custom Modal for Confirmation -->
-    <div id="custom-confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4" id="modal-title">Confirmar Acción</h3>
-            <p class="text-gray-700 mb-6" id="modal-message">¿Estás seguro de que quieres realizar esta acción?</p>
-            <div class="flex justify-end space-x-4">
-                <button id="modal-cancel-button" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition">Cancelar</button>
-                <button id="modal-confirm-button" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">Confirmar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Script de la API de Google -->
-    <script async defer src="https://apis.google.com/js/api.js"></script>
-    <script async defer src="https://accounts.google.com/gsi/client"></script>
 
     <script>
-        // ¡IMPORTANTE! Reemplaza 'TU_CLIENT_ID' con tu ID de Cliente de OAuth 2.0
-        const CLIENT_ID = '490772160476-4cmd0dse3b74o65g1n9s1q5itlbjavbb.apps.googleusercontent.com';
-        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
-        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E';
+        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet "Base de Datos".
+        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E'; // Asegúrate de que este sea tu ID real
+        // La API Key es necesaria para llamadas públicas sin autenticación de usuario.
+        // Asegúrate de que la API Key esté restringida a la API de Google Sheets y a tu dominio de GitHub Pages.
+        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; // ¡Tu API Key real!
 
-        // Ámbitos de autorización necesarios para leer y escribir en Google Sheets
-        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-
-        let tokenClient;
         let gapiInited = false;
-        let gisInited = false;
-        let allPlayersData = []; // Cache de todos los jugadores
-        let allMatchesData = []; // Cache de todos los partidos
-        let sheetIds = {}; // Nuevo: Almacena los sheetIds por nombre de hoja
+        let allPlayersData = []; // Para almacenar todos los datos de jugadores una vez
+        let allMatchesData = []; // Para almacenar todos los datos de partidos una vez
 
-        // Variables para el drag-and-drop táctil
-        let currentDraggedPlayer = null;
-        let originalParentOfDraggedPlayer = null;
-        let initialTouchX, initialTouchY;
-        let initialElementX, initialElementY;
-        let isDraggingTouch = false;
+        const loadingMessage = document.getElementById('loading-message');
+        const leaderboardTable = document.getElementById('leaderboard-table');
+        const leaderboardTableHead = leaderboardTable.querySelector('thead'); // Referencia al thead
+        const leaderboardTableBody = leaderboardTable.querySelector('tbody');
+        const yearSelect = document.getElementById('year-select');
+        const periodSelect = document.getElementById('period-select');
+        const criterionSelect = document.getElementById('criterion-select');
 
-        // Elementos del DOM
-        const authorizeButton = document.getElementById('authorize_button');
-        const signoutButtonSidebar = document.getElementById('signout_button_sidebar'); // Nuevo botón de cerrar sesión en sidebar (desktop)
-        const signoutButtonMobileSidebar = document.getElementById('signout_button_mobile_sidebar'); // Nuevo botón de cerrar sesión en sidebar (mobile)
-        const authStatus = document.getElementById('auth-status');
-        const adminContent = document.getElementById('admin-content');
+        // Función para parsear fechas DD/MM/YYYY a objetos Date
+        function parseDate(dateString) {
+            const [day, month, year] = dateString.split('/').map(Number);
+            return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
+        }
 
-        // Nuevos elementos para el menú lateral
-        const hamburgerButton = document.getElementById('hamburger-button');
-        const sideMenu = document.getElementById('side-menu');
-        const closeSideMenuButton = document.getElementById('close-side-menu-button');
-        const overlay = document.getElementById('overlay');
-        const tabButtons = document.querySelectorAll('.tab-button'); // Obtener todos los botones de pestaña
-        const tabContents = document.querySelectorAll('.tab-content'); // Obtener todos los contenidos de las pestañas
-
-        // Custom Confirmation Modal elements
-        const customConfirmModal = document.getElementById('custom-confirm-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalCancelButton = document.getElementById('modal-cancel-button');
-        const modalConfirmButton = document.getElementById('modal-confirm-button');
-
-        // Gestión de Jugadores
-        const playerIdInput = document.getElementById('player-id');
-        const playerNameInput = document.getElementById('player-name');
-        const playerStatusSelect = document.getElementById('player-status');
-        const playerRoleSelect = document.getElementById('player-role'); // Nuevo: Selector de Rol
-        const savePlayerButton = document.getElementById('save-player-button');
-        const deletePlayerButton = document.getElementById('delete-player-button');
-        const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
-        const playersLoadingMessageAdmin = document.getElementById('players-loading-message-admin'); // Mensaje de carga
-        // Nuevos filtros de Gestión de Jugadores
-        const playerListNameFilter = document.getElementById('player-list-name-filter');
-        const playerListStatusFilter = document.getElementById('player-list-status-filter');
-        const playerListRoleFilter = document.getElementById('player-list-role-filter');
-
-
-        // Armar Equipos
-        const teamMatchDateInput = document.getElementById('team-match-date'); // Nuevo: Fecha en Armar Equipos
-        const titularesPlayersDiv = document.getElementById('titulares-players'); // Nuevo: Jugadores Titulares
-        const suplentesPlayersDiv = document.getElementById('suplentes-players'); // Nuevo: Jugadores Suplentes
-        const teamClarosDiv = document.getElementById('team-claros');
-        const teamOscurosDiv = document.getElementById('team-oscuros');
-        const clarosCountSpan = document.getElementById('claros-count');
-        const oscurosCountSpan = document.getElementById('oscuros-count');
-        const saveTeamsButton = document.getElementById('save-teams-button');
-
-        // Resultados
-        const matchDateInput = document.getElementById('match-date');
-        const matchResultSelect = document.getElementById('match-result');
-        const resultsMatchYearSelect = document.getElementById('results-match-year-select');
-        const resultsMatchMonthSelect = document.getElementById('results-match-month-select');
-        const resultsMatchListDiv = document.getElementById('results-match-list'); // Ahora es un div, no un select
-        const registerMatchButton = document.getElementById('register-match-button');
-        const deleteMatchButton = document.getElementById('delete-match-button'); // Nuevo botón de eliminar partido
-
-        // Chamigo
-        const chamigoVotingPlayersDiv = document.getElementById('chamigo-voting-players');
-        const registerChamigoButton = document.getElementById('register-chamigo-button');
-        const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select'); // Nuevo
-        const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select'); // Nuevo
-        const chamigoMatchListDiv = document.getElementById('chamigo-match-list'); // Nuevo
-
-        // TT
-        const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
-        const registerTtButton = document.getElementById('register-tt-button');
-        const ttMatchYearSelect = document.getElementById('tt-match-year-select'); // Nuevo
-        const ttMatchMonthSelect = document.getElementById('tt-match-month-select'); // Nuevo
-        const ttMatchListDiv = document.getElementById('tt-match-list'); // Nuevo
-
-        // Tabla de Posiciones
-        const leaderboardLoadingMessage = document.getElementById('leaderboard-loading-message');
-        const leaderboardTableAdmin = document.getElementById('leaderboard-table-admin');
-        const leaderboardTableHeadAdmin = leaderboardTableAdmin.querySelector('thead');
-        const leaderboardTableBodyAdmin = leaderboardTableAdmin.querySelector('tbody');
-        const leaderboardYearSelect = document.getElementById('leaderboard-year-select');
-        const leaderboardPeriodSelect = document.getElementById('leaderboard-period-select');
-        const leaderboardCriterionSelect = document.getElementById('leaderboard-criterion-select');
-
-
-        // --- Funciones de Autenticación ---
-
+        // Función que se ejecuta cuando la librería gapi (API de Google) está cargada
+        // ¡IMPORTANTE! Esta función debe estar definida ANTES del script de la API de Google.
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
         }
 
+        // Inicializa el cliente de la API de Google
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
+                    apiKey: API_KEY,
                     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
                 });
                 gapiInited = true;
-                maybeEnableAuthButtons();
+                await loadAllDataAndRenderLeaderboard(); // Carga todos los datos y renderiza
             } catch (err) {
-                console.error("Error al inicializar gapi.client:", err);
-                authStatus.textContent = `Error al inicializar la API de Google: ${err.message || err.error_description || JSON.stringify(err)}. Revisa la consola.`;
-                authStatus.classList.remove('hidden');
+                console.error('Error al inicializar cliente GAPI:', err);
+                loadingMessage.textContent = `Error al cargar la tabla: ${err.message}. Asegúrate de que la API Key sea válida y la hoja esté compartida públicamente como "Lector".`;
+                loadingMessage.classList.remove('hidden');
+                leaderboardTable.classList.add('hidden');
             }
         }
 
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: '', // Se define en handleAuthClick
-            });
-            gisInited = true;
-            maybeEnableAuthButtons();
-        }
-
-        function maybeEnableAuthButtons() {
-            if (gapiInited && gisInited) {
-                authorizeButton.style.display = 'block';
-                if (gapi.client.getToken() !== null) {
-                    handleAuthSuccess();
-                } else {
-                    authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
-                    authStatus.classList.remove('hidden');
-                    // Asegurarse de que el menú y el botón estén ocultos si no hay token
-                    sideMenu.classList.add('hidden');
-                    hamburgerButton.classList.add('hidden');
-                    signoutButtonMobileSidebar.classList.add('hidden'); // También ocultar botón de cerrar sesión móvil
-                    signoutButtonSidebar.classList.add('hidden'); // También ocultar botón de cerrar sesión de escritorio
-                }
-            }
-        }
-
-        function handleAuthClick() {
-            tokenClient.callback = async (resp) => {
-                if (resp.error) {
-                    console.error('Error de autenticación:', resp);
-                    authStatus.textContent = `Error de autenticación: ${resp.error_description || resp.error}`;
-                    authStatus.classList.remove('hidden');
-                    return;
-                }
-                handleAuthSuccess();
-            };
-
-            if (gapi.client.getToken() === null) {
-                // Si no hay token, solicita uno
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                // Si ya hay token, úsalo para solicitar un nuevo token (refrescar)
-                tokenClient.requestAccessToken({prompt: ''});
-            }
-        }
-
-        async function handleAuthSuccess() {
-            authorizeButton.style.display = 'none';
-            signoutButtonSidebar.classList.remove('hidden'); // Mostrar botón de cerrar sesión de escritorio
-            signoutButtonMobileSidebar.classList.remove('hidden'); // Mostrar botón de cerrar sesión móvil
-            authStatus.classList.add('hidden');
-            adminContent.classList.remove('hidden');
-            
-            // Mostrar menú lateral y botón de hamburguesa eliminando la clase 'hidden'
-            sideMenu.classList.remove('hidden');
-            hamburgerButton.classList.remove('hidden');
-
-            await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
-            setupTabNavigation();
-            
-            // Establecer "Armar Equipos" como la pestaña activa por defecto
-            const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
-            const defaultTabContent = document.getElementById('team-formation');
-
-            // Ocultar todos los contenidos de las pestañas primero
-            tabContents.forEach(content => content.classList.add('hidden'));
-            // Eliminar la clase activa de todos los botones de pestaña
-            tabButtons.forEach(button => button.classList.remove('active'));
-
-            // Activar la pestaña por defecto
-            if (defaultTabButton && defaultTabContent) {
-                defaultTabButton.classList.add('active');
-                defaultTabContent.classList.remove('hidden');
-            }
-        }
-
-        function handleSignoutClick() {
-            const token = gapi.client.getToken();
-            if (token !== null) {
-                google.accounts.oauth2.revoke(token.access_token);
-                gapi.client.setToken('');
-                authorizeButton.style.display = 'block';
-                signoutButtonSidebar.classList.add('hidden'); // Ocultar botón de cerrar sesión de escritorio
-                signoutButtonMobileSidebar.classList.add('hidden'); // Ocultar botón de cerrar sesión móvil
-                adminContent.classList.add('hidden');
-                
-                // Ocultar menú lateral y botón de hamburguesa añadiendo la clase 'hidden'
-                sideMenu.classList.add('hidden');
-                hamburgerButton.classList.add('hidden');
-
-                authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
-                authStatus.classList.remove('hidden');
-                // Limpiar todas las interfaces
-                playersListAdminTableBody.innerHTML = '';
-                playersLoadingMessageAdmin.textContent = 'Cargando jugadores...'; // Restablecer mensaje de carga
-                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando titulares...</p>';
-                suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando suplentes...</p>';
-                teamClarosDiv.innerHTML = '';
-                teamOscurosDiv.innerHTML = '';
-                clarosCountSpan.textContent = '0';
-                oscurosCountSpan.textContent = '0';
-                resultsMatchListDiv.innerHTML = '<p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>';
-                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-                chamigoMatchListDiv.innerHTML = '<p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>';
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-                ttMatchListDiv.innerHTML = '<p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>';
-                leaderboardTableBodyAdmin.innerHTML = '';
-            }
-        }
-
-        // --- Custom Confirmation Modal ---
         /**
-         * Muestra un modal de confirmación personalizado.
-         * @param {string} title - El título del modal.
-         * @param {string} message - El mensaje del modal.
-         * @returns {Promise<boolean>} - Una promesa que resuelve a true si se confirma, false si se cancela.
+         * Carga todos los datos de jugadores y partidos de Google Sheets.
          */
-        function showCustomConfirm(title, message) {
-            return new Promise((resolve) => {
-                modalTitle.textContent = title;
-                modalMessage.textContent = message;
-                customConfirmModal.classList.remove('hidden');
+        async function loadAllDataAndRenderLeaderboard() {
+            loadingMessage.textContent = 'Cargando datos...';
+            loadingMessage.classList.remove('hidden');
+            leaderboardTable.classList.add('hidden');
 
-                const onConfirm = () => {
-                    hideCustomConfirm();
-                    resolve(true);
-                };
-
-                const onCancel = () => {
-                    hideCustomConfirm();
-                    resolve(false);
-                };
-
-                modalConfirmButton.onclick = onConfirm;
-                modalCancelButton.onclick = onCancel;
-
-                // Opcional: Cerrar con Escape
-                const handleKeyDown = (e) => {
-                    if (e.key === 'Escape') {
-                        onCancel();
-                        document.removeEventListener('keydown', handleKeyDown);
-                    }
-                };
-                document.addEventListener('keydown', handleKeyDown);
-            });
-        }
-
-        function hideCustomConfirm() {
-            customConfirmModal.classList.add('hidden');
-            modalConfirmButton.onclick = null;
-            modalCancelButton.onclick = null;
-        }
-
-
-        // --- Funciones de Carga de Datos ---
-
-        async function loadAllData() {
             try {
-                if (!gapi.client.sheets) {
-                    console.error("gapi.client.sheets no está disponible. ¿Se inicializó correctamente el cliente de la API de Google?");
-                    throw new Error("API de Google Sheets no cargada correctamente.");
-                }
-
-                // --- NUEVO: Obtener los sheetIds dinámicamente ---
-                const metadataResponse = await gapi.client.sheets.spreadsheets.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    fields: 'sheets.properties', // Solicitar solo las propiedades de las hojas
-                });
-
-                if (metadataResponse.result && metadataResponse.result.sheets) {
-                    metadataResponse.result.sheets.forEach(sheet => {
-                        sheetIds[sheet.properties.title] = sheet.properties.sheetId;
-                    });
-                    console.log("IDs de hojas cargados:", sheetIds); // Para depuración
-                } else {
-                    console.warn("No se pudo recuperar la metadata de las hojas. Usando IDs por defecto (0).");
-                    // Fallback si no se puede obtener la metadata (menos robusto)
-                    sheetIds['Partidos'] = 0;
-                    sheetIds['Jugadores'] = 0;
-                }
-                // --- FIN NUEVO ---
-
+                // Cargar jugadores
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:H', // Rango actualizado para incluir la columna 'Rol' (H)
+                    range: 'Jugadores!A:G', // ID_Jugador, Nombre, Estado, Puntos_Totales, Partidos_Jugados, Chamigos_Ganados, TT_Asistencias
                 });
-                allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
+                allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : []; // Ignorar encabezados
 
+                // Cargar partidos
                 const matchesResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G',
+                    range: 'Partidos!A:G', // ID_Partido, Fecha, Equipo_Claros_IDs, Equipo_Oscuros_IDs, Resultado, Chamigo_Votos, Asistencia_TT_IDs
                 });
-                allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : [];
+                allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : []; // Ignorar encabezados
 
+                populateYearSelect(); // Rellenar el selector de año
+                setInitialPeriod(); // Establecer el período inicial
+                renderLeaderboard(); // Renderizar la tabla inicial
             } catch (err) {
                 console.error('Error al cargar todos los datos:', err);
+                // Mejorar el mensaje de error para el usuario en la interfaz
                 let userErrorMessage = 'Error desconocido al cargar datos.';
                 if (err && err.result && err.result.error && err.result.error.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Revisa la consola para más detalles.`;
+                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
                 } else if (err && err.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
+                    userErrorMessage = `Error al cargar datos: ${err.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
                 }
-                alert(userErrorMessage);
+                loadingMessage.textContent = userErrorMessage;
+                loadingMessage.classList.remove('hidden');
+                leaderboardTable.classList.add('hidden');
             }
         }
-
-        async function loadAllDataAndDisplayAllContent() {
-            await loadAllData();
-            renderPlayersListAdmin(); // Se encarga de los filtros ahora
-            renderAvailablePlayersForTeams();
-            populateResultsMatchYearSelect(); // Llama a la función para el selector de año de resultados
-            populateMatchSelects(); // Se llama después de poblar el año para que use el filtro inicial
-            populateChamigoTtMatchYearSelect(); // NUEVO: para Chamigo y TT
-            populateChamigoTtMatchLists(); // NUEVO: para Chamigo y TT
-            populateLeaderboardYearSelect(); // Llama a la función para la tabla de posiciones
-            setInitialLeaderboardPeriod(); // Establece el período inicial para la tabla de posiciones
-            renderLeaderboard(); // Renderiza la tabla de posiciones inicial
-        }
-
-        // --- Funciones de Pestañas ---
-        function setupTabNavigation() {
-            tabButtons.forEach(button => {
-                // Eliminar listeners existentes para prevenir duplicados
-                button.removeEventListener('click', handleTabButtonClick);
-                button.addEventListener('click', handleTabButtonClick);
-            });
-        }
-
-        function handleTabButtonClick(event) {
-            const clickedButton = event.currentTarget;
-            
-            // Eliminar 'active' de todos los botones y añadir 'hidden' a todas las secciones de contenido
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.add('hidden'));
-
-            // Añadir 'active' al botón clickeado y eliminar 'hidden' de su sección de contenido correspondiente
-            clickedButton.classList.add('active');
-            document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
-
-            // Cerrar menú lateral en móvil después de la selección de pestaña
-            if (window.innerWidth < 768) { // Verificar si es una vista móvil
-                toggleSideMenu();
-            }
-
-            // Recargar datos específicos de la pestaña si es necesario
-            if (clickedButton.dataset.tab === 'players-management') {
-                renderPlayersListAdmin(); // Ahora con filtros
-            } else if (clickedButton.dataset.tab === 'team-formation') {
-                renderAvailablePlayersForTeams();
-                // Limpiar selecciones de equipos al cambiar de pestaña
-                teamClarosDiv.innerHTML = '';
-                teamOscurosDiv.innerHTML = '';
-                clarosCountSpan.textContent = '0';
-                oscurosCountSpan.textContent = '0';
-                saveTeamsButton.disabled = true;
-                teamMatchDateInput.value = ''; // Limpiar la fecha del partido
-            } else if (clickedButton.dataset.tab === 'match-results') {
-                populateResultsMatchYearSelect(); // Recargar años
-                resultsMatchMonthSelect.value = 'all'; // Resetear mes
-                populateMatchSelects(); // Recargar partidos con filtros
-                matchDateInput.value = '';
-                matchResultSelect.value = '';
-            } else if (clickedButton.dataset.tab === 'chamigo-management') {
-                populateChamigoTtMatchYearSelect(); // Recargar años para Chamigo
-                chamigoMatchMonthSelect.value = 'all'; // Resetear mes
-                populateChamigoTtMatchLists(); // Recargar partidos para Chamigo
-                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-            } else if (clickedButton.dataset.tab === 'tt-attendance') {
-                populateChamigoTtMatchYearSelect(); // Recargar años para TT
-                ttMatchMonthSelect.value = 'all'; // Resetear mes
-                populateChamigoTtMatchLists(); // Recargar partidos para TT
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-            } else if (clickedButton.dataset.tab === 'leaderboard-tab') {
-                // Al activar la pestaña de la tabla de posiciones, renderizarla
-                populateLeaderboardYearSelect();
-                setInitialLeaderboardPeriod(); // Asegurarse de que el período se establezca al cambiar de pestaña
-                renderLeaderboard();
-            }
-        }
-
-        // --- Toggle Side Menu Functionality ---
-        function toggleSideMenu() {
-            sideMenu.classList.toggle('open');
-            overlay.classList.toggle('open');
-            document.body.classList.toggle('overflow-hidden'); // Prevenir el scroll cuando el menú está abierto
-        }
-
-        // --- Gestión de Jugadores (AMB) ---
-
-        function renderPlayersListAdmin() {
-            playersListAdminTableBody.innerHTML = ''; // Limpiar tabla
-            document.querySelector('#players-list-admin table').classList.add('hidden'); // Ocultar tabla
-            playersLoadingMessageAdmin.classList.remove('hidden'); // Asegurarse de que el mensaje de carga sea visible
-            playersLoadingMessageAdmin.textContent = 'Cargando jugadores...'; // Resetear el texto del mensaje
-
-            // Obtener valores de los filtros
-            const nameFilter = playerListNameFilter.value.toLowerCase();
-            const statusFilter = playerListStatusFilter.value;
-            const roleFilter = playerListRoleFilter.value;
-
-            // Aplicar filtros
-            const filteredPlayers = allPlayersData.filter(player => {
-                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
-                const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
-                const matchesStatus = statusFilter === 'Todos' || estado === statusFilter;
-                const matchesRole = roleFilter === 'Todos' || rol === roleFilter;
-                return matchesName && matchesStatus && matchesRole;
-            });
-
-            if (filteredPlayers.length === 0) {
-                playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.'; // Actualizar el mensaje
-                return;
-            }
-
-            filteredPlayers.forEach((player, index) => {
-                // Asegurarse de que la columna 7 (índice 7) para Rol exista, si no, usar un valor por defecto
-                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
-                const row = `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-6 text-left">${id}</td>
-                        <td class="py-3 px-6 text-left">${nombre}</td>
-                        <td class="py-3 px-6 text-left">${estado}</td>
-                        <td class="py-3 px-6 text-left">${rol}</td> <!-- Columna para Rol -->
-                        <td class="py-3 px-6 text-center">
-                            <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs"
-                                data-id="${id}"
-                                data-name="${nombre}"
-                                data-status="${estado}"
-                                data-role="${rol}">Editar</button>
-                        </td>
-                    </tr>
-                `;
-                playersListAdminTableBody.innerHTML += row;
-            });
-
-            // Añadir event listeners a los botones de edición
-            document.querySelectorAll('.edit-player-button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    playerIdInput.value = e.target.dataset.id;
-                    playerNameInput.value = e.target.dataset.name;
-                    playerStatusSelect.value = e.target.dataset.status;
-                    playerRoleSelect.value = e.target.dataset.role; // Cargar el rol al editar
-                });
-            });
-            playersLoadingMessageAdmin.classList.add('hidden'); // Ocultar mensaje si la tabla se muestra
-            document.querySelector('#players-list-admin table').classList.remove('hidden'); // Mostrar tabla
-        }
-
-        // Event Listeners para los nuevos filtros de Gestión de Jugadores
-        playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
-        playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
-        playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
-
-
-        savePlayerButton.addEventListener('click', async () => {
-            const id = playerIdInput.value.trim();
-            const name = playerNameInput.value.trim();
-            const status = playerStatusSelect.value;
-            const role = playerRoleSelect.value; // Obtener el rol
-
-            if (!name) {
-                alert('El nombre del jugador no puede estar vacío.');
-                return;
-            }
-
-            // --- Validación de Nombre Único ---
-            const normalizedNewName = name.toLowerCase();
-            const isEditingExistingPlayer = id !== '';
-
-            const duplicatePlayer = allPlayersData.find(p => {
-                const existingId = p[0];
-                const existingName = p[1].toLowerCase();
-                // Si estamos editando, ignorar el propio jugador en la búsqueda de duplicados
-                return existingName === normalizedNewName && (!isEditingExistingPlayer || existingId !== id);
-            });
-
-            if (duplicatePlayer) {
-                alert(`Ya existe un jugador con el nombre "${name}". Por favor, elige un nombre diferente.`);
-                return;
-            }
-            // --- Fin Validación de Nombre Único ---
-
-            try {
-                let rowToUpdateIndex = allPlayersData.findIndex(p => p[0] === id); // Buscar por ID
-                let newPlayerId = id;
-
-                if (rowToUpdateIndex === -1) { // Si no se encuentra, es un nuevo jugador
-                    // Generar un nuevo ID de jugador (ej. J001, J002...)
-                    const maxIdNum = allPlayersData.reduce((max, p) => {
-                        const num = parseInt(p[0]?.replace('J', '') || 0);
-                        return Math.max(max, num);
-                    }, 0);
-                    newPlayerId = 'J' + String(maxIdNum + 1).padStart(3, '0');
-                    // Valores iniciales para un nuevo jugador, incluyendo el nuevo campo 'Rol'
-                    const newPlayerRow = [newPlayerId, name, status, 0, 0, 0, 0, role]; // Añadir 'role'
-                    allPlayersData.push(newPlayerRow);
-                    rowToUpdateIndex = allPlayersData.length - 1; // Índice del nuevo jugador
-                } else {
-                    // Modificar jugador existente
-                    allPlayersData[rowToUpdateIndex][1] = name; // Nombre
-                    allPlayersData[rowToUpdateIndex][2] = status; // Estado
-                    allPlayersData[rowToUpdateIndex][7] = role; // Actualizar Rol (columna H, índice 7)
-                }
-
-                // Actualizar la hoja de cálculo
-                // El rango ahora es A:H para incluir el nuevo campo
-                const values = [allPlayersData[rowToUpdateIndex]];
-                const range = `Jugadores!A${rowToUpdateIndex + 2}:H${rowToUpdateIndex + 2}`; // Rango A:H
-
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: range,
-                    valueInputOption: 'RAW',
-                    resource: { values: values },
-                });
-
-                alert('Jugador guardado exitosamente.');
-                playerIdInput.value = '';
-                playerNameInput.value = '';
-                playerStatusSelect.value = 'Activo';
-                playerRoleSelect.value = 'Titular'; // Resetear a valor por defecto
-                await loadAllDataAndDisplayAllContent(); // Recargar y renderizar la lista
-            } catch (err) {
-                console.error('Error al guardar jugador:', err);
-                alert(`Error al guardar jugador: ${err.message}. Revisa la consola.`);
-            }
-        });
-
-        deletePlayerButton.addEventListener('click', async () => {
-            const idToDelete = playerIdInput.value.trim();
-            if (!idToDelete) {
-                alert('Por favor, selecciona un jugador para eliminar usando su ID.');
-                return;
-            }
-
-            const confirmed = await showCustomConfirm('Confirmar Eliminación', `¿Estás seguro de que quieres marcar al jugador con ID ${idToDelete} como Inactivo? Esto no se puede deshacer fácilmente.`);
-            if (!confirmed) {
-                return;
-            }
-
-            try {
-                const rowIndex = allPlayersData.findIndex(p => p[0] === idToDelete);
-                if (rowIndex === -1) {
-                    alert('Jugador no encontrado.');
-                    return;
-                }
-
-                // Opción más segura: cambiar estado a 'Inactivo'
-                allPlayersData[rowIndex][2] = 'Inactivo'; // Cambiar estado a Inactivo
-                // Mantener el Rol actual, no se modifica al inactivar
-                const values = [allPlayersData[rowIndex]];
-                const range = `Jugadores!A${rowIndex + 2}:H${rowIndex + 2}`; // Rango A:H
-
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: range,
-                    valueInputOption: 'RAW',
-                    resource: { values: values },
-                });
-
-                alert(`Jugador con ID ${idToDelete} marcado como Inactivo.`);
-                playerIdInput.value = '';
-                playerNameInput.value = '';
-                playerStatusSelect.value = 'Activo';
-                playerRoleSelect.value = 'Titular'; // Resetear a valor por defecto
-                await loadAllDataAndDisplayAllContent();
-            } catch (err) {
-                console.error('Error al eliminar jugador:', err);
-                alert(`Error al eliminar jugador: ${err.message}. Revisa la consola.`);
-            }
-        });
-
-        // --- Armar Equipos ---
-
-        function renderAvailablePlayersForTeams() {
-            titularesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando titulares...</p>';
-            suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando suplentes...</p>';
-
-            // Filtrar solo jugadores Activos para Armar Equipos
-            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
-
-            if (activePlayers.length === 0) {
-                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos.</p>';
-                suplentesPlayersDiv.innerHTML = '';
-                return;
-            }
-            
-            titularesPlayersDiv.innerHTML = ''; // Limpiar antes de poblar
-            suplentesPlayersDiv.innerHTML = ''; // Limpiar antes de poblar
-
-            activePlayers.forEach(player => {
-                // Asegurarse de que la columna 7 (índice 7) para Rol exista, si no, usar un valor por defecto
-                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
-                const playerElement = document.createElement('div');
-                playerElement.className = 'player-draggable'; // Usará las clases definidas en <style>
-                playerElement.draggable = true; // Mantener para desktop
-                playerElement.dataset.id = id;
-                playerElement.dataset.name = nombre;
-                playerElement.textContent = nombre;
-                playerElement.addEventListener('dragstart', handleDragStart); // Desktop drag
-                playerElement.addEventListener('touchstart', handleTouchStart); // Touch drag
-                
-                if (rol === 'Titular') {
-                    titularesPlayersDiv.appendChild(playerElement);
-                } else { // Suplente
-                    suplentesPlayersDiv.appendChild(playerElement);
-                }
-            });
-
-            // Si no hay titulares o suplentes, mostrar un mensaje
-            if (titularesPlayersDiv.children.length === 0) {
-                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay titulares activos.</p>';
-            }
-            if (suplentesPlayersDiv.children.length === 0) {
-                suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay suplentes activos.</p>';
-            }
-        }
-
-        // --- Desktop Drag-and-Drop Handlers ---
-        function handleDragStart(e) {
-            console.log('Drag started for player (Desktop):', e.target.dataset.name);
-            e.dataTransfer.setData('text/plain', JSON.stringify({
-                id: e.target.dataset.id,
-                name: e.target.dataset.name,
-                source: e.target.parentNode.id
-            }));
-            e.dataTransfer.effectAllowed = 'move';
-        }
-
-        [titularesPlayersDiv, suplentesPlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(dropZone => {
-            dropZone.addEventListener('dragover', handleDragOver);
-            dropZone.addEventListener('drop', handleDrop);
-        });
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-            const playerId = data.id;
-            const sourceId = data.source;
-            const targetId = e.currentTarget.id;
-
-            console.log('Drop event (Desktop) on', e.currentTarget.id, 'for player:', data.name);
-
-            if (sourceId === targetId) return;
-
-            const draggedElement = document.querySelector(`#${sourceId} .player-draggable[data-id="${playerId}"]`);
-            if (draggedElement) {
-                // Mover el elemento directamente
-                document.getElementById(targetId).appendChild(draggedElement);
-            }
-            updateTeamCounts();
-        }
-
-        // --- Touch Drag-and-Drop Handlers ---
-        function handleTouchStart(e) {
-            if (e.touches.length === 1) {
-                isDraggingTouch = true;
-                currentDraggedPlayer = e.target;
-                originalParentOfDraggedPlayer = e.target.parentNode; // Store original parent
-                currentDraggedPlayer.classList.add('dragging-touch');
-
-                // Store initial touch position
-                initialTouchX = e.touches[0].clientX;
-                initialTouchY = e.touches[0].clientY;
-
-                // Store initial element position (relative to viewport)
-                const rect = currentDraggedPlayer.getBoundingClientRect();
-                initialElementX = rect.left;
-                initialElementY = rect.top;
-
-                // Set position to fixed to allow dragging outside parent
-                currentDraggedPlayer.style.position = 'fixed';
-                currentDraggedPlayer.style.zIndex = '1000'; // Bring to front
-                currentDraggedPlayer.style.pointerEvents = 'none'; // Avoid interfering with touch on elements below
-
-                // Move the element to its current visual position
-                currentDraggedPlayer.style.left = initialElementX + 'px';
-                currentDraggedPlayer.style.top = initialElementY + 'px';
-
-                document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                document.addEventListener('touchend', handleTouchEnd);
-            }
-        }
-
-        function handleTouchMove(e) {
-            if (!isDraggingTouch) return;
-            e.preventDefault(); // Prevent scrolling
-
-            const currentTouchX = e.touches[0].clientX;
-            const currentTouchY = e.touches[0].clientY;
-
-            const deltaX = currentTouchX - initialTouchX;
-            const deltaY = currentTouchY - initialTouchY;
-
-            currentDraggedPlayer.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-        }
-
-        function handleTouchEnd(e) {
-            if (!isDraggingTouch) return;
-
-            isDraggingTouch = false;
-            currentDraggedPlayer.classList.remove('dragging-touch');
-            currentDraggedPlayer.style.position = ''; // Reset position
-            currentDraggedPlayer.style.zIndex = '';
-            currentDraggedPlayer.style.pointerEvents = '';
-            currentDraggedPlayer.style.transform = ''; // Reset transform
-
-            document.removeEventListener('touchmove', handleTouchMove);
-            document.removeEventListener('touchend', handleTouchEnd);
-
-            // Determine drop target
-            const touch = e.changedTouches[0];
-            const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-
-            if (targetElement) {
-                let dropZone = null;
-                // Find the actual drop zone by traversing up the DOM
-                let current = targetElement;
-                while (current && current !== document.body) {
-                    if (current.id === 'titulares-players' ||
-                        current.id === 'suplentes-players' ||
-                        current.id === 'team-claros' ||
-                        current.id === 'team-oscuros') {
-                        dropZone = current;
-                        break;
-                    }
-                    current = current.parentNode;
-                }
-
-                if (dropZone) {
-                    handleTouchDrop(currentDraggedPlayer, dropZone);
-                } else {
-                    // If dropped outside a valid zone, return to original parent
-                    if (originalParentOfDraggedPlayer) {
-                        originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
-                    }
-                }
-            } else {
-                // If dropped outside the viewport, return to original parent
-                if (originalParentOfDraggedPlayer) {
-                    originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
-                }
-            }
-            currentDraggedPlayer = null;
-            originalParentOfDraggedPlayer = null;
-        }
-
-        function handleTouchDrop(draggedElement, dropZone) {
-            const sourceId = originalParentOfDraggedPlayer.id; // Use the stored original parent
-            const targetId = dropZone.id;
-
-            console.log('Touch Drop event on', targetId, 'for player:', draggedElement.dataset.name);
-
-            if (sourceId === targetId) {
-                // If dropped back into the same zone, just reset styles and return
-                return;
-            }
-
-            // Remove from original parent (it should still be there)
-            if (originalParentOfDraggedPlayer && originalParentOfDraggedPlayer.contains(draggedElement)) {
-                originalParentOfDraggedPlayer.removeChild(draggedElement);
-            }
-
-            // Append to the new target zone
-            dropZone.appendChild(draggedElement);
-
-            updateTeamCounts();
-        }
-
-        function updateTeamCounts() {
-            const clarosPlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
-            const oscurosPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
-
-            clarosCountSpan.textContent = clarosPlayers.length;
-            oscurosCountSpan.textContent = oscurosPlayers.length;
-
-            // Habilitar botón de guardar equipos si hay 5 jugadores en cada equipo
-            if (clarosPlayers.length === 5 && oscurosPlayers.length === 5) {
-                saveTeamsButton.disabled = false;
-            } else {
-                saveTeamsButton.disabled = true;
-            }
-        }
-
-        saveTeamsButton.addEventListener('click', async () => {
-            const clarosPlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
-            const oscurosPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
-            const matchDateInputVal = teamMatchDateInput.value; // Obtener la fecha del input (YYYY-MM-DD)
-
-            if (!matchDateInputVal) {
-                alert('Por favor, selecciona la fecha del partido.');
-                return;
-            }
-
-            if (clarosPlayers.length !== 5 || oscurosPlayers.length !== 5) {
-                alert('Debes seleccionar exactamente 5 jugadores para cada equipo.');
-                return;
-            }
-
-            // Convertir la fecha del input a un objeto Date local y luego formatear a DD/MM/YYYY
-            const formattedDate = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal));
-
-            // Validar si ya existe un partido con la misma fecha
-            const existingMatch = allMatchesData.find(match => match[1] === formattedDate);
-            if (existingMatch) {
-                alert(`Ya existe un partido registrado para la fecha ${formattedDate}. Por favor, elige otra fecha.`);
-                return;
-            }
-
-            try {
-                // Generar un nuevo ID de partido
-                const maxIdNum = allMatchesData.reduce((max, m) => {
-                    const num = parseInt(m[0]?.replace('P', '') || 0);
-                    return Math.max(max, num);
-                }, 0);
-                const newMatchId = 'P' + String(maxIdNum + 1).padStart(3, '0');
-
-                const newMatchRow = [
-                    newMatchId,
-                    formattedDate, // Usar la fecha del input
-                    clarosPlayers.join(','),
-                    oscurosPlayers.join(','),
-                    '', // Resultado vacío inicialmente
-                    '', // Chamigo_Votos vacío inicialmente
-                    ''  // Asistencia_TT_IDs vacío inicialmente
-                ];
-
-                await gapi.client.sheets.spreadsheets.values.append({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G',
-                    valueInputOption: 'RAW',
-                    resource: { values: [newMatchRow] },
-                });
-
-                alert(`Equipos guardados para el partido ${newMatchId} en la fecha ${formattedDate}.`);
-                await loadAllDataAndDisplayAllContent(); // Recargar partidos para que aparezca en el selector
-                // Limpiar la selección de equipos
-                titularesPlayersDiv.innerHTML = ''; // Se recargará con loadAllDataAndDisplayAllContent
-                suplentesPlayersDiv.innerHTML = ''; // Se recargará con loadAllDataAndDisplayAllContent
-                teamClarosDiv.innerHTML = '';
-                teamOscurosDiv.innerHTML = '';
-                clarosCountSpan.textContent = '0';
-                oscurosCountSpan.textContent = '0';
-                saveTeamsButton.disabled = true;
-                teamMatchDateInput.value = ''; // Limpiar la fecha del partido
-            } catch (err) {
-                console.error('Error al guardar equipos:', err);
-                alert(`Error al guardar equipos: ${err.message}. Revisa la consola.`);
-            }
-        });
-
-        // --- Funciones para poblar selectores de partidos (Resultados, Chamigo, TT) ---
-        function populateResultsMatchYearSelect() {
-            const years = new Set();
-            allMatchesData.forEach(match => {
-                const dateString = match[1]; // Columna 'Fecha'
-                if (dateString) {
-                    const date = parseDate(dateString);
-                    years.add(date.getFullYear());
-                }
-            });
-
-            const sortedYears = Array.from(years).sort((a, b) => b - a); // Ordenar de más reciente a más antiguo
-
-            resultsMatchYearSelect.innerHTML = ''; // Limpiar opciones existentes
-            const currentYear = new Date().getFullYear(); // Declarar aquí
-            if (sortedYears.length > 0) {
-                sortedYears.forEach(year => {
-                    const option = document.createElement('option');
-                    option.value = year;
-                    option.textContent = year;
-                    resultsMatchYearSelect.appendChild(option);
-                });
-                if (sortedYears.includes(currentYear)) {
-                    resultsMatchYearSelect.value = currentYear;
-                } else {
-                    resultsMatchYearSelect.value = sortedYears[0];
-                }
-            } else {
-                const option = document.createElement('option');
-                option.value = currentYear;
-                option.textContent = currentYear;
-                resultsMatchYearSelect.appendChild(option);
-            }
-        }
-
-        function populateMatchSelects() {
-            const selectedYear = resultsMatchYearSelect.value;
-            const selectedMonth = resultsMatchMonthSelect.value; // 'all' o un número de 0 a 11
-
-            resultsMatchListDiv.innerHTML = ''; // Limpiar la lista de partidos
-
-            const filteredMatches = allMatchesData.filter(match => {
-                const dateString = match[1];
-                if (!dateString) return false;
-                const matchDate = parseDate(dateString);
-                const matchYear = matchDate.getFullYear();
-                const matchMonth = matchDate.getMonth();
-
-                const yearMatch = selectedYear === 'all' || matchYear === parseInt(selectedYear);
-                const monthMatch = selectedMonth === 'all' || matchMonth === parseInt(selectedMonth);
-
-                return yearMatch && monthMatch;
-            });
-
-            const sortedMatches = [...filteredMatches].sort((a, b) => {
-                const dateA = parseDate(a[1]);
-                const dateB = parseDate(b[1]);
-                return dateB - dateA; // Ordenar de más reciente a más antiguo
-            });
-
-            if (sortedMatches.length === 0) {
-                resultsMatchListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
-                return;
-            }
-
-            sortedMatches.forEach(match => {
-                const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
-                const matchItem = document.createElement('div');
-                // Aplicar color según el resultado
-                if (resultado && resultado.trim() !== '') {
-                    matchItem.className = 'match-item has-result'; // Verde si hay resultado
-                } else {
-                    matchItem.className = 'match-item no-result'; // Rojo si no hay resultado
-                }
-                matchItem.dataset.matchId = id; // Guardar el ID del partido
-
-                const clarosNames = clarosIDs.split(',').map(id => {
-                    const player = allPlayersData.find(p => p[0] === id);
-                    return player ? player[1] : `ID:${id}`;
-                }).join(', ');
-                const oscurosNames = oscurosIDs.split(',').map(id => {
-                    const player = allPlayersData.find(p => p[0] === id);
-                    return player ? player[1] : `ID:${id}`;
-                }).join(', ');
-                
-                matchItem.innerHTML = `
-                    <p class="font-semibold">${fecha}</p>
-                    <p class="text-sm text-gray-700">Claros: ${clarosNames}</p>
-                    <p class="text-sm text-gray-700">Oscuros: ${oscurosNames}</p>
-                    ${resultado ? `<p class="text-xs text-gray-500">Resultado: ${resultado}</p>` : '<p class="text-xs text-gray-500">Sin resultado</p>'}
-                `;
-                resultsMatchListDiv.appendChild(matchItem);
-
-                matchItem.addEventListener('click', () => {
-                    // Remover clase 'selected' de todos los items
-                    document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                    // Añadir clase 'selected' al item clickeado
-                    matchItem.classList.add('selected');
-
-                    // Cargar detalles del partido en los inputs
-                    const selectedMatch = allMatchesData.find(m => m[0] === id);
-                    if (selectedMatch) {
-                        const [mId, mFecha, mClarosIDs, mOscurosIDs, mResultado] = selectedMatch;
-                        const [day, month, year] = mFecha.split('/');
-                        // Formatear la fecha para el input type="date" (YYYY-MM-DD)
-                        matchDateInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                        matchResultSelect.value = mResultado || '';
-                    }
-                });
-            });
-        }
-
-        // --- NUEVAS FUNCIONES PARA CHAMIGO Y TT ---
-
-        /**
-         * Rellena los selectores de año para Chamigo y TT.
-         */
-        function populateChamigoTtMatchYearSelect() {
-            const years = new Set();
-            allMatchesData.forEach(match => {
-                const dateString = match[1];
-                if (dateString) {
-                    const date = parseDate(dateString);
-                    years.add(date.getFullYear());
-                }
-            });
-
-            const sortedYears = Array.from(years).sort((a, b) => b - a);
-
-            // Limpiar y poblar selectores de año
-            [chamigoMatchYearSelect, ttMatchYearSelect].forEach(selectElement => {
-                selectElement.innerHTML = '';
-                const currentYear = new Date().getFullYear(); // Declarar aquí
-                if (sortedYears.length > 0) {
-                    sortedYears.forEach(year => {
-                        const option = document.createElement('option');
-                        option.value = year;
-                        option.textContent = year;
-                        selectElement.appendChild(option);
-                    });
-                    if (sortedYears.includes(currentYear)) {
-                        selectElement.value = currentYear;
-                    } else {
-                        selectElement.value = sortedYears[0];
-                    }
-                } else {
-                    const option = document.createElement('option');
-                    option.value = currentYear;
-                    option.textContent = currentYear;
-                    selectElement.appendChild(option);
-                }
-            });
-        }
-
-        /**
-         * Popula las listas de partidos para Chamigo y TT.
-         * @param {HTMLElement} targetListDiv - El div donde se renderizarán los partidos.
-         * @param {HTMLSelectElement} yearSelect - El selector de año.
-         * @param {HTMLSelectElement} monthSelect - El selector de mes.
-         * @param {Function} onMatchClickCallback - La función a llamar cuando se selecciona un partido.
-         * @param {string} tabName - 'chamigo' o 'tt' para deseleccionar correctamente los items.
-         */
-        function populateMatchListForTab(targetListDiv, yearSelect, monthSelect, onMatchClickCallback, tabName) {
-            const selectedYear = yearSelect.value;
-            const selectedMonth = monthSelect.value;
-
-            targetListDiv.innerHTML = ''; // Limpiar la lista de partidos
-
-            const filteredMatches = allMatchesData.filter(match => {
-                const dateString = match[1];
-                if (!dateString) return false;
-                const matchDate = parseDate(dateString);
-                const matchYear = matchDate.getFullYear();
-                const matchMonth = matchDate.getMonth();
-
-                const yearMatch = selectedYear === 'all' || matchYear === parseInt(selectedYear);
-                const monthMatch = selectedMonth === 'all' || matchMonth === parseInt(selectedMonth);
-
-                return yearMatch && monthMatch;
-            });
-
-            const sortedMatches = [...filteredMatches].sort((a, b) => {
-                const dateA = parseDate(a[1]);
-                const dateB = parseDate(b[1]);
-                return dateB - dateA; // Ordenar de más reciente a más antiguo
-            });
-
-            if (sortedMatches.length === 0) {
-                targetListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
-                return;
-            }
-
-            sortedMatches.forEach(match => {
-                const [id, fecha, clarosIDs, oscurosIDs, resultado, chamigoVotos, ttAttendees] = match;
-                const matchItem = document.createElement('div');
-                
-                // Determinar el color según el nombre de la pestaña
-                let shouldBeGreen = false;
-                if (tabName === 'chamigo') {
-                    // Chamigo debe ser verde si chamigoVotos está asignado (no vacío)
-                    shouldBeGreen = (chamigoVotos && chamigoVotos.trim() !== '');
-                } else if (tabName === 'tt') {
-                    // TT debe ser verde si ttAttendees está asignado (no vacío)
-                    shouldBeGreen = (ttAttendees && ttAttendees.trim() !== '');
-                } else {
-                    // Para otras pestañas (como 'results'), usar la lógica existente (basada en 'resultado')
-                    shouldBeGreen = (resultado && resultado.trim() !== '');
-                }
-
-                if (shouldBeGreen) {
-                    matchItem.className = 'match-item has-result'; // Verde si los datos relevantes existen
-                } else {
-                    matchItem.className = 'match-item no-result'; // Rojo si los datos relevantes no existen
-                }
-
-                matchItem.dataset.matchId = id; // Guardar el ID del partido
-
-                const clarosNames = clarosIDs.split(',').map(id => {
-                    const player = allPlayersData.find(p => p[0] === id);
-                    return player ? player[1] : `ID:${id}`;
-                }).join(', ');
-                const oscurosNames = oscurosIDs.split(',').map(id => {
-                    const player = allPlayersData.find(p => p[0] === id);
-                    return player ? player[1] : `ID:${id}`;
-                }).join(', ');
-                
-                matchItem.innerHTML = `
-                    <p class="font-semibold">${fecha}</p>
-                    <p class="text-sm text-gray-700">Claros: ${clarosNames}</p>
-                    <p class="text-sm text-gray-700">Oscuros: ${oscurosNames}</p>
-                    ${resultado ? `<p class="text-xs text-gray-500">Resultado: ${resultado}</p>` : '<p class="text-xs text-gray-500">Sin resultado</p>'}
-                `;
-                targetListDiv.appendChild(matchItem);
-
-                matchItem.addEventListener('click', () => {
-                    // Remover clase 'selected' de todos los items en esta lista específica
-                    document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected'));
-                    // Añadir clase 'selected' al item clickeado
-                    matchItem.classList.add('selected');
-
-                    onMatchClickCallback(id); // Llama a la función de callback con el ID del partido
-                });
-            });
-        }
-
-        // Función unificada para poblar Chamigo y TT match lists
-        function populateChamigoTtMatchLists() {
-            // Para Chamigo
-            populateMatchListForTab(chamigoMatchListDiv, chamigoMatchYearSelect, chamigoMatchMonthSelect, handleChamigoMatchSelection, 'chamigo');
-            // Para TT
-            populateMatchListForTab(ttMatchListDiv, ttMatchYearSelect, ttMatchMonthSelect, handleTtMatchSelection, 'tt');
-        }
-
-        // Event listeners para los nuevos filtros de resultados
-        resultsMatchYearSelect.addEventListener('change', populateMatchSelects);
-        resultsMatchMonthSelect.addEventListener('change', populateMatchSelects);
-
-        // Event listeners para los nuevos filtros de Chamigo
-        chamigoMatchYearSelect.addEventListener('change', () => populateChamigoTtMatchLists());
-        chamigoMatchMonthSelect.addEventListener('change', () => populateChamigoTtMatchLists());
-
-        // Event listeners para los nuevos filtros de TT
-        ttMatchYearSelect.addEventListener('change', () => populateChamigoTtMatchLists());
-        ttMatchMonthSelect.addEventListener('change', () => populateChamigoTtMatchLists());
-
-
-        // --- Resultados ---
-
-        registerMatchButton.addEventListener('click', async () => {
-            const selectedMatchItem = document.querySelector('#results-match-list .match-item.selected');
-            if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido de la lista.');
-                return;
-            }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
-            const result = matchResultSelect.value;
-            const matchDateInputVal = matchDateInput.value; // Formato YYYY-MM-DD (del input readonly)
-
-            if (!selectedMatchId || !result || !matchDateInputVal) {
-                alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
-                return;
-            }
-
-            try {
-                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-                if (matchIndex === -1) {
-                    alert('Partido no encontrado.');
-                    return;
-                }
-
-                const currentMatch = allMatchesData[matchIndex];
-                const [id, oldDate, clarosIDsStr, oscurosIDsStr, oldResult, chamigoVotosStr, ttAttendeesStr] = currentMatch;
-
-                // Revertir puntos y PJ si ya había un resultado
-                if (oldResult && oldResult.trim() !== '' && oldResult !== 'Suspendido') { // Solo si había un resultado válido antes
-                    const playersInOldMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
-                    const oldPlayerUpdates = {};
-
-                    // Revertir PJ
-                    playersInOldMatchIDs.forEach(pId => {
-                        oldPlayerUpdates[pId] = oldPlayerUpdates[pId] || { pointsChange: 0, gamesChange: 0 };
-                        oldPlayerUpdates[pId].gamesChange -= 1;
-                    });
-
-                    // Revertir Puntos
-                    if (oldResult === 'Claros') {
-                        (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                            oldPlayerUpdates[pId].pointsChange -= 3;
-                        });
-                    } else if (oldResult === 'Oscuros') {
-                        (oscurosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                            oldPlayerUpdates[pId].pointsChange -= 3;
-                        });
-                    } else if (oldResult === 'Empate') {
-                        playersInOldMatchIDs.forEach(pId => {
-                            oldPlayerUpdates[pId].pointsChange -= 1;
-                        });
-                    }
-
-                    const batchRevertRequests = [];
-                    for (const playerId of Object.keys(oldPlayerUpdates)) { // Usar Object.keys
-                        const playerUpdate = oldPlayerUpdates[playerId];
-                        const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                        if (playerGlobalIndex !== -1) {
-                            const currentPlayer = allPlayersData[playerGlobalIndex];
-                            currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange; // Puntos_Totales
-                            currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange; // Partidos_Jugados
-
-                            batchRevertRequests.push({
-                                range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`,
-                                values: [[currentPlayer[3], currentPlayer[4]]]
-                            });
-                        }
-                    }
-                    if (batchRevertRequests.length > 0) {
-                        await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                            spreadsheetId: SPREADSHEET_ID,
-                            resource: {
-                                data: batchRevertRequests,
-                                valueInputOption: 'RAW'
-                            }
-                        });
-                    }
-                }
-
-                // Actualizar el resultado y la fecha en el array en memoria
-                currentMatch[1] = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal)); // Actualizar fecha a DD/MM/YYYY
-                currentMatch[4] = result; // Actualizar resultado
-
-                // Actualizar la hoja de cálculo para el partido
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!A${matchIndex + 2}:G${matchIndex + 2}`,
-                    valueInputOption: 'RAW',
-                    resource: { values: [currentMatch] },
-                });
-
-                // --- Lógica de Puntos (Aplicar nuevos puntos) ---
-                const clarosPlayers = clarosIDsStr.split(',').filter(Boolean);
-                const oscurosPlayers = oscurosIDsStr.split(',').filter(Boolean);
-
-                let playersToUpdate = {}; // {id: {points: X, games: Y}}
-
-                // Incrementar partidos jugados para todos los participantes (solo si el resultado no es "Suspendido")
-                if (result !== 'Suspendido') {
-                    [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].games += 1;
-                    });
-                }
-
-                if (result === 'Claros') {
-                    clarosPlayers.forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].points += 3;
-                    });
-                } else if (result === 'Oscuros') {
-                    oscurosPlayers.forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].points += 3;
-                    });
-                } else if (result === 'Empate') {
-                    [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].points += 1;
-                    });
-                }
-
-                // Actualizar puntos y partidos jugados en la hoja de Jugadores
-                const updateRequests = [];
-                for (const pId of Object.keys(playersToUpdate)) { // Usar Object.keys
-                    const playerUpdate = playersToUpdate[pId];
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === pId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.points; // Sumar puntos
-                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.games; // Sumar partidos jugados
-
-                        updateRequests.push({
-                            range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`, // Columnas D (Puntos_Totales) y E (Partidos_Jugados)
-                            values: [[currentPlayer[3], currentPlayer[4]]]
-                        });
-                    }
-                }
-
-                if (updateRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: updateRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
-                alert('Resultado del partido y puntos actualizados exitosamente.');
-                matchDateInput.value = '';
-                matchResultSelect.value = '';
-                // Deseleccionar el partido de la lista
-                document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                await loadAllDataAndDisplayAllContent(); // Recargar todos los datos
-            } catch (err) {
-                console.error('Error al registrar partido:', err);
-                alert(`Error al registrar partido: ${err.message}. Revisa la consola.`);
-            }
-        });
-
-        async function deleteMatchButtonClickHandler() {
-            const selectedMatchItem = document.querySelector('#results-match-list .match-item.selected');
-            if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido de la lista para eliminar.');
-                return;
-            }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
-
-            const confirmed = await showCustomConfirm(
-                'Confirmar Eliminación de Partido',
-                `¿Estás seguro de que quieres eliminar el partido seleccionado (ID: ${selectedMatchId})? Esto revertirá todos los puntos, chamigos y asistencias TT asociados a este partido. Esta acción es irreversible.`
-            );
-
-            if (!confirmed) {
-                return;
-            }
-
-            try {
-                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-                if (matchIndex === -1) {
-                    alert('Partido no encontrado.');
-                    return;
-                }
-
-                const matchToDelete = allMatchesData[matchIndex];
-                // Asegurarse de que las variables estén definidas, incluso si las celdas están vacías
-                const [id, date, clarosIDsStr = '', oscurosIDsStr = '', result, chamigoVotosStr = '', ttAttendeesStr = ''] = matchToDelete;
-
-                // --- Revertir Estadísticas de Jugadores ---
-                const playersInMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
-                const playerUpdates = {}; // {playerId: {pointsChange: X, gamesChange: Y, chamigoChange: Z, ttChange: W}}
-
-                // Revertir Partidos Jugados (PJ) solo si el partido tuvo un resultado válido (no vacío y no 'Suspendido')
-                if (result && result.trim() !== '' && result !== 'Suspendido') {
-                    playersInMatchIDs.forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].gamesChange -= 1; // Restar 1 PJ
-                    });
-                }
-
-                // Revertir Puntos
-                if (result === 'Claros') {
-                    (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].pointsChange -= 3;
-                    });
-                } else if (result === 'Oscuros') {
-                    (oscurosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].pointsChange -= 3;
-                    });
-                } else if (result === 'Empate') {
-                    playersInMatchIDs.forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].pointsChange -= 1;
-                    });
-                }
-
-                // Revertir Chamigo
-                if (chamigoVotosStr) {
-                    try {
-                        const chamigoVotos = JSON.parse(chamigoVotosStr);
-                        const maxVotes = chamigoVotos.length > 0 ? Math.max(...chamigoVotos.map(v => v.votos)) : 0;
-                        const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
-                        chamigosDelPartido.forEach(chamigo => {
-                            playerUpdates[chamigo.id] = playerUpdates[chamigo.id] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                            playerUpdates[chamigo.id].chamigoChange -= 1;
-                        });
-                    } catch (e) {
-                        console.warn('Error al parsear votos de chamigo al eliminar:', chamigoVotosStr, e);
-                    }
-                }
-
-                // Revertir TT Asistencia
-                if (ttAttendeesStr) {
-                    const ttAttendees = ttAttendeesStr.split(',').filter(Boolean);
-                    ttAttendees.forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].ttChange -= 1;
-                    });
-                }
-
-                // Aplicar cambios a la hoja de Jugadores
-                const batchUpdatePlayerRequests = [];
-                for (const playerId of Object.keys(playerUpdates)) { // Usar Object.keys
-                    const playerUpdate = playerUpdates[playerId];
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange; // Puntos_Totales
-                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange; // Partidos_Jugados
-                        currentPlayer[5] = parseInt(currentPlayer[5] || 0) + playerUpdate.chamigoChange; // Chamigos_Ganados
-                        currentPlayer[6] = parseInt(currentPlayer[6] || 0) + playerUpdate.ttChange; // TT_Asistencias
-
-                        batchUpdatePlayerRequests.push({
-                            range: `Jugadores!D${playerGlobalIndex + 2}:G${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[3], currentPlayer[4], currentPlayer[5], currentPlayer[6]]]
-                        });
-                    }
-                }
-
-                if (batchUpdatePlayerRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: batchUpdatePlayerRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
-                // --- Eliminar Fila del Partido de la Hoja 'Partidos' ---
-                // Sheets API deleteDimension request es 0-indexed para el startIndex
-                // y endIndex es exclusivo (startIndex + count)
-                // Convertir el índice del array (0-based) a índice de fila de la hoja (1-based), y sumar 1 por el encabezado.
-                const sheetRowIndex = matchIndex + 2; // +1 por 1-based, +1 por fila de encabezado
-
-                if (sheetIds['Partidos'] === undefined) {
-                    console.error("Sheet ID for 'Partidos' not found. Cannot delete row.");
-                    alert("Error: No se pudo encontrar la hoja 'Partidos'. Por favor, recarga la página e intenta de nuevo.");
-                    return;
-                }
-
-                await gapi.client.sheets.spreadsheets.batchUpdate({
-                    spreadsheetId: SPREADSHEET_ID,
-                    resource: {
-                        requests: [{
-                            deleteDimension: {
-                                range: {
-                                    sheetId: sheetIds['Partidos'], // Usar el sheetId dinámico para 'Partidos'
-                                    dimension: 'ROWS',
-                                    startIndex: sheetRowIndex - 1, // Sheets API es 0-indexed para startIndex
-                                    endIndex: sheetRowIndex // endIndex es exclusivo
-                                }
-                            }
-                        }]
-                    }
-                });
-
-                alert('Partido eliminado y estadísticas revertidas exitosamente.');
-                matchDateInput.value = '';
-                matchResultSelect.value = '';
-                document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                await loadAllDataAndDisplayAllContent(); // Recargar todos los datos y la UI
-            } catch (err) {
-                console.error('Error al eliminar partido:', err);
-                alert(`Error al eliminar partido: ${err.message}. Revisa la consola.`);
-            }
-        }
-
-
-        // --- Funciones de Chamigo ---
-
-        // Función para manejar la selección de un partido en la lista de Chamigo
-        function handleChamigoMatchSelection(selectedMatchId) {
-            chamigoVotingPlayersDiv.innerHTML = '';
-            if (selectedMatchId) {
-                const match = allMatchesData.find(m => m[0] === selectedMatchId);
-                if (match) {
-                    const clarosIDs = match[2] ? match[2].split(',') : [];
-                    const oscurosIDs = match[3] ? match[3].split(',') : [];
-                    const playersInMatchIDs = [...new Set([...clarosIDs, ...oscurosIDs])]; // Unir y eliminar duplicados
-
-                    const playersInMatch = playersInMatchIDs.map(id => {
-                        const player = allPlayersData.find(p => p[0] === id);
-                        return { id: id, name: player ? player[1] : `ID:${id}` };
-                    });
-                    renderChamigoVotingPlayers(playersInMatch);
-
-                    // Precargar votos si ya existen
-                    if (match[5]) { // Columna Chamigo_Votos
-                        try {
-                            const existingVotes = JSON.parse(match[5]);
-                            existingVotes.forEach(vote => {
-                                const input = chamigoVotingPlayersDiv.querySelector(`input[data-id="${vote.id}"]`);
-                                if (input) {
-                                    input.value = vote.votos;
-                                }
-                            });
-                        } catch (e) {
-                            console.warn("Error al parsear votos de chamigo existentes:", e);
-                        }
-                    }
-                }
-            } else {
-                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-            }
-        }
-
-        function renderChamigoVotingPlayers(playersInMatch) {
-            chamigoVotingPlayersDiv.innerHTML = '';
-            if (playersInMatch.length === 0) {
-                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores para votar por Chamigo en este partido.</p>';
-                return;
-            }
-
-            playersInMatch.forEach(player => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex items-center space-x-2';
-                playerDiv.innerHTML = `
-                    <label class="block text-sm font-medium text-gray-700">${player.name}:</label>
-                    <input type="number" data-id="${player.id}" class="chamigo-vote-input mt-1 block w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" value="0" min="0">
-                `;
-                chamigoVotingPlayersDiv.appendChild(playerDiv);
-            });
-        }
-
-        registerChamigoButton.addEventListener('click', async () => {
-            const selectedMatchItem = document.querySelector('#chamigo-match-list .match-item.selected');
-            if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido de la lista para registrar el Chamigo.');
-                return;
-            }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
-
-            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-            if (matchIndex === -1) {
-                alert('Partido no encontrado.');
-                return;
-            }
-
-            const currentMatch = allMatchesData[matchIndex];
-            // Recopilar votos
-            const voteInputs = document.querySelectorAll('.chamigo-vote-input');
-            let votes = [];
-            voteInputs.forEach(input => {
-                const playerId = input.dataset.id;
-                const numVotes = parseInt(input.value || 0);
-                if (numVotes > 0) {
-                    votes.push({ id: playerId, votos: numVotes });
-                }
-            });
-
-            if (votes.length === 0) {
-                alert('No se han ingresado votos para Chamigo.');
-                return;
-            }
-
-            // Encontrar el/los Chamigo(s) con más votos
-            const maxVotes = Math.max(...votes.map(v => v.votos));
-            const chamigosDelPartido = votes.filter(v => v.votos === maxVotes);
-
-            // Actualizar la columna Chamigo_Votos del partido
-            currentMatch[5] = JSON.stringify(votes); // Guardar todos los votos como JSON
-
-            try {
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!F${matchIndex + 2}`, // Columna F (Chamigo_Votos)
-                    valueInputOption: 'RAW',
-                    resource: { values: [[currentMatch[5]]] },
-                });
-
-                // Actualizar el contador de Chamigos_Ganados en la hoja de Jugadores
-                const updateRequests = [];
-                chamigosDelPartido.forEach(chamigo => {
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === chamigo.id);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentChamigos = parseInt(currentPlayer[5] || 0); // Columna Chamigos_Ganados
-                        currentPlayer[5] = currentChamigos + 1; // Incrementar Chamigos_Ganados
-
-                        updateRequests.push({
-                            range: `Jugadores!F${playerGlobalIndex + 2}`, // Columna F (Chamigos_Ganados)
-                            values: [[currentPlayer[5]]]
-                        });
-                    }
-                });
-
-                if (updateRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: updateRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
-                alert('Chamigo(s) registrado(s) exitosamente.');
-                // Limpiar inputs de votos
-                document.querySelectorAll('.chamigo-vote-input').forEach(input => input.value = '0');
-                await loadAllDataAndDisplayAllContent(); // Recargar todos los datos
-            } catch (err) {
-                console.error('Error al registrar Chamigo:', err);
-                alert(`Error al registrar Chamigo: ${err.message}. Revisa la consola.`);
-            }
-        });
-
-        // --- Funciones de Asistencia TT ---
-
-        // Función para manejar la selección de un partido en la lista de TT
-        function handleTtMatchSelection(selectedMatchId) {
-            ttAttendancePlayersDiv.innerHTML = '';
-            if (selectedMatchId) {
-                const match = allMatchesData.find(m => m[0] === selectedMatchId);
-                if (match) {
-                    // Ahora renderiza TODOS los jugadores activos para TT
-                    renderTtAttendancePlayers(allPlayersData.filter(p => p[2] === 'Activo').map(p => ({id: p[0], name: p[1]})));
-
-                    // Precargar asistencia si ya existe para este partido
-                    if (match[6]) { // Columna Asistencia_TT_IDs
-                        const existingAttendees = match[6].split(',');
-                        existingAttendees.forEach(id => {
-                            const checkbox = ttAttendancePlayersDiv.querySelector(`input[data-id="${id}"]`);
-                            if (checkbox) {
-                                checkbox.checked = true;
-                            }
-                        });
-                    }
-                }
-            } else {
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-            }
-        }
-
-        function renderTtAttendancePlayers(playersToRender) { // Recibe la lista de jugadores a mostrar
-            ttAttendancePlayersDiv.innerHTML = '';
-            if (playersToRender.length === 0) {
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos disponibles para registrar asistencia TT.</p>';
-                return;
-            }
-
-            playersToRender.forEach(player => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex items-center space-x-2';
-                playerDiv.innerHTML = `
-                    <input type="checkbox" id="tt-player-${player.id}" data-id="${player.id}" class="tt-checkbox h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
-                    <label for="tt-player-${player.id}" class="text-sm font-medium text-gray-700">${player.name}</label>
-                `;
-                ttAttendancePlayersDiv.appendChild(playerDiv);
-            });
-        }
-
-        registerTtButton.addEventListener('click', async () => {
-            const selectedMatchItem = document.querySelector('#tt-match-list .match-item.selected');
-            if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido de la lista para registrar la asistencia TT.');
-                return;
-            }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
-
-            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-            if (matchIndex === -1) {
-                alert('Partido no encontrado.');
-                return;
-            }
-
-            const currentMatch = allMatchesData[matchIndex];
-            const ttAttendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
-
-            // Obtener asistentes TT previos para evitar doble conteo de puntos
-            const prevTtAttendees = currentMatch[6] ? currentMatch[6].split(',').filter(Boolean) : [];
-            const newAttendeesForPoints = ttAttendees.filter(id => !prevTtAttendees.includes(id));
-            const removedAttendeesForPoints = prevTtAttendees.filter(id => !ttAttendees.includes(id));
-
-
-            // Actualizar la columna Asistencia_TT_IDs del partido
-            currentMatch[6] = ttAttendees.join(','); // Columna G (Asistencia_TT_IDs)
-
-            try {
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!G${matchIndex + 2}`,
-                    valueInputOption: 'RAW',
-                    resource: { values: [[currentMatch[6]]] },
-                });
-
-                // Actualizar el contador de TT_Asistencias en la hoja de Jugadores
-                const updateRequests = [];
-                newAttendeesForPoints.forEach(playerId => { // Solo para los nuevos asistentes
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentTtAsistencias = parseInt(currentPlayer[6] || 0); // Columna TT_Asistencias
-                        currentPlayer[6] = currentTtAsistencias + 1; // Incrementar TT_Asistencias
-
-                        updateRequests.push({
-                            range: `Jugadores!G${playerGlobalIndex + 2}`, // Columna G (TT_Asistencias)
-                            values: [[currentPlayer[6]]]
-                        });
-                    }
-                });
-
-                removedAttendeesForPoints.forEach(playerId => { // Para los asistentes que se desmarcaron
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentTtAsistencias = parseInt(currentPlayer[6] || 0);
-                        currentPlayer[6] = currentTtAsistencias - 1; // Decrementar TT_Asistencias
-
-                        updateRequests.push({
-                            range: `Jugadores!G${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[6]]]
-                        });
-                    }
-                });
-
-
-                if (updateRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: updateRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
-                alert('Asistencia al Tercer Tiempo registrada exitosamente.');
-                // Limpiar checkboxes (se recargarán con loadAllDataAndDisplayAllContent)
-                // document.querySelectorAll('.tt-checkbox').forEach(cb => cb.checked = false);
-                await loadAllDataAndDisplayAllContent(); // Recargar todos los datos
-            } catch (err) {
-                console.error('Error al registrar asistencia TT:', err);
-                alert(`Error al registrar asistencia TT: ${err.message}. Revisa la consola.`);
-            }
-        });
-
-
-        // --- Funciones de Tabla de Posiciones (para el panel de admin) ---
 
         /**
          * Rellena el selector de año con los años disponibles en los partidos.
          * Selecciona el año actual por defecto si existe, o el más reciente.
          */
-        function populateLeaderboardYearSelect() {
+        function populateYearSelect() {
             const years = new Set();
             allMatchesData.forEach(match => {
                 const dateString = match[1]; // Columna 'Fecha'
@@ -2399,41 +202,40 @@
 
             const sortedYears = Array.from(years).sort((a, b) => b - a); // Ordenar de más reciente a más antiguo
 
-            leaderboardYearSelect.innerHTML = ''; // Limpiar opciones existentes
-            const currentYear = new Date().getFullYear(); // Declarar aquí
+            yearSelect.innerHTML = ''; // Limpiar opciones existentes
             if (sortedYears.length > 0) {
                 sortedYears.forEach(year => {
                     const option = document.createElement('option');
                     option.value = year;
                     option.textContent = year;
-                    leaderboardYearSelect.appendChild(option);
+                    yearSelect.appendChild(option);
                 });
                 // Seleccionar el año actual por defecto si existe, o el más reciente
+                const currentYear = new Date().getFullYear();
                 if (sortedYears.includes(currentYear)) {
-                    leaderboardYearSelect.value = currentYear;
+                    yearSelect.value = currentYear;
                 } else {
-                    leaderboardYearSelect.value = sortedYears[0];
+                    yearSelect.value = sortedYears[0];
                 }
             } else {
                 const option = document.createElement('option');
-                option.value = currentYear; // Año actual si no hay datos
-                option.textContent = currentYear;
-                leaderboardYearSelect.appendChild(option);
+                option.value = new Date().getFullYear(); // Año actual si no hay datos
+                option.textContent = new Date().getFullYear();
+                yearSelect.appendChild(option);
             }
         }
 
         /**
-         * Establece el período inicial (Apertura/Clausura/Totales) para la tabla de posiciones
-         * basado en la fecha actual.
+         * Establece el período inicial (Apertura/Clausura/Totales) basado en la fecha actual.
          */
-        function setInitialLeaderboardPeriod() {
+        function setInitialPeriod() {
             const currentMonth = new Date().getMonth(); // 0-indexed (Enero es 0)
             if (currentMonth >= 0 && currentMonth <= 5) { // Enero a Junio
-                leaderboardPeriodSelect.value = 'apertura';
+                periodSelect.value = 'apertura';
             } else if (currentMonth >= 6 && currentMonth <= 11) { // Julio a Diciembre
-                leaderboardPeriodSelect.value = 'clausura';
+                periodSelect.value = 'clausura';
             } else {
-                leaderboardPeriodSelect.value = 'totales'; // Por defecto, si no cae en Apertura/Clausura
+                periodSelect.value = 'totales'; // Por defecto, si no cae en Apertura/Clausura
             }
         }
 
@@ -2441,7 +243,7 @@
          * Filtra los partidos según el año y el período seleccionados.
          * Esta función ahora solo filtra por fecha, sin considerar el resultado o suspensión.
          */
-        function filterMatchesForLeaderboard(matches, selectedYear, selectedPeriod) {
+        function filterMatches(matches, selectedYear, selectedPeriod) {
             return matches.filter(match => {
                 const dateString = match[1]; // Columna 'Fecha'
                 if (!dateString || dateString.trim() === '') return false; // Asegura que la fecha exista
@@ -2468,7 +270,7 @@
          * Calcula las estadísticas de los jugadores basándose en los partidos filtrados.
          * Incluye cálculo de Efectividad y Ausente.
          */
-        function calculatePlayerStatsForLeaderboard(players, filteredMatches) {
+        function calculatePlayerStats(players, filteredMatches) {
             const playerStats = {};
             // totalMatchesInPeriod es el número de partidos en el período seleccionado,
             // incluyendo suspendidos o sin resultado, ya que Chamigo y TT se cuentan de todos.
@@ -2485,14 +287,13 @@
                         partidos: 0, // PJ (partidos jugados que cuentan para puntos)
                         chamigos: 0, // Chamigo (total en el período)
                         tt: 0,       // TT (total en el período)
-                        efectividad: '0.00%', // Nueva columna
+                        efectividad: '0.00%',
                         ausente: 0 // Se calculará al final
                     };
                 }
             });
 
             filteredMatches.forEach(match => {
-                // Desestructuración con valores por defecto para mayor robustez
                 const [
                     idPartido,
                     fecha,
@@ -2503,7 +304,7 @@
                     asistenciaTTIDsStr = ''
                 ] = match;
 
-                const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
+                const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean);
                 const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean);
                 const allPlayersInMatchForPJ = new Set([...equipoClarosIDs, ...equipoOscurosIDs]); // Jugadores que participaron en este partido
 
@@ -2519,7 +320,6 @@
 
                     if (resultado === 'Claros' || resultado === 'Oscuros') {
                         const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
-
                         winningTeam.forEach(playerId => {
                             if (playerStats[playerId]) playerStats[playerId].puntos += 3; // Añadir puntos por victoria
                         });
@@ -2534,12 +334,13 @@
                 if (chamigoVotosStr) {
                     try {
                         const chamigoVotos = JSON.parse(chamigoVotosStr);
-                        // Encontrar el/los chamigo(s) con más votos para este partido
                         if (chamigoVotos.length > 0) {
                             const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
                             const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
                             chamigosDelPartido.forEach(chamigo => {
-                                if (playerStats[chamigo.id]) playerStats[chamigo.id].chamigos++; // Incrementar Chamigo
+                                if (playerStats[chamigo.id]) {
+                                    playerStats[chamigo.id].chamigos++; // Incrementar Chamigo
+                                }
                             });
                         }
                     } catch (e) {
@@ -2547,11 +348,13 @@
                     }
                 }
 
-                // --- Contar asistencias a TT (de cualquier partido en el período, independientemente del resultado) ---
+                // --- Calcular TT (de cualquier partido en el período, independientemente del resultado) ---
                 if (asistenciaTTIDsStr) {
-                    const ttAttendees = asistenciaTTIDsStr.split(',').filter(Boolean); // Filter Boolean removes empty strings
+                    const ttAttendees = asistenciaTTIDsStr.split(',').filter(Boolean);
                     ttAttendees.forEach(playerId => {
-                        if (playerStats[playerId]) playerStats[playerId].tt++; // Incrementar TT
+                        if (playerStats[playerId]) {
+                            playerStats[playerId].tt++; // Incrementar TT
+                        }
                     });
                 }
             });
@@ -2579,21 +382,20 @@
          * adaptando las columnas según el criterio seleccionado.
          */
         function renderLeaderboard() {
-            // Corregir las referencias a los elementos del DOM específicos de la tabla de posiciones del admin
-            leaderboardLoadingMessage.textContent = 'Calculando posiciones...';
-            leaderboardLoadingMessage.classList.remove('hidden');
-            leaderboardTableAdmin.classList.add('hidden');
-            leaderboardTableBodyAdmin.innerHTML = ''; // Limpiar tabla
+            loadingMessage.textContent = 'Calculando posiciones...';
+            loadingMessage.classList.remove('hidden');
+            leaderboardTable.classList.add('hidden');
+            leaderboardTableBody.innerHTML = ''; // Limpiar tabla
 
-            const selectedYear = leaderboardYearSelect.value;
-            const selectedPeriod = leaderboardPeriodSelect.value;
-            const selectedCriterion = leaderboardCriterionSelect.value;
+            const selectedYear = yearSelect.value;
+            const selectedPeriod = periodSelect.value;
+            const selectedCriterion = criterionSelect.value;
 
             // 1. Filtrar partidos (solo por año y período, sin importar resultado/suspensión)
-            const filteredMatches = filterMatchesForLeaderboard(allMatchesData, selectedYear, selectedPeriod);
+            const filteredMatches = filterMatches(allMatchesData, selectedYear, selectedPeriod);
 
             // 2. Calcular estadísticas de jugadores (incluye Efectividad y Ausente)
-            let playersWithStats = calculatePlayerStatsForLeaderboard(allPlayersData, filteredMatches);
+            let playersWithStats = calculatePlayerStats(allPlayersData, filteredMatches);
 
             // Se muestran TODOS los jugadores activos, sin filtrar por PJ > 0
             // como se solicitó en la última interacción.
@@ -2618,7 +420,7 @@
             let headerRowHTML = '';
             if (selectedCriterion === 'puntos') {
                 headerRowHTML = `
-                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                    <tr>
                         <th class="py-3 px-6 text-left">Posición</th>
                         <th class="py-3 px-6 text-left">Jugador</th>
                         <th class="py-3 px-6 text-center">Puntos</th>
@@ -2628,7 +430,7 @@
                 `;
             } else if (selectedCriterion === 'presentismo') {
                 headerRowHTML = `
-                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                    <tr>
                         <th class="py-3 px-6 text-left">Posición</th>
                         <th class="py-3 px-6 text-left">Jugador</th>
                         <th class="py-3 px-6 text-center">PJ</th>
@@ -2636,7 +438,7 @@
                 `;
             } else if (selectedCriterion === 'ausentismo') {
                 headerRowHTML = `
-                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                    <tr>
                         <th class="py-3 px-6 text-left">Posición</th>
                         <th class="py-3 px-6 text-left">Jugador</th>
                         <th class="py-3 px-6 text-center">Ausente</th>
@@ -2644,7 +446,7 @@
                 `;
             } else if (selectedCriterion === 'chamigos') {
                 headerRowHTML = `
-                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                    <tr>
                         <th class="py-3 px-6 text-left">Posición</th>
                         <th class="py-3 px-6 text-left">Jugador</th>
                         <th class="py-3 px-6 text-center">Chamigo</th>
@@ -2652,14 +454,14 @@
                 `;
             } else if (selectedCriterion === 'tt') {
                 headerRowHTML = `
-                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                    <tr>
                         <th class="py-3 px-6 text-left">Posición</th>
                         <th class="py-3 px-6 text-left">Jugador</th>
                         <th class="py-3 px-6 text-center">TT</th>
                     </tr>
                 `;
             }
-            leaderboardTableHeadAdmin.innerHTML = headerRowHTML;
+            leaderboardTableHead.innerHTML = headerRowHTML;
 
             // 5. Llenar el cuerpo de la tabla (<tbody>)
             if (playersWithStats.length > 0) {
@@ -2698,86 +500,31 @@
                             <td class="py-3 px-6 text-center">${player.tt}</td>
                         `;
                     }
-                    leaderboardTableBodyAdmin.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+                    leaderboardTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
                 });
-                leaderboardLoadingMessage.classList.add('hidden'); // Ocultar el mensaje de carga
-                leaderboardTableAdmin.classList.remove('hidden'); // Mostrar la tabla
+                loadingMessage.classList.add('hidden');
+                leaderboardTable.classList.remove('hidden');
             } else {
-                leaderboardLoadingMessage.textContent = 'No hay datos disponibles para los filtros seleccionados.';
-                leaderboardLoadingMessage.classList.remove('hidden');
-                leaderboardTableAdmin.classList.add('hidden');
+                loadingMessage.textContent = 'No hay datos disponibles para los filtros seleccionados.';
+                loadingMessage.classList.remove('hidden');
+                leaderboardTable.classList.add('hidden');
             }
         }
 
-        // --- Utilidades ---
-        /**
-         * Parsea una cadena de fecha en formato DD/MM/YYYY a un objeto Date.
-         * Asume la zona horaria local.
-         * @param {string} dateString - La cadena de fecha en formato DD/MM/YYYY.
-         * @returns {Date} El objeto Date.
-         */
-        function parseDate(dateString) {
-            const [day, month, year] = dateString.split('/').map(Number);
-            return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
-        }
+        // Event Listeners para los selectores
+        yearSelect.addEventListener('change', renderLeaderboard);
+        periodSelect.addEventListener('change', renderLeaderboard);
+        criterionSelect.addEventListener('change', renderLeaderboard);
 
-        /**
-         * Parsea una cadena de fecha en formatoYYYY-MM-DD (de input type="date") a un objeto Date.
-         * Asegura que se interprete en la zona horaria local para evitar problemas de desfase.
-         * @param {string} dateString - La cadena de fecha en formatoYYYY-MM-DD.
-         * @returns {Date} El objeto Date en la zona horaria local.
-         */
-        function parseYYYYMMDDToLocalDate(dateString) {
-            const [year, month, day] = dateString.split('-').map(Number);
-            return new Date(year, month - 1, day); // Crea un objeto Date en la zona horaria local
-        }
-
-        /**
-         * Formatea un objeto Date a una cadena en formato DD/MM/YYYY.
-         * @param {Date} date - El objeto Date a formatear.
-         * @returns {string} La cadena de fecha en formato DD/MM/YYYY.
-         */
-        function formatDateToDDMMYYYY(date) {
-            const dd = String(date.getDate()).padStart(2, '0');
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const yyyy = date.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
-        }
-
-
-        // --- Inicialización ---
-        authorizeButton.addEventListener('click', handleAuthClick);
-        signoutButtonSidebar.addEventListener('click', handleSignoutClick); // Asignar handler al botón de cerrar sesión (desktop)
-        signoutButtonMobileSidebar.addEventListener('click', handleSignoutClick); // Asignar handler al botón de cerrar sesión (mobile)
-        deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler); // Asignar handler al nuevo botón
-
-        // Event Listeners para el menú lateral
-        hamburgerButton.addEventListener('click', toggleSideMenu);
-        closeSideMenuButton.addEventListener('click', toggleSideMenu);
-        overlay.addEventListener('click', toggleSideMenu);
-
-        // Event Listeners para los selectores de la tabla de posiciones
-        leaderboardYearSelect.addEventListener('change', renderLeaderboard);
-        leaderboardPeriodSelect.addEventListener('change', renderLeaderboard);
-        leaderboardCriterionSelect.addEventListener('change', renderLeaderboard);
-
+        // Carga la librería de Google API cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Panel de Administración de Fútbol 5 cargado!');
-            // Asegurarse de que el menú lateral y el botón de hamburguesa estén ocultos al inicio
-            sideMenu.classList.add('hidden');
-            hamburgerButton.classList.add('hidden');
-            signoutButtonMobileSidebar.classList.add('hidden'); // Ocultar también el botón de cerrar sesión móvil
-            signoutButtonSidebar.classList.add('hidden'); // Ocultar también el botón de cerrar sesión de escritorio
-
-            // Cargar las librerías de Google
-            gapiLoaded();
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.defer = true;
-            script.onload = gisLoaded;
-            document.head.appendChild(script);
+            console.log('Tabla de Posiciones de Fútbol 5 cargada!');
+            // La función gapiLoaded() ahora se llama a través del atributo 'onload' del script tag de la API de Google.
+            // Esto asegura que 'gapi' esté definido cuando se intente usar.
         });
     </script>
+    <!-- Script de la API de Google -->
+    <!-- Este script debe estar DESPUÉS de la definición de gapiLoaded() -->
+    <script async src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 </body>
 </html>
