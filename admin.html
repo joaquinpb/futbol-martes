@@ -1024,7 +1024,7 @@
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDate = matchDateInput.value; // Formato YYYY-MM-DD (del input readonly)
+            const matchDate = matchDateInput.value; // Formatoレンダー-MM-DD (del input readonly)
 
             if (!selectedMatchId || !result || !matchDate) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
@@ -1486,10 +1486,19 @@
             });
 
             filteredMatches.forEach(match => {
-                const [idPartido, fecha, equipoClarosIDsStr, equipoOscurosIDsStr, resultado, chamigoVotosStr, asistenciaTTIDsStr] = match;
+                // Desestructuración con valores por defecto para mayor robustez
+                const [
+                    idPartido,
+                    fecha,
+                    equipoClarosIDsStr = '',
+                    equipoOscurosIDsStr = '',
+                    resultado,
+                    chamigoVotosStr = '',
+                    asistenciaTTIDsStr = ''
+                ] = match;
 
-                const equipoClarosIDs = equipoClarosIDsStr ? equipoClarosIDsStr.split(',') : [];
-                const equipoOscurosIDs = oscurosIDsStr ? oscurosIDsStr.split(',') : [];
+                const equipoClarosIDs = equipoClarosIDsStr.split(',');
+                const equipoOscurosIDs = equipoOscurosIDsStr.split(',');
                 const allPlayersInMatch = new Set([...equipoClarosIDs, ...equipoOscurosIDs]);
 
                 // Contar partidos jugados (PJ) y ajustar Ausente
@@ -1503,7 +1512,6 @@
                 // Asignar puntos por resultado
                 if (resultado === 'Claros' || resultado === 'Oscuros') {
                     const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
-                    // const losingTeam = resultado === 'Claros' ? equipoOscurosIDs : equipoClarosIDs; // No se usa para puntos aquí
 
                     winningTeam.forEach(playerId => {
                         if (playerStats[playerId]) playerStats[playerId].puntos += 3;
@@ -1586,7 +1594,7 @@
                 } else if (selectedCriterion === 'presentismo') {
                     return b.partidos - a.partidos; // Ordenar por PJ DESC
                 } else if (selectedCriterion === 'ausentismo') {
-                    return b.ausente - a.ausente; // Ordenar por Ausente DESC
+                    return a.ausente - b.ausente; // Ordenar por Ausente ASC (menos ausencias primero)
                 } else if (selectedCriterion === 'chamigos') {
                     return b.chamigos - a.chamigos;
                 } else if (selectedCriterion === 'tt') {
