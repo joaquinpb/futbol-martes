@@ -19,14 +19,23 @@
         th, td {
             @apply py-3 px-6 text-left;
         }
+        /* Encabezado de la tabla: fondo negro, texto blanco */
         thead th {
-            @apply bg-gray-200 text-gray-700 uppercase text-sm leading-normal;
+            @apply bg-gray-900 text-white uppercase text-sm leading-normal;
+        }
+        /* Filas del cuerpo de la tabla: alternar entre dos tonos de gris */
+        tbody tr:nth-child(odd) {
+            @apply bg-gray-100; /* Tono de gris más claro para filas impares */
+        }
+        tbody tr:nth-child(even) {
+            @apply bg-gray-200; /* Tono de gris más oscuro para filas pares */
         }
         tbody tr {
-            @apply border-b border-gray-200 hover:bg-gray-100;
+            /* Borde inferior para separar filas y efecto hover */
+            @apply border-b border-gray-300 hover:bg-gray-300 transition duration-150 ease-in-out;
         }
         tbody tr:last-child {
-            @apply border-b-0;
+            @apply border-b-0; /* Eliminar borde inferior de la última fila */
         }
     </style>
 </head>
@@ -219,27 +228,28 @@
 
         /**
          * Filtra los partidos según el año y el período seleccionados.
+         * Esta función ahora solo filtra por fecha, sin considerar el resultado o suspensión.
          */
         function filterMatches(matches, selectedYear, selectedPeriod) {
-            // Solo considerar partidos que tienen fecha y no están suspendidos
-            const validMatches = matches.filter(match => match[1] && match[1].trim() !== '' && match[4] !== 'Suspendido');
-
-            return validMatches.filter(match => {
+            return matches.filter(match => {
                 const dateString = match[1]; // Columna 'Fecha'
+                if (!dateString || dateString.trim() === '') return false; // Asegura que la fecha exista
+
                 const matchDate = parseDate(dateString);
                 const matchYear = matchDate.getFullYear();
                 const matchMonth = matchDate.getMonth(); // 0-indexed
 
-                if (selectedYear !== 'all' && matchYear !== parseInt(selectedYear)) {
-                    return false;
-                }
+                const yearMatch = (selectedYear === 'all' || matchYear === parseInt(selectedYear));
+                let periodMatch = true;
 
                 if (selectedPeriod === 'apertura') {
-                    return matchMonth >= 0 && matchMonth <= 5; // Enero (0) a Junio (5)
+                    periodMatch = (matchMonth >= 0 && matchMonth <= 5); // Enero (0) a Junio (5)
                 } else if (selectedPeriod === 'clausura') {
-                    return matchMonth >= 6 && matchMonth <= 11; // Julio (6) a Diciembre (11)
+                    periodMatch = (matchMonth >= 6 && matchMonth <= 11); // Julio (6) a Diciembre (11)
                 }
-                return true; // "totales" o si no hay período seleccionado
+                // Si selectedPeriod es 'totales', periodMatch sigue siendo true (no se filtra por mes)
+
+                return yearMatch && periodMatch;
             });
         }
 
@@ -249,6 +259,8 @@
          */
         function calculatePlayerStats(players, filteredMatches) {
             const playerStats = {};
+            // totalMatchesInPeriod es el número de partidos en el período seleccionado,
+            // incluyendo suspendidos o sin resultado, ya que Chamigo y TT se cuentan de todos.
             const totalMatchesInPeriod = filteredMatches.length;
 
             // Inicializar estadísticas para todos los jugadores activos
@@ -259,43 +271,53 @@
                         id,
                         nombre,
                         puntos: 0,
-                        partidos: 0, // PJ
-                        chamigos: 0, // Chamigo
-                        tt: 0,
-                        efectividad: '0.00%', // Nueva columna
-                        ausente: totalMatchesInPeriod // Nueva columna, se ajustará
+                        partidos: 0, // PJ (partidos jugados que cuentan para puntos)
+                        chamigos: 0, // Chamigo (total en el período)
+                        tt: 0,       // TT (total en el período)
+                        efectividad: '0.00%',
+                        ausente: 0 // Se calculará al final
                     };
                 }
             });
 
             filteredMatches.forEach(match => {
-                const [idPartido, fecha, equipoClarosIDsStr, equipoOscurosIDsStr, resultado, chamigoVotosStr, asistenciaTTIDsStr] = match;
+                const [
+                    idPartido,
+                    fecha,
+                    equipoClarosIDsStr = '',
+                    equipoOscurosIDsStr = '',
+                    resultado, // Resultado del partido
+                    chamigoVotosStr = '',
+                    asistenciaTTIDsStr = ''
+                ] = match;
 
-                const equipoClarosIDs = equipoClarosIDsStr ? equipoClarosIDsStr.split(',').filter(Boolean) : [];
-                const equipoOscurosIDs = equipoOscurosIDsStr ? equipoOscurosIDsStr.split(',').filter(Boolean) : [];
-                const allPlayersInMatch = new Set([...equipoClarosIDs, ...equipoOscurosIDs]);
+                const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean);
+                const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean);
+                const allPlayersInMatchForPJ = new Set([...equipoClarosIDs, ...equipoOscurosIDs]); // Jugadores que participaron en este partido
 
-                // Contar partidos jugados (PJ) y ajustar Ausente
-                allPlayersInMatch.forEach(playerId => {
-                    if (playerStats[playerId]) {
-                        playerStats[playerId].partidos++;
-                        playerStats[playerId].ausente--; // Restar 1 por cada partido jugado
+                // --- Calcular Puntos y PJ (solo para partidos con resultado válido y no suspendidos) ---
+                const matchHasValidResult = (resultado && resultado.trim() !== '' && resultado !== 'Suspendido');
+
+                if (matchHasValidResult) {
+                    allPlayersInMatchForPJ.forEach(playerId => {
+                        if (playerStats[playerId]) {
+                            playerStats[playerId].partidos++; // Incrementar PJ
+                        }
+                    });
+
+                    if (resultado === 'Claros' || resultado === 'Oscuros') {
+                        const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
+                        winningTeam.forEach(playerId => {
+                            if (playerStats[playerId]) playerStats[playerId].puntos += 3; // Añadir puntos por victoria
+                        });
+                    } else if (resultado === 'Empate') {
+                        allPlayersInMatchForPJ.forEach(playerId => {
+                            if (playerStats[playerId]) playerStats[playerId].puntos += 1; // Añadir puntos por empate
+                        });
                     }
-                });
-
-                // Asignar puntos por resultado
-                if (resultado === 'Claros' || resultado === 'Oscuros') {
-                    const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
-                    winningTeam.forEach(playerId => {
-                        if (playerStats[playerId]) playerStats[playerId].puntos += 3;
-                    });
-                } else if (resultado === 'Empate') {
-                    allPlayersInMatch.forEach(playerId => {
-                        if (playerStats[playerId]) playerStats[playerId].puntos += 1;
-                    });
                 }
 
-                // Contar Chamigos
+                // --- Calcular Chamigos (de cualquier partido en el período, independientemente del resultado) ---
                 if (chamigoVotosStr) {
                     try {
                         const chamigoVotos = JSON.parse(chamigoVotosStr);
@@ -303,7 +325,9 @@
                             const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
                             const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
                             chamigosDelPartido.forEach(chamigo => {
-                                if (playerStats[chamigo.id]) playerStats[chamigo.id].chamigos++;
+                                if (playerStats[chamigo.id]) {
+                                    playerStats[chamigo.id].chamigos++; // Incrementar Chamigo
+                                }
                             });
                         }
                     } catch (e) {
@@ -311,17 +335,24 @@
                     }
                 }
 
-                // Contar asistencias a TT
+                // --- Calcular TT (de cualquier partido en el período, independientemente del resultado) ---
                 if (asistenciaTTIDsStr) {
                     const ttAttendees = asistenciaTTIDsStr.split(',').filter(Boolean);
                     ttAttendees.forEach(playerId => {
-                        if (playerStats[playerId]) playerStats[playerId].tt++;
+                        if (playerStats[playerId]) {
+                            playerStats[playerId].tt++; // Incrementar TT
+                        }
                     });
                 }
             });
 
-            // Calcular Efectividad después de contar todos los puntos y PJ
+            // --- Calcular Ausente y Efectividad para cada jugador ---
             Object.values(playerStats).forEach(player => {
+                // Ausente: total de partidos en el período - partidos jugados (PJ) en el período
+                // PJ ya solo cuenta los partidos con resultado válido.
+                player.ausente = totalMatchesInPeriod - player.partidos;
+
+                // Efectividad
                 const maxPossiblePoints = player.partidos * 3;
                 if (maxPossiblePoints > 0) {
                     player.efectividad = ((player.puntos / maxPossiblePoints) * 100).toFixed(2) + '%';
@@ -347,17 +378,14 @@
             const selectedPeriod = periodSelect.value;
             const selectedCriterion = criterionSelect.value;
 
-            // 1. Filtrar partidos
+            // 1. Filtrar partidos (solo por año y período, sin importar resultado/suspensión)
             const filteredMatches = filterMatches(allMatchesData, selectedYear, selectedPeriod);
 
             // 2. Calcular estadísticas de jugadores (incluye Efectividad y Ausente)
             let playersWithStats = calculatePlayerStats(allPlayersData, filteredMatches);
 
-            // Filtrar jugadores con 0 partidos jugados si el criterio es puntos, chamigo o TT
-            if (selectedCriterion === 'puntos' || selectedCriterion === 'chamigos' || selectedCriterion === 'tt' || selectedCriterion === 'presentismo') {
-                playersWithStats = playersWithStats.filter(player => player.partidos > 0);
-            }
-            // Para 'Ausentismo', no filtramos por PJ > 0, ya que queremos ver a los ausentes.
+            // Se muestran TODOS los jugadores activos, sin filtrar por PJ > 0
+            // como se solicitó en la última interacción.
 
             // 3. Ordenar jugadores
             playersWithStats.sort((a, b) => {
@@ -366,7 +394,7 @@
                 } else if (selectedCriterion === 'presentismo') {
                     return b.partidos - a.partidos; // Ordenar por PJ DESC
                 } else if (selectedCriterion === 'ausentismo') {
-                    return a.ausente - b.ausente; // Ordenar por Ausente DESC
+                    return a.ausente - b.ausente; // Ordenar por Ausente DESC (menos ausencias primero)
                 } else if (selectedCriterion === 'chamigos') {
                     return b.chamigos - a.chamigos;
                 } else if (selectedCriterion === 'tt') {
