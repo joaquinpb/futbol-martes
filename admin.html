@@ -56,10 +56,10 @@
         }
         /* Nuevos estilos para el sombreado de partidos */
         .match-item.no-result {
-            background-color: #fee2e2; /* bg-red-100 */
+            background-color: #fee2e2; /* bg-red-100 pastel */
         }
         .match-item.has-result {
-            background-color: #dcfce7; /* bg-green-100 */
+            background-color: #dcfce7; /* bg-green-100 pastel */
         }
     </style>
 </head>
@@ -1330,12 +1330,13 @@
                     }
 
                     const batchRevertRequests = [];
-                    for (const playerId in oldPlayerUpdates) {
+                    for (const playerId of Object.keys(oldPlayerUpdates)) { // Usar Object.keys
+                        const playerUpdate = oldPlayerUpdates[playerId];
                         const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
                         if (playerGlobalIndex !== -1) {
                             const currentPlayer = allPlayersData[playerGlobalIndex];
-                            currentPlayer[3] = parseInt(currentPlayer[3] || 0) + oldPlayerUpdates[playerId].pointsChange; // Puntos_Totales
-                            currentPlayer[4] = parseInt(currentPlayer[4] || 0) + oldPlayerUpdates[playerId].gamesChange; // Partidos_Jugados
+                            currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange; // Puntos_Totales
+                            currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange; // Partidos_Jugados
 
                             batchRevertRequests.push({
                                 range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`,
@@ -1399,7 +1400,8 @@
 
                 // Actualizar puntos y partidos jugados en la hoja de Jugadores
                 const updateRequests = [];
-                for (const pId in playersToUpdate) {
+                for (const pId of Object.keys(playersToUpdate)) { // Usar Object.keys
+                    const playerUpdate = playersToUpdate[pId];
                     const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === pId);
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
@@ -1519,14 +1521,15 @@
 
                 // Aplicar cambios a la hoja de Jugadores
                 const batchUpdatePlayerRequests = [];
-                for (const playerId in playerUpdates) {
+                for (const playerId of Object.keys(playerUpdates)) { // Usar Object.keys
+                    const playerUpdate = playerUpdates[playerId];
                     const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
-                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdates[playerId].pointsChange; // Puntos_Totales
-                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdates[playerId].gamesChange; // Partidos_Jugados
-                        currentPlayer[5] = parseInt(currentPlayer[5] || 0) + playerUpdates[playerId].chamigoChange; // Chamigos_Ganados
-                        currentPlayer[6] = parseInt(currentPlayer[6] || 0) + playerUpdates[playerId].ttChange; // TT_Asistencias
+                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange; // Puntos_Totales
+                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange; // Partidos_Jugados
+                        currentPlayer[5] = parseInt(currentPlayer[5] || 0) + playerUpdate.chamigoChange; // Chamigos_Ganados
+                        currentPlayer[6] = parseInt(currentPlayer[6] || 0) + playerUpdate.ttChange; // TT_Asistencias
 
                         batchUpdatePlayerRequests.push({
                             range: `Jugadores!D${playerGlobalIndex + 2}:G${playerGlobalIndex + 2}`,
