@@ -29,6 +29,11 @@
         .player-draggable:active {
             cursor: grabbing; /* Cambia el cursor a una mano agarrando al hacer clic */
         }
+        /* Nueva clase para feedback visual al arrastrar con toque */
+        .player-draggable.dragging-touch {
+            opacity: 0.7;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
         /* Estilo para el botón de cerrar sesión (Cruz) */
         .close-button {
             background: none;
@@ -502,6 +507,13 @@
         let allPlayersData = []; // Cache de todos los jugadores
         let allMatchesData = []; // Cache de todos los partidos
         let sheetIds = {}; // Nuevo: Almacena los sheetIds por nombre de hoja
+
+        // Variables para el drag-and-drop táctil
+        let currentDraggedPlayer = null;
+        let originalParentOfDraggedPlayer = null;
+        let initialTouchX, initialTouchY;
+        let initialElementX, initialElementY;
+        let isDraggingTouch = false;
 
         // Elementos del DOM
         const authorizeButton = document.getElementById('authorize_button');
@@ -1041,12 +1053,13 @@
                 const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
                 const playerElement = document.createElement('div');
                 playerElement.className = 'player-draggable'; // Usará las clases definidas en <style>
-                playerElement.draggable = true;
+                playerElement.draggable = true; // Mantener para desktop
                 playerElement.dataset.id = id;
                 playerElement.dataset.name = nombre;
                 playerElement.textContent = nombre;
-                playerElement.addEventListener('dragstart', handleDragStart);
-
+                playerElement.addEventListener('dragstart', handleDragStart); // Desktop drag
+                playerElement.addEventListener('touchstart', handleTouchStart); // Touch drag
+                
                 if (rol === 'Titular') {
                     titularesPlayersDiv.appendChild(playerElement);
                 } else { // Suplente
@@ -1063,12 +1076,13 @@
             }
         }
 
+        // --- Desktop Drag-and-Drop Handlers ---
         function handleDragStart(e) {
-            console.log('Drag started for player:', e.target.dataset.name); // Log de depuración
+            console.log('Drag started for player (Desktop):', e.target.dataset.name);
             e.dataTransfer.setData('text/plain', JSON.stringify({
                 id: e.target.dataset.id,
                 name: e.target.dataset.name,
-                source: e.target.parentNode.id // 'titulares-players', 'suplentes-players', 'team-claros', 'team-oscuros'
+                source: e.target.parentNode.id
             }));
             e.dataTransfer.effectAllowed = 'move';
         }
@@ -1087,30 +1101,134 @@
             e.preventDefault();
             const data = JSON.parse(e.dataTransfer.getData('text/plain'));
             const playerId = data.id;
-            const playerName = data.name;
             const sourceId = data.source;
             const targetId = e.currentTarget.id;
 
-            console.log('Drop event on', e.currentTarget.id, 'for player:', data.name); // Log de depuración
+            console.log('Drop event (Desktop) on', e.currentTarget.id, 'for player:', data.name);
 
-            // Evitar mover al mismo lugar
             if (sourceId === targetId) return;
 
-            // Remover del origen
-            const sourceElement = document.querySelector(`#${sourceId} .player-draggable[data-id="${playerId}"]`);
-            if (sourceElement) sourceElement.remove();
-
-            // Añadir al destino si no existe ya
-            if (!document.querySelector(`#${targetId} .player-draggable[data-id="${playerId}"]`)) {
-                const playerElement = document.createElement('div');
-                playerElement.className = 'player-draggable'; // Usará las clases definidas en <style>
-                playerElement.draggable = true;
-                playerElement.dataset.id = playerId;
-                playerElement.dataset.name = playerName;
-                playerElement.textContent = playerName;
-                playerElement.addEventListener('dragstart', handleDragStart);
-                document.getElementById(targetId).appendChild(playerElement);
+            const draggedElement = document.querySelector(`#${sourceId} .player-draggable[data-id="${playerId}"]`);
+            if (draggedElement) {
+                // Mover el elemento directamente
+                document.getElementById(targetId).appendChild(draggedElement);
             }
+            updateTeamCounts();
+        }
+
+        // --- Touch Drag-and-Drop Handlers ---
+        function handleTouchStart(e) {
+            if (e.touches.length === 1) {
+                isDraggingTouch = true;
+                currentDraggedPlayer = e.target;
+                originalParentOfDraggedPlayer = e.target.parentNode; // Store original parent
+                currentDraggedPlayer.classList.add('dragging-touch');
+
+                // Store initial touch position
+                initialTouchX = e.touches[0].clientX;
+                initialTouchY = e.touches[0].clientY;
+
+                // Store initial element position (relative to viewport)
+                const rect = currentDraggedPlayer.getBoundingClientRect();
+                initialElementX = rect.left;
+                initialElementY = rect.top;
+
+                // Set position to fixed to allow dragging outside parent
+                currentDraggedPlayer.style.position = 'fixed';
+                currentDraggedPlayer.style.zIndex = '1000'; // Bring to front
+                currentDraggedPlayer.style.pointerEvents = 'none'; // Avoid interfering with touch on elements below
+
+                // Move the element to its current visual position
+                currentDraggedPlayer.style.left = initialElementX + 'px';
+                currentDraggedPlayer.style.top = initialElementY + 'px';
+
+                document.addEventListener('touchmove', handleTouchMove, { passive: false });
+                document.addEventListener('touchend', handleTouchEnd);
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (!isDraggingTouch) return;
+            e.preventDefault(); // Prevent scrolling
+
+            const currentTouchX = e.touches[0].clientX;
+            const currentTouchY = e.touches[0].clientY;
+
+            const deltaX = currentTouchX - initialTouchX;
+            const deltaY = currentTouchY - initialTouchY;
+
+            currentDraggedPlayer.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        }
+
+        function handleTouchEnd(e) {
+            if (!isDraggingTouch) return;
+
+            isDraggingTouch = false;
+            currentDraggedPlayer.classList.remove('dragging-touch');
+            currentDraggedPlayer.style.position = ''; // Reset position
+            currentDraggedPlayer.style.zIndex = '';
+            currentDraggedPlayer.style.pointerEvents = '';
+            currentDraggedPlayer.style.transform = ''; // Reset transform
+
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+
+            // Determine drop target
+            const touch = e.changedTouches[0];
+            const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            if (targetElement) {
+                let dropZone = null;
+                // Find the actual drop zone by traversing up the DOM
+                let current = targetElement;
+                while (current && current !== document.body) {
+                    if (current.id === 'titulares-players' ||
+                        current.id === 'suplentes-players' ||
+                        current.id === 'team-claros' ||
+                        current.id === 'team-oscuros') {
+                        dropZone = current;
+                        break;
+                    }
+                    current = current.parentNode;
+                }
+
+                if (dropZone) {
+                    handleTouchDrop(currentDraggedPlayer, dropZone);
+                } else {
+                    // If dropped outside a valid zone, return to original parent
+                    if (originalParentOfDraggedPlayer) {
+                        originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
+                    }
+                }
+            } else {
+                // If dropped outside the viewport, return to original parent
+                if (originalParentOfDraggedPlayer) {
+                    originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
+                }
+            }
+            currentDraggedPlayer = null;
+            originalParentOfDraggedPlayer = null;
+        }
+
+        function handleTouchDrop(draggedElement, dropZone) {
+            const sourceId = originalParentOfDraggedPlayer.id; // Use the stored original parent
+            const targetId = dropZone.id;
+
+            console.log('Touch Drop event on', targetId, 'for player:', draggedElement.dataset.name);
+
+            if (sourceId === targetId) {
+                // If dropped back into the same zone, just reset styles and return
+                return;
+            }
+
+            // Remove from original parent (it should still be there)
+            if (originalParentOfDraggedPlayer && originalParentOfDraggedPlayer.contains(draggedElement)) {
+                originalParentOfDraggedPlayer.removeChild(draggedElement);
+            }
+
+            // Append to the new target zone
+            dropZone.appendChild(draggedElement);
+
             updateTeamCounts();
         }
 
