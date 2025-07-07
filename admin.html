@@ -22,25 +22,53 @@
             display: block;
         }
         /* Estilos para el efecto de arrastre */
-        .player-draggable:hover {
+        .player-draggable {
+            @apply bg-white p-2 rounded-md shadow-sm mb-2 flex justify-between items-center;
             cursor: grab; /* Cambia el cursor a una mano al pasar el ratón */
         }
         .player-draggable:active {
             cursor: grabbing; /* Cambia el cursor a una mano agarrando al hacer clic */
         }
+        /* Estilo para el botón de cerrar sesión (Cruz) */
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #ef4444; /* Rojo 500 de Tailwind */
+            cursor: pointer;
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem;
+            border-radius: 9999px; /* Fully rounded */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .close-button:hover {
+            background-color: #fecaca; /* Rojo 100 de Tailwind */
+            color: #dc2626; /* Rojo 600 de Tailwind */
+        }
+        /* Estilo para los elementos de la lista de partidos seleccionables */
+        .match-item {
+            @apply bg-white p-3 rounded-md shadow-sm mb-2 cursor-pointer hover:bg-gray-100 transition duration-150 ease-in-out;
+        }
+        .match-item.selected {
+            @apply bg-indigo-100 border-l-4 border-indigo-500;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl">
-        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Panel de Administración</h1>
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl relative">
+        <!-- Botón de Cerrar Sesión (Cruz) -->
+        <button id="signout_button" class="close-button hidden">
+            &times; <!-- Símbolo de cruz -->
+        </button>
+
+        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Panel de Administración</h1>
 
         <!-- Botones de Autenticación -->
         <div class="flex justify-center space-x-4 mb-8">
             <button id="authorize_button" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
                 Autorizar Google Sheets
-            </button>
-            <button id="signout_button" class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-300 hidden">
-                Cerrar Sesión
             </button>
         </div>
 
@@ -112,11 +140,15 @@
 
             <div id="team-formation" class="tab-content">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Armar Equipos</h2>
+                <div class="mb-4">
+                    <label for="team-match-date" class="block text-sm font-medium text-gray-700">Fecha del Partido:</label>
+                    <input type="date" id="team-match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                </div>
                 <p class="text-gray-500 mb-4">Selecciona 10 jugadores para formar los equipos Claros y Oscuros.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Disponibles</h3>
-                        <div id="available-players" class="border border-gray-300 rounded-lg p-4 h-64 overflow-y-auto bg-gray-50">
+                        <div id="available-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2">
                             <!-- Jugadores disponibles se cargarán aquí -->
                             <p class="text-gray-500">Cargando jugadores...</p>
                         </div>
@@ -126,13 +158,13 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <h4 class="font-semibold text-gray-700 mb-2">Claros (<span id="claros-count">0</span>)</h4>
-                                <div id="team-claros" class="border border-blue-300 rounded-lg p-3 h-28 overflow-y-auto bg-blue-50">
+                                <div id="team-claros" class="border border-blue-300 rounded-lg p-3 bg-blue-50 flex flex-wrap content-start gap-2 min-h-[120px]">
                                     <!-- Jugadores del equipo Claros -->
                                 </div>
                             </div>
                             <div>
                                 <h4 class="font-semibold text-gray-700 mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
-                                <div id="team-oscuros" class="border border-red-300 rounded-lg p-3 h-28 overflow-y-auto bg-red-50">
+                                <div id="team-oscuros" class="border border-red-300 rounded-lg p-3 bg-red-50 flex flex-wrap content-start gap-2 min-h-[120px]">
                                     <!-- Jugadores del equipo Oscuros -->
                                 </div>
                             </div>
@@ -147,11 +179,48 @@
             <div id="match-results" class="tab-content">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Resultados</h2>
                 <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-medium text-gray-800 mb-3">Detalles del Partido</h3>
+                    <h3 class="text-xl font-medium text-gray-800 mb-3">Seleccionar Partido</h3>
+                    <!-- Filtros para seleccionar partido - MOVIDOS ARRIBA -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label for="results-match-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                            <select id="results-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                                <!-- Opciones de año se generarán dinámicamente -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="results-match-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
+                            <select id="results-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="all">Todos</option>
+                                <option value="0">Enero</option>
+                                <option value="1">Febrero</option>
+                                <option value="2">Marzo</option>
+                                <option value="3">Abril</option>
+                                <option value="4">Mayo</option>
+                                <option value="5">Junio</option>
+                                <option value="6">Julio</option>
+                                <option value="7">Agosto</option>
+                                <option value="8">Septiembre</option>
+                                <option value="9">Octubre</option>
+                                <option value="10">Noviembre</option>
+                                <option value="11">Diciembre</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-1">
+                            <!-- Este div ahora contendrá la lista de partidos dinámicamente -->
+                            <label class="block text-sm font-medium text-gray-700">Partidos Disponibles:</label>
+                            <div id="results-match-list" class="mt-1 border border-gray-300 rounded-md shadow-sm h-40 overflow-y-auto p-2 bg-white">
+                                <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
+                                <!-- Los partidos se cargarán aquí dinámicamente como divs clickeables -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-medium text-gray-800 mb-3 mt-6">Detalles del Partido Seleccionado</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label for="match-date" class="block text-sm font-medium text-gray-700">Fecha del Partido:</label>
-                            <input type="date" id="match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            <input type="date" id="match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" readonly>
                         </div>
                         <div>
                             <label for="match-result" class="block text-sm font-medium text-gray-700">Resultado:</label>
@@ -163,13 +232,6 @@
                                 <option value="Suspendido">Suspendido</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="mb-4">
-                        <label for="results-match-select" class="block text-sm font-medium text-gray-700">Seleccionar Partido:</label>
-                        <select id="results-match-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <option value="">Seleccionar partido (fecha - Claros vs Oscuros)</option>
-                            <!-- Opciones se cargarán dinámicamente -->
-                        </select>
                     </div>
                     <button id="register-match-button" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 w-full">
                         Registrar Resultado y Puntos
@@ -242,6 +304,8 @@
                         <label for="leaderboard-criterion-select" class="block text-sm font-medium text-gray-700">Criterio:</label>
                         <select id="leaderboard-criterion-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
                             <option value="puntos">Puntos</option>
+                            <option value="presentismo">Presentismo</option>
+                            <option value="ausentismo">Ausentismo</option>
                             <option value="chamigos">Chamigo</option>
                             <option value="tt">TT</option>
                         </select>
@@ -252,14 +316,7 @@
                     <p id="leaderboard-loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
                     <table id="leaderboard-table-admin" class="min-w-full bg-white rounded-lg shadow hidden">
                         <thead>
-                            <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                                <th class="py-3 px-6 text-left">Posición</th>
-                                <th class="py-3 px-6 text-left">Jugador</th>
-                                <th class="py-3 px-6 text-center">Puntos</th>
-                                <th class="py-3 px-6 text-center">Partidos</th>
-                                <th class="py-3 px-6 text-center">Chamigos</th>
-                                <th class="py-3 px-6 text-center">TT</th>
-                            </tr>
+                            <!-- Los encabezados se generarán dinámicamente según el criterio -->
                         </thead>
                         <tbody class="text-gray-600 text-sm font-light">
                             <!-- Filas de jugadores se cargarán aquí -->
@@ -304,6 +361,7 @@
         const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
 
         // Armar Equipos
+        const teamMatchDateInput = document.getElementById('team-match-date'); // Nuevo: Fecha en Armar Equipos
         const availablePlayersDiv = document.getElementById('available-players');
         const teamClarosDiv = document.getElementById('team-claros');
         const teamOscurosDiv = document.getElementById('team-oscuros');
@@ -311,10 +369,12 @@
         const oscurosCountSpan = document.getElementById('oscuros-count');
         const saveTeamsButton = document.getElementById('save-teams-button');
 
-        // Resultados (antes Registrar Partido)
+        // Resultados
         const matchDateInput = document.getElementById('match-date');
         const matchResultSelect = document.getElementById('match-result');
-        const resultsMatchSelect = document.getElementById('results-match-select');
+        const resultsMatchYearSelect = document.getElementById('results-match-year-select');
+        const resultsMatchMonthSelect = document.getElementById('results-match-month-select');
+        const resultsMatchListDiv = document.getElementById('results-match-list'); // Ahora es un div, no un select
         const registerMatchButton = document.getElementById('register-match-button');
 
         // Chamigo
@@ -327,9 +387,10 @@
         const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
         const registerTtButton = document.getElementById('register-tt-button');
 
-        // Tabla de Posiciones (nuevos elementos)
+        // Tabla de Posiciones
         const leaderboardLoadingMessage = document.getElementById('leaderboard-loading-message');
         const leaderboardTableAdmin = document.getElementById('leaderboard-table-admin');
+        const leaderboardTableHeadAdmin = leaderboardTableAdmin.querySelector('thead');
         const leaderboardTableBodyAdmin = leaderboardTableAdmin.querySelector('tbody');
         const leaderboardYearSelect = document.getElementById('leaderboard-year-select');
         const leaderboardPeriodSelect = document.getElementById('leaderboard-period-select');
@@ -345,7 +406,6 @@
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
-                    // No se necesita API_KEY aquí, ya que OAuth 2.0 proporciona la autorización.
                     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
                 });
                 gapiInited = true;
@@ -423,7 +483,7 @@
                 teamOscurosDiv.innerHTML = '';
                 clarosCountSpan.textContent = '0';
                 oscurosCountSpan.textContent = '0';
-                resultsMatchSelect.innerHTML = '<option value="">Seleccionar partido (fecha - Claros vs Oscuros)</option>';
+                resultsMatchListDiv.innerHTML = '<p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>';
                 chamigoMatchSelect.innerHTML = '<option value="">Seleccionar partido (fecha - Claros vs Oscuros)</option>';
                 ttMatchSelect.innerHTML = '<option value="">Seleccionar partido (fecha - Claros vs Oscuros)</option>';
                 chamigoVotingPlayersDiv.innerHTML = '';
@@ -469,7 +529,9 @@
             await loadAllData();
             renderPlayersListAdmin();
             renderAvailablePlayersForTeams();
-            populateMatchSelects();
+            populateResultsMatchYearSelect(); // Llama a la función para el selector de año de resultados
+            populateMatchSelects(); // Se llama después de poblar el año para que use el filtro inicial
+            populateChamigoTtMatchSelects(); // Se encarga de Chamigo y TT
             populateLeaderboardYearSelect(); // Llama a la función para la tabla de posiciones
             setInitialLeaderboardPeriod(); // Establece el período inicial para la tabla de posiciones
             renderLeaderboard(); // Renderiza la tabla de posiciones inicial
@@ -499,17 +561,19 @@
                         clarosCountSpan.textContent = '0';
                         oscurosCountSpan.textContent = '0';
                         saveTeamsButton.disabled = true;
+                        teamMatchDateInput.value = ''; // Limpiar la fecha del partido
                     } else if (button.dataset.tab === 'match-results') {
-                        populateMatchSelects();
-                        resultsMatchSelect.value = ''; // Limpiar selección
+                        populateResultsMatchYearSelect(); // Recargar años
+                        resultsMatchMonthSelect.value = 'all'; // Resetear mes
+                        populateMatchSelects(); // Recargar partidos con filtros
                         matchDateInput.value = '';
                         matchResultSelect.value = '';
                     } else if (button.dataset.tab === 'chamigo-management') {
-                        populateMatchSelects();
+                        populateChamigoTtMatchSelects(); // Recargar partidos
                         chamigoMatchSelect.value = ''; // Limpiar selección
                         chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
                     } else if (button.dataset.tab === 'tt-attendance') {
-                        populateMatchSelects();
+                        populateChamigoTtMatchSelects(); // Recargar partidos
                         ttMatchSelect.value = ''; // Limpiar selección
                         ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
                     } else if (button.dataset.tab === 'leaderboard-tab') {
@@ -665,7 +729,7 @@
             activePlayers.forEach(player => {
                 const [id, nombre] = player;
                 const playerElement = document.createElement('div');
-                playerElement.className = 'player-draggable cursor-grab bg-white p-2 rounded-md shadow-sm mb-2 flex justify-between items-center';
+                playerElement.className = 'player-draggable'; // Usará las clases definidas en <style>
                 playerElement.draggable = true;
                 playerElement.dataset.id = id;
                 playerElement.dataset.name = nombre;
@@ -715,7 +779,7 @@
             // Añadir al destino si no existe ya
             if (!document.querySelector(`#${targetId} .player-draggable[data-id="${playerId}"]`)) {
                 const playerElement = document.createElement('div');
-                playerElement.className = 'player-draggable cursor-grab bg-white p-2 rounded-md shadow-sm mb-2 flex justify-between items-center';
+                playerElement.className = 'player-draggable'; // Usará las clases definidas en <style>
                 playerElement.draggable = true;
                 playerElement.dataset.id = playerId;
                 playerElement.dataset.name = playerName;
@@ -744,9 +808,25 @@
         saveTeamsButton.addEventListener('click', async () => {
             const clarosPlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
             const oscurosPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
+            const matchDate = teamMatchDateInput.value; // Obtener la fecha del input
+
+            if (!matchDate) {
+                alert('Por favor, selecciona la fecha del partido.');
+                return;
+            }
 
             if (clarosPlayers.length !== 5 || oscurosPlayers.length !== 5) {
                 alert('Debes seleccionar exactamente 5 jugadores para cada equipo.');
+                return;
+            }
+
+            // Formatear la fecha a DD/MM/YYYY para comparación
+            const formattedDate = formatDateToDDMMYYYY(new Date(matchDate));
+
+            // Validar si ya existe un partido con la misma fecha
+            const existingMatch = allMatchesData.find(match => match[1] === formattedDate);
+            if (existingMatch) {
+                alert(`Ya existe un partido registrado para la fecha ${formattedDate}. Por favor, elige otra fecha.`);
                 return;
             }
 
@@ -758,15 +838,9 @@
                 }, 0);
                 const newMatchId = 'P' + String(maxIdNum + 1).padStart(3, '0');
 
-                const today = new Date();
-                const dd = String(today.getDate()).padStart(2, '0');
-                const mm = String(today.getMonth() + 1).padStart(2, '0'); // Enero es 0
-                const yyyy = today.getFullYear();
-                const formattedDate = `${dd}/${mm}/${yyyy}`;
-
                 const newMatchRow = [
                     newMatchId,
-                    formattedDate,
+                    formattedDate, // Usar la fecha del input
                     clarosPlayers.join(','),
                     oscurosPlayers.join(','),
                     '', // Resultado vacío inicialmente
@@ -790,15 +864,121 @@
                 clarosCountSpan.textContent = '0';
                 oscurosCountSpan.textContent = '0';
                 saveTeamsButton.disabled = true;
+                teamMatchDateInput.value = ''; // Limpiar la fecha del partido
             } catch (err) {
                 console.error('Error al guardar equipos:', err);
                 alert(`Error al guardar equipos: ${err.message}. Revisa la consola.`);
             }
         });
 
-        // --- Funciones para poblar selectores de partidos ---
+        // --- Funciones para poblar selectores de partidos (Resultados, Chamigo, TT) ---
+        function populateResultsMatchYearSelect() {
+            const years = new Set();
+            allMatchesData.forEach(match => {
+                const dateString = match[1]; // Columna 'Fecha'
+                if (dateString) {
+                    const date = parseDate(dateString);
+                    years.add(date.getFullYear());
+                }
+            });
+
+            const sortedYears = Array.from(years).sort((a, b) => b - a); // Ordenar de más reciente a más antiguo
+
+            resultsMatchYearSelect.innerHTML = ''; // Limpiar opciones existentes
+            const currentYear = new Date().getFullYear();
+            if (sortedYears.length > 0) {
+                sortedYears.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    resultsMatchYearSelect.appendChild(option);
+                });
+                if (sortedYears.includes(currentYear)) {
+                    resultsMatchYearSelect.value = currentYear;
+                } else {
+                    resultsMatchYearSelect.value = sortedYears[0];
+                }
+            } else {
+                const option = document.createElement('option');
+                option.value = currentYear;
+                option.textContent = currentYear;
+                resultsMatchYearSelect.appendChild(option);
+            }
+        }
+
         function populateMatchSelects() {
-            const selectsToPopulate = [resultsMatchSelect, chamigoMatchSelect, ttMatchSelect];
+            const selectedYear = resultsMatchYearSelect.value;
+            const selectedMonth = resultsMatchMonthSelect.value; // 'all' o un número de 0 a 11
+
+            resultsMatchListDiv.innerHTML = ''; // Limpiar la lista de partidos
+
+            const filteredMatches = allMatchesData.filter(match => {
+                const dateString = match[1];
+                if (!dateString) return false;
+                const matchDate = parseDate(dateString);
+                const matchYear = matchDate.getFullYear();
+                const matchMonth = matchDate.getMonth();
+
+                const yearMatch = selectedYear === 'all' || matchYear === parseInt(selectedYear);
+                const monthMatch = selectedMonth === 'all' || matchMonth === parseInt(selectedMonth);
+
+                return yearMatch && monthMatch;
+            });
+
+            const sortedMatches = [...filteredMatches].sort((a, b) => {
+                const dateA = parseDate(a[1]);
+                const dateB = parseDate(b[1]);
+                return dateB - dateA; // Ordenar de más reciente a más antiguo
+            });
+
+            if (sortedMatches.length === 0) {
+                resultsMatchListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
+                return;
+            }
+
+            sortedMatches.forEach(match => {
+                const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
+                const matchItem = document.createElement('div');
+                matchItem.className = 'match-item'; // Clase para estilo y clickeable
+                matchItem.dataset.matchId = id; // Guardar el ID del partido
+
+                const clarosNames = clarosIDs.split(',').map(id => {
+                    const player = allPlayersData.find(p => p[0] === id);
+                    return player ? player[1] : `ID:${id}`;
+                }).join(', ');
+                const oscurosNames = oscurosIDs.split(',').map(id => {
+                    const player = allPlayersData.find(p => p[0] === id);
+                    return player ? player[1] : `ID:${id}`;
+                }).join(', ');
+                
+                matchItem.innerHTML = `
+                    <p class="font-semibold">${fecha}</p>
+                    <p class="text-sm text-gray-700">Claros: ${clarosNames}</p>
+                    <p class="text-sm text-gray-700">Oscuros: ${oscurosNames}</p>
+                    ${resultado ? `<p class="text-xs text-gray-500">Resultado: ${resultado}</p>` : '<p class="text-xs text-gray-500">Sin resultado</p>'}
+                `;
+                resultsMatchListDiv.appendChild(matchItem);
+
+                matchItem.addEventListener('click', () => {
+                    // Remover clase 'selected' de todos los items
+                    document.querySelectorAll('.match-item').forEach(item => item.classList.remove('selected'));
+                    // Añadir clase 'selected' al item clickeado
+                    matchItem.classList.add('selected');
+
+                    // Cargar detalles del partido en los inputs
+                    const selectedMatch = allMatchesData.find(m => m[0] === id);
+                    if (selectedMatch) {
+                        const [mId, mFecha, mClarosIDs, mOscurosIDs, mResultado] = selectedMatch;
+                        const [day, month, year] = mFecha.split('/');
+                        matchDateInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                        matchResultSelect.value = mResultado || '';
+                    }
+                });
+            });
+        }
+
+        function populateChamigoTtMatchSelects() {
+            const selectsToPopulate = [chamigoMatchSelect, ttMatchSelect];
 
             selectsToPopulate.forEach(selectElement => {
                 selectElement.innerHTML = '<option value="">Seleccionar partido (fecha - Claros vs Oscuros)</option>';
@@ -827,32 +1007,24 @@
         }
 
 
-        // --- Resultados (antes Registrar Partido) ---
+        // Event listeners para los nuevos filtros de resultados
+        resultsMatchYearSelect.addEventListener('change', populateMatchSelects);
+        resultsMatchMonthSelect.addEventListener('change', populateMatchSelects);
 
-        resultsMatchSelect.addEventListener('change', () => {
-            const selectedMatchId = resultsMatchSelect.value;
-            if (selectedMatchId) {
-                const match = allMatchesData.find(m => m[0] === selectedMatchId);
-                if (match) {
-                    // Pre-rellenar fecha del partido si está disponible
-                    if (match[1]) { // Columna Fecha
-                        const [day, month, year] = match[1].split('/');
-                        matchDateInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    } else {
-                        matchDateInput.value = '';
-                    }
-                    matchResultSelect.value = match[4] || ''; // Pre-rellenar resultado si ya existe
-                }
-            } else {
-                matchDateInput.value = '';
-                matchResultSelect.value = '';
-            }
-        });
+
+        // --- Resultados ---
+
+        // El evento de cambio en resultsMatchSelect (ahora resultsMatchListDiv) se maneja directamente en populateMatchSelects
 
         registerMatchButton.addEventListener('click', async () => {
-            const selectedMatchId = resultsMatchSelect.value;
+            const selectedMatchItem = document.querySelector('.match-item.selected');
+            if (!selectedMatchItem) {
+                alert('Por favor, selecciona un partido de la lista.');
+                return;
+            }
+            const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDate = matchDateInput.value; // Formato YYYY-MM-DD
+            const matchDate = matchDateInput.value; // Formatoレンダー-MM-DD (del input readonly)
 
             if (!selectedMatchId || !result || !matchDate) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
@@ -948,6 +1120,8 @@
                 alert('Resultado del partido y puntos actualizados exitosamente.');
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
+                // Deseleccionar el partido de la lista
+                document.querySelectorAll('.match-item').forEach(item => item.classList.remove('selected'));
                 await loadAllDataAndDisplayAllContent(); // Recargar todos los datos
             } catch (err) {
                 console.error('Error al registrar partido:', err);
@@ -1205,7 +1379,7 @@
         });
 
 
-        // --- Funciones de Tabla de Posiciones (Copiadas y adaptadas de index.html) ---
+        // --- Funciones de Tabla de Posiciones (para el panel de admin) ---
 
         /**
          * Rellena el selector de año con los años disponibles en los partidos.
@@ -1240,8 +1414,8 @@
                 }
             } else {
                 const option = document.createElement('option');
-                option.value = new Date().getFullYear(); // Año actual si no hay datos
-                option.textContent = new Date().getFullYear();
+                option.value = currentYear; // Año actual si no hay datos
+                option.textContent = currentYear;
                 leaderboardYearSelect.appendChild(option);
             }
         }
@@ -1288,9 +1462,11 @@
 
         /**
          * Calcula las estadísticas de los jugadores basándose en los partidos filtrados.
+         * Incluye cálculo de Efectividad y Ausente.
          */
         function calculatePlayerStatsForLeaderboard(players, filteredMatches) {
             const playerStats = {};
+            const totalMatchesInPeriod = filteredMatches.length;
 
             // Inicializar estadísticas para todos los jugadores activos
             players.forEach(player => {
@@ -1300,37 +1476,45 @@
                         id,
                         nombre,
                         puntos: 0,
-                        partidos: 0,
-                        chamigos: 0,
-                        tt: 0
+                        partidos: 0, // PJ
+                        chamigos: 0, // Chamigo
+                        tt: 0,
+                        efectividad: '0.00%', // Nueva columna
+                        ausente: totalMatchesInPeriod // Nueva columna, se ajustará
                     };
                 }
             });
 
             filteredMatches.forEach(match => {
-                const [idPartido, fecha, equipoClarosIDsStr, equipoOscurosIDsStr, resultado, chamigoVotosStr, asistenciaTTIDsStr] = match;
+                // Desestructuración con valores por defecto para mayor robustez
+                const [
+                    idPartido,
+                    fecha,
+                    equipoClarosIDsStr = '',
+                    equipoOscurosIDsStr = '',
+                    resultado,
+                    chamigoVotosStr = '',
+                    asistenciaTTIDsStr = ''
+                ] = match;
 
-                const equipoClarosIDs = equipoClarosIDsStr ? equipoClarosIDsStr.split(',') : [];
-                const equipoOscurosIDs = equipoOscurosIDsStr ? equipoOscurosIDsStr.split(',') : [];
+                const equipoClarosIDs = equipoClarosIDsStr.split(',');
+                const equipoOscurosIDs = equipoOscurosIDsStr.split(',');
                 const allPlayersInMatch = new Set([...equipoClarosIDs, ...equipoOscurosIDs]);
 
-                // Contar partidos jugados
+                // Contar partidos jugados (PJ) y ajustar Ausente
                 allPlayersInMatch.forEach(playerId => {
                     if (playerStats[playerId]) {
                         playerStats[playerId].partidos++;
+                        playerStats[playerId].ausente--; // Restar 1 por cada partido jugado
                     }
                 });
 
                 // Asignar puntos por resultado
                 if (resultado === 'Claros' || resultado === 'Oscuros') {
                     const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
-                    const losingTeam = resultado === 'Claros' ? equipoOscurosIDs : equipoClarosIDs;
 
                     winningTeam.forEach(playerId => {
                         if (playerStats[playerId]) playerStats[playerId].puntos += 3;
-                    });
-                    losingTeam.forEach(playerId => {
-                        // Los perdedores no suman puntos
                     });
                 } else if (resultado === 'Empate') {
                     allPlayersInMatch.forEach(playerId => {
@@ -1364,11 +1548,22 @@
                 }
             });
 
+            // Calcular Efectividad después de contar todos los puntos y PJ
+            Object.values(playerStats).forEach(player => {
+                const maxPossiblePoints = player.partidos * 3;
+                if (maxPossiblePoints > 0) {
+                    player.efectividad = ((player.puntos / maxPossiblePoints) * 100).toFixed(2) + '%';
+                } else {
+                    player.efectividad = '0.00%';
+                }
+            });
+
             return Object.values(playerStats); // Convertir a array de objetos
         }
 
         /**
-         * Renderiza la tabla de posiciones con los datos filtrados y ordenados.
+         * Renderiza la tabla de posiciones con los datos filtrados y ordenados,
+         * adaptando las columnas según el criterio seleccionado.
          */
         function renderLeaderboard() {
             leaderboardLoadingMessage.textContent = 'Calculando posiciones...';
@@ -1383,13 +1578,23 @@
             // 1. Filtrar partidos
             const filteredMatches = filterMatchesForLeaderboard(allMatchesData, selectedYear, selectedPeriod);
 
-            // 2. Calcular estadísticas de jugadores
+            // 2. Calcular estadísticas de jugadores (incluye Efectividad y Ausente)
             let playersWithStats = calculatePlayerStatsForLeaderboard(allPlayersData, filteredMatches);
+
+            // Filtrar jugadores con 0 partidos jugados si el criterio es puntos, chamigo o TT
+            if (selectedCriterion === 'puntos' || selectedCriterion === 'chamigos' || selectedCriterion === 'tt' || selectedCriterion === 'presentismo') {
+                playersWithStats = playersWithStats.filter(player => player.partidos > 0);
+            }
+            // Para 'Ausentismo', no filtramos por PJ > 0, ya que queremos ver a los ausentes.
 
             // 3. Ordenar jugadores
             playersWithStats.sort((a, b) => {
                 if (selectedCriterion === 'puntos') {
                     return b.puntos - a.puntos;
+                } else if (selectedCriterion === 'presentismo') {
+                    return b.partidos - a.partidos; // Ordenar por PJ DESC
+                } else if (selectedCriterion === 'ausentismo') {
+                    return a.ausente - b.ausente; // Ordenar por Ausente ASC (menos ausencias primero)
                 } else if (selectedCriterion === 'chamigos') {
                     return b.chamigos - a.chamigos;
                 } else if (selectedCriterion === 'tt') {
@@ -1398,25 +1603,91 @@
                 return 0; // Por defecto no ordena si el criterio no es reconocido
             });
 
-            // Filtrar jugadores con 0 partidos jugados si el criterio es puntos, chamigos o tt
-            if (selectedCriterion === 'puntos' || selectedCriterion === 'chamigos' || selectedCriterion === 'tt') {
-                playersWithStats = playersWithStats.filter(player => player.partidos > 0);
+            // 4. Actualizar encabezados de la tabla (<thead>)
+            let headerRowHTML = '';
+            if (selectedCriterion === 'puntos') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">Puntos</th>
+                        <th class="py-3 px-6 text-center">PJ</th>
+                        <th class="py-3 px-6 text-center">Efectividad</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'presentismo') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">PJ</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'ausentismo') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">Ausente</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'chamigos') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">Chamigo</th>
+                    </tr>
+                `;
+            } else if (selectedCriterion === 'tt') {
+                headerRowHTML = `
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">Posición</th>
+                        <th class="py-3 px-6 text-left">Jugador</th>
+                        <th class="py-3 px-6 text-center">TT</th>
+                    </tr>
+                `;
             }
+            leaderboardTableHeadAdmin.innerHTML = headerRowHTML;
 
-
+            // 5. Llenar el cuerpo de la tabla (<tbody>)
             if (playersWithStats.length > 0) {
                 playersWithStats.forEach((player, index) => {
-                    const row = `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                    let rowHTML = '';
+                    if (selectedCriterion === 'puntos') {
+                        rowHTML = `
                             <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
                             <td class="py-3 px-6 text-left">${player.nombre}</td>
                             <td class="py-3 px-6 text-center">${player.puntos}</td>
                             <td class="py-3 px-6 text-center">${player.partidos}</td>
+                            <td class="py-3 px-6 text-center">${player.efectividad}</td>
+                        `;
+                    } else if (selectedCriterion === 'presentismo') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
+                            <td class="py-3 px-6 text-center">${player.partidos}</td>
+                        `;
+                    } else if (selectedCriterion === 'ausentismo') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
+                            <td class="py-3 px-6 text-center">${player.ausente}</td>
+                        `;
+                    } else if (selectedCriterion === 'chamigos') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
                             <td class="py-3 px-6 text-center">${player.chamigos}</td>
+                        `;
+                    } else if (selectedCriterion === 'tt') {
+                        rowHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
+                            <td class="py-3 px-6 text-left">${player.nombre}</td>
                             <td class="py-3 px-6 text-center">${player.tt}</td>
-                        </tr>
-                    `;
-                    leaderboardTableBodyAdmin.innerHTML += row;
+                        `;
+                    }
+                    leaderboardTableBodyAdmin.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
                 });
                 leaderboardLoadingMessage.classList.add('hidden');
                 leaderboardTableAdmin.classList.remove('hidden');
