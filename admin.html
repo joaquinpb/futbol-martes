@@ -250,7 +250,8 @@
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="match-results">Resultados</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-management">Chamigo</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-attendance">TT</button>
-            </div>
+            <a href="index.html" target="_blank" class="tab-button">Tabla de Posiciones</a>
+        </div>
         <!-- Signout button for mobile sidebar -->
         <button id="signout_button_mobile_sidebar" class="md:hidden mx-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 hidden">
             Cerrar Sesión
@@ -716,12 +717,7 @@
         const leaderboardTableAdmin = document.getElementById('leaderboard-table-admin');
         const leaderboardTableHeadAdmin = leaderboardTableAdmin.querySelector('thead');
         const leaderboardTableBodyAdmin = leaderboardTableAdmin.querySelector('tbody');
-        const leaderboardYearSelect = document.getElementById('leaderboard-year-select');
-        const leaderboardPeriodSelect = document.getElementById('leaderboard-period-select');
-        const leaderboardCriterionSelect = document.getElementById('leaderboard-criterion-select');
-
-
-        // --- Funciones de Autenticación ---
+        const const const // --- Funciones de Autenticación ---
 
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
@@ -1019,7 +1015,12 @@
                 ttMatchMonthSelect.value = 'all'; // Resetear mes
                 populateChamigoTtMatchLists(); // Recargar partidos para TT
                 ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-            } 
+            } else if (clickedButton.dataset.tab === 'leaderboard-tab') {
+                // Al activar la pestaña de la tabla de posiciones, renderizarla
+                populateLeaderboardYearSelect();
+                setInitialLeaderboardPeriod(); // Asegurarse de que el período se establezca al cambiar de pestaña
+                renderLeaderboard();
+            }
         }
 
         // --- Toggle Side Menu Functionality ---
@@ -2372,53 +2373,36 @@
          * Rellena el selector de año con los años disponibles en los partidos.
          * Selecciona el año actual por defecto si existe, o el más reciente.
          */
-        function populateLeaderboardYearSelect() {
-            const years = new Set();
-            allMatchesData.forEach(match => {
-                const dateString = match[1]; // Columna 'Fecha'
-                if (dateString) {
-                    const date = parseDate(dateString);
-                    years.add(date.getFullYear());
-                }
-            });
+        });
 
             const sortedYears = Array.from(years).sort((a, b) => b - a); // Ordenar de más reciente a más antiguo
 
-            leaderboardYearSelect.innerHTML = ''; // Limpiar opciones existentes
+            // Limpiar opciones existentes
             const currentYear = new Date().getFullYear(); // Declarar aquí
             if (sortedYears.length > 0) {
                 sortedYears.forEach(year => {
                     const option = document.createElement('option');
                     option.value = year;
                     option.textContent = year;
-                    leaderboardYearSelect.appendChild(option);
-                });
+                    });
                 // Seleccionar el año actual por defecto si existe, o el más reciente
                 if (sortedYears.includes(currentYear)) {
-                    leaderboardYearSelect.value = currentYear;
-                } else {
-                    leaderboardYearSelect.value = sortedYears[0];
-                }
+                    } else {
+                    }
             } else {
                 const option = document.createElement('option');
                 option.value = currentYear; // Año actual si no hay datos
                 option.textContent = currentYear;
-                leaderboardYearSelect.appendChild(option);
-            }
+                }
         }
 
         /**
          * Establece el período inicial (Apertura/Clausura/Totales) para la tabla de posiciones
          * basado en la fecha actual.
          */
-        function setInitialLeaderboardPeriod() {
-            const currentMonth = new Date().getMonth(); // 0-indexed (Enero es 0)
-            if (currentMonth >= 0 && currentMonth <= 5) { // Enero a Junio
-                leaderboardPeriodSelect.value = 'apertura';
-            } else if (currentMonth >= 6 && currentMonth <= 11) { // Julio a Diciembre
-                leaderboardPeriodSelect.value = 'clausura';
-            } else {
-                leaderboardPeriodSelect.value = 'totales'; // Por defecto, si no cae en Apertura/Clausura
+        else if (currentMonth >= 6 && currentMonth <= 11) { // Julio a Diciembre
+                } else {
+                // Por defecto, si no cae en Apertura/Clausura
             }
         }
 
@@ -2563,31 +2547,7 @@
          * Renderiza la tabla de posiciones con los datos filtrados y ordenados,
          * adaptando las columnas según el criterio seleccionado.
          */
-        function renderLeaderboard() {
-            // Corregir las referencias a los elementos del DOM específicos de la tabla de posiciones del admin
-            leaderboardLoadingMessage.textContent = 'Calculando posiciones...';
-            leaderboardLoadingMessage.classList.remove('hidden');
-            leaderboardTableAdmin.classList.add('hidden');
-            leaderboardTableBodyAdmin.innerHTML = ''; // Limpiar tabla
-
-            const selectedYear = leaderboardYearSelect.value;
-            const selectedPeriod = leaderboardPeriodSelect.value;
-            const selectedCriterion = leaderboardCriterionSelect.value;
-
-            // 1. Filtrar partidos (solo por año y período, sin importar resultado/suspensión)
-            const filteredMatches = filterMatchesForLeaderboard(allMatchesData, selectedYear, selectedPeriod);
-
-            // 2. Calcular estadísticas de jugadores (incluye Efectividad y Ausente)
-            let playersWithStats = calculatePlayerStatsForLeaderboard(allPlayersData, filteredMatches);
-
-            // Se muestran TODOS los jugadores activos, sin filtrar por PJ > 0
-            // como se solicitó en la última interacción.
-
-            // 3. Ordenar jugadores
-            playersWithStats.sort((a, b) => {
-                if (selectedCriterion === 'puntos') {
-                    return b.puntos - a.puntos;
-                } else if (selectedCriterion === 'presentismo') {
+        else if (selectedCriterion === 'presentismo') {
                     return b.partidos - a.partidos; // Ordenar por PJ DESC
                 } else if (selectedCriterion === 'ausentismo') {
                     return b.ausente - a.ausente; // Ordenar por Ausente DESC (más ausencias primero)
@@ -2747,10 +2707,6 @@
         });
 
         // Event Listeners para los selectores de la tabla de posiciones
-        
-        
-        
-
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
             // Asegurarse de que el menú lateral y el botón de hamburguesa estén ocultos al inicio
