@@ -107,7 +107,7 @@
             width: 256px; /* w-64 */
             background-color: #312e81; /* indigo-800 */
             color: white;
-            transform: translateX(-100%); /* Hidden by default */
+            transform: translateX(-100%); /* Hidden by default for both mobile and desktop */
             transition: transform 0.3s ease-in-out;
             z-index: 40;
             display: flex; /* Use flex for vertical layout of tabs */
@@ -115,8 +115,9 @@
             padding-top: 1rem; /* Add some padding at the top */
         }
 
+        /* This class will be applied by JS to make it visible */
         #side-menu.open {
-            transform: translateX(0); /* Show when open */
+            transform: translateX(0);
         }
 
         #overlay {
@@ -178,30 +179,33 @@
         }
 
         @media (min-width: 768px) {
-            #side-menu.open {
+            #side-menu {
                 width: 256px; /* Wider for desktop */
                 background-color: #312e81; /* indigo-800 - Corrected color */
                 color: white; /* Ensure text remains white on dark background */
                 border-right: 1px solid #e2e8f0; /* border-gray-200 */
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
-                transform: translateX(0) !important; /* Always open on desktop when 'open' class is present */
+                /* REMOVED: transform: translateX(0); - Now controlled by .open class */
+            }
+            /* On desktop, if side-menu is not hidden, it should always be open */
+            #side-menu:not(.hidden) {
+                transform: translateX(0) !important;
             }
 
-            #side-menu.open .tab-button, #side-menu.open .sidebar-link {
+            #side-menu .tab-button, #side-menu .sidebar-link {
                 color: white; /* Ensure text remains white on dark background */
             }
-            #side-menu.open .tab-button.active {
+            #side-menu .tab-button.active {
                 background-color: #4338ca; /* indigo-700 */
                 color: white; /* Ensure text remains white on dark background */
                 border-left: 4px solid #4f46e5; /* border-indigo-500 */
             }
-            #side-menu.open .tab-button:hover, #side-menu.open .sidebar-link:hover {
+            #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
                 background-color: #4f46e5; /* indigo-600 */
             }
 
             .main-admin-content-container {
                 margin: 2rem; /* Add some margin around the main content */
-                /* Adjusted max-width to account for sidebar and margins */
                 max-width: calc(100% - 256px - 4rem); /* Sidebar width + 2rem left + 2rem right margin */
             }
             #signout_button_mobile_sidebar {
@@ -213,8 +217,10 @@
             #overlay {
                 display: none !important;
             }
-        }
-    </style>
+            #hamburger-button {
+                display: none !important; /* Always hide hamburger on desktop */
+            }
+        </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 md:p-0">
     <!-- Hamburger Button (visible on all screens) -->
@@ -713,8 +719,9 @@
                     authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
                     authStatus.classList.remove('hidden');
                     // Asegurarse de que el menú y el botón estén ocultos si no hay token
-                    sideMenu.classList.add('hidden');
-                    hamburgerButton.classList.add('hidden');
+                    sideMenu.classList.add('hidden'); // Ensure it's hidden
+                    sideMenu.classList.remove('open'); // Ensure it's closed
+                    hamburgerButton.classList.add('hidden'); // Ensure hamburger is hidden
                     signoutButtonMobileSidebar.classList.add('hidden');
                     signoutButtonSidebar.classList.add('hidden');
                     adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
@@ -749,13 +756,16 @@
             authStatus.classList.add('hidden');
             adminContent.classList.remove('hidden'); // Mostrar el contenido de administración
             
-            // Mostrar menú lateral y botón de hamburguesa
+            // Mostrar el menú lateral
             sideMenu.classList.remove('hidden'); 
-            // Controlar la visibilidad del botón de hamburguesa según el tamaño de la pantalla
-            if (window.innerWidth < 768) {
-                 hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
+            // En desktop, la barra lateral siempre debe estar 'abierta'
+            if (window.innerWidth >= 768) {
+                sideMenu.classList.add('open'); // Force 'open' on desktop
+                hamburgerButton.classList.add('hidden'); // Always hide hamburger on desktop
             } else {
-                 hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en escritorio
+                // En móvil, el menú está inicialmente cerrado, y el botón de hamburguesa visible
+                sideMenu.classList.remove('open'); // Ensure it's closed for mobile initial state
+                hamburgerButton.classList.remove('hidden'); // Show hamburger on mobile
             }
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
@@ -784,11 +794,10 @@
                 signoutButtonMobileSidebar.classList.add('hidden');
                 adminContent.classList.add('hidden'); // Ocultar el contenido de administración
                 
-                sideMenu.classList.add('hidden');
+                sideMenu.classList.add('hidden'); // Ensure sidebar is hidden
+                sideMenu.classList.remove('open'); // Ensure sidebar is closed (for mobile state)
                 hamburgerButton.classList.add('hidden');
                 overlay.classList.add('hidden');
-                sideMenu.classList.remove('open');
-                overlay.classList.remove('open');
                 document.body.classList.remove('overflow-hidden');
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
@@ -958,22 +967,18 @@
 
         // --- Toggle Side Menu Functionality ---
         function toggleSideMenu() {
-            sideMenu.classList.toggle('open');
             const isMobile = window.innerWidth < 768;
-
-            if (isMobile) {
+            if (isMobile) { // Only toggle on mobile
+                sideMenu.classList.toggle('open');
                 overlay.classList.toggle('open');
                 document.body.classList.toggle('overflow-hidden');
                 if (sideMenu.classList.contains('open')) {
-                    hamburgerButton.classList.add('hidden');
+                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
                 } else {
-                    hamburgerButton.classList.remove('hidden');
+                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
                 }
-            } else {
-                hamburgerButton.classList.add('hidden');
-                overlay.classList.remove('open');
-                document.body.classList.remove('overflow-hidden');
             }
+            // On desktop, this function should do nothing, as the sidebar is always open/closed by auth state
         }
 
         // --- Gestión de Jugadores (AMB) ---
@@ -2241,11 +2246,44 @@
             }
         });
 
+        // Evento para manejar el redimensionamiento de la ventana
+        window.addEventListener('resize', () => {
+            // Solo ajustar la visibilidad de la barra lateral si está autenticado
+            if (gapi.client.getToken() !== null) {
+                if (window.innerWidth >= 768) {
+                    sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
+                    sideMenu.classList.add('open'); // Asegurarse de que tenga 'open' para visibilidad
+                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
+                    overlay.classList.remove('open'); // Ocultar overlay en desktop
+                    document.body.classList.remove('overflow-hidden'); // Restablecer el scroll
+                } else {
+                    // Si se redimensiona a móvil
+                    // Si la barra lateral estaba visible (estado de escritorio), ocultarla y mostrar hamburguesa
+                    if (sideMenu.classList.contains('open')) { // Si estaba abierta (por desktop)
+                        sideMenu.classList.remove('open'); // Cerrarla para móvil
+                        overlay.classList.remove('open');
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                    // Mostrar hamburguesa si el menú está cerrado en mobile
+                    hamburgerButton.classList.remove('hidden');
+                }
+            } else {
+                // Si no está autenticado, asegurar que todo permanezca oculto en cualquier redimensionamiento
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.add('hidden');
+                overlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        });
+
+
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
-            // Asegurarse de que el menú lateral y el botón de hamburguesa estén ocultos al inicio
-            sideMenu.classList.add('hidden');
+            // Asegurarse de que el botón de hamburguesa y el menú lateral estén ocultos al inicio
             hamburgerButton.classList.add('hidden');
+            sideMenu.classList.add('hidden'); // Explicitly hide sidebar on load
+            sideMenu.classList.remove('open'); // Ensure it's not open
             signoutButtonMobileSidebar.classList.add('hidden');
             signoutButtonSidebar.classList.add('hidden');
             adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
