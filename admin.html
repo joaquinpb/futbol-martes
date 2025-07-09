@@ -14,9 +14,8 @@
             min-height: 100vh; /* Asegura que el cuerpo ocupe toda la altura del viewport */
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
-            display: flex; /* Usa flex para contener el contenido principal y permitir centrado */
-            justify-content: center; /* Centra el contenido principal horizontalmente */
-            align-items: center; /* Centra el contenido principal verticalmente */
+            /* REMOVED: display: flex; - Removed to simplify layout with fixed sidebar */
+            /* REMOVED: align-items: start; - Removed with flex */
         }
         /* Estilos para el efecto de arrastre */
         .player-draggable {
@@ -79,7 +78,6 @@
             font-size: 0.875rem; /* text-sm */
             line-height: 1.25rem; /* leading-normal */
         }
-        /* Filas del cuerpo de la tabla: alternar entre dos tonos de gris */
         #leaderboard-table-admin tbody tr:nth-child(odd) {
             background-color: #f7fafc !important; /* Gris muy claro (bg-gray-100) */
         }
@@ -87,7 +85,6 @@
             background-color: #edf2f7 !important; /* Gris ligeramente más oscuro (bg-gray-200) */
         }
         #leaderboard-table-admin tbody tr {
-            /* Borde inferior para separar filas y efecto hover */
             border-bottom: 1px solid #cbd5e0; /* border-gray-300 */
             transition: background-color 150ms ease-in-out; /* transition duration-150 ease-in-out */
         }
@@ -97,14 +94,11 @@
         #leaderboard-table-admin tbody tr:last-child {
             border-bottom: 0; /* Eliminar borde inferior de la última fila */
         }
-        /* Asegurar color de texto para las celdas del cuerpo para legibilidad */
         #leaderboard-table-admin tbody td {
             color: #4a5568; /* text-gray-600 */
         }
 
         /* --- Estilos para el menú lateral responsivo --- */
-
-        /* Base styles for side menu (applies to both mobile and desktop) */
         #side-menu {
             position: fixed;
             top: 0;
@@ -113,7 +107,7 @@
             width: 256px; /* w-64 */
             background-color: #312e81; /* indigo-800 */
             color: white;
-            transform: translateX(-100%); /* Hidden by default */
+            transform: translateX(-100%); /* Hidden by default for both mobile and desktop */
             transition: transform 0.3s ease-in-out;
             z-index: 40;
             display: flex; /* Use flex for vertical layout of tabs */
@@ -121,11 +115,11 @@
             padding-top: 1rem; /* Add some padding at the top */
         }
 
+        /* This class will be applied by JS to make it visible */
         #side-menu.open {
-            transform: translateX(0); /* Show when open */
+            transform: translateX(0);
         }
 
-        /* Styles for overlay (only for mobile) */
         #overlay {
             position: fixed;
             inset: 0; /* top:0, right:0, bottom:0, left:0 */
@@ -138,7 +132,6 @@
             display: block; /* Show when side menu is open (mobile only) */
         }
 
-        /* Hamburger button (visible on all screens now) */
         #hamburger-button {
             position: fixed;
             top: 1rem;
@@ -151,7 +144,6 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
         }
 
-        /* Close button inside side menu (visible on all screens when menu is open) */
         #close-side-menu-button {
             background: none;
             border: none;
@@ -161,8 +153,7 @@
             padding: 0.5rem;
         }
 
-        /* Adjust tab buttons for sidebar (applies to both mobile and desktop when open) */
-        #side-menu .tab-button, #side-menu .sidebar-link { /* Añadir .sidebar-link aquí */
+        #side-menu .tab-button, #side-menu .sidebar-link {
             padding-left: 1.5rem; /* px-6 */
             padding-right: 1.5rem; /* px-6 */
             text-align: left;
@@ -178,64 +169,60 @@
         #side-menu .tab-button.active {
             background-color: #4338ca; /* indigo-700 */
         }
-        #side-menu .tab-button:hover, #side-menu .sidebar-link:hover { /* Añadir .sidebar-link aquí */
+        #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
             background-color: #4f46e5; /* indigo-600 */
         }
 
-        /* --- Ajustes para el botón de cerrar sesión --- */
-        /* Aplicar el mismo margen inferior para desktop y mobile */
         #signout_button_sidebar,
         #signout_button_mobile_sidebar {
             margin-bottom: 2rem; /* Unificado: 2rem de separación del borde inferior */
         }
 
-        /* Media query for medium screens and up (md: 768px) */
         @media (min-width: 768px) {
-            /* Styles for desktop sidebar when open */
-            #side-menu.open {
+            #side-menu {
                 width: 256px; /* Wider for desktop */
-                background-color: white; /* White background for desktop sidebar */
-                color: #4a5568; /* text-gray-600 */
+                background-color: #312e81; /* indigo-800 - Corrected color */
+                color: white; /* Ensure text remains white on dark background */
                 border-right: 1px solid #e2e8f0; /* border-gray-200 */
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
-                transform: translateX(0) !important; /* Always open on desktop when 'open' class is present */
+                /* REMOVED: transform: translateX(0); - Now controlled by .open class */
+            }
+            /* On desktop, if side-menu is not hidden, it should always be open */
+            #side-menu:not(.hidden) {
+                transform: translateX(0) !important;
             }
 
-            /* Adjust tab buttons for desktop sidebar when open */
-            #side-menu.open .tab-button, #side-menu.open .sidebar-link { /* Añadir .sidebar-link aquí */
-                color: #4a5568; /* text-gray-600 */
+            #side-menu .tab-button, #side-menu .sidebar-link {
+                color: white; /* Ensure text remains white on dark background */
             }
-            #side-menu.open .tab-button.active {
-                background-color: #e0e7ff; /* indigo-100 */
-                color: #4f46e5; /* indigo-600 */
+            #side-menu .tab-button.active {
+                background-color: #4338ca; /* indigo-700 */
+                color: white; /* Ensure text remains white on dark background */
                 border-left: 4px solid #4f46e5; /* border-indigo-500 */
             }
-            #side-menu.open .tab-button:hover, #side-menu.open .sidebar-link:hover { /* Añadir .sidebar-link aquí */
-                background-color: #edf2f7; /* gray-200 */
+            #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
+                background-color: #4f46e5; /* indigo-600 */
             }
 
-            /* Main content container - centered, sidebar overlays */
             .main-admin-content-container {
                 margin: 2rem; /* Add some margin around the main content */
-                max-width: calc(100% - 4rem); /* Adjust max-width to account for margins */
+                max-width: calc(100% - 256px - 4rem); /* Sidebar width + 2rem left + 2rem right margin */
             }
-            /* Hide mobile signout button on desktop */
             #signout_button_mobile_sidebar {
                 display: none !important;
             }
-            /* Show desktop signout button */
             #signout_button_sidebar {
                 display: block !important;
             }
-
-            /* Hide overlay on desktop */
             #overlay {
                 display: none !important;
             }
-        }
-    </style>
+            #hamburger-button {
+                display: none !important; /* Always hide hamburger on desktop */
+            }
+        </style>
 </head>
-<body class="bg-gray-100 flex items-start justify-center min-h-screen p-4 md:p-0">
+<body class="bg-gray-100 min-h-screen p-4 md:p-0">
     <!-- Hamburger Button (visible on all screens) -->
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -277,7 +264,7 @@
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
     <!-- Main Content Area -->
-    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl relative">
+    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl relative md:ml-64 mx-auto">
         <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Panel de Administración</h1>
 
         <!-- Authentication buttons (only authorize button remains here) -->
@@ -627,6 +614,7 @@
         const signoutButtonMobileSidebar = document.getElementById('signout_button_mobile_sidebar'); // Nuevo botón de cerrar sesión en sidebar (mobile)
         const authStatus = document.getElementById('auth-status');
         const adminContent = document.getElementById('admin-content');
+        const mainAdminContentContainer = document.querySelector('.main-admin-content-container'); // Referencia al contenedor principal
 
         // Nuevos elementos para el menú lateral
         const hamburgerButton = document.getElementById('hamburger-button');
@@ -691,15 +679,6 @@
         const ttMatchMonthSelect = document.getElementById('tt-match-month-select'); // Nuevo
         const ttMatchListDiv = document.getElementById('tt-match-list'); // Nuevo
 
-        // Elementos de la Tabla de Posiciones (eliminados de la interfaz, pero las variables se mantienen por si acaso)
-        // const leaderboardLoadingMessage = document.getElementById('leaderboard-loading-message');
-        // const leaderboardTableAdmin = document.getElementById('leaderboard-table-admin');
-        // const leaderboardTableHeadAdmin = leaderboardTableAdmin.querySelector('thead');
-        // const leaderboardTableBodyAdmin = leaderboardTableAdmin.querySelector('tbody');
-        // const leaderboardYearSelect = document.getElementById('leaderboard-year-select');
-        // const leaderboardPeriodSelect = document.getElementById('leaderboard-period-select');
-        // const leaderboardCriterionSelect = document.getElementById('leaderboard-criterion-select');
-
 
         // --- Funciones de Autenticación ---
 
@@ -740,10 +719,12 @@
                     authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
                     authStatus.classList.remove('hidden');
                     // Asegurarse de que el menú y el botón estén ocultos si no hay token
-                    sideMenu.classList.add('hidden');
-                    hamburgerButton.classList.add('hidden');
-                    signoutButtonMobileSidebar.classList.add('hidden'); // También ocultar botón de cerrar sesión móvil
-                    signoutButtonSidebar.classList.add('hidden'); // También ocultar botón de cerrar sesión de escritorio
+                    sideMenu.classList.add('hidden'); // Ensure it's hidden
+                    sideMenu.classList.remove('open'); // Ensure it's closed
+                    hamburgerButton.classList.add('hidden'); // Ensure hamburger is hidden
+                    signoutButtonMobileSidebar.classList.add('hidden');
+                    signoutButtonSidebar.classList.add('hidden');
+                    adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
                 }
             }
         }
@@ -770,14 +751,22 @@
 
         async function handleAuthSuccess() {
             authorizeButton.style.display = 'none';
-            signoutButtonSidebar.classList.remove('hidden'); // Mostrar botón de cerrar sesión de escritorio
-            signoutButtonMobileSidebar.classList.remove('hidden'); // Mostrar botón de cerrar sesión móvil
+            signoutButtonSidebar.classList.remove('hidden');
+            signoutButtonMobileSidebar.classList.remove('hidden');
             authStatus.classList.add('hidden');
-            adminContent.classList.remove('hidden');
+            adminContent.classList.remove('hidden'); // Mostrar el contenido de administración
             
-            // Mostrar menú lateral y botón de hamburguesa
-            hamburgerButton.classList.remove('hidden');
-            sideMenu.classList.remove('hidden'); // Asegura que el menú esté visible para poder ser toggled
+            // Mostrar el menú lateral
+            sideMenu.classList.remove('hidden'); 
+            // En desktop, la barra lateral siempre debe estar 'abierta'
+            if (window.innerWidth >= 768) {
+                sideMenu.classList.add('open'); // Force 'open' on desktop
+                hamburgerButton.classList.add('hidden'); // Always hide hamburger on desktop
+            } else {
+                // En móvil, el menú está inicialmente cerrado, y el botón de hamburguesa visible
+                sideMenu.classList.remove('open'); // Ensure it's closed for mobile initial state
+                hamburgerButton.classList.remove('hidden'); // Show hamburger on mobile
+            }
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
             setupTabNavigation();
@@ -786,12 +775,9 @@
             const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
             const defaultTabContent = document.getElementById('team-formation');
 
-            // Ocultar todos los contenidos de las pestañas primero
             tabContents.forEach(content => content.classList.add('hidden'));
-            // Eliminar la clase activa de todos los botones de pestaña
             tabButtons.forEach(button => button.classList.remove('active'));
 
-            // Activar la pestaña por defecto
             if (defaultTabButton && defaultTabContent) {
                 defaultTabButton.classList.add('active');
                 defaultTabContent.classList.remove('hidden');
@@ -804,23 +790,21 @@
                 google.accounts.oauth2.revoke(token.access_token);
                 gapi.client.setToken('');
                 authorizeButton.style.display = 'block';
-                signoutButtonSidebar.classList.add('hidden'); // Ocultar botón de cerrar sesión de escritorio
-                signoutButtonMobileSidebar.classList.add('hidden'); // Ocultar botón de cerrar sesión móvil
-                adminContent.classList.add('hidden');
+                signoutButtonSidebar.classList.add('hidden');
+                signoutButtonMobileSidebar.classList.add('hidden');
+                adminContent.classList.add('hidden'); // Ocultar el contenido de administración
                 
-                // Asegurarse de que el menú lateral y el botón de hamburguesa estén ocultos
-                sideMenu.classList.add('hidden');
+                sideMenu.classList.add('hidden'); // Ensure sidebar is hidden
+                sideMenu.classList.remove('open'); // Ensure sidebar is closed (for mobile state)
                 hamburgerButton.classList.add('hidden');
-                overlay.classList.add('hidden'); // Asegurarse de que el overlay esté oculto
-                sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado
-                overlay.classList.remove('open'); // Asegurarse de que el overlay esté cerrado
-                document.body.classList.remove('overflow-hidden'); // Restablecer el scroll del body
+                overlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
                 authStatus.classList.remove('hidden');
                 // Limpiar todas las interfaces
                 playersListAdminTableBody.innerHTML = '';
-                playersLoadingMessageAdmin.textContent = 'Cargando jugadores...'; // Restablecer mensaje de carga
+                playersLoadingMessageAdmin.textContent = 'Cargando jugadores...';
                 titularesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando titulares...</p>';
                 suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando suplentes...</p>';
                 teamClarosDiv.innerHTML = '';
@@ -832,17 +816,10 @@
                 chamigoMatchListDiv.innerHTML = '<p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>';
                 ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
                 ttMatchListDiv.innerHTML = '<p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>';
-                //leaderboardTableBodyAdmin.innerHTML = ''; // Eliminado
             }
         }
 
         // --- Custom Confirmation Modal ---
-        /**
-         * Muestra un modal de confirmación personalizado.
-         * @param {string} title - El título del modal.
-         * @param {string} message - El mensaje del modal.
-         * @returns {Promise<boolean>} - Una promesa que resuelve a true si se confirma, false si se cancela.
-         */
         function showCustomConfirm(title, message) {
             return new Promise((resolve) => {
                 modalTitle.textContent = title;
@@ -862,7 +839,6 @@
                 modalConfirmButton.onclick = onConfirm;
                 modalCancelButton.onclick = onCancel;
 
-                // Opcional: Cerrar con Escape
                 const handleKeyDown = (e) => {
                     if (e.key === 'Escape') {
                         onCancel();
@@ -889,28 +865,25 @@
                     throw new Error("API de Google Sheets no cargada correctamente.");
                 }
 
-                // --- NUEVO: Obtener los sheetIds dinámicamente ---
                 const metadataResponse = await gapi.client.sheets.spreadsheets.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    fields: 'sheets.properties', // Solicitar solo las propiedades de las hojas
+                    fields: 'sheets.properties',
                 });
 
                 if (metadataResponse.result && metadataResponse.result.sheets) {
                     metadataResponse.result.sheets.forEach(sheet => {
                         sheetIds[sheet.properties.title] = sheet.properties.sheetId;
                     });
-                    console.log("IDs de hojas cargados:", sheetIds); // Para depuración
+                    console.log("IDs de hojas cargados:", sheetIds);
                 } else {
                     console.warn("No se pudo recuperar la metadata de las hojas. Usando IDs por defecto (0).");
-                    // Fallback si no se puede obtener la metadata (menos robusto)
                     sheetIds['Partidos'] = 0;
                     sheetIds['Jugadores'] = 0;
                 }
-                // --- FIN NUEVO ---
 
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:H', // Rango actualizado para incluir la columna 'Rol' (H)
+                    range: 'Jugadores!A:H',
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
 
@@ -934,21 +907,17 @@
 
         async function loadAllDataAndDisplayAllContent() {
             await loadAllData();
-            renderPlayersListAdmin(); // Se encarga de los filtros ahora
+            renderPlayersListAdmin();
             renderAvailablePlayersForTeams();
-            populateResultsMatchYearSelect(); // Llama a la función para el selector de año de resultados
-            populateMatchSelects(); // Se llama después de poblar el año para que use el filtro inicial
-            populateChamigoTtMatchYearSelect(); // NUEVO: para Chamigo y TT
-            populateChamigoTtMatchLists(); // NUEVO: para Chamigo y TT
-            // populateLeaderboardYearSelect(); // Eliminado
-            // setInitialLeaderboardPeriod(); // Eliminado
-            // renderLeaderboard(); // Eliminado
+            populateResultsMatchYearSelect();
+            populateMatchSelects();
+            populateChamigoTtMatchYearSelect();
+            populateChamigoTtMatchLists();
         }
 
         // --- Funciones de Pestañas ---
         function setupTabNavigation() {
             tabButtons.forEach(button => {
-                // Eliminar listeners existentes para prevenir duplicados
                 button.removeEventListener('click', handleTabButtonClick);
                 button.addEventListener('click', handleTabButtonClick);
             });
@@ -957,76 +926,73 @@
         function handleTabButtonClick(event) {
             const clickedButton = event.currentTarget;
             
-            // Eliminar 'active' de todos los botones y añadir 'hidden' a todas las secciones de contenido
             tabButtons.forEach(btn => btn.classList.remove('active'));
             tabContents.forEach(content => content.classList.add('hidden'));
 
-            // Añadir 'active' al botón clickeado y eliminar 'hidden' de su sección de contenido correspondiente
             clickedButton.classList.add('active');
             document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
 
-            // Cierra el menú lateral si es mobile
-            if (window.innerWidth < 768) { // Si es mobile
+            if (window.innerWidth < 768) {
                 toggleSideMenu();
             }
-            // Si es desktop, el menú permanece abierto.
 
-            // Recargar datos específicos de la pestaña si es necesario
             if (clickedButton.dataset.tab === 'players-management') {
-                renderPlayersListAdmin(); // Ahora con filtros
+                renderPlayersListAdmin();
             } else if (clickedButton.dataset.tab === 'team-formation') {
                 renderAvailablePlayersForTeams();
-                // Limpiar selecciones de equipos al cambiar de pestaña
                 teamClarosDiv.innerHTML = '';
                 teamOscurosDiv.innerHTML = '';
                 clarosCountSpan.textContent = '0';
                 oscurosCountSpan.textContent = '0';
                 saveTeamsButton.disabled = true;
-                teamMatchDateInput.value = ''; // Limpiar la fecha del partido
+                teamMatchDateInput.value = '';
             } else if (clickedButton.dataset.tab === 'match-results') {
-                populateResultsMatchYearSelect(); // Recargar años
-                resultsMatchMonthSelect.value = 'all'; // Resetear mes
-                populateMatchSelects(); // Recargar partidos con filtros
+                populateResultsMatchYearSelect();
+                resultsMatchMonthSelect.value = 'all';
+                populateMatchSelects();
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
             } else if (clickedButton.dataset.tab === 'chamigo-management') {
-                populateChamigoTtMatchYearSelect(); // Recargar años para Chamigo
-                chamigoMatchMonthSelect.value = 'all'; // Resetear mes
-                populateChamigoTtMatchLists(); // Recargar partidos para Chamigo
+                populateChamigoTtMatchYearSelect();
+                chamigoMatchMonthSelect.value = 'all';
+                populateChamigoTtMatchLists();
                 chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
             } else if (clickedButton.dataset.tab === 'tt-attendance') {
-                populateChamigoTtMatchYearSelect(); // Recargar años para TT
-                ttMatchMonthSelect.value = 'all'; // Resetear mes
-                populateChamigoTtMatchLists(); // Recargar partidos para TT
+                populateChamigoTtMatchYearSelect();
+                ttMatchMonthSelect.value = 'all';
+                populateChamigoTtMatchLists();
                 ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
             }
-            // La lógica para 'leaderboard-tab' se ha eliminado
         }
 
         // --- Toggle Side Menu Functionality ---
         function toggleSideMenu() {
-            sideMenu.classList.toggle('open');
-            // El overlay solo se activa en mobile
-            if (window.innerWidth < 768) {
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) { // Only toggle on mobile
+                sideMenu.classList.toggle('open');
                 overlay.classList.toggle('open');
-                document.body.classList.toggle('overflow-hidden'); // Prevenir el scroll cuando el menú está abierto
+                document.body.classList.toggle('overflow-hidden');
+                if (sideMenu.classList.contains('open')) {
+                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
+                } else {
+                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
+                }
             }
+            // On desktop, this function should do nothing, as the sidebar is always open/closed by auth state
         }
 
         // --- Gestión de Jugadores (AMB) ---
 
         function renderPlayersListAdmin() {
-            playersListAdminTableBody.innerHTML = ''; // Limpiar tabla
-            document.querySelector('#players-list-admin table').classList.add('hidden'); // Ocultar tabla
-            playersLoadingMessageAdmin.classList.remove('hidden'); // Asegurarse de que el mensaje de carga sea visible
-            playersLoadingMessageAdmin.textContent = 'Cargando jugadores...'; // Resetear el texto del mensaje
+            playersListAdminTableBody.innerHTML = '';
+            document.querySelector('#players-list-admin table').classList.add('hidden');
+            playersLoadingMessageAdmin.classList.remove('hidden');
+            playersLoadingMessageAdmin.textContent = 'Cargando jugadores...';
 
-            // Obtener valores de los filtros
             const nameFilter = playerListNameFilter.value.toLowerCase();
             const statusFilter = playerListStatusFilter.value;
             const roleFilter = playerListRoleFilter.value;
 
-            // Aplicar filtros
             const filteredPlayers = allPlayersData.filter(player => {
                 const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
                 const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
@@ -1036,19 +1002,18 @@
             });
 
             if (filteredPlayers.length === 0) {
-                playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.'; // Actualizar el mensaje
+                playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.';
                 return;
             }
 
             filteredPlayers.forEach((player, index) => {
-                // Asegurarse de que la columna 7 (índice 7) para Rol exista, si no, usar un valor por defecto
                 const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
                 const row = `
                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                         <td class="py-3 px-6 text-left">${id}</td>
                         <td class="py-3 px-6 text-left">${nombre}</td>
                         <td class="py-3 px-6 text-left">${estado}</td>
-                        <td class="py-3 px-6 text-left">${rol}</td> <!-- Columna para Rol -->
+                        <td class="py-3 px-6 text-left">${rol}</td>
                         <td class="py-3 px-6 text-center">
                             <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs"
                                 data-id="${id}"
@@ -1061,20 +1026,18 @@
                 playersListAdminTableBody.innerHTML += row;
             });
 
-            // Añadir event listeners a los botones de edición
             document.querySelectorAll('.edit-player-button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     playerIdInput.value = e.target.dataset.id;
                     playerNameInput.value = e.target.dataset.name;
                     playerStatusSelect.value = e.target.dataset.status;
-                    playerRoleSelect.value = e.target.dataset.role; // Cargar el rol al editar
+                    playerRoleSelect.value = e.target.dataset.role;
                 });
             });
-            playersLoadingMessageAdmin.classList.add('hidden'); // Ocultar mensaje si la tabla se muestra
-            document.querySelector('#players-list-admin table').classList.remove('hidden'); // Mostrar tabla
+            playersLoadingMessageAdmin.classList.add('hidden');
+            document.querySelector('#players-list-admin table').classList.remove('hidden');
         }
 
-        // Event Listeners para los nuevos filtros de Gestión de Jugadores
         playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
         playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
         playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
@@ -1084,21 +1047,19 @@
             const id = playerIdInput.value.trim();
             const name = playerNameInput.value.trim();
             const status = playerStatusSelect.value;
-            const role = playerRoleSelect.value; // Obtener el rol
+            const role = playerRoleSelect.value;
 
             if (!name) {
                 alert('El nombre del jugador no puede estar vacío.');
                 return;
             }
 
-            // --- Validación de Nombre Único ---
             const normalizedNewName = name.toLowerCase();
             const isEditingExistingPlayer = id !== '';
 
             const duplicatePlayer = allPlayersData.find(p => {
                 const existingId = p[0];
                 const existingName = p[1].toLowerCase();
-                // Si estamos editando, ignorar el propio jugador en la búsqueda de duplicados
                 return existingName === normalizedNewName && (!isEditingExistingPlayer || existingId !== id);
             });
 
@@ -1106,34 +1067,28 @@
                 alert(`Ya existe un jugador con el nombre "${name}". Por favor, elige un nombre diferente.`);
                 return;
             }
-            // --- Fin Validación de Nombre Único ---
 
             try {
-                let rowToUpdateIndex = allPlayersData.findIndex(p => p[0] === id); // Buscar por ID
+                let rowToUpdateIndex = allPlayersData.findIndex(p => p[0] === id);
                 let newPlayerId = id;
 
-                if (rowToUpdateIndex === -1) { // Si no se encuentra, es un nuevo jugador
-                    // Generar un nuevo ID de jugador (ej. J001, J002...)
+                if (rowToUpdateIndex === -1) {
                     const maxIdNum = allPlayersData.reduce((max, p) => {
                         const num = parseInt(p[0]?.replace('J', '') || 0);
                         return Math.max(max, num);
                     }, 0);
                     newPlayerId = 'J' + String(maxIdNum + 1).padStart(3, '0');
-                    // Valores iniciales para un nuevo jugador, incluyendo el nuevo campo 'Rol'
-                    const newPlayerRow = [newPlayerId, name, status, 0, 0, 0, 0, role]; // Añadir 'role'
+                    const newPlayerRow = [newPlayerId, name, status, 0, 0, 0, 0, role];
                     allPlayersData.push(newPlayerRow);
-                    rowToUpdateIndex = allPlayersData.length - 1; // Índice del nuevo jugador
+                    rowToUpdateIndex = allPlayersData.length - 1;
                 } else {
-                    // Modificar jugador existente
-                    allPlayersData[rowToUpdateIndex][1] = name; // Nombre
-                    allPlayersData[rowToUpdateIndex][2] = status; // Estado
-                    allPlayersData[rowToUpdateIndex][7] = role; // Actualizar Rol (columna H, índice 7)
+                    allPlayersData[rowToUpdateIndex][1] = name;
+                    allPlayersData[rowToUpdateIndex][2] = status;
+                    allPlayersData[rowToUpdateIndex][7] = role;
                 }
 
-                // Actualizar la hoja de cálculo
-                // El rango ahora es A:H para incluir el nuevo campo
                 const values = [allPlayersData[rowToUpdateIndex]];
-                const range = `Jugadores!A${rowToUpdateIndex + 2}:H${rowToUpdateIndex + 2}`; // Rango A:H
+                const range = `Jugadores!A${rowToUpdateIndex + 2}:H${rowToUpdateIndex + 2}`;
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -1146,8 +1101,8 @@
                 playerIdInput.value = '';
                 playerNameInput.value = '';
                 playerStatusSelect.value = 'Activo';
-                playerRoleSelect.value = 'Titular'; // Resetear a valor por defecto
-                await loadAllDataAndDisplayAllContent(); // Recargar y renderizar la lista
+                playerRoleSelect.value = 'Titular';
+                await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al guardar jugador:', err);
                 alert(`Error al guardar jugador: ${err.message}. Revisa la consola.`);
@@ -1173,11 +1128,9 @@
                     return;
                 }
 
-                // Opción más segura: cambiar estado a 'Inactivo'
-                allPlayersData[rowIndex][2] = 'Inactivo'; // Cambiar estado a Inactivo
-                // Mantener el Rol actual, no se modifica al inactivar
+                allPlayersData[rowIndex][2] = 'Inactivo';
                 const values = [allPlayersData[rowIndex]];
-                const range = `Jugadores!A${rowIndex + 2}:H${rowIndex + 2}`; // Rango A:H
+                const range = `Jugadores!A${rowIndex + 2}:H${rowIndex + 2}`;
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -1190,7 +1143,7 @@
                 playerIdInput.value = '';
                 playerNameInput.value = '';
                 playerStatusSelect.value = 'Activo';
-                playerRoleSelect.value = 'Titular'; // Resetear a valor por defecto
+                playerRoleSelect.value = 'Titular';
                 await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al eliminar jugador:', err);
@@ -1204,7 +1157,6 @@
             titularesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando titulares...</p>';
             suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando suplentes...</p>';
 
-            // Filtrar solo jugadores Activos para Armar Equipos
             const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
 
             if (activePlayers.length === 0) {
@@ -1213,29 +1165,27 @@
                 return;
             }
             
-            titularesPlayersDiv.innerHTML = ''; // Limpiar antes de poblar
-            suplentesPlayersDiv.innerHTML = ''; // Limpiar antes de poblar
+            titularesPlayersDiv.innerHTML = '';
+            suplentesPlayersDiv.innerHTML = '';
 
             activePlayers.forEach(player => {
-                // Asegurarse de que la columna 7 (índice 7) para Rol exista, si no, usar un valor por defecto
                 const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
                 const playerElement = document.createElement('div');
-                playerElement.className = 'player-draggable'; // Usará las clases definidas en <style>
-                playerElement.draggable = true; // Mantener para desktop
+                playerElement.className = 'player-draggable';
+                playerElement.draggable = true;
                 playerElement.dataset.id = id;
                 playerElement.dataset.name = nombre;
                 playerElement.textContent = nombre;
-                playerElement.addEventListener('dragstart', handleDragStart); // Desktop drag
-                playerElement.addEventListener('touchstart', handleTouchStart); // Touch drag
+                playerElement.addEventListener('dragstart', handleDragStart);
+                playerElement.addEventListener('touchstart', handleTouchStart);
                 
                 if (rol === 'Titular') {
                     titularesPlayersDiv.appendChild(playerElement);
-                } else { // Suplente
+                } else {
                     suplentesPlayersDiv.appendChild(playerElement);
                 }
             });
 
-            // Si no hay titulares o suplentes, mostrar un mensaje
             if (titularesPlayersDiv.children.length === 0) {
                 titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay titulares activos.</p>';
             }
@@ -1274,18 +1224,16 @@
 
             console.log('Drop event (Desktop) on', e.currentTarget.id, 'for player:', data.name);
 
-            // Restricción: No permitir arrastrar entre Titulares y Suplentes
             if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
                 (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
                 console.log('Arrastre no permitido entre Titulares y Suplentes.');
-                return; // No hacer nada si el arrastre no está permitido
+                return;
             }
 
             if (sourceId === targetId) return;
 
             const draggedElement = document.querySelector(`#${sourceId} .player-draggable[data-id="${playerId}"]`);
             if (draggedElement) {
-                // Mover el elemento directamente
                 document.getElementById(targetId).appendChild(draggedElement);
             }
             updateTeamCounts();
@@ -1296,24 +1244,20 @@
             if (e.touches.length === 1) {
                 isDraggingTouch = true;
                 currentDraggedPlayer = e.target;
-                originalParentOfDraggedPlayer = e.target.parentNode; // Store original parent
+                originalParentOfDraggedPlayer = e.target.parentNode;
                 currentDraggedPlayer.classList.add('dragging-touch');
 
-                // Store initial touch position
                 initialTouchX = e.touches[0].clientX;
                 initialTouchY = e.touches[0].clientY;
 
-                // Store initial element position (relative to viewport)
                 const rect = currentDraggedPlayer.getBoundingClientRect();
                 initialElementX = rect.left;
                 initialElementY = rect.top;
 
-                // Set position to fixed to allow dragging outside parent
                 currentDraggedPlayer.style.position = 'fixed';
-                currentDraggedPlayer.style.zIndex = '1000'; // Bring to front
-                currentDraggedPlayer.style.pointerEvents = 'none'; // Avoid interfering with touch on elements below
+                currentDraggedPlayer.style.zIndex = '1000';
+                currentDraggedPlayer.style.pointerEvents = 'none';
 
-                // Move the element to its current visual position
                 currentDraggedPlayer.style.left = initialElementX + 'px';
                 currentDraggedPlayer.style.top = initialElementY + 'px';
 
@@ -1324,7 +1268,7 @@
 
         function handleTouchMove(e) {
             if (!isDraggingTouch) return;
-            e.preventDefault(); // Prevent scrolling
+            e.preventDefault();
 
             const currentTouchX = e.touches[0].clientX;
             const currentTouchY = e.touches[0].clientY;
@@ -1340,21 +1284,19 @@
 
             isDraggingTouch = false;
             currentDraggedPlayer.classList.remove('dragging-touch');
-            currentDraggedPlayer.style.position = ''; // Reset position
+            currentDraggedPlayer.style.position = '';
             currentDraggedPlayer.style.zIndex = '';
             currentDraggedPlayer.style.pointerEvents = '';
-            currentDraggedPlayer.style.transform = ''; // Reset transform
+            currentDraggedPlayer.style.transform = '';
 
             document.removeEventListener('touchmove', handleTouchMove);
             document.removeEventListener('touchend', handleTouchEnd);
 
-            // Determine drop target
             const touch = e.changedTouches[0];
             const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
 
             if (targetElement) {
                 let dropZone = null;
-                // Find the actual drop zone by traversing up the DOM
                 let current = targetElement;
                 while (current && current !== document.body) {
                     if (current.id === 'titulares-players' ||
@@ -1370,13 +1312,11 @@
                 if (dropZone) {
                     handleTouchDrop(currentDraggedPlayer, dropZone);
                 } else {
-                    // If dropped outside a valid zone, return to original parent
                     if (originalParentOfDraggedPlayer) {
                         originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
                     }
                 }
             } else {
-                // If dropped outside the viewport, return to original parent
                 if (originalParentOfDraggedPlayer) {
                     originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
                 }
@@ -1386,16 +1326,14 @@
         }
 
         function handleTouchDrop(draggedElement, dropZone) {
-            const sourceId = originalParentOfDraggedPlayer.id; // Use the stored original parent
+            const sourceId = originalParentOfDraggedPlayer.id;
             const targetId = dropZone.id;
 
             console.log('Touch Drop event on', targetId, 'for player:', draggedElement.dataset.name);
 
-            // Restricción: No permitir arrastrar entre Titulares y Suplentes
             if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
                 (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
                 console.log('Arrastre no permitido entre Titulares y Suplentes.');
-                // Regresar el elemento a su contenedor original
                 if (originalParentOfDraggedPlayer) {
                     originalParentOfDraggedPlayer.appendChild(draggedElement);
                 }
@@ -1403,16 +1341,13 @@
             }
 
             if (sourceId === targetId) {
-                // If dropped back into the same zone, just reset styles and return
                 return;
             }
 
-            // Remove from original parent (it should still be there)
             if (originalParentOfDraggedPlayer && originalParentOfDraggedPlayer.contains(draggedElement)) {
                 originalParentOfDraggedPlayer.removeChild(draggedElement);
             }
 
-            // Append to the new target zone
             dropZone.appendChild(draggedElement);
 
             updateTeamCounts();
@@ -1425,7 +1360,6 @@
             clarosCountSpan.textContent = clarosPlayers.length;
             oscurosCountSpan.textContent = oscurosPlayers.length;
 
-            // Habilitar botón de guardar equipos si hay 5 jugadores en cada equipo
             if (clarosPlayers.length === 5 && oscurosPlayers.length === 5) {
                 saveTeamsButton.disabled = false;
             } else {
@@ -1436,7 +1370,7 @@
         saveTeamsButton.addEventListener('click', async () => {
             const clarosPlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
             const oscurosPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
-            const matchDateInputVal = teamMatchDateInput.value; // Obtener la fecha del input (YYYY-MM-DD)
+            const matchDateInputVal = teamMatchDateInput.value;
 
             if (!matchDateInputVal) {
                 alert('Por favor, selecciona la fecha del partido.');
@@ -1448,10 +1382,8 @@
                 return;
             }
 
-            // Convertir la fecha del input a un objeto Date local y luego formatear a DD/MM/YYYY
             const formattedDate = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal));
 
-            // Validar si ya existe un partido con la misma fecha
             const existingMatch = allMatchesData.find(match => match[1] === formattedDate);
             if (existingMatch) {
                 alert(`Ya existe un partido registrado para la fecha ${formattedDate}. Por favor, elige otra fecha.`);
@@ -1459,7 +1391,6 @@
             }
 
             try {
-                // Generar un nuevo ID de partido
                 const maxIdNum = allMatchesData.reduce((max, m) => {
                     const num = parseInt(m[0]?.replace('P', '') || 0);
                     return Math.max(max, num);
@@ -1468,12 +1399,12 @@
 
                 const newMatchRow = [
                     newMatchId,
-                    formattedDate, // Usar la fecha del input
+                    formattedDate,
                     clarosPlayers.join(','),
                     oscurosPlayers.join(','),
-                    '', // Resultado vacío inicialmente
-                    '', // Chamigo_Votos vacío inicialmente
-                    ''  // Asistencia_TT_IDs vacío inicialmente
+                    '',
+                    '',
+                    ''
                 ];
 
                 await gapi.client.sheets.spreadsheets.values.append({
@@ -1484,16 +1415,15 @@
                 });
 
                 alert(`Equipos guardados para el partido ${newMatchId} en la fecha ${formattedDate}.`);
-                await loadAllDataAndDisplayAllContent(); // Recargar partidos para que aparezca en el selector
-                // Limpiar la selección de equipos
-                titularesPlayersDiv.innerHTML = ''; // Se recargará con loadAllDataAndDisplayAllContent
-                suplentesPlayersDiv.innerHTML = ''; // Se recargará con loadAllDataAndDisplayAllContent
+                await loadAllDataAndDisplayAllContent();
+                titularesPlayersDiv.innerHTML = '';
+                suplentesPlayersDiv.innerHTML = '';
                 teamClarosDiv.innerHTML = '';
                 teamOscurosDiv.innerHTML = '';
                 clarosCountSpan.textContent = '0';
                 oscurosCountSpan.textContent = '0';
                 saveTeamsButton.disabled = true;
-                teamMatchDateInput.value = ''; // Limpiar la fecha del partido
+                teamMatchDateInput.value = '';
             } catch (err) {
                 console.error('Error al guardar equipos:', err);
                 alert(`Error al guardar equipos: ${err.message}. Revisa la consola.`);
@@ -1504,17 +1434,17 @@
         function populateResultsMatchYearSelect() {
             const years = new Set();
             allMatchesData.forEach(match => {
-                const dateString = match[1]; // Columna 'Fecha'
+                const dateString = match[1];
                 if (dateString) {
                     const date = parseDate(dateString);
                     years.add(date.getFullYear());
                 }
             });
 
-            const sortedYears = Array.from(years).sort((a, b) => b - a); // Ordenar de más reciente a más antiguo
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
 
-            resultsMatchYearSelect.innerHTML = ''; // Limpiar opciones existentes
-            const currentYear = new Date().getFullYear(); // Declarar aquí
+            resultsMatchYearSelect.innerHTML = '';
+            const currentYear = new Date().getFullYear();
             if (sortedYears.length > 0) {
                 sortedYears.forEach(year => {
                     const option = document.createElement('option');
@@ -1537,9 +1467,9 @@
 
         function populateMatchSelects() {
             const selectedYear = resultsMatchYearSelect.value;
-            const selectedMonth = resultsMatchMonthSelect.value; // 'all' o un número de 0 a 11
+            const selectedMonth = resultsMatchMonthSelect.value;
 
-            resultsMatchListDiv.innerHTML = ''; // Limpiar la lista de partidos
+            resultsMatchListDiv.innerHTML = '';
 
             const filteredMatches = allMatchesData.filter(match => {
                 const dateString = match[1];
@@ -1557,7 +1487,7 @@
             const sortedMatches = [...filteredMatches].sort((a, b) => {
                 const dateA = parseDate(a[1]);
                 const dateB = parseDate(b[1]);
-                return dateB - dateA; // Ordenar de más reciente a más antiguo
+                return dateB - dateA;
             });
 
             if (sortedMatches.length === 0) {
@@ -1568,13 +1498,12 @@
             sortedMatches.forEach(match => {
                 const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
                 const matchItem = document.createElement('div');
-                // Aplicar color según el resultado
                 if (resultado && resultado.trim() !== '') {
-                    matchItem.className = 'match-item has-result'; // Verde si hay resultado
+                    matchItem.className = 'match-item has-result';
                 } else {
-                    matchItem.className = 'match-item no-result'; // Rojo si no hay resultado
+                    matchItem.className = 'match-item no-result';
                 }
-                matchItem.dataset.matchId = id; // Guardar el ID del partido
+                matchItem.dataset.matchId = id;
 
                 const clarosNames = clarosIDs.split(',').map(id => {
                     const player = allPlayersData.find(p => p[0] === id);
@@ -1594,17 +1523,13 @@
                 resultsMatchListDiv.appendChild(matchItem);
 
                 matchItem.addEventListener('click', () => {
-                    // Remover clase 'selected' de todos los items
                     document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                    // Añadir clase 'selected' al item clickeado
                     matchItem.classList.add('selected');
 
-                    // Cargar detalles del partido en los inputs
                     const selectedMatch = allMatchesData.find(m => m[0] === id);
                     if (selectedMatch) {
                         const [mId, mFecha, mClarosIDs, mOscurosIDs, mResultado] = selectedMatch;
                         const [day, month, year] = mFecha.split('/');
-                        // Formatear la fecha para el input type="date" (YYYY-MM-DD)
                         matchDateInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                         matchResultSelect.value = mResultado || '';
                     }
@@ -1614,9 +1539,6 @@
 
         // --- NUEVAS FUNCIONES PARA CHAMIGO Y TT ---
 
-        /**
-         * Rellena los selectores de año para Chamigo y TT.
-         */
         function populateChamigoTtMatchYearSelect() {
             const years = new Set();
             allMatchesData.forEach(match => {
@@ -1629,10 +1551,9 @@
 
             const sortedYears = Array.from(years).sort((a, b) => b - a);
 
-            // Limpiar y poblar selectores de año
             [chamigoMatchYearSelect, ttMatchYearSelect].forEach(selectElement => {
                 selectElement.innerHTML = '';
-                const currentYear = new Date().getFullYear(); // Declarar aquí
+                const currentYear = new Date().getFullYear();
                 if (sortedYears.length > 0) {
                     sortedYears.forEach(year => {
                         const option = document.createElement('option');
@@ -1654,19 +1575,11 @@
             });
         }
 
-        /**
-         * Popula las listas de partidos para Chamigo y TT.
-         * @param {HTMLElement} targetListDiv - El div donde se renderizarán los partidos.
-         * @param {HTMLSelectElement} yearSelect - El selector de año.
-         * @param {HTMLSelectElement} monthSelect - El selector de mes.
-         * @param {Function} onMatchClickCallback - La función a llamar cuando se selecciona un partido.
-         * @param {string} tabName - 'chamigo' o 'tt' para deseleccionar correctamente los items.
-         */
         function populateMatchListForTab(targetListDiv, yearSelect, monthSelect, onMatchClickCallback, tabName) {
             const selectedYear = yearSelect.value;
             const selectedMonth = monthSelect.value;
 
-            targetListDiv.innerHTML = ''; // Limpiar la lista de partidos
+            targetListDiv.innerHTML = '';
 
             const filteredMatches = allMatchesData.filter(match => {
                 const dateString = match[1];
@@ -1684,7 +1597,7 @@
             const sortedMatches = [...filteredMatches].sort((a, b) => {
                 const dateA = parseDate(a[1]);
                 const dateB = parseDate(b[1]);
-                return dateB - dateA; // Ordenar de más reciente a más antiguo
+                return dateB - dateA;
             });
 
             if (sortedMatches.length === 0) {
@@ -1696,26 +1609,22 @@
                 const [id, fecha, clarosIDs, oscurosIDs, resultado, chamigoVotos, ttAttendees] = match;
                 const matchItem = document.createElement('div');
                 
-                // Determinar el color según el nombre de la pestaña
                 let shouldBeGreen = false;
                 if (tabName === 'chamigo') {
-                    // Chamigo debe ser verde si chamigoVotos está asignado (no vacío)
                     shouldBeGreen = (chamigoVotos && chamigoVotos.trim() !== '');
                 } else if (tabName === 'tt') {
-                    // TT debe ser verde si ttAttendees está asignado (no vacío)
                     shouldBeGreen = (ttAttendees && ttAttendees.trim() !== '');
                 } else {
-                    // Para otras pestañas (como 'results'), usar la lógica existente (basada en 'resultado')
                     shouldBeGreen = (resultado && resultado.trim() !== '');
                 }
 
                 if (shouldBeGreen) {
-                    matchItem.className = 'match-item has-result'; // Verde si los datos relevantes existen
+                    matchItem.className = 'match-item has-result';
                 } else {
-                    matchItem.className = 'match-item no-result'; // Rojo si los datos relevantes no existen
+                    matchItem.className = 'match-item no-result';
                 }
 
-                matchItem.dataset.matchId = id; // Guardar el ID del partido
+                matchItem.dataset.matchId = id;
 
                 const clarosNames = clarosIDs.split(',').map(id => {
                     const player = allPlayersData.find(p => p[0] === id);
@@ -1735,33 +1644,25 @@
                 targetListDiv.appendChild(matchItem);
 
                 matchItem.addEventListener('click', () => {
-                    // Remover clase 'selected' de todos los items en esta lista específica
                     document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected'));
-                    // Añadir clase 'selected' al item clickeado
                     matchItem.classList.add('selected');
 
-                    onMatchClickCallback(id); // Llama a la función de callback con el ID del partido
+                    onMatchClickCallback(id);
                 });
             });
         }
 
-        // Función unificada para poblar Chamigo y TT match lists
         function populateChamigoTtMatchLists() {
-            // Para Chamigo
             populateMatchListForTab(chamigoMatchListDiv, chamigoMatchYearSelect, chamigoMatchMonthSelect, handleChamigoMatchSelection, 'chamigo');
-            // Para TT
             populateMatchListForTab(ttMatchListDiv, ttMatchYearSelect, ttMatchMonthSelect, handleTtMatchSelection, 'tt');
         }
 
-        // Event listeners para los nuevos filtros de resultados
         resultsMatchYearSelect.addEventListener('change', populateMatchSelects);
         resultsMatchMonthSelect.addEventListener('change', populateMatchSelects);
 
-        // Event listeners para los nuevos filtros de Chamigo
         chamigoMatchYearSelect.addEventListener('change', () => populateChamigoTtMatchLists());
         chamigoMatchMonthSelect.addEventListener('change', () => populateChamigoTtMatchLists());
 
-        // Event listeners para los nuevos filtros de TT
         ttMatchYearSelect.addEventListener('change', () => populateChamigoTtMatchLists());
         ttMatchMonthSelect.addEventListener('change', () => populateChamigoTtMatchLists());
 
@@ -1776,7 +1677,7 @@
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDateInputVal = matchDateInput.value; // Formato YYYY-MM-DD (del input readonly)
+            const matchDateInputVal = matchDateInput.value;
 
             if (!selectedMatchId || !result || !matchDateInputVal) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
@@ -1793,18 +1694,15 @@
                 const currentMatch = allMatchesData[matchIndex];
                 const [id, oldDate, clarosIDsStr, oscurosIDsStr, oldResult, chamigoVotosStr, ttAttendeesStr] = currentMatch;
 
-                // Revertir puntos y PJ si ya había un resultado
-                if (oldResult && oldResult.trim() !== '' && oldResult !== 'Suspendido') { // Solo si había un resultado válido antes
+                if (oldResult && oldResult.trim() !== '' && oldResult !== 'Suspendido') {
                     const playersInOldMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
                     const oldPlayerUpdates = {};
 
-                    // Revertir PJ
                     playersInOldMatchIDs.forEach(pId => {
                         oldPlayerUpdates[pId] = oldPlayerUpdates[pId] || { pointsChange: 0, gamesChange: 0 };
                         oldPlayerUpdates[pId].gamesChange -= 1;
                     });
 
-                    // Revertir Puntos
                     if (oldResult === 'Claros') {
                         (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
                             oldPlayerUpdates[pId].pointsChange -= 3;
@@ -1820,13 +1718,13 @@
                     }
 
                     const batchRevertRequests = [];
-                    for (const playerId of Object.keys(oldPlayerUpdates)) { // Usar Object.keys
+                    for (const playerId of Object.keys(oldPlayerUpdates)) {
                         const playerUpdate = oldPlayerUpdates[playerId];
                         const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
                         if (playerGlobalIndex !== -1) {
                             const currentPlayer = allPlayersData[playerGlobalIndex];
-                            currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange; // Puntos_Totales
-                            currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange; // Partidos_Jugados
+                            currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange;
+                            currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange;
 
                             batchRevertRequests.push({
                                 range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`,
@@ -1845,11 +1743,9 @@
                     }
                 }
 
-                // Actualizar el resultado y la fecha en el array en memoria
-                currentMatch[1] = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal)); // Actualizar fecha a DD/MM/YYYY
-                currentMatch[4] = result; // Actualizar resultado
+                currentMatch[1] = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal));
+                currentMatch[4] = result;
 
-                // Actualizar la hoja de cálculo para el partido
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
                     range: `Partidos!A${matchIndex + 2}:G${matchIndex + 2}`,
@@ -1857,13 +1753,11 @@
                     resource: { values: [currentMatch] },
                 });
 
-                // --- Lógica de Puntos (Aplicar nuevos puntos) ---
                 const clarosPlayers = clarosIDsStr.split(',').filter(Boolean);
                 const oscurosPlayers = oscurosIDsStr.split(',').filter(Boolean);
 
-                let playersToUpdate = {}; // {id: {points: X, games: Y}}
+                let playersToUpdate = {};
 
-                // Incrementar partidos jugados para todos los participantes (solo si el resultado no es "Suspendido")
                 if (result !== 'Suspendido') {
                     [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
                         playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
@@ -1888,18 +1782,17 @@
                     });
                 }
 
-                // Actualizar puntos y partidos jugados en la hoja de Jugadores
                 const updateRequests = [];
-                for (const pId of Object.keys(playersToUpdate)) { // Usar Object.keys
+                for (const pId of Object.keys(playersToUpdate)) {
                     const playerUpdate = playersToUpdate[pId];
                     const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === pId);
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
-                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.points; // Sumar puntos
-                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.games; // Sumar partidos jugados
+                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.points;
+                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.games;
 
                         updateRequests.push({
-                            range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`, // Columnas D (Puntos_Totales) y E (Partidos_Jugados)
+                            range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`,
                             values: [[currentPlayer[3], currentPlayer[4]]]
                         });
                     }
@@ -1918,9 +1811,8 @@
                 alert('Resultado del partido y puntos actualizados exitosamente.');
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
-                // Deseleccionar el partido de la lista
                 document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                await loadAllDataAndDisplayAllContent(); // Recargar todos los datos
+                await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al registrar partido:', err);
                 alert(`Error al registrar partido: ${err.message}. Revisa la consola.`);
@@ -1952,22 +1844,18 @@
                 }
 
                 const matchToDelete = allMatchesData[matchIndex];
-                // Asegurarse de que las variables estén definidas, incluso si las celdas están vacías
                 const [id, date, clarosIDsStr = '', oscurosIDsStr = '', result, chamigoVotosStr = '', ttAttendeesStr = ''] = matchToDelete;
 
-                // --- Revertir Estadísticas de Jugadores ---
                 const playersInMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
-                const playerUpdates = {}; // {playerId: {pointsChange: X, gamesChange: Y, chamigoChange: Z, ttChange: W}}
+                const playerUpdates = {};
 
-                // Revertir Partidos Jugados (PJ) solo si el partido tuvo un resultado válido (no vacío y no 'Suspendido')
                 if (result && result.trim() !== '' && result !== 'Suspendido') {
                     playersInMatchIDs.forEach(pId => {
                         playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].gamesChange -= 1; // Restar 1 PJ
+                        playerUpdates[pId].gamesChange -= 1;
                     });
                 }
 
-                // Revertir Puntos
                 if (result === 'Claros') {
                     (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
                         playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
@@ -1985,7 +1873,6 @@
                     });
                 }
 
-                // Revertir Chamigo
                 if (chamigoVotosStr) {
                     try {
                         const chamigoVotos = JSON.parse(chamigoVotosStr);
@@ -2000,7 +1887,6 @@
                     }
                 }
 
-                // Revertir TT Asistencia
                 if (ttAttendeesStr) {
                     const ttAttendees = ttAttendeesStr.split(',').filter(Boolean);
                     ttAttendees.forEach(pId => {
@@ -2009,17 +1895,16 @@
                     });
                 }
 
-                // Aplicar cambios a la hoja de Jugadores
                 const batchUpdatePlayerRequests = [];
-                for (const playerId of Object.keys(playerUpdates)) { // Usar Object.keys
+                for (const playerId of Object.keys(playerUpdates)) {
                     const playerUpdate = playerUpdates[playerId];
                     const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
-                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange; // Puntos_Totales
-                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange; // Partidos_Jugados
-                        currentPlayer[5] = parseInt(currentPlayer[5] || 0) + playerUpdate.chamigoChange; // Chamigos_Ganados
-                        currentPlayer[6] = parseInt(currentPlayer[6] || 0) + playerUpdate.ttChange; // TT_Asistencias
+                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange;
+                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange;
+                        currentPlayer[5] = parseInt(currentPlayer[5] || 0) + playerUpdate.chamigoChange;
+                        currentPlayer[6] = parseInt(currentPlayer[6] || 0) + playerUpdate.ttChange;
 
                         batchUpdatePlayerRequests.push({
                             range: `Jugadores!D${playerGlobalIndex + 2}:G${playerGlobalIndex + 2}`,
@@ -2038,11 +1923,7 @@
                     });
                 }
 
-                // --- Eliminar Fila del Partido de la Hoja 'Partidos' ---
-                // Sheets API deleteDimension request es 0-indexed para el startIndex
-                // y endIndex es exclusivo (startIndex + count)
-                // Convertir el índice del array (0-based) a índice de fila de la hoja (1-based), y sumar 1 por el encabezado.
-                const sheetRowIndex = matchIndex + 2; // +1 por 1-based, +1 por fila de encabezado
+                const sheetRowIndex = matchIndex + 2;
 
                 if (sheetIds['Partidos'] === undefined) {
                     console.error("Sheet ID for 'Partidos' not found. Cannot delete row.");
@@ -2056,10 +1937,10 @@
                         requests: [{
                             deleteDimension: {
                                 range: {
-                                    sheetId: sheetIds['Partidos'], // Usar el sheetId dinámico para 'Partidos'
+                                    sheetId: sheetIds['Partidos'],
                                     dimension: 'ROWS',
-                                    startIndex: sheetRowIndex - 1, // Sheets API es 0-indexed para startIndex
-                                    endIndex: sheetRowIndex // endIndex es exclusivo
+                                    startIndex: sheetRowIndex - 1,
+                                    endIndex: sheetRowIndex
                                 }
                             }
                         }]
@@ -2070,7 +1951,7 @@
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
                 document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                await loadAllDataAndDisplayAllContent(); // Recargar todos los datos y la UI
+                await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al eliminar partido:', err);
                 alert(`Error al eliminar partido: ${err.message}. Revisa la consola.`);
@@ -2080,7 +1961,6 @@
 
         // --- Funciones de Chamigo ---
 
-        // Función para manejar la selección de un partido en la lista de Chamigo
         function handleChamigoMatchSelection(selectedMatchId) {
             chamigoVotingPlayersDiv.innerHTML = '';
             if (selectedMatchId) {
@@ -2088,7 +1968,7 @@
                 if (match) {
                     const clarosIDs = match[2] ? match[2].split(',') : [];
                     const oscurosIDs = match[3] ? match[3].split(',') : [];
-                    const playersInMatchIDs = [...new Set([...clarosIDs, ...oscurosIDs])]; // Unir y eliminar duplicados
+                    const playersInMatchIDs = [...new Set([...clarosIDs, ...oscurosIDs])];
 
                     const playersInMatch = playersInMatchIDs.map(id => {
                         const player = allPlayersData.find(p => p[0] === id);
@@ -2096,8 +1976,7 @@
                     });
                     renderChamigoVotingPlayers(playersInMatch);
 
-                    // Precargar votos si ya existen
-                    if (match[5]) { // Columna Chamigo_Votos
+                    if (match[5]) {
                         try {
                             const existingVotes = JSON.parse(match[5]);
                             existingVotes.forEach(vote => {
@@ -2149,7 +2028,6 @@
             }
 
             const currentMatch = allMatchesData[matchIndex];
-            // Recopilar votos
             const voteInputs = document.querySelectorAll('.chamigo-vote-input');
             let votes = [];
             voteInputs.forEach(input => {
@@ -2165,32 +2043,29 @@
                 return;
             }
 
-            // Encontrar el/los Chamigo(s) con más votos
             const maxVotes = Math.max(...votes.map(v => v.votos));
             const chamigosDelPartido = votes.filter(v => v.votos === maxVotes);
 
-            // Actualizar la columna Chamigo_Votos del partido
-            currentMatch[5] = JSON.stringify(votes); // Guardar todos los votos como JSON
+            currentMatch[5] = JSON.stringify(votes);
 
             try {
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!F${matchIndex + 2}`, // Columna F (Chamigo_Votos)
+                    range: `Partidos!F${matchIndex + 2}`,
                     valueInputOption: 'RAW',
                     resource: { values: [[currentMatch[5]]] },
                 });
 
-                // Actualizar el contador de Chamigos_Ganados en la hoja de Jugadores
                 const updateRequests = [];
                 chamigosDelPartido.forEach(chamigo => {
                     const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === chamigo.id);
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentChamigos = parseInt(currentPlayer[5] || 0); // Columna Chamigos_Ganados
-                        currentPlayer[5] = currentChamigos + 1; // Incrementar Chamigos_Ganados
+                        const currentChamigos = parseInt(currentPlayer[5] || 0);
+                        currentPlayer[5] = currentChamigos + 1;
 
                         updateRequests.push({
-                            range: `Jugadores!F${playerGlobalIndex + 2}`, // Columna F (Chamigos_Ganados)
+                            range: `Jugadores!F${playerGlobalIndex + 2}`,
                             values: [[currentPlayer[5]]]
                         });
                     }
@@ -2207,9 +2082,8 @@
                 }
 
                 alert('Chamigo(s) registrado(s) exitosamente.');
-                // Limpiar inputs de votos
                 document.querySelectorAll('.chamigo-vote-input').forEach(input => input.value = '0');
-                await loadAllDataAndDisplayAllContent(); // Recargar todos los datos
+                await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al registrar Chamigo:', err);
                 alert(`Error al registrar Chamigo: ${err.message}. Revisa la consola.`);
@@ -2218,17 +2092,14 @@
 
         // --- Funciones de Asistencia TT ---
 
-        // Función para manejar la selección de un partido en la lista de TT
         function handleTtMatchSelection(selectedMatchId) {
             ttAttendancePlayersDiv.innerHTML = '';
             if (selectedMatchId) {
                 const match = allMatchesData.find(m => m[0] === selectedMatchId);
                 if (match) {
-                    // Ahora renderiza TODOS los jugadores activos para TT
                     renderTtAttendancePlayers(allPlayersData.filter(p => p[2] === 'Activo').map(p => ({id: p[0], name: p[1]})));
 
-                    // Precargar asistencia si ya existe para este partido
-                    if (match[6]) { // Columna Asistencia_TT_IDs
+                    if (match[6]) {
                         const existingAttendees = match[6].split(',');
                         existingAttendees.forEach(id => {
                             const checkbox = ttAttendancePlayersDiv.querySelector(`input[data-id="${id}"]`);
@@ -2243,7 +2114,7 @@
             }
         }
 
-        function renderTtAttendancePlayers(playersToRender) { // Recibe la lista de jugadores a mostrar
+        function renderTtAttendancePlayers(playersToRender) {
             ttAttendancePlayersDiv.innerHTML = '';
             if (playersToRender.length === 0) {
                 ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos disponibles para registrar asistencia TT.</p>';
@@ -2278,14 +2149,12 @@
             const currentMatch = allMatchesData[matchIndex];
             const ttAttendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
 
-            // Obtener asistentes TT previos para evitar doble conteo de puntos
             const prevTtAttendees = currentMatch[6] ? currentMatch[6].split(',').filter(Boolean) : [];
             const newAttendeesForPoints = ttAttendees.filter(id => !prevTtAttendees.includes(id));
             const removedAttendeesForPoints = prevTtAttendees.filter(id => !ttAttendees.includes(id));
 
 
-            // Actualizar la columna Asistencia_TT_IDs del partido
-            currentMatch[6] = ttAttendees.join(','); // Columna G (Asistencia_TT_IDs)
+            currentMatch[6] = ttAttendees.join(',');
 
             try {
                 await gapi.client.sheets.spreadsheets.values.update({
@@ -2295,28 +2164,27 @@
                     resource: { values: [[currentMatch[6]]] },
                 });
 
-                // Actualizar el contador de TT_Asistencias en la hoja de Jugadores
                 const updateRequests = [];
-                newAttendeesForPoints.forEach(playerId => { // Solo para los nuevos asistentes
+                newAttendeesForPoints.forEach(playerId => {
                     const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentTtAsistencias = parseInt(currentPlayer[6] || 0); // Columna TT_Asistencias
-                        currentPlayer[6] = currentTtAsistencias + 1; // Incrementar TT_Asistencias
+                        const currentTtAsistencias = parseInt(currentPlayer[6] || 0);
+                        currentPlayer[6] = currentTtAsistencias + 1;
 
                         updateRequests.push({
-                            range: `Jugadores!G${playerGlobalIndex + 2}`, // Columna G (TT_Asistencias)
+                            range: `Jugadores!G${playerGlobalIndex + 2}`,
                             values: [[currentPlayer[6]]]
                         });
                     }
                 });
 
-                removedAttendeesForPoints.forEach(playerId => { // Para los asistentes que se desmarcaron
+                removedAttendeesForPoints.forEach(playerId => {
                     const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
                     if (playerGlobalIndex !== -1) {
                         const currentPlayer = allPlayersData[playerGlobalIndex];
                         const currentTtAsistencias = parseInt(currentPlayer[6] || 0);
-                        currentPlayer[6] = currentTtAsistencias - 1; // Decrementar TT_Asistencias
+                        currentPlayer[6] = currentTtAsistencias - 1;
 
                         updateRequests.push({
                             range: `Jugadores!G${playerGlobalIndex + 2}`,
@@ -2337,9 +2205,7 @@
                 }
 
                 alert('Asistencia al Tercer Tiempo registrada exitosamente.');
-                // Limpiar checkboxes (se recargarán con loadAllDataAndDisplayAllContent)
-                // document.querySelectorAll('.tt-checkbox').forEach(cb => cb.checked = false);
-                await loadAllDataAndDisplayAllContent(); // Recargar todos los datos
+                await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al registrar asistencia TT:', err);
                 alert(`Error al registrar asistencia TT: ${err.message}. Revisa la consola.`);
@@ -2347,44 +2213,17 @@
         });
 
 
-        // --- Funciones de Tabla de Posiciones (para el panel de admin) ---
-        // Estas funciones se han eliminado ya que la lógica se moverá a index.html
-        /*
-        function populateLeaderboardYearSelect() { ... }
-        function setInitialLeaderboardPeriod() { ... }
-        function filterMatchesForLeaderboard(matches, selectedYear, selectedPeriod) { ... }
-        function calculatePlayerStatsForLeaderboard(players, filteredMatches) { ... }
-        function renderLeaderboard() { ... }
-        */
-
         // --- Utilidades ---
-        /**
-         * Parsea una cadena de fecha en formato DD/MM/YYYY a un objeto Date.
-         * Asume la zona horaria local.
-         * @param {string} dateString - La cadena de fecha en formato DD/MM/YYYY.
-         * @returns {Date} El objeto Date.
-         */
         function parseDate(dateString) {
             const [day, month, year] = dateString.split('/').map(Number);
-            return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
+            return new Date(year, month - 1, day);
         }
 
-        /**
-         * Parsea una cadena de fecha en formato YYYY-MM-DD (de input type="date") a un objeto Date.
-         * Asegura que se interprete en la zona horaria local para evitar problemas de desfase.
-         * @param {string} dateString - La cadena de fecha en formato YYYY-MM-DD.
-         * @returns {Date} El objeto Date en la zona horaria local.
-         */
         function parseYYYYMMDDToLocalDate(dateString) {
             const [year, month, day] = dateString.split('-').map(Number);
-            return new Date(year, month - 1, day); // Crea un objeto Date en la zona horaria local
+            return new Date(year, month - 1, day);
         }
 
-        /**
-         * Formatea un objeto Date a una cadena en formato DD/MM/YYYY.
-         * @param {Date} date - El objeto Date a formatear.
-         * @returns {string} La cadena de fecha en formato DD/MM/YYYY.
-         */
         function formatDateToDDMMYYYY(date) {
             const dd = String(date.getDate()).padStart(2, '0');
             const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -2395,36 +2234,60 @@
 
         // --- Inicialización ---
         authorizeButton.addEventListener('click', handleAuthClick);
-        signoutButtonSidebar.addEventListener('click', handleSignoutClick); // Asignar handler al botón de cerrar sesión (desktop)
-        signoutButtonMobileSidebar.addEventListener('click', handleSignoutClick); // Asignar handler al botón de cerrar sesión (mobile)
-        deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler); // Asignar handler al nuevo botón
+        signoutButtonSidebar.addEventListener('click', handleSignoutClick);
+        signoutButtonMobileSidebar.addEventListener('click', handleSignoutClick);
+        deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler);
 
-        // Event Listeners para el menú lateral
         hamburgerButton.addEventListener('click', toggleSideMenu);
         closeSideMenuButton.addEventListener('click', toggleSideMenu);
-        // El overlay solo cierra el menú si es mobile
         overlay.addEventListener('click', () => {
             if (window.innerWidth < 768) {
                 toggleSideMenu();
             }
         });
 
-        // Los Event Listeners para los selectores de la tabla de posiciones se han eliminado
-        /*
-        leaderboardYearSelect.addEventListener('change', renderLeaderboard);
-        leaderboardPeriodSelect.addEventListener('change', renderLeaderboard);
-        leaderboardCriterionSelect.addEventListener('change', renderLeaderboard);
-        */
+        // Evento para manejar el redimensionamiento de la ventana
+        window.addEventListener('resize', () => {
+            // Solo ajustar la visibilidad de la barra lateral si está autenticado
+            if (gapi.client.getToken() !== null) {
+                if (window.innerWidth >= 768) {
+                    sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
+                    sideMenu.classList.add('open'); // Asegurarse de que tenga 'open' para visibilidad
+                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
+                    overlay.classList.remove('open'); // Ocultar overlay en desktop
+                    document.body.classList.remove('overflow-hidden'); // Restablecer el scroll
+                } else {
+                    // Si se redimensiona a móvil
+                    // Si la barra lateral estaba visible (estado de escritorio), ocultarla y mostrar hamburguesa
+                    if (sideMenu.classList.contains('open')) { // Si estaba abierta (por desktop)
+                        sideMenu.classList.remove('open'); // Cerrarla para móvil
+                        overlay.classList.remove('open');
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                    // Mostrar hamburguesa si el menú está cerrado en mobile
+                    hamburgerButton.classList.remove('hidden');
+                }
+            } else {
+                // Si no está autenticado, asegurar que todo permanezca oculto en cualquier redimensionamiento
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.add('hidden');
+                overlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        });
+
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
-            // Asegurarse de que el menú lateral y el botón de hamburguesa estén ocultos al inicio
-            sideMenu.classList.add('hidden');
+            // Asegurarse de que el botón de hamburguesa y el menú lateral estén ocultos al inicio
             hamburgerButton.classList.add('hidden');
-            signoutButtonMobileSidebar.classList.add('hidden'); // Ocultar también el botón de cerrar sesión móvil
-            signoutButtonSidebar.classList.add('hidden'); // Ocultar también el botón de cerrar sesión de escritorio
+            sideMenu.classList.add('hidden'); // Explicitly hide sidebar on load
+            sideMenu.classList.remove('open'); // Ensure it's not open
+            signoutButtonMobileSidebar.classList.add('hidden');
+            signoutButtonSidebar.classList.add('hidden');
+            adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
 
-            // Cargar las librerías de Google
             gapiLoaded();
             const script = document.createElement('script');
             script.src = 'https://accounts.google.com/gsi/client';
