@@ -207,6 +207,69 @@
         .highlighted {
             background-color: #e0e7ff; /* indigo-100 */
         }
+
+        /* Styles for the soccer field */
+        #soccer-field-container {
+            position: relative;
+            width: 100%;
+            padding-top: 150%; /* Aspect ratio for a vertical field (e.g., 2:3) */
+            background-image: url('https://placehold.co/600x900/0f8d48/ffffff?text=Cancha+de+Fútbol'); /* Placeholder image for soccer field */
+            background-size: cover;
+            background-position: center;
+            border-radius: 0.5rem; /* rounded-lg */
+            overflow: hidden; /* Ensure players stay within bounds */
+            margin-bottom: 1.5rem; /* mb-6 */
+        }
+
+        .player-marker {
+            position: absolute;
+            width: 40px; /* Tamaño del marcador de jugador */
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.8); /* Fondo blanco semitransparente */
+            border-radius: 50%; /* Forma circular */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem; /* text-xs */
+            font-weight: bold;
+            text-align: center;
+            color: #1a202c; /* text-gray-900 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transform: translate(-50%, -50%); /* Centrar el marcador en la posición */
+            border: 2px solid; /* Border for team color */
+            padding: 2px; /* Inner padding for text */
+            white-space: nowrap; /* Prevent text wrapping */
+            overflow: hidden; /* Hide overflow text */
+            text-overflow: ellipsis; /* Add ellipsis for overflow text */
+        }
+
+        .player-marker.claros {
+            border-color: #4299e1; /* blue-500 */
+            background-color: rgba(66, 153, 225, 0.8); /* blue-500 with transparency */
+            color: white;
+        }
+
+        .player-marker.oscuros {
+            border-color: #e53e3e; /* red-500 */
+            background-color: rgba(229, 62, 62, 0.8); /* red-500 with transparency */
+            color: white;
+        }
+
+        /* Responsive adjustments for player marker size */
+        @media (min-width: 640px) { /* sm breakpoint */
+            .player-marker {
+                width: 50px;
+                height: 50px;
+                font-size: 0.875rem; /* text-sm */
+            }
+        }
+        @media (min-width: 768px) { /* md breakpoint */
+            .player-marker {
+                width: 60px;
+                height: 60px;
+                font-size: 1rem; /* text-base */
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col md:flex-row p-4 md:p-0">
@@ -518,6 +581,12 @@
         <!-- Content for Fixture -->
         <div id="fixture-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Detalles del Partido</h2>
+            
+            <!-- Soccer Field Container -->
+            <div id="soccer-field-container" class="hidden">
+                <!-- Players will be dynamically added here -->
+            </div>
+
             <!-- Match details will be loaded here -->
             <p id="fixture-loading-message" class="loading-message col-span-full">
                 <span class="loading-spinner"></span>Cargando detalles del partido...
@@ -1309,9 +1378,13 @@
             const fixtureMonthSelect = document.getElementById('fixture-month-select');
             const loadingMessage = document.getElementById('fixture-loading-message');
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
+            const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
 
             fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
             fixtureDetailsDisplay.classList.add('hidden'); // Hide details when re-rendering cards
+            soccerFieldContainer.classList.add('hidden'); // Hide soccer field
+            soccerFieldContainer.innerHTML = ''; // Clear players from field
+
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
 
@@ -1352,9 +1425,12 @@
         function renderFixtureDetails(matchId) {
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const loadingMessage = document.getElementById('fixture-loading-message');
+            const soccerFieldContainer = document.getElementById('soccer-field-container');
 
             loadingMessage.classList.remove('hidden');
             fixtureDetailsDisplay.classList.add('hidden');
+            soccerFieldContainer.classList.add('hidden'); // Hide field while loading
+            soccerFieldContainer.innerHTML = ''; // Clear existing players
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando detalles del partido...`;
             
             const selectedMatch = allMatchesData.find(match => match[0] === matchId);
@@ -1405,6 +1481,52 @@
                 chamigos = ['No definido'];
             }
 
+            // Render players on the field
+            // Define positions for 5 players on each side (relative to field container)
+            // Claros (bottom half of the field)
+            const clarosPositions = [
+                { top: '75%', left: '20%' },
+                { top: '85%', left: '40%' },
+                { top: '70%', left: '50%' },
+                { top: '85%', left: '60%' },
+                { top: '75%', left: '80%' }
+            ];
+            // Oscuros (top half of the field)
+            const oscurosPositions = [
+                { top: '25%', left: '20%' },
+                { top: '15%', left: '40%' },
+                { top: '30%', left: '50%' },
+                { top: '15%', left: '60%' },
+                { top: '25%', left: '80%' }
+            ];
+
+            // Clear previous players
+            soccerFieldContainer.innerHTML = '';
+
+            // Add Claros players
+            clarosPlayers.slice(0, 5).forEach((playerName, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.classList.add('player-marker', 'claros');
+                playerDiv.textContent = playerName.split(' ')[0]; // Show only first name
+                playerDiv.style.top = clarosPositions[index].top;
+                playerDiv.style.left = clarosPositions[index].left;
+                soccerFieldContainer.appendChild(playerDiv);
+            });
+
+            // Add Oscuros players
+            oscurosPlayers.slice(0, 5).forEach((playerName, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.classList.add('player-marker', 'oscuros');
+                playerDiv.textContent = playerName.split(' ')[0]; // Show only first name
+                playerDiv.style.top = oscurosPositions[index].top;
+                playerDiv.style.left = oscurosPositions[index].left;
+                soccerFieldContainer.appendChild(playerDiv);
+            });
+
+            // Show soccer field
+            soccerFieldContainer.classList.remove('hidden');
+
+            // Update details lists
             document.getElementById('claros-players-list').innerHTML = clarosPlayers.length > 0 ? clarosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
             document.getElementById('oscuros-players-list').innerHTML = oscurosPlayers.length > 0 ? oscurosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
             document.getElementById('winner-team').textContent = winnerTeam;
