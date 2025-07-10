@@ -20,7 +20,7 @@
         table {
             @apply min-w-full bg-white rounded-lg shadow-md;
         }
-        /* Encabezados de tabla: centrado por defecto, Jugador a la izquierda */
+        /* Encabezados de tabla: centrado por defecto */
         th {
             @apply py-3 px-3 text-center; /* Reducido padding para mejor ajuste en pantallas pequeñas */
         }
@@ -59,6 +59,11 @@
         }
         tbody td {
             color: #4a5568; /* text-gray-600 */
+        }
+
+        /* Custom class to disable horizontal overflow */
+        .overflow-x-auto-off {
+            overflow-x: hidden;
         }
 
         /* --- Estilos para el menú lateral responsivo --- */
@@ -648,6 +653,8 @@
             const selectedYear = document.getElementById(yearSelectId).value;
             const selectedPeriod = document.getElementById(periodSelectId).value;
 
+            console.log(`[getFilteredMatches] Called with Year: ${selectedYear}, Period: ${selectedPeriod}`); // Debug log
+
             return allMatchesData.filter(match => {
                 const dateString = match[1]; // Fecha en formato DD/MM/YYYY
                 if (!dateString) return false;
@@ -675,6 +682,7 @@
         // --- Centralized Stats Calculation ---
         function calculateStatsForPeriod(yearSelectId, periodSelectId) {
             const filteredMatches = getFilteredMatches(yearSelectId, periodSelectId);
+            console.log(`[calculateStatsForPeriod] Filtered matches count: ${filteredMatches.length}`); // Debug log
             
             const playerStats = {};
             // Initialize all active players
@@ -793,7 +801,7 @@
                 if (player.ausentes < 0) player.ausentes = 0; // Ensure it's not negative
             });
 
-            return {
+            const result = {
                 players: Object.values(playerStats).filter(player => player.name), // Filter out any invalid player entries
                 teamStats: {
                     clarosWins,
@@ -803,6 +811,8 @@
                     totalPJMatches
                 }
             };
+            console.log('[calculateStatsForPeriod] Calculated Result:', result); // Debug log
+            return result;
         }
 
 
@@ -1046,12 +1056,21 @@
             loadingMessage.classList.remove('hidden'); // Ensure loading message is visible initially
             loadingMessage.textContent = 'Cargando estadísticas de equipos...';
 
+            console.log('[renderEquiposStats] Starting render...'); // Debug log
             const { teamStats } = calculateStatsForPeriod('equipos-year-select', 'equipos-period-select');
+            console.log('[renderEquiposStats] Calculated teamStats:', teamStats); // Debug log
 
             // Always hide loading message after calculation, even if stats are zero
             loadingMessage.classList.add('hidden');
 
-            // Display stats, even if all are zero
+            // If no data for the period, show a specific message instead of cards
+            if (teamStats.totalPJMatches === 0 && teamStats.suspendidos === 0) {
+                equiposStatsDisplay.innerHTML = `<p class="text-gray-500 text-center col-span-full">No hay datos de Equipos disponibles para los filtros seleccionados.</p>`;
+                console.log('[renderEquiposStats] No data found for selected filters.'); // Debug log
+                return;
+            }
+
+            // Display stats, even if some are zero (but total matches exist)
             const statsHtml = `
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center">
                     <span class="text-3xl font-bold">${teamStats.oscurosWins}</span>
@@ -1075,11 +1094,7 @@
                 </div>
             `;
             equiposStatsDisplay.innerHTML = statsHtml;
-
-            // If no data for the period, show a specific message instead of just empty cards
-            if (teamStats.totalPJMatches === 0 && teamStats.suspendidos === 0) {
-                equiposStatsDisplay.innerHTML = `<p class="text-gray-500 text-center col-span-full">No hay datos de Equipos disponibles para los filtros seleccionados.</p>`;
-            }
+            console.log('[renderEquiposStats] Stats rendered successfully.'); // Debug log
         }
 
 
