@@ -266,25 +266,17 @@
 
     <!-- Script de la API de Google -->
     <script async defer src="https://apis.google.com/js/api.js"></script>
-    <!-- REMOVED: <script async defer src="https://accounts.google.com/gsi/client"></script> -->
 
     <script>
-        // ¡IMPORTANTE! Reemplaza 'TU_CLIENT_ID' con tu ID de Cliente de OAuth 2.0
-        // Este CLIENT_ID ya NO es estrictamente necesario para la carga de datos públicos en esta página,
-        // pero se mantiene por si se necesita para otras funcionalidades o para futuras expansiones.
-        const CLIENT_ID = '490772160476-4cmd0dse3b74o65g1n9s1q5itlbjavbb.apps.googleusercontent.com';
+        // ¡IMPORTANTE! Reemplaza 'TU_CLAVE_DE_API_AQUI' con tu Clave de API de Google Cloud Console.
+        // Esta clave es necesaria para acceder a Google Sheets API para hojas públicas sin autenticación de usuario.
+        const API_KEY = 'AIzaSyBw-L_A_P_I_K_E_Y_H_E_R_E_f_u_t_b_o_l_m_a_r_t_e_s'; 
+        
         // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
         // Asegúrate de que esta hoja de cálculo esté compartida públicamente con "Cualquier persona con el enlace puede ver"
-        // para que la aplicación pueda leer los datos sin necesidad de autenticación explícita del usuario.
         const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E';
 
-        // Ámbitos de autorización necesarios (solo lectura para esta página)
-        // Se mantienen los SCOPES, aunque para una hoja pública no son estrictamente necesarios para la lectura.
-        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
-
-        // REMOVED: let tokenClient;
         let gapiInited = false;
-        // REMOVED: let gisInited = false;
         let allPlayersData = []; // Cache de todos los jugadores
         let allMatchesData = []; // Cache de todos los partidos
 
@@ -319,23 +311,17 @@
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
-                    // No se necesita 'apiKey' si la hoja está publicada a la web o es totalmente pública.
-                    // Si tu hoja no es pública y no quieres usar OAuth, necesitarías una API Key aquí.
-                    // Pero como dijiste que funcionaba antes, asumimos que la hoja es pública.
+                    apiKey: API_KEY, // Se usa la clave de API aquí
                     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                    // REMOVED: client_id: CLIENT_ID, // No es necesario para acceso público sin OAuth
-                    // REMOVED: scope: SCOPES, // No es necesario para acceso público sin OAuth
                 });
                 gapiInited = true;
                 handleDataLoadSuccess(); // Cargar datos y mostrar contenido
             } catch (err) {
                 console.error("Error al inicializar gapi.client:", err);
-                loadingMessage.textContent = `Error al inicializar la API de Google: ${err.message || err.error_description || JSON.stringify(err)}. Revisa la consola.`;
+                loadingMessage.textContent = `Error al inicializar la API de Google: ${err.message || err.error_description || JSON.stringify(err)}. Revisa la consola. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
                 loadingMessage.classList.remove('hidden');
             }
         }
-
-        // REMOVED: function gisLoaded() { ... } // Ya no se usa
 
         async function handleDataLoadSuccess() {
             // Este método se llama cuando la API de Google Sheets está lista para ser usada
@@ -708,21 +694,26 @@
         // Evento para manejar el redimensionamiento de la ventana
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 768) {
-                sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
-                sideMenu.classList.add('open'); // Asegurarse de que tenga 'open' para visibilidad
-                hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
-                overlay.classList.remove('open'); // Ocultar overlay en desktop
-                document.body.classList.remove('overflow-hidden'); // Restablecer el scroll
+                // Si gapi está inicializado, asegurar que la barra lateral esté abierta y la hamburguesa oculta
+                if (gapiInited) { 
+                    sideMenu.classList.remove('hidden'); 
+                    sideMenu.classList.add('open'); 
+                    hamburgerButton.classList.add('hidden'); 
+                    overlay.classList.remove('open'); 
+                    document.body.classList.remove('overflow-hidden'); 
+                }
             } else {
                 // Si se redimensiona a móvil
                 // Si la barra lateral estaba visible (estado de escritorio), ocultarla y mostrar hamburguesa
-                if (sideMenu.classList.contains('open')) { // Si estaba abierta (por desktop)
-                    sideMenu.classList.remove('open'); // Cerrarla para móvil
+                if (sideMenu.classList.contains('open')) { 
+                    sideMenu.classList.remove('open'); 
                     overlay.classList.remove('open');
                     document.body.classList.remove('overflow-hidden');
                 }
                 // Mostrar hamburguesa si el menú está cerrado en mobile
-                hamburgerButton.classList.remove('hidden');
+                if (!sideMenu.classList.contains('open')) {
+                    hamburgerButton.classList.remove('hidden');
+                }
             }
         });
 
@@ -732,19 +723,11 @@
             hamburgerButton.classList.add('hidden');
             sideMenu.classList.add('hidden'); // Explicitly hide sidebar on load
             sideMenu.classList.remove('open'); // Ensure it's not open
+            overlay.classList.add('hidden'); // Ensure overlay is hidden
+            document.body.classList.remove('overflow-hidden'); // Ensure no overflow from previous state
 
             // Cargar las librerías de Google
             gapiLoaded();
-            // REMOVED: const script = document.createElement('script'); // Ya no se necesita el script de GSI
-            // REMOVED: script.src = 'https://accounts.google.com/gsi/client';
-            // REMOVED: script.async = true;
-            // REMOVED: script.defer = true;
-            // REMOVED: script.onload = gisLoaded;
-            // REMOVED: document.head.appendChild(script);
-
-            // populateYearSelect() se llama ahora dentro de handleDataLoadSuccess
-            // renderLeaderboard() se llama ahora dentro de handleDataLoadSuccess
-            // setupTabNavigation() se llama ahora dentro de handleDataLoadSuccess
         });
     </script>
 </body>
