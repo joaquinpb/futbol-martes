@@ -1746,10 +1746,10 @@
                             const resultItem = document.createElement('div');
                             resultItem.classList.add('p-2', 'cursor-pointer', 'hover:bg-gray-100');
                             resultItem.textContent = player[1];
-                            resultItem.dataset.playerId = player[0];
+                            resultItem.dataset.playerId = player[0]; // Store player ID
                             resultItem.addEventListener('click', () => {
                                 playerSearchInput.value = player[1];
-                                selectedPlayerIdInput.value = player.dataset.playerId;
+                                selectedPlayerIdInput.value = resultItem.dataset.playerId; // Corrected: use resultItem.dataset.playerId
                                 playerResultsDiv.classList.add('hidden');
                                 renderIndividualStatsTable();
                             });
@@ -1814,7 +1814,7 @@
 
             // Render TOTAL row first
             const totalStats = playerStatsData.stats.overallTotal;
-            let totalRowHTML = `
+            let tableHTML = `
                 <tr class="bg-indigo-100 font-bold text-indigo-800">
                     <td class="py-3 px-3 text-center">TOTAL</td>
                     <td class="py-3 px-3 text-center">N/A</td>
@@ -1829,7 +1829,6 @@
                     <td class="py-3 px-3 text-center">${totalStats.ausentes}</td>
                 </tr>
             `;
-            individualStatsTableBody.innerHTML += totalRowHTML;
 
             // Render stats grouped by year and period
             const sortedYears = Object.keys(playerStatsData.stats.years).sort((a, b) => b - a); // Descending year
@@ -1837,55 +1836,82 @@
             sortedYears.forEach(year => {
                 const yearStats = playerStatsData.stats.years[year];
                 
-                // Determine if Apertura or Clausura has data for this year
-                const hasAperturaData = yearStats.apertura.pj > 0;
-                const hasClausuraData = yearStats.clausura.pj > 0;
+                // Only render year header and details if there's any data for this year
+                // Check if the player has any PJ in Apertura or Clausura for this specific year
+                const hasAnyPJInYear = yearStats.apertura.pj > 0 || yearStats.clausura.pj > 0;
 
-                // Only render year header if there's any data for this year
-                if (hasAperturaData || hasClausuraData) {
-                    individualStatsTableBody.innerHTML += `
-                        <tr class="bg-gray-200 font-semibold text-gray-700">
+                if (hasAnyPJInYear) {
+                    tableHTML += `
+                        <tr class="bg-gray-200 font-semibold text-gray-700 cursor-pointer toggle-year-button" data-year="${year}">
                             <td class="py-3 px-3 text-center">${year}</td>
-                            <td class="py-3 px-3 text-center" colspan="10"></td> <!-- Spanning columns -->
+                            <td class="py-3 px-3 text-center" colspan="9"></td> <!-- Spanning columns for year -->
+                            <td class="py-3 px-3 text-center"><i class="fas fa-plus-square toggle-icon" data-year="${year}"></i></td>
                         </tr>
                     `;
+
+                    // Start a new tbody for the collapsible content of this year
+                    // By default, it's hidden (grouped)
+                    tableHTML += `<tbody id="year-details-${year}" class="hidden">`;
+
+                    // Always render Apertura row, showing 0s if no data
+                    const aperturaStats = yearStats.apertura;
+                    tableHTML += `
+                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-3 text-center"></td>
+                            <td class="py-3 px-3 text-center">Apertura</td>
+                            <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
+                            <td class="py-3 px-3 text-center">${aperturaStats.pg}</td>
+                            <td class="py-3 px-3 text-center">${aperturaStats.pe}</td>
+                            <td class="py-3 px-3 text-center">${aperturaStats.pp}</td>
+                            <td class="py-3 px-3 text-center">${aperturaStats.pj}</td>
+                            <td class="py-3 px-3 text-center">${aperturaStats.efectividad}%</td>
+                            <td class="py-3 px-3 text-center">${aperturaStats.chamigos}</td>
+                            <td class="py-3 px-3 text-center">${aperturaStats.tt}</td>
+                            <td class="py-3 px-3 text-center">${aperturaStats.ausentes}</td>
+                        </tr>
+                    `;
+
+                    // Always render Clausura row, showing 0s if no data
+                    const clausuraStats = yearStats.clausura;
+                    tableHTML += `
+                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-3 text-center"></td>
+                            <td class="py-3 px-3 text-center">Clausura</td>
+                            <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
+                            <td class="py-3 px-3 text-center">${clausuraStats.pg}</td>
+                            <td class="py-3 px-3 text-center">${clausuraStats.pe}</td>
+                            <td class="py-3 px-3 text-center">${clausuraStats.pp}</td>
+                            <td class="py-3 px-3 text-center">${clausuraStats.pj}</td>
+                            <td class="py-3 px-3 text-center">${clausuraStats.efectividad}%</td>
+                            <td class="py-3 px-3 text-center">${clausuraStats.chamigos}</td>
+                            <td class="py-3 px-3 text-center">${clausuraStats.tt}</td>
+                            <td class="py-3 px-3 text-center">${clausuraStats.ausentes}</td>
+                        </tr>
+                    `;
+                    tableHTML += `</tbody>`; // Close tbody for the year details
                 }
+            });
 
-                // Always render Apertura row, showing 0s if no data
-                const aperturaStats = yearStats.apertura;
-                individualStatsTableBody.innerHTML += `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-3 text-center"></td>
-                        <td class="py-3 px-3 text-center">Apertura</td>
-                        <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
-                        <td class="py-3 px-3 text-center">${aperturaStats.pg}</td>
-                        <td class="py-3 px-3 text-center">${aperturaStats.pe}</td>
-                        <td class="py-3 px-3 text-center">${aperturaStats.pp}</td>
-                        <td class="py-3 px-3 text-center">${aperturaStats.pj}</td>
-                        <td class="py-3 px-3 text-center">${aperturaStats.efectividad}%</td>
-                        <td class="py-3 px-3 text-center">${aperturaStats.chamigos}</td>
-                        <td class="py-3 px-3 text-center">${aperturaStats.tt}</td>
-                        <td class="py-3 px-3 text-center">${aperturaStats.ausentes}</td>
-                    </tr>
-                `;
+            individualStatsTableBody.innerHTML = tableHTML;
 
-                // Always render Clausura row, showing 0s if no data
-                const clausuraStats = yearStats.clausura;
-                individualStatsTableBody.innerHTML += `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-3 text-center"></td>
-                        <td class="py-3 px-3 text-center">Clausura</td>
-                        <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
-                        <td class="py-3 px-3 text-center">${clausuraStats.pg}</td>
-                        <td class="py-3 px-3 text-center">${clausuraStats.pe}</td>
-                        <td class="py-3 px-3 text-center">${clausuraStats.pp}</td>
-                        <td class="py-3 px-3 text-center">${clausuraStats.pj}</td>
-                        <td class="py-3 px-3 text-center">${clausuraStats.efectividad}%</td>
-                        <td class="py-3 px-3 text-center">${clausuraStats.chamigos}</td>
-                        <td class="py-3 px-3 text-center">${clausuraStats.tt}</td>
-                        <td class="py-3 px-3 text-center">${clausuraStats.ausentes}</td>
-                    </tr>
-                `;
+            // Add event listeners for toggle buttons
+            document.querySelectorAll('.toggle-year-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const year = event.currentTarget.dataset.year;
+                    const yearDetailsTbody = document.getElementById(`year-details-${year}`);
+                    const toggleIcon = event.currentTarget.querySelector('.toggle-icon');
+
+                    if (yearDetailsTbody) {
+                        yearDetailsTbody.classList.toggle('hidden');
+                        if (yearDetailsTbody.classList.contains('hidden')) {
+                            toggleIcon.classList.remove('fa-minus-square');
+                            toggleIcon.classList.add('fa-plus-square');
+                        } else {
+                            toggleIcon.classList.remove('fa-plus-square');
+                            toggleIcon.classList.add('fa-minus-square');
+                        }
+                    }
+                });
             });
 
             loadingMessage.classList.add('hidden');
