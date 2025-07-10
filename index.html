@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Carga de Font Awesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Carga de Chart.js para gráficos -->
+    <!-- Carga de Chart.js para gráficos (aunque no se use directamente para perfiles individuales, se mantiene por si se usa en el futuro) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Fuente Inter para una mejor legibilidad */
@@ -182,16 +182,6 @@
             table-layout: auto;
         }
 
-        /* Style for clickable player names */
-        .player-name-clickable {
-            cursor: pointer;
-            color: #4f46e5; /* Indigo-600 */
-            font-weight: 500; /* Medium font weight */
-        }
-        .player-name-clickable:hover {
-            text-decoration: underline;
-        }
-
         /* Style for loading messages */
         .loading-message {
             display: flex;
@@ -228,12 +218,12 @@
         </div>
         <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-content"><i class="fas fa-trophy mr-2"></i>Tabla de Posiciones</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-content"><i class="fas fa-handshake mr-2"></i>Chamigo</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-content"><i class="fas fa-clock mr-2"></i>TT</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-content"><i class="fas fa-star mr-2"></i>Chamigo</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-content"><i class="fas fa-beer mr-2"></i>TT</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="presentismo-content"><i class="fas fa-check-circle mr-2"></i>Presentismo</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="ausentismo-content"><i class="fas fa-times-circle mr-2"></i>Ausentismo</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="estadisticas-content"><i class="fas fa-chart-bar mr-2"></i>Estadísticas</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="equipos-content"><i class="fas fa-users mr-2"></i>Equipos</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="equipos-content"><i class="fas fa-futbol mr-2"></i>Equipos</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="fixture-content"><i class="fas fa-calendar-alt mr-2"></i>Fixture</button>
         </div>
     </nav>
@@ -467,30 +457,6 @@
                 </div>
             </div>
             
-            <!-- Player Profile Section (hidden by default) -->
-            <div id="player-profile-section" class="hidden bg-gray-50 p-6 rounded-lg shadow-inner mb-6">
-                <button id="back-to-stats-button" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-md mb-4 transition duration-150 ease-in-out">
-                    <i class="fas fa-arrow-left mr-2"></i>Volver a Estadísticas
-                </button>
-                <h3 id="player-profile-name" class="text-3xl font-bold text-indigo-700 mb-4"></h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-lg shadow-sm">
-                        <p class="text-gray-600">Puntos: <span id="profile-points" class="font-semibold text-gray-800"></span></p>
-                        <p class="text-gray-600">Partidos Jugados (PJ): <span id="profile-pj" class="font-semibold text-gray-800"></span></p>
-                        <p class="text-gray-600">Efectividad: <span id="profile-efectividad" class="font-semibold text-gray-800"></span></p>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm">
-                        <p class="text-gray-600">Chamigos: <span id="profile-chamigos" class="font-semibold text-gray-800"></span></p>
-                        <p class="text-gray-600">Asistencia TT: <span id="profile-tt" class="font-semibold text-gray-800"></span></p>
-                        <p class="text-gray-600">Ausentes: <span id="profile-ausentes" class="font-semibold text-gray-800"></span></p>
-                    </div>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm">
-                    <h4 class="text-xl font-semibold text-gray-700 mb-3">Rendimiento en Partidos</h4>
-                    <canvas id="playerStatsChart" width="400" height="200"></canvas>
-                </div>
-            </div>
-
             <div id="estadisticas-table-container" class="overflow-x-auto"> <!-- This one keeps overflow-x-auto -->
                 <p id="estadisticas-loading-message" class="loading-message">
                     <span class="loading-spinner"></span>Cargando estadísticas...
@@ -609,7 +575,6 @@
         let gapiInited = false;
         let allPlayersData = []; // Cache de todos los jugadores
         let allMatchesData = []; // Cache de todos los partidos
-        let playerStatsChartInstance = null; // Para la instancia del gráfico de Chart.js
 
         // Elementos del DOM para el menú lateral
         const hamburgerButton = document.getElementById('hamburger-button');
@@ -628,11 +593,11 @@
         const equiposContent = document.getElementById('equipos-content');
         const fixtureContent = document.getElementById('fixture-content'); // New fixture content
 
-        // Referencias a elementos de la sección de perfil de jugador
-        const playerProfileSection = document.getElementById('player-profile-section');
-        const backToStatsButton = document.getElementById('back-to-stats-button');
-        const estadisticasFilters = document.getElementById('estadisticas-filters');
-        const estadisticasTableContainer = document.getElementById('estadisticas-table-container');
+        // Referencias a elementos de la sección de perfil de jugador (eliminados del DOM, pero las variables se mantienen por si acaso)
+        // const playerProfileSection = document.getElementById('player-profile-section');
+        // const backToStatsButton = document.getElementById('back-to-stats-button');
+        // const estadisticasFilters = document.getElementById('estadisticas-filters');
+        // const estadisticasTableContainer = document.getElementById('estadisticas-table-container');
 
         // --- Funciones de Inicialización de Google API y Carga de Datos ---
 
@@ -773,13 +738,6 @@
             // Remover 'active' de todos los botones y ocultar todos los contenidos
             tabButtons.forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-
-            // Ocultar la sección de perfil de jugador y mostrar filtros/tabla de estadísticas si se vuelve a la pestaña de estadísticas
-            if (clickedButton.dataset.tab === 'estadisticas-content') {
-                playerProfileSection.classList.add('hidden');
-                estadisticasFilters.classList.remove('hidden');
-                estadisticasTableContainer.classList.remove('hidden');
-            }
 
             // Añadir 'active' al botón clicado y mostrar su contenido
             clickedButton.classList.add('active');
@@ -1027,7 +985,7 @@
             rankedPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.points}</td>
                     <td class="py-3 px-3 text-center">${player.efectividad}%</td>
                 `;
@@ -1036,7 +994,6 @@
 
             loadingMessage.classList.add('hidden');
             leaderboardTable.classList.remove('hidden');
-            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de Chamigo ---
@@ -1066,7 +1023,7 @@
             rankedChamigoPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.chamigos}</td>
                 `;
                 chamigoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
@@ -1074,7 +1031,6 @@
 
             loadingMessage.classList.add('hidden');
             chamigoTable.classList.remove('hidden');
-            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de TT ---
@@ -1104,7 +1060,7 @@
             rankedTTPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.tt}</td>
                 `;
                 ttTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
@@ -1112,7 +1068,6 @@
 
             loadingMessage.classList.add('hidden');
             ttTable.classList.remove('hidden');
-            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de Presentismo ---
@@ -1142,7 +1097,7 @@
             rankedPJPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.pj}</td>
                 `;
                 presentismoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
@@ -1150,7 +1105,6 @@
 
             loadingMessage.classList.add('hidden');
             presentismoTable.classList.remove('hidden');
-            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de Ausentismo ---
@@ -1180,7 +1134,7 @@
             rankedAusentePlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.ausentes}</td>
                 `;
                 ausentismoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
@@ -1188,7 +1142,6 @@
 
             loadingMessage.classList.add('hidden');
             ausentismoTable.classList.remove('hidden');
-            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de Estadísticas ---
@@ -1239,7 +1192,7 @@
             rankedEstadisticasPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.points}</td>
                     <td class="py-3 px-3 text-center">${player.pg}</td>
                     <td class="py-3 px-3 text-center">${player.pe}</td>
@@ -1255,7 +1208,6 @@
 
             loadingMessage.classList.add('hidden');
             estadisticasTable.classList.remove('hidden');
-            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Estadísticas de Equipos ---
@@ -1415,129 +1367,6 @@
 
             loadingMessage.classList.add('hidden');
             fixtureDetailsDisplay.classList.remove('hidden');
-        }
-
-        // --- Player Profile Functions ---
-        function showPlayerProfile(playerId) {
-            const player = allPlayersData.find(p => p[0] === playerId);
-            if (!player) {
-                console.error('Jugador no encontrado:', playerId);
-                return;
-            }
-
-            // Calculate stats for the player across all time (total)
-            const { players: allTimePlayersStats } = calculateStatsForPeriod('estadisticas-year-select', 'total');
-            const playerFullStats = allTimePlayersStats.find(p => p.id === playerId);
-
-            if (!playerFullStats) {
-                console.error('Estadísticas completas del jugador no encontradas:', playerId);
-                return;
-            }
-
-            // Hide general stats table and filters
-            estadisticasFilters.classList.add('hidden');
-            estadisticasTableContainer.classList.add('hidden');
-            
-            // Show player profile section
-            playerProfileSection.classList.remove('hidden');
-
-            // Populate player profile details
-            document.getElementById('player-profile-name').textContent = playerFullStats.name;
-            document.getElementById('profile-points').textContent = playerFullStats.points;
-            document.getElementById('profile-pj').textContent = playerFullStats.pj;
-            document.getElementById('profile-efectividad').textContent = `${playerFullStats.efectividad}%`;
-            document.getElementById('profile-chamigos').textContent = playerFullStats.chamigos;
-            document.getElementById('profile-tt').textContent = playerFullStats.tt;
-            document.getElementById('profile-ausentes').textContent = playerFullStats.ausentes;
-
-            renderPlayerStatsChart(playerFullStats);
-        }
-
-        function renderPlayerStatsChart(playerStats) {
-            const ctx = document.getElementById('playerStatsChart').getContext('2d');
-
-            // Destroy existing chart instance if it exists
-            if (playerStatsChartInstance) {
-                playerStatsChartInstance.destroy();
-            }
-
-            playerStatsChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Puntos', 'PG', 'PE', 'PP'],
-                    datasets: [{
-                        label: 'Rendimiento',
-                        data: [playerStats.points, playerStats.pg, playerStats.pe, playerStats.pp],
-                        backgroundColor: [
-                            'rgba(79, 70, 229, 0.6)', // Indigo-600
-                            'rgba(34, 197, 94, 0.6)', // Green-500
-                            'rgba(234, 179, 8, 0.6)', // Yellow-500
-                            'rgba(239, 68, 68, 0.6)'  // Red-500
-                        ],
-                        borderColor: [
-                            'rgba(79, 70, 229, 1)',
-                            'rgba(34, 197, 94, 1)',
-                            'rgba(234, 179, 8, 1)',
-                            'rgba(239, 68, 68, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#4a5568' // gray-600
-                            },
-                            grid: {
-                                color: '#e2e8f0' // gray-300
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                color: '#4a5568' // gray-600
-                            },
-                            grid: {
-                                display: false
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        title: {
-                            display: true,
-                            text: 'Estadísticas Clave',
-                            color: '#1a202c', // gray-900
-                            font: {
-                                size: 16
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function addPlayerNameClickListeners() {
-            document.querySelectorAll('.player-name-clickable').forEach(element => {
-                element.removeEventListener('click', handlePlayerNameClick); // Prevent duplicate listeners
-                element.addEventListener('click', handlePlayerNameClick);
-            });
-        }
-
-        function handlePlayerNameClick(event) {
-            const playerId = event.target.dataset.playerId;
-            // First, switch to the 'estadisticas-content' tab
-            const estadisticasTabButton = document.querySelector('.tab-button[data-tab="estadisticas-content"]');
-            if (estadisticasTabButton) {
-                estadisticasTabButton.click(); // Simulate click to activate tab
-            }
-            // Then, show the player profile
-            showPlayerProfile(playerId);
         }
 
         // --- Utilidades ---
@@ -1703,13 +1532,6 @@
             if (window.innerWidth < 768) {
                 toggleSideMenu();
             }
-        });
-
-        backToStatsButton.addEventListener('click', () => {
-            playerProfileSection.classList.add('hidden');
-            estadisticasFilters.classList.remove('hidden');
-            estadisticasTableContainer.classList.remove('hidden');
-            renderEstadisticasTable(); // Re-render the main stats table
         });
 
         // Evento para manejar el redimensionamiento de la ventana
