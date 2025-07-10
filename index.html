@@ -465,29 +465,9 @@
         <!-- Content for Fixture -->
         <div id="fixture-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Detalles del Partido</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div>
-                    <label for="fixture-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                    <select id="fixture-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                        </select>
-                </div>
-                <div>
-                    <label for="fixture-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
-                    <select id="fixture-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                        <option value="apertura">Apertura</option>
-                        <option value="clausura">Clausura</option>
-                        <option value="total">Totales</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="fixture-match-select" class="block text-sm font-medium text-gray-700">Seleccionar Partido:</label>
-                    <select id="fixture-match-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                        </select>
-                </div>
-            </div>
+            <!-- Match details will be loaded here -->
             <p id="fixture-loading-message" class="text-gray-500 text-center col-span-full">Cargando detalles del partido...</p>
-            <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 hidden">
-                <!-- Match details will be loaded here -->
+            <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 mb-6 hidden">
                 <div class="bg-blue-100 p-4 rounded-lg shadow-sm">
                     <h3 class="font-semibold text-blue-800 mb-2">Jugadores de Claros</h3>
                     <ul id="claros-players-list" class="list-disc list-inside text-gray-700"></ul>
@@ -507,6 +487,24 @@
                 <div class="bg-purple-100 p-4 rounded-lg shadow-sm">
                     <h3 class="font-semibold text-purple-800 mb-2">Chamigo/s</h3>
                     <ul id="chamigos-list" class="list-disc list-inside text-gray-700"></ul>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-semibold text-gray-700 mb-4">Partidos del Mes</h3>
+            <div id="fixture-matches-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <!-- Match cards will be loaded here -->
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="fixture-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="fixture-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="fixture-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
+                    <select id="fixture-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        </select>
                 </div>
             </div>
         </div>
@@ -645,7 +643,7 @@
                 button.addEventListener('click', handleTabButtonClick);
             });
 
-            // Llenar y seleccionar automáticamente año y período para todas las secciones
+            // Llenar y seleccionar automáticamente año y período/mes para todas las secciones
             populateAndSetCurrentPeriod('leaderboard-year-select', 'leaderboard-period-select');
             populateAndSetCurrentPeriod('chamigo-year-select', 'chamigo-period-select');
             populateAndSetCurrentPeriod('tt-year-select', 'tt-period-select');
@@ -653,7 +651,11 @@
             populateAndSetCurrentPeriod('ausentismo-year-select', 'ausentismo-period-select');
             populateAndSetCurrentPeriod('estadisticas-year-select', 'estadisticas-period-select');
             populateAndSetCurrentPeriod('equipos-year-select', 'equipos-period-select');
-            populateAndSetCurrentPeriod('fixture-year-select', 'fixture-period-select'); // New fixture filters
+            
+            // For fixture, we need to populate months instead of periods
+            populateYearSelects('fixture-year-select');
+            populateMonthSelects('fixture-month-select');
+
 
             // Activar la pestaña por defecto al cargar
             const defaultTabButton = document.querySelector('.tab-button[data-tab="leaderboard-content"]');
@@ -707,7 +709,7 @@
             } else if (targetTabId === 'equipos-content') {
                 renderEquiposStats();
             } else if (targetTabId === 'fixture-content') { // New fixture content rendering
-                populateFixtureMatchSelect(); // Populate matches first
+                renderFixtureMatchCards(); // Populate matches cards
             }
         }
 
@@ -726,12 +728,12 @@
             }
         }
 
-        // --- Helper Function: Filter Matches by Year and Period ---
-        function getFilteredMatches(yearSelectId, periodSelectId) {
+        // --- Helper Function: Filter Matches by Year and Period/Month ---
+        function getFilteredMatches(yearSelectId, periodOrMonthSelectId, isMonthFilter = false) {
             const selectedYear = document.getElementById(yearSelectId).value;
-            const selectedPeriod = document.getElementById(periodSelectId).value;
+            const selectedPeriodOrMonth = document.getElementById(periodOrMonthSelectId).value;
 
-            console.log(`[getFilteredMatches] Called with Year: ${selectedYear}, Period: ${selectedPeriod}`); // Debug log
+            console.log(`[getFilteredMatches] Called with Year: ${selectedYear}, Period/Month: ${selectedPeriodOrMonth}, IsMonthFilter: ${isMonthFilter}`); // Debug log
 
             return allMatchesData.filter(match => {
                 const dateString = match[1]; // Fecha en formato DD/MM/YYYY
@@ -745,21 +747,27 @@
 
                 const yearMatch = selectedYear === 'all' || matchYear === parseInt(selectedYear);
 
-                let periodMatch = false;
-                if (selectedPeriod === 'total') {
-                    periodMatch = true; // Todos los meses
-                } else if (selectedPeriod === 'apertura') {
-                    periodMatch = matchMonth >= 0 && matchMonth <= 5; // Enero (0) a Junio (5)
-                } else if (selectedPeriod === 'clausura') {
-                    periodMatch = matchMonth >= 6 && matchMonth <= 11; // Julio (6) a Diciembre (11)
+                let periodOrMonthMatch = false;
+                if (isMonthFilter) {
+                    // For month filter
+                    periodOrMonthMatch = selectedPeriodOrMonth === 'all' || matchMonth === (parseInt(selectedPeriodOrMonth) - 1); // Month is 1-indexed in select, 0-indexed in Date
+                } else {
+                    // For period filter (apertura, clausura, total)
+                    if (selectedPeriodOrMonth === 'total') {
+                        periodOrMonthMatch = true; // Todos los meses
+                    } else if (selectedPeriodOrMonth === 'apertura') {
+                        periodOrMonthMatch = matchMonth >= 0 && matchMonth <= 5; // Enero (0) a Junio (5)
+                    } else if (selectedPeriodOrMonth === 'clausura') {
+                        periodOrMonthMatch = matchMonth >= 6 && matchMonth <= 11; // Julio (6) a Diciembre (11)
+                    }
                 }
-                return yearMatch && periodMatch;
+                return yearMatch && periodOrMonthMatch;
             });
         }
 
         // --- Centralized Stats Calculation ---
         function calculateStatsForPeriod(yearSelectId, periodSelectId) {
-            const filteredMatches = getFilteredMatches(yearSelectId, periodSelectId);
+            const filteredMatches = getFilteredMatches(yearSelectId, periodSelectId, false); // Always use period filter here
             console.log(`[calculateStatsForPeriod] Filtered matches count: ${filteredMatches.length}`); // Debug log
             
             const playerStats = {};
@@ -1192,72 +1200,75 @@
         }
 
         // --- Fixture Functions ---
-        function populateFixtureMatchSelect() {
-            const fixtureMatchSelect = document.getElementById('fixture-match-select');
+        function renderFixtureMatchCards() {
+            const fixtureMatchesCardsContainer = document.getElementById('fixture-matches-cards-container');
             const fixtureYearSelect = document.getElementById('fixture-year-select');
-            const fixturePeriodSelect = document.getElementById('fixture-period-select');
-            
-            fixtureMatchSelect.innerHTML = ''; // Clear previous options
+            const fixtureMonthSelect = document.getElementById('fixture-month-select');
+            const loadingMessage = document.getElementById('fixture-loading-message');
+            const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
 
-            const filteredMatches = getFilteredMatches(fixtureYearSelect.id, fixturePeriodSelect.id);
-            console.log(`[populateFixtureMatchSelect] Found ${filteredMatches.length} matches for selection.`);
+            fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
+            fixtureDetailsDisplay.classList.add('hidden'); // Hide details when re-rendering cards
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando partidos...';
+
+            const filteredMatches = getFilteredMatches(fixtureYearSelect.id, fixtureMonthSelect.id, true); // Use month filter
+            console.log(`[renderFixtureMatchCards] Found ${filteredMatches.length} matches for selection.`);
 
             if (filteredMatches.length === 0) {
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'No hay partidos disponibles';
-                fixtureMatchSelect.appendChild(option);
-                fixtureMatchSelect.disabled = true;
-            } else {
-                fixtureMatchSelect.disabled = false;
-                // Sort matches by date descending (most recent first)
-                filteredMatches.sort((a, b) => parseDate(b[1]).getTime() - parseDate(a[1]).getTime());
-
-                filteredMatches.forEach(match => {
-                    const [matchId, date] = match;
-                    const option = document.createElement('option');
-                    option.value = matchId;
-                    option.textContent = `Partido del ${date}`;
-                    fixtureMatchSelect.appendChild(option);
-                });
+                loadingMessage.textContent = 'No hay partidos disponibles para los filtros seleccionados.';
+                return;
             }
-            // Automatically render details for the first match or if no match selected
-            renderFixtureDetails();
+
+            // Sort matches by date descending (most recent first)
+            filteredMatches.sort((a, b) => parseDate(b[1]).getTime() - parseDate(a[1]).getTime());
+
+            filteredMatches.forEach(match => {
+                const [matchId, date, clarosIDsStr, oscurosIDsStr, result] = match;
+                const cardHtml = `
+                    <div class="bg-white p-4 rounded-lg shadow-md cursor-pointer hover:bg-gray-100 transition duration-150 ease-in-out" data-match-id="${matchId}">
+                        <h4 class="font-semibold text-lg text-indigo-700 mb-2">Partido del ${date}</h4>
+                        <p class="text-gray-600">Ganador: ${result || 'No definido'}</p>
+                    </div>
+                `;
+                fixtureMatchesCardsContainer.innerHTML += cardHtml;
+            });
+
+            // Add event listeners to each newly created card
+            fixtureMatchesCardsContainer.querySelectorAll('[data-match-id]').forEach(card => {
+                card.addEventListener('click', (event) => {
+                    const matchId = event.currentTarget.dataset.matchId;
+                    renderFixtureDetails(matchId);
+                });
+            });
+
+            loadingMessage.classList.add('hidden');
+            fixtureMatchesCardsContainer.classList.remove('hidden'); // Ensure container is visible
         }
 
-        function renderFixtureDetails() {
-            const fixtureMatchSelect = document.getElementById('fixture-match-select');
+        function renderFixtureDetails(matchId) {
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const loadingMessage = document.getElementById('fixture-loading-message');
 
             loadingMessage.classList.remove('hidden');
             fixtureDetailsDisplay.classList.add('hidden');
-            fixtureDetailsDisplay.innerHTML = ''; // Clear previous content
-
-            const selectedMatchId = fixtureMatchSelect.value;
-            console.log(`[renderFixtureDetails] Selected Match ID: ${selectedMatchId}`);
-
-            if (!selectedMatchId) {
-                loadingMessage.textContent = 'Selecciona un partido para ver los detalles.';
-                return;
-            }
-
-            const selectedMatch = allMatchesData.find(match => match[0] === selectedMatchId);
+            
+            const selectedMatch = allMatchesData.find(match => match[0] === matchId);
 
             if (!selectedMatch) {
                 loadingMessage.textContent = 'Detalles del partido no encontrados.';
                 return;
             }
 
-            const [matchId, date, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = selectedMatch;
+            const [id, date, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = selectedMatch;
 
             // Helper to get player names from IDs
             const getPlayerNames = (idsString) => {
                 if (!idsString || idsString.trim() === '') return []; // Return empty array for empty string
                 const ids = idsString.split(',').filter(Boolean);
-                return ids.map(id => {
-                    const player = allPlayersData.find(p => p[0] === id);
-                    return player ? player[1] : `ID Desconocido (${id})`;
+                return ids.map(playerId => {
+                    const player = allPlayersData.find(p => p[0] === playerId);
+                    return player ? player[1] : `ID Desconocido (${playerId})`;
                 }).filter(Boolean); // Filter out any null/undefined names
             };
 
@@ -1283,42 +1294,19 @@
                         chamigos = ['No definido'];
                     }
                 } catch (e) {
-                    console.warn('Error al parsear votos de chamigo en el partido', matchId, ':', e);
+                    console.warn('Error al parsear votos de chamigo en el partido', id, ':', e);
                     chamigos = ['Error al cargar Chamigo'];
                 }
             } else {
                 chamigos = ['No definido'];
             }
 
-            const clarosList = clarosPlayers.length > 0 ? clarosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
-            const oscurosList = oscurosPlayers.length > 0 ? oscurosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
-            const ttList = ttAttendees.map(name => `<li>${name}</li>`).join('');
-            const chamigoList = chamigos.map(name => `<li>${name}</li>`).join('');
+            document.getElementById('claros-players-list').innerHTML = clarosPlayers.length > 0 ? clarosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
+            document.getElementById('oscuros-players-list').innerHTML = oscurosPlayers.length > 0 ? oscurosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
+            document.getElementById('winner-team').textContent = winnerTeam;
+            document.getElementById('tt-attendees-list').innerHTML = ttAttendees.map(name => `<li>${name}</li>`).join('');
+            document.getElementById('chamigos-list').innerHTML = chamigos.map(name => `<li>${name}</li>`).join('');
 
-            const detailsHtml = `
-                <div class="bg-blue-100 p-4 rounded-lg shadow-sm">
-                    <h3 class="font-semibold text-blue-800 mb-2">Jugadores de Claros</h3>
-                    <ul class="list-disc list-inside text-gray-700">${clarosList}</ul>
-                </div>
-                <div class="bg-red-100 p-4 rounded-lg shadow-sm">
-                    <h3 class="font-semibold text-red-800 mb-2">Jugadores de Oscuros</h3>
-                    <ul class="list-disc list-inside text-gray-700">${oscurosList}</ul>
-                </div>
-                <div class="bg-green-100 p-4 rounded-lg shadow-sm col-span-full">
-                    <h3 class="font-semibold text-green-800 mb-2">Equipo Ganador</h3>
-                    <p class="text-gray-800 font-medium text-lg">${winnerTeam}</p>
-                </div>
-                <div class="bg-yellow-100 p-4 rounded-lg shadow-sm">
-                    <h3 class="font-semibold text-yellow-800 mb-2">Asistentes al TT</h3>
-                    <ul class="list-disc list-inside text-gray-700">${ttList}</ul>
-                </div>
-                <div class="bg-purple-100 p-4 rounded-lg shadow-sm">
-                    <h3 class="font-semibold text-purple-800 mb-2">Chamigo/s</h3>
-                    <ul class="list-disc list-inside text-gray-700">${chamigoList}</ul>
-                </div>
-            `;
-
-            fixtureDetailsDisplay.innerHTML = detailsHtml;
             loadingMessage.classList.add('hidden');
             fixtureDetailsDisplay.classList.remove('hidden');
         }
@@ -1358,6 +1346,38 @@
                 });
             }
         }
+
+        function populateMonthSelects(selectId) {
+            const monthSelect = document.getElementById(selectId);
+            const months = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+
+            monthSelect.innerHTML = '';
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = 'Todos los Meses';
+            monthSelect.appendChild(allOption);
+
+            months.forEach((monthName, index) => {
+                const option = document.createElement('option');
+                option.value = index + 1; // Month is 1-indexed for value
+                option.textContent = monthName;
+                monthSelect.appendChild(option);
+            });
+
+            // Set current month as default
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1; // getMonth is 0-indexed
+            const monthOption = Array.from(monthSelect.options).find(option => parseInt(option.value) === currentMonth);
+            if (monthOption) {
+                monthSelect.value = currentMonth;
+            } else {
+                monthSelect.value = 'all'; // Fallback if current month is not in options (shouldn't happen)
+            }
+        }
+
 
         function populateAndSetCurrentPeriod(yearSelectId, periodSelectId) {
             populateYearSelects(yearSelectId); // First populate years
@@ -1414,9 +1434,8 @@
         document.getElementById('equipos-period-select').addEventListener('change', renderEquiposStats);
 
         // Event listeners for Fixture
-        document.getElementById('fixture-year-select').addEventListener('change', populateFixtureMatchSelect);
-        document.getElementById('fixture-period-select').addEventListener('change', populateFixtureMatchSelect);
-        document.getElementById('fixture-match-select').addEventListener('change', renderFixtureDetails);
+        document.getElementById('fixture-year-select').addEventListener('change', renderFixtureMatchCards);
+        document.getElementById('fixture-month-select').addEventListener('change', renderFixtureMatchCards);
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
         closeSideMenuButton.addEventListener('click', toggleSideMenu);
