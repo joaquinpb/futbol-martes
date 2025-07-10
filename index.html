@@ -14,6 +14,7 @@
             min-height: 100vh;
             margin: 0;
             padding: 0;
+            display: flex; /* Usar flexbox para el layout principal */
         }
         /* Estilos base para tablas */
         table {
@@ -51,16 +52,16 @@
             color: #4a5568; /* text-gray-600 */
         }
 
-        /* --- Estilos para el menú lateral responsivo (copiado de admin.html) --- */
+        /* --- Estilos para el menú lateral responsivo --- */
         #side-menu {
-            position: fixed;
+            position: fixed; /* Fixed for mobile sliding effect */
             top: 0;
             left: 0;
             height: 100vh;
             width: 256px; /* w-64 */
             background-color: #312e81; /* indigo-800 */
             color: white;
-            transform: translateX(-100%); /* Hidden by default for both mobile and desktop */
+            transform: translateX(-100%); /* Hidden by default for mobile */
             transition: transform 0.3s ease-in-out;
             z-index: 40;
             display: flex; /* Use flex for vertical layout of tabs */
@@ -68,7 +69,7 @@
             padding-top: 1rem; /* Add some padding at the top */
         }
 
-        /* This class will be applied by JS to make it visible */
+        /* This class will be applied by JS to make it visible on mobile */
         #side-menu.open {
             transform: translateX(0);
         }
@@ -126,38 +127,17 @@
             background-color: #4f46e5; /* indigo-600 */
         }
 
+        /* Desktop Styles (min-width: 768px) */
         @media (min-width: 768px) {
             #side-menu {
-                width: 256px; /* Wider for desktop */
-                background-color: #312e81; /* indigo-800 - Corrected color */
-                color: white; /* Ensure text remains white on dark background */
+                position: relative; /* Make it part of the normal flow */
+                transform: translateX(0) !important; /* Always visible on desktop */
+                flex-shrink: 0; /* Prevent shrinking */
+                height: auto; /* Let content define height */
+                min-height: 100vh; /* Ensure it takes full viewport height */
                 border-right: 1px solid #e2e8f0; /* border-gray-200 */
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06); /* shadow-lg */
-            }
-            /* On desktop, if side-menu is not hidden, it should always be open */
-            #side-menu:not(.hidden) {
-                transform: translateX(0) !important;
-            }
-
-            #side-menu .tab-button, #side-menu .sidebar-link {
-                color: white; /* Ensure text remains white on dark background */
-            }
-            #side-menu .tab-button.active {
-                background-color: #4338ca; /* indigo-700 */
-                color: white; /* Ensure text remains white on dark background */
-                border-left: 4px solid #4f46e5; /* border-indigo-500 */
-            }
-            #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
-                background-color: #4f46e5; /* indigo-600 */
-            }
-
-            .main-content-container {
-                margin-left: 256px; /* Make space for the fixed sidebar */
-                margin-right: 2rem; /* Add some margin on the right */
-                max-width: calc(100% - 256px - 2rem); /* Adjust max-width */
-            }
-            #overlay {
-                display: none !important;
+                display: flex !important; /* Override hidden class if present */
             }
             #hamburger-button {
                 display: none !important; /* Always hide hamburger on desktop */
@@ -165,14 +145,26 @@
             #close-side-menu-button {
                 display: none !important; /* Hide close button on desktop */
             }
+            #overlay {
+                display: none !important; /* Hide overlay on desktop */
+            }
+            .main-content-container {
+                flex-grow: 1; /* Take remaining space */
+                margin-left: 0 !important; /* Reset margin-left from mobile */
+                margin-right: 0 !important; /* Reset margin-right from mobile */
+                max-width: none !important; /* Allow it to expand fully */
+                width: auto !important; /* Let flexbox control width */
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 md:p-0">
+<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row p-4 md:p-0">
+    <!-- Hamburger Button (visible on mobile) -->
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
+    <!-- Side Navigation Menu -->
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
         <div class="p-4 text-right">
             <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
@@ -186,11 +178,14 @@
         </div>
     </nav>
 
+    <!-- Overlay for when side menu is open (mobile only) -->
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
+    <!-- Main Content Area -->
     <div class="main-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8">
         <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">La Clande - Los Martes</h1>
 
+        <!-- Content for Tabla de Posiciones -->
         <div id="leaderboard-content" class="tab-content">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Posiciones</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -202,9 +197,9 @@
                 <div>
                     <label for="leaderboard-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="leaderboard-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
                         <option value="total">Totales</option>
-                        <option value="apertura">Apertura (Ene-Jun)</option>
-                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -226,6 +221,7 @@
             </div>
         </div>
 
+        <!-- Content for Chamigo -->
         <div id="chamigo-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Chamigos</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -237,9 +233,9 @@
                 <div>
                     <label for="chamigo-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="chamigo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
                         <option value="total">Totales</option>
-                        <option value="apertura">Apertura (Ene-Jun)</option>
-                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -259,6 +255,7 @@
             </div>
         </div>
 
+        <!-- Content for TT -->
         <div id="tt-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Asistencia TT</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -270,9 +267,9 @@
                 <div>
                     <label for="tt-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="tt-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
                         <option value="total">Totales</option>
-                        <option value="apertura">Apertura (Ene-Jun)</option>
-                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -292,6 +289,7 @@
             </div>
         </div>
 
+        <!-- Content for Presentismo -->
         <div id="presentismo-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Presentismo (PJ)</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -303,9 +301,9 @@
                 <div>
                     <label for="presentismo-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="presentismo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
                         <option value="total">Totales</option>
-                        <option value="apertura">Apertura (Ene-Jun)</option>
-                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -325,6 +323,7 @@
             </div>
         </div>
 
+        <!-- Content for Ausentismo -->
         <div id="ausentismo-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Ausentismo</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -336,9 +335,9 @@
                 <div>
                     <label for="ausentismo-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="ausentismo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
                         <option value="total">Totales</option>
-                        <option value="apertura">Apertura (Ene-Jun)</option>
-                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -481,6 +480,13 @@
                 button.addEventListener('click', handleTabButtonClick);
             });
 
+            // Llenar y seleccionar automáticamente año y período para todas las secciones
+            populateAndSetCurrentPeriod('leaderboard-year-select', 'leaderboard-period-select');
+            populateAndSetCurrentPeriod('chamigo-year-select', 'chamigo-period-select');
+            populateAndSetCurrentPeriod('tt-year-select', 'tt-period-select');
+            populateAndSetCurrentPeriod('presentismo-year-select', 'presentismo-period-select');
+            populateAndSetCurrentPeriod('ausentismo-year-select', 'ausentismo-period-select');
+
             // Activar la pestaña por defecto al cargar
             const defaultTabButton = document.querySelector('.tab-button[data-tab="leaderboard-content"]');
             if (defaultTabButton) {
@@ -492,15 +498,8 @@
                 presentismoContent.classList.add('hidden');
                 ausentismoContent.classList.add('hidden');
             }
-
-            // Llenar los selectores de año para todas las secciones
-            populateYearSelects('leaderboard-year-select');
-            populateYearSelects('chamigo-year-select');
-            populateYearSelects('tt-year-select');
-            populateYearSelects('presentismo-year-select');
-            populateYearSelects('ausentismo-year-select');
             
-            // Renderizar el contenido de la pestaña por defecto
+            // Renderizar el contenido de la pestaña por defecto (leaderboard)
             renderLeaderboard();
         }
 
@@ -955,9 +954,34 @@
                     option.textContent = year;
                     yearSelect.appendChild(option);
                 });
-                yearSelect.value = sortedYears[0]; // Seleccionar el año más reciente por defecto
+            }
+        }
+
+        function populateAndSetCurrentPeriod(yearSelectId, periodSelectId) {
+            populateYearSelects(yearSelectId); // First populate years
+
+            const yearSelect = document.getElementById(yearSelectId);
+            const periodSelect = document.getElementById(periodSelectId);
+
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth(); // 0-indexed
+
+            // Set current year
+            const yearOption = Array.from(yearSelect.options).find(option => parseInt(option.value) === currentYear);
+            if (yearOption) {
+                yearSelect.value = currentYear;
             } else {
-                yearSelect.value = 'all';
+                yearSelect.value = 'all'; // Fallback if current year is not in options
+            }
+
+            // Set current period
+            if (currentMonth >= 0 && currentMonth <= 5) { // January to June (Apertura)
+                periodSelect.value = 'apertura';
+            } else if (currentMonth >= 6 && currentMonth <= 11) { // July to December (Clausura)
+                periodSelect.value = 'clausura';
+            } else {
+                periodSelect.value = 'total'; // Default to Totales if outside specific periods or for initial load
             }
         }
 
