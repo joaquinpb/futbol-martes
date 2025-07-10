@@ -376,7 +376,7 @@
         <!-- Content for Estadísticas -->
         <div id="estadisticas-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas de Jugadores</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div>
                     <label for="estadisticas-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
                     <select id="estadisticas-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
@@ -389,6 +389,29 @@
                         <option value="clausura">Clausura</option>
                         <option value="total">Totales</option>
                     </select>
+                </div>
+                <div class="col-span-full md:col-span-1 grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="estadisticas-sort-criterion" class="block text-sm font-medium text-gray-700">Ordenar por:</label>
+                        <select id="estadisticas-sort-criterion" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <option value="points">Puntos</option>
+                            <option value="pg">PG</option>
+                            <option value="pe">PE</option>
+                            <option value="pp">PP</option>
+                            <option value="pj">PJ</option>
+                            <option value="efectividad">Efectividad</option>
+                            <option value="chamigos">Chamigo</option>
+                            <option value="tt">TT</option>
+                            <option value="ausentes">Ausentismo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="estadisticas-sort-order" class="block text-sm font-medium text-gray-700">Orden:</label>
+                        <select id="estadisticas-sort-order" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <option value="desc">Descendente</option>
+                            <option value="asc">Ascendente</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="overflow-x-auto"> <!-- This one keeps overflow-x-auto -->
@@ -433,7 +456,7 @@
                     </select>
                 </div>
             </div>
-            <!-- Moved loading message outside of equipos-stats-display -->
+            <!-- Loading message for Equipos, always present in DOM -->
             <p id="equipos-loading-message" class="text-gray-500 text-center col-span-full">Cargando estadísticas de equipos...</p>
             <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
                 <!-- Estadísticas de equipos se cargarán aquí -->
@@ -1008,6 +1031,8 @@
             const estadisticasTable = document.getElementById('estadisticas-table');
             const estadisticasTableBody = estadisticasTable.querySelector('tbody');
             const loadingMessage = document.getElementById('estadisticas-loading-message');
+            const sortCriterionSelect = document.getElementById('estadisticas-sort-criterion');
+            const sortOrderSelect = document.getElementById('estadisticas-sort-order');
 
             estadisticasTableBody.innerHTML = '';
             estadisticasTable.classList.add('hidden');
@@ -1016,8 +1041,27 @@
 
             const { players: rankedEstadisticasPlayers } = calculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
 
-            // Ordenar por Puntos (descendente) por defecto, o por # (posición)
-            rankedEstadisticasPlayers.sort((a, b) => b.points - a.points);
+            // Get selected sort criterion and order
+            const sortCriterion = sortCriterionSelect.value;
+            const sortOrder = sortOrderSelect.value;
+
+            // Sort players based on selected criterion and order
+            rankedEstadisticasPlayers.sort((a, b) => {
+                let valA = a[sortCriterion];
+                let valB = b[sortCriterion];
+
+                // Special handling for 'efectividad' as it's a string with '%'
+                if (sortCriterion === 'efectividad') {
+                    valA = parseFloat(valA);
+                    valB = parseFloat(valB);
+                }
+
+                if (sortOrder === 'asc') {
+                    return valA - valB;
+                } else {
+                    return valB - valA;
+                }
+            });
 
             if (rankedEstadisticasPlayers.length === 0) {
                 loadingMessage.textContent = 'No hay datos de Estadísticas disponibles para los filtros seleccionados.';
@@ -1065,15 +1109,7 @@
             // 2. Ocultar mensaje de carga
             loadingMessage.classList.add('hidden');
 
-            // 3. Si no hay datos para el período, mostrar mensaje específico
-            if (teamStats.totalPJMatches === 0 && teamStats.suspendidos === 0) {
-                equiposStatsDisplay.innerHTML = `<p class="text-gray-500 text-center col-span-full">No hay datos de Equipos disponibles para los filtros seleccionados.</p>`;
-                equiposStatsDisplay.classList.remove('hidden'); // Mostrar el contenedor con el mensaje
-                console.log('[renderEquiposStats] No data found for selected filters.'); // Debug log
-                return;
-            }
-
-            // 4. Si hay datos, construir y mostrar las tarjetas de estadísticas
+            // 3. Siempre construir y mostrar las tarjetas de estadísticas, incluso si los valores son 0
             const statsHtml = `
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center">
                     <span class="text-3xl font-bold">${teamStats.oscurosWins}</span>
@@ -1182,8 +1218,11 @@
         document.getElementById('ausentismo-year-select').addEventListener('change', renderAusentismoTable);
         document.getElementById('ausentismo-period-select').addEventListener('change', renderAusentismoTable);
         
+        // Event listeners for Estadísticas sorting
         document.getElementById('estadisticas-year-select').addEventListener('change', renderEstadisticasTable);
         document.getElementById('estadisticas-period-select').addEventListener('change', renderEstadisticasTable);
+        document.getElementById('estadisticas-sort-criterion').addEventListener('change', renderEstadisticasTable);
+        document.getElementById('estadisticas-sort-order').addEventListener('change', renderEstadisticasTable);
 
         document.getElementById('equipos-year-select').addEventListener('change', renderEquiposStats);
         document.getElementById('equipos-period-select').addEventListener('change', renderEquiposStats);
