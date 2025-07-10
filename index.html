@@ -225,6 +225,7 @@
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="estadisticas-content"><i class="fas fa-chart-bar mr-2"></i>Estadísticas</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="equipos-content"><i class="fas fa-futbol mr-2"></i>Equipos</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="fixture-content"><i class="fas fa-calendar-alt mr-2"></i>Fixture</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="individual-stats-content"><i class="fas fa-user mr-2"></i>Estadísticas Individuales</button>
         </div>
     </nav>
 
@@ -559,6 +560,41 @@
             </div>
         </div>
 
+        <!-- Content for Estadísticas Individuales -->
+        <div id="individual-stats-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas Individuales por Jugador</h2>
+            <div class="mb-6">
+                <label for="individual-player-select" class="block text-sm font-medium text-gray-700">Seleccionar Jugador:</label>
+                <select id="individual-player-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                    <!-- Options will be populated by JS -->
+                </select>
+            </div>
+            <div class="overflow-x-auto">
+                <p id="individual-stats-loading-message" class="loading-message">
+                    <span class="loading-spinner"></span>Cargando estadísticas individuales...
+                </p>
+                <table id="individual-stats-table" class="bg-white rounded-lg shadow hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-3 text-center">Año</th>
+                            <th class="py-3 px-3 text-center">Torneo</th>
+                            <th class="py-3 px-3 text-center">Puntos</th>
+                            <th class="py-3 px-3 text-center">PG</th>
+                            <th class="py-3 px-3 text-center">PE</th>
+                            <th class="py-3 px-3 text-center">PP</th>
+                            <th class="py-3 px-3 text-center">PJ</th>
+                            <th class="py-3 px-3 text-center">Efectividad</th>
+                            <th class="py-3 px-3 text-center">Chamigo</th>
+                            <th class="py-3 px-3 text-center">TT</th>
+                            <th class="py-3 px-3 text-center">Ausentismo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <!-- Script que contiene las funciones de inicialización de GAPI y carga de datos.
@@ -592,6 +628,7 @@
         const estadisticasContent = document.getElementById('estadisticas-content');
         const equiposContent = document.getElementById('equipos-content');
         const fixtureContent = document.getElementById('fixture-content');
+        const individualStatsContent = document.getElementById('individual-stats-content'); // New content div
 
         // --- Funciones de Inicialización de Google API y Carga de Datos ---
         // Se definen aquí para asegurar que estén disponibles cuando el script de la API de Google las llame.
@@ -619,6 +656,7 @@
                 document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
                 document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
                 document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`; // New
             }
         }
 
@@ -651,6 +689,7 @@
                 document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
                 document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
                 document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`; // New
             }
         }
 
@@ -706,6 +745,8 @@
             populateYearSelects('fixture-year-select', 'fixture');
             populateMonthSelects('fixture-month-select', 'fixture');
 
+            // Populate individual player select
+            populateIndividualPlayerSelect(); // New call
 
             // Activar la pestaña por defecto al cargar
             const defaultTabButton = document.querySelector('.tab-button[data-tab="leaderboard-content"]');
@@ -720,6 +761,7 @@
                 estadisticasContent.classList.add('hidden');
                 equiposContent.classList.add('hidden');
                 fixtureContent.classList.add('hidden');
+                individualStatsContent.classList.add('hidden'); // New
             }
             
             // Renderizar el contenido de la pestaña por defecto (leaderboard)
@@ -760,6 +802,8 @@
                 renderEquiposStats();
             } else if (targetTabId === 'fixture-content') {
                 renderFixtureMatchCards();
+            } else if (targetTabId === 'individual-stats-content') { // New case
+                renderIndividualStatsTable();
             }
         }
 
@@ -790,7 +834,7 @@
                 if (!dateString) return false;
 
                 const [day, month, year] = dateString.split('/').map(Number);
-                const matchDate = new Date(year, month - 1, day); // Mes es 0-indexado
+                const matchDate = new Date(year, month - 1, day); // Mes es 0-indexedado
 
                 const matchYear = matchDate.getFullYear();
                 const matchMonth = matchDate.getMonth(); // 0-11
@@ -1490,6 +1534,323 @@
             });
         }
 
+        // New function to calculate individual player stats
+        function calculateIndividualPlayerStats(playerId) {
+            const playerStats = {
+                years: {},
+                overallTotal: { points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: 0, chamigos: 0, tt: 0, ausentes: 0 }
+            };
+
+            const playerInfo = allPlayersData.find(p => p[0] === playerId);
+            if (!playerInfo) return null; // Player not found
+
+            const playerName = playerInfo[1];
+
+            // Get all years present in matches data
+            const allYearsInMatches = new Set();
+            allMatchesData.forEach(match => {
+                const dateString = match[1];
+                if (dateString) {
+                    const [day, month, year] = dateString.split('/').map(Number);
+                    allYearsInMatches.add(year);
+                }
+            });
+
+            // Initialize stats for all years and periods for the selected player
+            Array.from(allYearsInMatches).sort().forEach(year => {
+                playerStats.years[year] = {
+                    apertura: { points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: 0, chamigos: 0, tt: 0, ausentes: 0 },
+                    clausura: { points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: 0, chamigos: 0, tt: 0, ausentes: 0 },
+                    total: { points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: 0, chamigos: 0, tt: 0, ausentes: 0 }
+                };
+            });
+
+            // Calculate stats for each match
+            allMatchesData.forEach(match => {
+                const [matchId, dateString, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = match;
+                if (!dateString) return;
+
+                const [day, month, year] = dateString.split('/').map(Number);
+                const matchDate = new Date(year, month - 1, day); // Month is 0-indexed
+                const matchYear = matchDate.getFullYear();
+                const matchMonth = matchDate.getMonth(); // 0-11
+
+                const period = (matchMonth >= 0 && matchMonth <= 5) ? 'apertura' : 'clausura';
+
+                const clarosPlayers = clarosIDsStr.split(',').filter(Boolean);
+                const oscurosPlayers = oscurosIDsStr.split(',').filter(Boolean);
+                const allPlayersInMatch = [...new Set([...clarosPlayers, ...oscurosPlayers])];
+
+                const isPlayerInMatch = allPlayersInMatch.includes(playerId);
+
+                if (playerStats.years[matchYear] && isPlayerInMatch) {
+                    const currentYearStats = playerStats.years[matchYear];
+                    const currentPeriodStats = currentYearStats[period];
+                    const currentYearTotalStats = currentYearStats.total;
+
+                    // Update PJ (Partidos Jugados) if match is not suspended
+                    if (result !== 'Suspendido') {
+                        currentPeriodStats.pj += 1;
+                        currentYearTotalStats.pj += 1;
+                        playerStats.overallTotal.pj += 1;
+                    }
+
+                    // Update points based on match result
+                    if (result === 'Claros' && clarosPlayers.includes(playerId)) {
+                        currentPeriodStats.points += 3;
+                        currentPeriodStats.pg += 1;
+                        currentYearTotalStats.points += 3;
+                        currentYearTotalStats.pg += 1;
+                        playerStats.overallTotal.points += 3;
+                        playerStats.overallTotal.pg += 1;
+                    } else if (result === 'Oscuros' && oscurosPlayers.includes(playerId)) {
+                        currentPeriodStats.points += 3;
+                        currentPeriodStats.pg += 1;
+                        currentYearTotalStats.points += 3;
+                        currentYearTotalStats.pg += 1;
+                        playerStats.overallTotal.points += 3;
+                        playerStats.overallTotal.pg += 1;
+                    } else if (result === 'Empate' && isPlayerInMatch) {
+                        currentPeriodStats.points += 1;
+                        currentPeriodStats.pe += 1;
+                        currentYearTotalStats.points += 1;
+                        currentYearTotalStats.pe += 1;
+                        playerStats.overallTotal.points += 1;
+                        playerStats.overallTotal.pe += 1;
+                    } else if (result === 'Claros' && oscurosPlayers.includes(playerId)) { // Player was in losing team
+                        currentPeriodStats.pp += 1;
+                        currentYearTotalStats.pp += 1;
+                        playerStats.overallTotal.pp += 1;
+                    } else if (result === 'Oscuros' && clarosPlayers.includes(playerId)) { // Player was in losing team
+                        currentPeriodStats.pp += 1;
+                        currentYearTotalStats.pp += 1;
+                        playerStats.overallTotal.pp += 1;
+                    }
+
+                    // Chamigo counts
+                    if (chamigoVotosStr) {
+                        try {
+                            const chamigoVotos = JSON.parse(chamigoVotosStr);
+                            if (chamigoVotos.some(v => v.id === playerId && v.votos === Math.max(...chamigoVotos.map(c => c.votos)))) {
+                                currentPeriodStats.chamigos += 1;
+                                currentYearTotalStats.chamigos += 1;
+                                playerStats.overallTotal.chamigos += 1;
+                            }
+                        } catch (e) {
+                            console.warn('Error parsing chamigo votes for match', matchId, ':', e);
+                        }
+                    }
+
+                    // TT counts
+                    if (ttAttendeesStr) {
+                        const ttAttendees = ttAttendeesStr.split(',').filter(Boolean);
+                        if (ttAttendees.includes(playerId)) {
+                            currentPeriodStats.tt += 1;
+                            currentYearTotalStats.tt += 1;
+                            playerStats.overallTotal.tt += 1;
+                        }
+                    }
+                }
+            });
+
+            // Calculate Efectividad and Ausentes for each period, year total, and overall total
+            Array.from(allYearsInMatches).sort().forEach(year => {
+                const yearStats = playerStats.years[year];
+                ['apertura', 'clausura'].forEach(periodType => { // Only iterate through apertura/clausura for individual periods
+                    const stats = yearStats[periodType];
+                    const maxPossiblePoints = stats.pj * 3;
+                    if (maxPossiblePoints > 0) {
+                        stats.efectividad = ((stats.points / maxPossiblePoints) * 100).toFixed(2);
+                    } else {
+                        stats.efectividad = 0;
+                    }
+                    
+                    const totalMatchesInPeriod = allMatchesData.filter(m => {
+                        const [d, mo, y] = m[1].split('/').map(Number);
+                        const matchDate = new Date(y, mo - 1, d);
+                        const mYear = matchDate.getFullYear();
+                        const mMonth = matchDate.getMonth();
+                        const mPeriod = (mMonth >= 0 && mMonth <= 5) ? 'apertura' : 'clausura';
+                        
+                        return mYear === year && mPeriod === periodType && m[4] !== 'Suspendido';
+                    }).length;
+
+                    stats.ausentes = totalMatchesInPeriod - stats.pj;
+                    if (stats.ausentes < 0) stats.ausentes = 0;
+                });
+
+                // Calculate for year total
+                const yearTotalStats = yearStats.total;
+                const yearTotalMaxPossiblePoints = yearTotalStats.pj * 3;
+                if (yearTotalMaxPossiblePoints > 0) {
+                    yearTotalStats.efectividad = ((yearTotalStats.points / yearTotalMaxPossiblePoints) * 100).toFixed(2);
+                } else {
+                    yearTotalStats.efectividad = 0;
+                }
+                const totalMatchesInYear = allMatchesData.filter(m => {
+                    const [d, mo, y] = m[1].split('/').map(Number);
+                    return y === year && m[4] !== 'Suspendido';
+                }).length;
+                yearTotalStats.ausentes = totalMatchesInYear - yearTotalStats.pj;
+                if (yearTotalStats.ausentes < 0) yearTotalStats.ausentes = 0;
+            });
+
+            // Overall total efectividad and ausentes
+            const overallMaxPossiblePoints = playerStats.overallTotal.pj * 3;
+            if (overallMaxPossiblePoints > 0) {
+                playerStats.overallTotal.efectividad = ((playerStats.overallTotal.points / overallMaxPossiblePoints) * 100).toFixed(2);
+            } else {
+                playerStats.overallTotal.efectividad = 0;
+            }
+            const totalNonSuspendedMatches = allMatchesData.filter(m => m[4] !== 'Suspendido').length;
+            playerStats.overallTotal.ausentes = totalNonSuspendedMatches - playerStats.overallTotal.pj;
+            if (playerStats.overallTotal.ausentes < 0) playerStats.overallTotal.ausentes = 0;
+
+
+            return { playerName, stats: playerStats };
+        }
+
+        // Function to populate the player select dropdown
+        function populateIndividualPlayerSelect() {
+            const playerSelect = document.getElementById('individual-player-select');
+            playerSelect.innerHTML = ''; // Clear existing options
+
+            // Add a default "Select a player" option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Selecciona un jugador';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            playerSelect.appendChild(defaultOption);
+
+            // Populate with active players
+            allPlayersData.filter(p => p[2] === 'Activo').sort((a, b) => a[1].localeCompare(b[1])).forEach(player => {
+                const option = document.createElement('option');
+                option.value = player[0]; // Player ID
+                option.textContent = player[1]; // Player Name
+                playerSelect.appendChild(option);
+            });
+
+            // Try to restore last selected player from localStorage
+            const lastSelectedPlayerId = localStorage.getItem('individual-player-selected');
+            if (lastSelectedPlayerId && Array.from(playerSelect.options).some(opt => opt.value === lastSelectedPlayerId)) {
+                playerSelect.value = lastSelectedPlayerId;
+                // No need to call renderIndividualStatsTable here, as it will be called by handleTabButtonClick
+            } else {
+                // If no player selected or invalid, ensure table is hidden and message shown
+                document.getElementById('individual-stats-table').classList.add('hidden');
+                document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
+            }
+        }
+
+        // Function to render the individual stats table
+        function renderIndividualStatsTable() {
+            const playerSelect = document.getElementById('individual-player-select');
+            const selectedPlayerId = playerSelect.value;
+            const individualStatsTable = document.getElementById('individual-stats-table');
+            const individualStatsTableBody = individualStatsTable.querySelector('tbody');
+            const loadingMessage = document.getElementById('individual-stats-loading-message');
+
+            individualStatsTableBody.innerHTML = '';
+            individualStatsTable.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando estadísticas individuales...`;
+
+            if (!selectedPlayerId) {
+                loadingMessage.textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                return;
+            }
+
+            // Save selected player to localStorage
+            localStorage.setItem('individual-player-selected', selectedPlayerId);
+
+            const playerStatsData = calculateIndividualPlayerStats(selectedPlayerId);
+
+            if (!playerStatsData || !playerStatsData.stats || Object.keys(playerStatsData.stats.years).length === 0 && playerStatsData.stats.overallTotal.pj === 0) {
+                loadingMessage.textContent = 'No hay datos disponibles para el jugador seleccionado en este período.';
+                return;
+            }
+
+            // Render TOTAL row first
+            const totalStats = playerStatsData.stats.overallTotal;
+            let totalRowHTML = `
+                <tr class="bg-indigo-100 font-bold text-indigo-800">
+                    <td class="py-3 px-3 text-center">TOTAL</td>
+                    <td class="py-3 px-3 text-center">N/A</td>
+                    <td class="py-3 px-3 text-center">${totalStats.points}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.pg}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.pe}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.pp}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.pj}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.efectividad}%</td>
+                    <td class="py-3 px-3 text-center">${totalStats.chamigos}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.tt}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.ausentes}</td>
+                </tr>
+            `;
+            individualStatsTableBody.innerHTML += totalRowHTML;
+
+            // Render stats grouped by year and period
+            const sortedYears = Object.keys(playerStatsData.stats.years).sort((a, b) => b - a); // Descending year
+
+            sortedYears.forEach(year => {
+                const yearStats = playerStatsData.stats.years[year];
+                
+                // Only render year header if there's data for Apertura or Clausura in that year
+                if (yearStats.apertura.pj > 0 || yearStats.clausura.pj > 0) {
+                    individualStatsTableBody.innerHTML += `
+                        <tr class="bg-gray-200 font-semibold text-gray-700">
+                            <td class="py-3 px-3 text-center">${year}</td>
+                            <td class="py-3 px-3 text-center" colspan="10"></td> <!-- Spanning columns -->
+                        </tr>
+                    `;
+                }
+
+
+                // Render Apertura if player played in it
+                if (yearStats.apertura.pj > 0) {
+                    individualStatsTableBody.innerHTML += `
+                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-3 text-center"></td>
+                            <td class="py-3 px-3 text-center">Apertura</td>
+                            <td class="py-3 px-3 text-center">${yearStats.apertura.points}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.apertura.pg}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.apertura.pe}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.apertura.pp}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.apertura.pj}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.apertura.efectividad}%</td>
+                            <td class="py-3 px-3 text-center">${yearStats.apertura.chamigos}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.apertura.tt}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.apertura.ausentes}</td>
+                        </tr>
+                    `;
+                }
+
+                // Render Clausura if player played in it
+                if (yearStats.clausura.pj > 0) {
+                    individualStatsTableBody.innerHTML += `
+                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-3 text-center"></td>
+                            <td class="py-3 px-3 text-center">Clausura</td>
+                            <td class="py-3 px-3 text-center">${yearStats.clausura.points}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.clausura.pg}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.clausura.pe}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.clausura.pp}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.clausura.pj}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.clausura.efectividad}%</td>
+                            <td class="py-3 px-3 text-center">${yearStats.clausura.chamigos}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.clausura.tt}</td>
+                            <td class="py-3 px-3 text-center">${yearStats.clausura.ausentes}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            loadingMessage.classList.add('hidden');
+            individualStatsTable.classList.remove('hidden');
+        }
+
 
         // --- Event Listeners e Inicialización ---
         document.getElementById('leaderboard-year-select').addEventListener('change', renderLeaderboard);
@@ -1519,6 +1880,9 @@
         // Event listeners for Fixture
         document.getElementById('fixture-year-select').addEventListener('change', renderFixtureMatchCards);
         document.getElementById('fixture-month-select').addEventListener('change', renderFixtureMatchCards);
+
+        // New event listener for individual player select
+        document.getElementById('individual-player-select').addEventListener('change', renderIndividualStatsTable);
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
         closeSideMenuButton.addEventListener('click', toggleSideMenu);
