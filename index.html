@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>La Clande - Los Martes</title>
+    <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Fuente Inter para una mejor legibilidad */
@@ -201,11 +202,9 @@
                 <div>
                     <label for="leaderboard-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="leaderboard-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                        <option value="all">Todo el Año</option>
-                        <option value="q1">Q1 (Ene-Mar)</option>
-                        <option value="q2">Q2 (Abr-Jun)</option>
-                        <option value="q3">Q3 (Jul-Sep)</option>
-                        <option value="q4">Q4 (Oct-Dic)</option>
+                        <option value="total">Totales</option>
+                        <option value="apertura">Apertura (Ene-Jun)</option>
+                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -238,11 +237,9 @@
                 <div>
                     <label for="chamigo-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="chamigo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                        <option value="all">Todo el Año</option>
-                        <option value="q1">Q1 (Ene-Mar)</option>
-                        <option value="q2">Q2 (Abr-Jun)</option>
-                        <option value="q3">Q3 (Jul-Sep)</option>
-                        <option value="q4">Q4 (Oct-Dic)</option>
+                        <option value="total">Totales</option>
+                        <option value="apertura">Apertura (Ene-Jun)</option>
+                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -273,11 +270,9 @@
                 <div>
                     <label for="tt-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="tt-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                        <option value="all">Todo el Año</option>
-                        <option value="q1">Q1 (Ene-Mar)</option>
-                        <option value="q2">Q2 (Abr-Jun)</option>
-                        <option value="q3">Q3 (Jul-Sep)</option>
-                        <option value="q4">Q4 (Oct-Dic)</option>
+                        <option value="total">Totales</option>
+                        <option value="apertura">Apertura (Ene-Jun)</option>
+                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -308,11 +303,9 @@
                 <div>
                     <label for="presentismo-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="presentismo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                        <option value="all">Todo el Año</option>
-                        <option value="q1">Q1 (Ene-Mar)</option>
-                        <option value="q2">Q2 (Abr-Jun)</option>
-                        <option value="q3">Q3 (Jul-Sep)</option>
-                        <option value="q4">Q4 (Oct-Dic)</option>
+                        <option value="total">Totales</option>
+                        <option value="apertura">Apertura (Ene-Jun)</option>
+                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -343,11 +336,9 @@
                 <div>
                     <label for="ausentismo-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
                     <select id="ausentismo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                        <option value="all">Todo el Año</option>
-                        <option value="q1">Q1 (Ene-Mar)</option>
-                        <option value="q2">Q2 (Abr-Jun)</option>
-                        <option value="q3">Q3 (Jul-Sep)</option>
-                        <option value="q4">Q4 (Oct-Dic)</option>
+                        <option value="total">Totales</option>
+                        <option value="apertura">Apertura (Ene-Jun)</option>
+                        <option value="clausura">Clausura (Jul-Dic)</option>
                     </select>
                 </div>
             </div>
@@ -576,15 +567,13 @@
 
                 const yearMatch = selectedYear === 'all' || matchYear === parseInt(selectedYear);
 
-                let periodMatch = true;
-                if (selectedPeriod !== 'all') {
-                    const quarterMap = {
-                        'q1': [0, 1, 2], // Ene, Feb, Mar
-                        'q2': [3, 4, 5], // Abr, May, Jun
-                        'q3': [6, 7, 8], // Jul, Ago, Sep
-                        'q4': [9, 10, 11] // Oct, Nov, Dic
-                    };
-                    periodMatch = quarterMap[selectedPeriod].includes(matchMonth);
+                let periodMatch = false;
+                if (selectedPeriod === 'total') {
+                    periodMatch = true; // Todos los meses
+                } else if (selectedPeriod === 'apertura') {
+                    periodMatch = matchMonth >= 0 && matchMonth <= 5; // Enero (0) a Junio (5)
+                } else if (selectedPeriod === 'clausura') {
+                    periodMatch = matchMonth >= 6 && matchMonth <= 11; // Julio (6) a Diciembre (11)
                 }
                 return yearMatch && periodMatch;
             });
