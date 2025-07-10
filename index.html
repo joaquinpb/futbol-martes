@@ -213,13 +213,57 @@
             position: relative;
             width: 100%;
             padding-top: 150%; /* Aspect ratio for a vertical field (e.g., 2:3) */
-            background-image: url('https://placehold.co/600x900/0f8d48/ffffff?text=Cancha+de+Fútbol'); /* Placeholder image for soccer field */
-            background-size: cover;
-            background-position: center;
+            background-color: #0f8d48; /* Green field color */
+            border: 2px solid white; /* Outer perimeter */
             border-radius: 0.5rem; /* rounded-lg */
             overflow: hidden; /* Ensure players stay within bounds */
             margin-bottom: 1.5rem; /* mb-6 */
         }
+
+        /* Halfway line */
+        #soccer-field-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: white;
+            transform: translateY(-50%);
+        }
+
+        /* Center circle */
+        #soccer-field-container::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20%; /* Adjust size as needed */
+            height: 20%; /* Adjust size as needed */
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Goals (simplified) */
+        .goal {
+            position: absolute;
+            width: 30%; /* Width of the goal */
+            height: 5%; /* Depth of the goal area */
+            border: 2px solid white;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+        .goal.top {
+            top: 0;
+            left: 35%;
+            border-bottom: none;
+        }
+        .goal.bottom {
+            bottom: 0;
+            left: 35%;
+            border-top: none;
+        }
+
 
         .player-marker {
             position: absolute;
@@ -584,6 +628,9 @@
             
             <!-- Soccer Field Container -->
             <div id="soccer-field-container" class="hidden">
+                <!-- Goals -->
+                <div class="goal top"></div>
+                <div class="goal bottom"></div>
                 <!-- Players will be dynamically added here -->
             </div>
 
@@ -592,14 +639,7 @@
                 <span class="loading-spinner"></span>Cargando detalles del partido...
             </p>
             <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 mb-6 hidden">
-                <div class="bg-blue-100 p-4 rounded-lg shadow-sm">
-                    <h3 class="font-semibold text-blue-800 mb-2">Jugadores de Claros</h3>
-                    <ul id="claros-players-list" class="list-disc list-inside text-gray-700"></ul>
-                </div>
-                <div class="bg-red-100 p-4 rounded-lg shadow-sm">
-                    <h3 class="font-semibold text-red-800 mb-2">Jugadores de Oscuros</h3>
-                    <ul id="oscuros-players-list" class="list-disc list-inside text-gray-700"></ul>
-                </div>
+                <!-- Removed player lists, keeping other details -->
                 <div class="bg-green-100 p-4 rounded-lg shadow-sm col-span-full">
                     <h3 class="font-semibold text-green-800 mb-2">Equipo Ganador</h3>
                     <p id="winner-team" class="text-gray-800 font-medium text-lg"></p>
@@ -1430,7 +1470,7 @@
             loadingMessage.classList.remove('hidden');
             fixtureDetailsDisplay.classList.add('hidden');
             soccerFieldContainer.classList.add('hidden'); // Hide field while loading
-            soccerFieldContainer.innerHTML = ''; // Clear existing players
+            soccerFieldContainer.innerHTML = ''; // Clear existing players and goals
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando detalles del partido...`;
             
             const selectedMatch = allMatchesData.find(match => match[0] === matchId);
@@ -1481,27 +1521,26 @@
                 chamigos = ['No definido'];
             }
 
-            // Render players on the field
+            // Re-add goals to the field
+            soccerFieldContainer.innerHTML = '<div class="goal top"></div><div class="goal bottom"></div>';
+
             // Define positions for 5 players on each side (relative to field container)
             // Claros (bottom half of the field)
             const clarosPositions = [
-                { top: '75%', left: '20%' },
-                { top: '85%', left: '40%' },
+                { top: '90%', left: '50%' },  // Goalkeeper
+                { top: '75%', left: '25%' },
                 { top: '70%', left: '50%' },
-                { top: '85%', left: '60%' },
-                { top: '75%', left: '80%' }
+                { top: '75%', left: '75%' },
+                { top: '60%', left: '50%' }
             ];
             // Oscuros (top half of the field)
             const oscurosPositions = [
-                { top: '25%', left: '20%' },
-                { top: '15%', left: '40%' },
+                { top: '10%', left: '50%' }, // Goalkeeper
+                { top: '25%', left: '25%' },
                 { top: '30%', left: '50%' },
-                { top: '15%', left: '60%' },
-                { top: '25%', left: '80%' }
+                { top: '25%', left: '75%' },
+                { top: '40%', left: '50%' }
             ];
-
-            // Clear previous players
-            soccerFieldContainer.innerHTML = '';
 
             // Add Claros players
             clarosPlayers.slice(0, 5).forEach((playerName, index) => {
@@ -1526,9 +1565,7 @@
             // Show soccer field
             soccerFieldContainer.classList.remove('hidden');
 
-            // Update details lists
-            document.getElementById('claros-players-list').innerHTML = clarosPlayers.length > 0 ? clarosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
-            document.getElementById('oscuros-players-list').innerHTML = oscurosPlayers.length > 0 ? oscurosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
+            // Update details lists (these are now the only lists remaining)
             document.getElementById('winner-team').textContent = winnerTeam;
             document.getElementById('tt-attendees-list').innerHTML = ttAttendees.map(name => `<li>${name}</li>`).join('');
             document.getElementById('chamigos-list').innerHTML = chamigos.map(name => `<li>${name}</li>`).join('');
