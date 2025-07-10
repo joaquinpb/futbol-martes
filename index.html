@@ -203,6 +203,10 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* Highlighted class for autocomplete results */
+        .highlighted {
+            background-color: #e0e7ff; /* indigo-100 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col md:flex-row p-4 md:p-0">
@@ -1720,19 +1724,44 @@
             const playerResultsDiv = document.getElementById('individual-player-results');
             const selectedPlayerIdInput = document.getElementById('selected-player-id');
             let timeoutId; // To debounce input
+            let highlightedIndex = -1; // To keep track of the highlighted item for keyboard navigation
+
+            // Helper to remove highlight from all results
+            const removeHighlight = () => {
+                playerResultsDiv.querySelectorAll('.highlighted').forEach(item => {
+                    item.classList.remove('highlighted');
+                });
+            };
+
+            // Helper to apply highlight to a specific index
+            const highlightResult = (index) => {
+                removeHighlight();
+                const results = playerResultsDiv.children;
+                if (results.length > 0 && index >= 0 && index < results.length) {
+                    results[index].classList.add('highlighted');
+                    playerSearchInput.value = results[index].textContent; // Update input value
+                    highlightedIndex = index;
+                }
+            };
 
             // Clear input on focus
             playerSearchInput.addEventListener('focus', () => {
                 playerSearchInput.value = '';
                 selectedPlayerIdInput.value = '';
+                playerResultsDiv.innerHTML = ''; // Clear results when focusing
+                playerResultsDiv.classList.add('hidden');
                 document.getElementById('individual-stats-table').classList.add('hidden');
                 document.getElementById('individual-stats-loading-message').classList.remove('hidden');
                 document.getElementById('individual-stats-loading-message').textContent = 'Escribe al menos 3 caracteres para buscar un jugador.';
+                highlightedIndex = -1; // Reset highlight
             });
 
             playerSearchInput.addEventListener('input', () => {
                 clearTimeout(timeoutId);
                 const searchTerm = playerSearchInput.value.toLowerCase();
+                
+                removeHighlight(); // Clear highlight on new input
+                highlightedIndex = -1; // Reset highlight index
 
                 if (searchTerm.length < 3) {
                     playerResultsDiv.innerHTML = '';
@@ -1758,8 +1787,9 @@
                             resultItem.dataset.playerId = player[0]; // Store player ID
                             resultItem.addEventListener('click', () => {
                                 playerSearchInput.value = player[1];
-                                selectedPlayerIdInput.value = resultItem.dataset.playerId; // Corrected: use resultItem.dataset.playerId
+                                selectedPlayerIdInput.value = resultItem.dataset.playerId; 
                                 playerResultsDiv.classList.add('hidden');
+                                highlightedIndex = -1; // Reset highlight after selection
                                 renderIndividualStatsTable();
                             });
                             playerResultsDiv.appendChild(resultItem);
@@ -1769,6 +1799,30 @@
                         playerResultsDiv.classList.add('hidden');
                     }
                 }, 300); // Debounce for 300ms
+            });
+
+            // Keyboard navigation
+            playerSearchInput.addEventListener('keydown', (event) => {
+                const results = playerResultsDiv.children;
+                if (results.length === 0) return;
+
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault(); // Prevent cursor movement in input
+                    highlightedIndex = (highlightedIndex + 1) % results.length;
+                    highlightResult(highlightedIndex);
+                } else if (event.key === 'ArrowUp') {
+                    event.preventDefault(); // Prevent cursor movement in input
+                    highlightedIndex = (highlightedIndex - 1 + results.length) % results.length;
+                    highlightResult(highlightedIndex);
+                } else if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent form submission
+                    if (highlightedIndex !== -1) {
+                        results[highlightedIndex].click(); // Simulate click on highlighted item
+                    } else if (results.length > 0) {
+                        // If no item is explicitly highlighted, but results are visible, select the first one
+                        results[0].click();
+                    }
+                }
             });
 
             // Hide results when input loses focus (with a slight delay to allow click on results)
@@ -1821,9 +1875,9 @@
                 return;
             }
 
-            // Render TOTAL row first
+            // Render TOTAL row first, always visible
             const totalStats = playerStatsData.stats.overallTotal;
-            let tableHTML = `
+            individualStatsTableBody.innerHTML += `
                 <tr class="bg-indigo-100 font-bold text-indigo-800">
                     <td class="py-3 px-3 text-center">TOTAL</td>
                     <td class="py-3 px-3 text-center">N/A</td>
@@ -1850,7 +1904,7 @@
 
                 if (hasAnyPJInYear) {
                     // Year header row - always visible, acts as toggle
-                    tableHTML += `
+                    individualStatsTableBody.innerHTML += `
                         <tr class="bg-gray-200 font-semibold text-gray-700 cursor-pointer toggle-year-button" data-year="${year}">
                             <td class="py-3 px-3 text-center">${year}</td>
                             <td class="py-3 px-3 text-center" colspan="9"></td> <!-- Spanning columns for year -->
@@ -1860,7 +1914,7 @@
 
                     // Apertura row - initially hidden
                     const aperturaStats = yearStats.apertura;
-                    tableHTML += `
+                    individualStatsTableBody.innerHTML += `
                         <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
                             <td class="py-3 px-3 text-center"></td>
                             <td class="py-3 px-3 text-center">Apertura</td>
@@ -1878,7 +1932,7 @@
 
                     // Clausura row - initially hidden
                     const clausuraStats = yearStats.clausura;
-                    tableHTML += `
+                    individualStatsTableBody.innerHTML += `
                         <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
                             <td class="py-3 px-3 text-center"></td>
                             <td class="py-3 px-3 text-center">Clausura</td>
@@ -1896,7 +1950,8 @@
                 }
             });
 
-            individualStatsTableBody.innerHTML = tableHTML;
+            loadingMessage.classList.add('hidden');
+            individualStatsTable.classList.remove('hidden');
 
             // Add event listeners for toggle buttons AFTER content is rendered
             document.querySelectorAll('.toggle-year-button').forEach(button => {
@@ -1920,9 +1975,6 @@
                     }
                 });
             });
-
-            loadingMessage.classList.add('hidden');
-            individualStatsTable.classList.remove('hidden');
         }
 
 
