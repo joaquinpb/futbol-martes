@@ -433,8 +433,9 @@
                     </select>
                 </div>
             </div>
-            <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <p id="equipos-loading-message" class="text-gray-500 text-center col-span-full hidden">Cargando estadísticas de equipos...</p>
+            <!-- Moved loading message outside of equipos-stats-display -->
+            <p id="equipos-loading-message" class="text-gray-500 text-center col-span-full">Cargando estadísticas de equipos...</p>
+            <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
                 <!-- Estadísticas de equipos se cargarán aquí -->
             </div>
         </div>
@@ -1052,25 +1053,27 @@
             const equiposStatsDisplay = document.getElementById('equipos-stats-display');
             const loadingMessage = document.getElementById('equipos-loading-message');
 
-            equiposStatsDisplay.innerHTML = ''; // Clear previous content
-            loadingMessage.classList.remove('hidden'); // Ensure loading message is visible initially
-            loadingMessage.textContent = 'Cargando estadísticas de equipos...';
+            // 1. Mostrar mensaje de carga y ocultar display de stats
+            loadingMessage.classList.remove('hidden');
+            equiposStatsDisplay.classList.add('hidden');
+            equiposStatsDisplay.innerHTML = ''; // Limpiar contenido anterior
 
             console.log('[renderEquiposStats] Starting render...'); // Debug log
             const { teamStats } = calculateStatsForPeriod('equipos-year-select', 'equipos-period-select');
             console.log('[renderEquiposStats] Calculated teamStats:', teamStats); // Debug log
 
-            // Always hide loading message after calculation, even if stats are zero
+            // 2. Ocultar mensaje de carga
             loadingMessage.classList.add('hidden');
 
-            // If no data for the period, show a specific message instead of cards
+            // 3. Si no hay datos para el período, mostrar mensaje específico
             if (teamStats.totalPJMatches === 0 && teamStats.suspendidos === 0) {
                 equiposStatsDisplay.innerHTML = `<p class="text-gray-500 text-center col-span-full">No hay datos de Equipos disponibles para los filtros seleccionados.</p>`;
+                equiposStatsDisplay.classList.remove('hidden'); // Mostrar el contenedor con el mensaje
                 console.log('[renderEquiposStats] No data found for selected filters.'); // Debug log
                 return;
             }
 
-            // Display stats, even if some are zero (but total matches exist)
+            // 4. Si hay datos, construir y mostrar las tarjetas de estadísticas
             const statsHtml = `
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center">
                     <span class="text-3xl font-bold">${teamStats.oscurosWins}</span>
@@ -1094,6 +1097,7 @@
                 </div>
             `;
             equiposStatsDisplay.innerHTML = statsHtml;
+            equiposStatsDisplay.classList.remove('hidden'); // Mostrar el contenedor de stats
             console.log('[renderEquiposStats] Stats rendered successfully.'); // Debug log
         }
 
