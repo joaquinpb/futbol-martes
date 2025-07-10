@@ -564,10 +564,14 @@
         <div id="individual-stats-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas Individuales por Jugador</h2>
             <div class="mb-6">
-                <label for="individual-player-select" class="block text-sm font-medium text-gray-700">Seleccionar Jugador:</label>
-                <select id="individual-player-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                    <!-- Options will be populated by JS -->
-                </select>
+                <label for="individual-player-search" class="block text-sm font-medium text-gray-700">Buscar Jugador:</label>
+                <div class="relative">
+                    <input type="text" id="individual-player-search" placeholder="Escribe al menos 3 caracteres..." class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                    <div id="individual-player-results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
+                        <!-- Autocomplete results will go here -->
+                    </div>
+                </div>
+                <input type="hidden" id="selected-player-id"> <!-- To store the actual selected player ID -->
             </div>
             <div class="overflow-x-auto">
                 <p id="individual-stats-loading-message" class="loading-message">
@@ -745,8 +749,8 @@
             populateYearSelects('fixture-year-select', 'fixture');
             populateMonthSelects('fixture-month-select', 'fixture');
 
-            // Populate individual player select
-            populateIndividualPlayerSelect(); // New call
+            // Setup individual player search
+            setupPlayerSearch(); // New call
 
             // Activar la pestaña por defecto al cargar
             const defaultTabButton = document.querySelector('.tab-button[data-tab="leaderboard-content"]');
@@ -1710,34 +1714,71 @@
             return { playerName, stats: playerStats };
         }
 
-        // Function to populate the player select dropdown
-        function populateIndividualPlayerSelect() {
-            const playerSelect = document.getElementById('individual-player-select');
-            playerSelect.innerHTML = ''; // Clear existing options
+        // New function to set up player search with autocomplete
+        function setupPlayerSearch() {
+            const playerSearchInput = document.getElementById('individual-player-search');
+            const playerResultsDiv = document.getElementById('individual-player-results');
+            const selectedPlayerIdInput = document.getElementById('selected-player-id');
+            let timeoutId; // To debounce input
 
-            // Add a default "Select a player" option
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Selecciona un jugador';
-            defaultOption.disabled = true;
-            defaultOption.selected = true;
-            playerSelect.appendChild(defaultOption);
+            playerSearchInput.addEventListener('input', () => {
+                clearTimeout(timeoutId);
+                const searchTerm = playerSearchInput.value.toLowerCase();
 
-            // Populate with active players
-            allPlayersData.filter(p => p[2] === 'Activo').sort((a, b) => a[1].localeCompare(b[1])).forEach(player => {
-                const option = document.createElement('option');
-                option.value = player[0]; // Player ID
-                option.textContent = player[1]; // Player Name
-                playerSelect.appendChild(option);
+                if (searchTerm.length < 3) {
+                    playerResultsDiv.innerHTML = '';
+                    playerResultsDiv.classList.add('hidden');
+                    selectedPlayerIdInput.value = ''; // Clear selected player if search term is too short
+                    document.getElementById('individual-stats-table').classList.add('hidden');
+                    document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                    document.getElementById('individual-stats-loading-message').textContent = 'Escribe al menos 3 caracteres para buscar un jugador.';
+                    return;
+                }
+
+                timeoutId = setTimeout(() => {
+                    playerResultsDiv.innerHTML = '';
+                    const filteredPlayers = allPlayersData.filter(p => 
+                        p[2] === 'Activo' && p[1].toLowerCase().includes(searchTerm)
+                    ).sort((a, b) => a[1].localeCompare(b[1]));
+
+                    if (filteredPlayers.length > 0) {
+                        filteredPlayers.forEach(player => {
+                            const resultItem = document.createElement('div');
+                            resultItem.classList.add('p-2', 'cursor-pointer', 'hover:bg-gray-100');
+                            resultItem.textContent = player[1];
+                            resultItem.dataset.playerId = player[0];
+                            resultItem.addEventListener('click', () => {
+                                playerSearchInput.value = player[1];
+                                selectedPlayerIdInput.value = player.dataset.playerId;
+                                playerResultsDiv.classList.add('hidden');
+                                renderIndividualStatsTable();
+                            });
+                            playerResultsDiv.appendChild(resultItem);
+                        });
+                        playerResultsDiv.classList.remove('hidden');
+                    } else {
+                        playerResultsDiv.classList.add('hidden');
+                    }
+                }, 300); // Debounce for 300ms
             });
 
-            // Try to restore last selected player from localStorage
+            // Hide results when input loses focus (with a slight delay to allow click on results)
+            playerSearchInput.addEventListener('focusout', () => {
+                setTimeout(() => {
+                    playerResultsDiv.classList.add('hidden');
+                }, 200);
+            });
+
+            // Initial state: check if a player was previously selected and populate input
             const lastSelectedPlayerId = localStorage.getItem('individual-player-selected');
-            if (lastSelectedPlayerId && Array.from(playerSelect.options).some(opt => opt.value === lastSelectedPlayerId)) {
-                playerSelect.value = lastSelectedPlayerId;
-                // No need to call renderIndividualStatsTable here, as it will be called by handleTabButtonClick
+            if (lastSelectedPlayerId) {
+                const lastSelectedPlayer = allPlayersData.find(p => p[0] === lastSelectedPlayerId);
+                if (lastSelectedPlayer) {
+                    playerSearchInput.value = lastSelectedPlayer[1];
+                    selectedPlayerIdInput.value = lastSelectedPlayerId;
+                    // renderIndividualStatsTable will be called when the tab is activated
+                }
             } else {
-                // If no player selected or invalid, ensure table is hidden and message shown
                 document.getElementById('individual-stats-table').classList.add('hidden');
                 document.getElementById('individual-stats-loading-message').classList.remove('hidden');
                 document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
@@ -1746,8 +1787,7 @@
 
         // Function to render the individual stats table
         function renderIndividualStatsTable() {
-            const playerSelect = document.getElementById('individual-player-select');
-            const selectedPlayerId = playerSelect.value;
+            const selectedPlayerId = document.getElementById('selected-player-id').value;
             const individualStatsTable = document.getElementById('individual-stats-table');
             const individualStatsTableBody = individualStatsTable.querySelector('tbody');
             const loadingMessage = document.getElementById('individual-stats-loading-message');
@@ -1767,8 +1807,8 @@
 
             const playerStatsData = calculateIndividualPlayerStats(selectedPlayerId);
 
-            if (!playerStatsData || !playerStatsData.stats || Object.keys(playerStatsData.stats.years).length === 0 && playerStatsData.stats.overallTotal.pj === 0) {
-                loadingMessage.textContent = 'No hay datos disponibles para el jugador seleccionado en este período.';
+            if (!playerStatsData || (!Object.keys(playerStatsData.stats.years).length && playerStatsData.stats.overallTotal.pj === 0)) {
+                loadingMessage.textContent = 'No hay datos disponibles para el jugador seleccionado.';
                 return;
             }
 
@@ -1797,8 +1837,12 @@
             sortedYears.forEach(year => {
                 const yearStats = playerStatsData.stats.years[year];
                 
-                // Only render year header if there's data for Apertura or Clausura in that year
-                if (yearStats.apertura.pj > 0 || yearStats.clausura.pj > 0) {
+                // Determine if Apertura or Clausura has data for this year
+                const hasAperturaData = yearStats.apertura.pj > 0;
+                const hasClausuraData = yearStats.clausura.pj > 0;
+
+                // Only render year header if there's any data for this year
+                if (hasAperturaData || hasClausuraData) {
                     individualStatsTableBody.innerHTML += `
                         <tr class="bg-gray-200 font-semibold text-gray-700">
                             <td class="py-3 px-3 text-center">${year}</td>
@@ -1807,44 +1851,41 @@
                     `;
                 }
 
+                // Always render Apertura row, showing 0s if no data
+                const aperturaStats = yearStats.apertura;
+                individualStatsTableBody.innerHTML += `
+                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-3 text-center"></td>
+                        <td class="py-3 px-3 text-center">Apertura</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pg}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pe}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pp}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pj}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.efectividad}%</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.chamigos}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.tt}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.ausentes}</td>
+                    </tr>
+                `;
 
-                // Render Apertura if player played in it
-                if (yearStats.apertura.pj > 0) {
-                    individualStatsTableBody.innerHTML += `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-3 px-3 text-center"></td>
-                            <td class="py-3 px-3 text-center">Apertura</td>
-                            <td class="py-3 px-3 text-center">${yearStats.apertura.points}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.apertura.pg}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.apertura.pe}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.apertura.pp}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.apertura.pj}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.apertura.efectividad}%</td>
-                            <td class="py-3 px-3 text-center">${yearStats.apertura.chamigos}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.apertura.tt}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.apertura.ausentes}</td>
-                        </tr>
-                    `;
-                }
-
-                // Render Clausura if player played in it
-                if (yearStats.clausura.pj > 0) {
-                    individualStatsTableBody.innerHTML += `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-3 px-3 text-center"></td>
-                            <td class="py-3 px-3 text-center">Clausura</td>
-                            <td class="py-3 px-3 text-center">${yearStats.clausura.points}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.clausura.pg}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.clausura.pe}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.clausura.pp}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.clausura.pj}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.clausura.efectividad}%</td>
-                            <td class="py-3 px-3 text-center">${yearStats.clausura.chamigos}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.clausura.tt}</td>
-                            <td class="py-3 px-3 text-center">${yearStats.clausura.ausentes}</td>
-                        </tr>
-                    `;
-                }
+                // Always render Clausura row, showing 0s if no data
+                const clausuraStats = yearStats.clausura;
+                individualStatsTableBody.innerHTML += `
+                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-3 text-center"></td>
+                        <td class="py-3 px-3 text-center">Clausura</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pg}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pe}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pp}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pj}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.efectividad}%</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.chamigos}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.tt}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.ausentes}</td>
+                    </tr>
+                `;
             });
 
             loadingMessage.classList.add('hidden');
@@ -1881,8 +1922,8 @@
         document.getElementById('fixture-year-select').addEventListener('change', renderFixtureMatchCards);
         document.getElementById('fixture-month-select').addEventListener('change', renderFixtureMatchCards);
 
-        // New event listener for individual player select
-        document.getElementById('individual-player-select').addEventListener('change', renderIndividualStatsTable);
+        // Event listener for individual player search input (handled by setupPlayerSearch)
+        // document.getElementById('individual-player-select').addEventListener('change', renderIndividualStatsTable); // Removed, now handled by autocomplete click
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
         closeSideMenuButton.addEventListener('click', toggleSideMenu);
