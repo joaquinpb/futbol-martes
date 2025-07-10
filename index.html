@@ -6,6 +6,10 @@
     <title>LA CLANDE</title> <!-- Título de la página actualizado a mayúsculas -->
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Carga de Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Fuente Inter para una mejor legibilidad */
         body {
@@ -21,7 +25,6 @@
             @apply bg-white rounded-lg shadow-md;
             width: 100%; /* Ensure tables take full width */
             border-collapse: collapse; /* For clean borders */
-            /* Removed table-layout: fixed; for most tables to allow auto width */
         }
         /* Encabezados de tabla: centrado por defecto */
         th {
@@ -174,12 +177,41 @@
             }
         }
 
-        /* Removed specific width styles for leaderboard, chamigo, tt, presentismo, ausentismo tables */
-        /* They will now use auto layout, adjusting to content */
-
         /* Estadísticas table remains auto layout and overflow-x-auto */
         #estadisticas-table {
             table-layout: auto;
+        }
+
+        /* Style for clickable player names */
+        .player-name-clickable {
+            cursor: pointer;
+            color: #4f46e5; /* Indigo-600 */
+            font-weight: 500; /* Medium font weight */
+        }
+        .player-name-clickable:hover {
+            text-decoration: underline;
+        }
+
+        /* Style for loading messages */
+        .loading-message {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: #6b7280; /* gray-500 */
+            font-style: italic;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #4f46e5; /* Indigo-600 */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -195,14 +227,14 @@
             <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
         </div>
         <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-content">Tabla de Posiciones</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-content">Chamigo</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-content">TT</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="presentismo-content">Presentismo</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="ausentismo-content">Ausentismo</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="estadisticas-content">Estadísticas</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="equipos-content">Equipos</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="fixture-content">Fixture</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-content"><i class="fas fa-trophy mr-2"></i>Tabla de Posiciones</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-content"><i class="fas fa-handshake mr-2"></i>Chamigo</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-content"><i class="fas fa-clock mr-2"></i>TT</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="presentismo-content"><i class="fas fa-check-circle mr-2"></i>Presentismo</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="ausentismo-content"><i class="fas fa-times-circle mr-2"></i>Ausentismo</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="estadisticas-content"><i class="fas fa-chart-bar mr-2"></i>Estadísticas</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="equipos-content"><i class="fas fa-users mr-2"></i>Equipos</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="fixture-content"><i class="fas fa-calendar-alt mr-2"></i>Fixture</button>
         </div>
     </nav>
 
@@ -233,14 +265,16 @@
             </div>
 
             <div class="overflow-x-auto-off">
-                <p id="leaderboard-loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
+                <p id="leaderboard-loading-message" class="loading-message">
+                    <span class="loading-spinner"></span>Cargando tabla de posiciones...
+                </p>
                 <table id="leaderboard-table" class="bg-white rounded-lg shadow hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
                             <th class="py-3 px-3 text-center">#</th>
                             <th class="py-3 px-3 text-left-player">Jugador</th>
                             <th class="py-3 px-3 text-center">Puntos</th>
-                            <th class="py-3 px-3 text-center">Efectividad</th> <!-- Texto corregido -->
+                            <th class="py-3 px-3 text-center">Efectividad</th>
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 text-sm font-light">
@@ -268,7 +302,9 @@
                 </div>
             </div>
             <div class="overflow-x-auto-off">
-                <p id="chamigo-loading-message" class="text-gray-500 text-center">Cargando tabla de Chamigos...</p>
+                <p id="chamigo-loading-message" class="loading-message">
+                    <span class="loading-spinner"></span>Cargando tabla de Chamigos...
+                </p>
                 <table id="chamigo-table" class="bg-white rounded-lg shadow hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
@@ -302,7 +338,9 @@
                 </div>
             </div>
             <div class="overflow-x-auto-off">
-                <p id="tt-loading-message" class="text-gray-500 text-center">Cargando tabla de Asistencia TT...</p>
+                <p id="tt-loading-message" class="loading-message">
+                    <span class="loading-spinner"></span>Cargando tabla de Asistencia TT...
+                </p>
                 <table id="tt-table" class="bg-white rounded-lg shadow hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
@@ -336,7 +374,9 @@
                 </div>
             </div>
             <div class="overflow-x-auto-off">
-                <p id="presentismo-loading-message" class="text-gray-500 text-center">Cargando tabla de Presentismo...</p>
+                <p id="presentismo-loading-message" class="loading-message">
+                    <span class="loading-spinner"></span>Cargando tabla de Presentismo...
+                </p>
                 <table id="presentismo-table" class="bg-white rounded-lg shadow hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
@@ -370,7 +410,9 @@
                 </div>
             </div>
             <div class="overflow-x-auto-off">
-                <p id="ausentismo-loading-message" class="text-gray-500 text-center">Cargando tabla de Ausentismo...</p>
+                <p id="ausentismo-loading-message" class="loading-message">
+                    <span class="loading-spinner"></span>Cargando tabla de Ausentismo...
+                </p>
                 <table id="ausentismo-table" class="bg-white rounded-lg shadow hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
@@ -388,7 +430,7 @@
         <!-- Content for Estadísticas -->
         <div id="estadisticas-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas de Jugadores</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div id="estadisticas-filters" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div>
                     <label for="estadisticas-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
                     <select id="estadisticas-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
@@ -424,8 +466,35 @@
                     </select>
                 </div>
             </div>
-            <div class="overflow-x-auto"> <!-- This one keeps overflow-x-auto -->
-                <p id="estadisticas-loading-message" class="text-gray-500 text-center">Cargando estadísticas...</p>
+            
+            <!-- Player Profile Section (hidden by default) -->
+            <div id="player-profile-section" class="hidden bg-gray-50 p-6 rounded-lg shadow-inner mb-6">
+                <button id="back-to-stats-button" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-md mb-4 transition duration-150 ease-in-out">
+                    <i class="fas fa-arrow-left mr-2"></i>Volver a Estadísticas
+                </button>
+                <h3 id="player-profile-name" class="text-3xl font-bold text-indigo-700 mb-4"></h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                        <p class="text-gray-600">Puntos: <span id="profile-points" class="font-semibold text-gray-800"></span></p>
+                        <p class="text-gray-600">Partidos Jugados (PJ): <span id="profile-pj" class="font-semibold text-gray-800"></span></p>
+                        <p class="text-gray-600">Efectividad: <span id="profile-efectividad" class="font-semibold text-gray-800"></span></p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                        <p class="text-gray-600">Chamigos: <span id="profile-chamigos" class="font-semibold text-gray-800"></span></p>
+                        <p class="text-gray-600">Asistencia TT: <span id="profile-tt" class="font-semibold text-gray-800"></span></p>
+                        <p class="text-gray-600">Ausentes: <span id="profile-ausentes" class="font-semibold text-gray-800"></span></p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <h4 class="text-xl font-semibold text-gray-700 mb-3">Rendimiento en Partidos</h4>
+                    <canvas id="playerStatsChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <div id="estadisticas-table-container" class="overflow-x-auto"> <!-- This one keeps overflow-x-auto -->
+                <p id="estadisticas-loading-message" class="loading-message">
+                    <span class="loading-spinner"></span>Cargando estadísticas...
+                </p>
                 <table id="estadisticas-table" class="bg-white rounded-lg shadow hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
@@ -467,7 +536,9 @@
                 </div>
             </div>
             <!-- Loading message for Equipos, always present in DOM -->
-            <p id="equipos-loading-message" class="text-gray-500 text-center col-span-full">Cargando estadísticas de equipos...</p>
+            <p id="equipos-loading-message" class="loading-message col-span-full">
+                <span class="loading-spinner"></span>Cargando estadísticas de equipos...
+            </p>
             <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
                 <!-- Estadísticas de equipos se cargarán aquí -->
             </div>
@@ -477,7 +548,9 @@
         <div id="fixture-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Detalles del Partido</h2>
             <!-- Match details will be loaded here -->
-            <p id="fixture-loading-message" class="text-gray-500 text-center col-span-full">Cargando detalles del partido...</p>
+            <p id="fixture-loading-message" class="loading-message col-span-full">
+                <span class="loading-spinner"></span>Cargando detalles del partido...
+            </p>
             <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 mb-6 hidden">
                 <div class="bg-blue-100 p-4 rounded-lg shadow-sm">
                     <h3 class="font-semibold text-blue-800 mb-2">Jugadores de Claros</h3>
@@ -536,6 +609,7 @@
         let gapiInited = false;
         let allPlayersData = []; // Cache de todos los jugadores
         let allMatchesData = []; // Cache de todos los partidos
+        let playerStatsChartInstance = null; // Para la instancia del gráfico de Chart.js
 
         // Elementos del DOM para el menú lateral
         const hamburgerButton = document.getElementById('hamburger-button');
@@ -553,6 +627,12 @@
         const estadisticasContent = document.getElementById('estadisticas-content');
         const equiposContent = document.getElementById('equipos-content');
         const fixtureContent = document.getElementById('fixture-content'); // New fixture content
+
+        // Referencias a elementos de la sección de perfil de jugador
+        const playerProfileSection = document.getElementById('player-profile-section');
+        const backToStatsButton = document.getElementById('back-to-stats-button');
+        const estadisticasFilters = document.getElementById('estadisticas-filters');
+        const estadisticasTableContainer = document.getElementById('estadisticas-table-container');
 
         // --- Funciones de Inicialización de Google API y Carga de Datos ---
 
@@ -572,14 +652,14 @@
                 console.error("Error al inicializar gapi.client:", err);
                 // Actualizar todos los mensajes de carga con el error
                 const errorMessage = `Error al inicializar la API de Google: ${err.message || JSON.stringify(err)}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
-                document.getElementById('leaderboard-loading-message').textContent = errorMessage;
-                document.getElementById('chamigo-loading-message').textContent = errorMessage;
-                document.getElementById('tt-loading-message').textContent = errorMessage;
-                document.getElementById('presentismo-loading-message').textContent = errorMessage;
-                document.getElementById('ausentismo-loading-message').textContent = errorMessage;
-                document.getElementById('estadisticas-loading-message').textContent = errorMessage;
-                document.getElementById('equipos-loading-message').textContent = errorMessage;
-                document.getElementById('fixture-loading-message').textContent = errorMessage; // New fixture loading message
+                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
             }
         }
 
@@ -604,14 +684,14 @@
             } catch (error) {
                 console.error("Error al cargar datos iniciales:", error);
                 const errorMessage = `Error al cargar datos: ${error.message || JSON.stringify(error)}. Asegúrate de que la hoja sea accesible.`;
-                document.getElementById('leaderboard-loading-message').textContent = errorMessage;
-                document.getElementById('chamigo-loading-message').textContent = errorMessage;
-                document.getElementById('tt-loading-message').textContent = errorMessage;
-                document.getElementById('presentismo-loading-message').textContent = errorMessage;
-                document.getElementById('ausentismo-loading-message').textContent = errorMessage;
-                document.getElementById('estadisticas-loading-message').textContent = errorMessage;
-                document.getElementById('equipos-loading-message').textContent = errorMessage;
-                document.getElementById('fixture-loading-message').textContent = errorMessage; // New fixture loading message
+                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
+                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
             }
         }
 
@@ -655,17 +735,17 @@
             });
 
             // Llenar y seleccionar automáticamente año y período/mes para todas las secciones
-            populateAndSetCurrentPeriod('leaderboard-year-select', 'leaderboard-period-select');
-            populateAndSetCurrentPeriod('chamigo-year-select', 'chamigo-period-select');
-            populateAndSetCurrentPeriod('tt-year-select', 'tt-period-select');
-            populateAndSetCurrentPeriod('presentismo-year-select', 'presentismo-period-select');
-            populateAndSetCurrentPeriod('ausentismo-year-select', 'ausentismo-period-select');
-            populateAndSetCurrentPeriod('estadisticas-year-select', 'estadisticas-period-select');
-            populateAndSetCurrentPeriod('equipos-year-select', 'equipos-period-select');
+            populateAndSetCurrentPeriod('leaderboard-year-select', 'leaderboard-period-select', 'leaderboard');
+            populateAndSetCurrentPeriod('chamigo-year-select', 'chamigo-period-select', 'chamigo');
+            populateAndSetCurrentPeriod('tt-year-select', 'tt-period-select', 'tt');
+            populateAndSetCurrentPeriod('presentismo-year-select', 'presentismo-period-select', 'presentismo');
+            populateAndSetCurrentPeriod('ausentismo-year-select', 'ausentismo-period-select', 'ausentismo');
+            populateAndSetCurrentPeriod('estadisticas-year-select', 'estadisticas-period-select', 'estadisticas');
+            populateAndSetCurrentPeriod('equipos-year-select', 'equipos-period-select', 'equipos');
             
             // For fixture, we need to populate months instead of periods
-            populateYearSelects('fixture-year-select');
-            populateMonthSelects('fixture-month-select');
+            populateYearSelects('fixture-year-select', 'fixture');
+            populateMonthSelects('fixture-month-select', 'fixture');
 
 
             // Activar la pestaña por defecto al cargar
@@ -680,7 +760,7 @@
                 ausentismoContent.classList.add('hidden');
                 estadisticasContent.classList.add('hidden');
                 equiposContent.classList.add('hidden');
-                fixtureContent.classList.add('hidden'); // New fixture content
+                fixtureContent.classList.add('hidden');
             }
             
             // Renderizar el contenido de la pestaña por defecto (leaderboard)
@@ -693,6 +773,13 @@
             // Remover 'active' de todos los botones y ocultar todos los contenidos
             tabButtons.forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            // Ocultar la sección de perfil de jugador y mostrar filtros/tabla de estadísticas si se vuelve a la pestaña de estadísticas
+            if (clickedButton.dataset.tab === 'estadisticas-content') {
+                playerProfileSection.classList.add('hidden');
+                estadisticasFilters.classList.remove('hidden');
+                estadisticasTableContainer.classList.remove('hidden');
+            }
 
             // Añadir 'active' al botón clicado y mostrar su contenido
             clickedButton.classList.add('active');
@@ -719,8 +806,8 @@
                 renderEstadisticasTable();
             } else if (targetTabId === 'equipos-content') {
                 renderEquiposStats();
-            } else if (targetTabId === 'fixture-content') { // New fixture content rendering
-                renderFixtureMatchCards(); // Populate matches cards
+            } else if (targetTabId === 'fixture-content') {
+                renderFixtureMatchCards();
             }
         }
 
@@ -922,7 +1009,7 @@
             leaderboardTableBody.innerHTML = '';
             leaderboardTable.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
-            loadingMessage.textContent = 'Cargando tabla de posiciones...';
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de posiciones...`;
 
             const { players: rankedPlayers } = calculateStatsForPeriod('leaderboard-year-select', 'leaderboard-period-select');
 
@@ -930,7 +1017,7 @@
             rankedPlayers.sort((a, b) => b.points - a.points);
 
             if (rankedPlayers.length === 0) {
-                loadingMessage.textContent = 'No hay datos disponibles para los filtros seleccionados.';
+                loadingMessage.innerHTML = `No hay datos disponibles para los filtros seleccionados.`;
                 loadingMessage.classList.remove('hidden');
                 leaderboardTable.classList.add('hidden');
                 return;
@@ -940,7 +1027,7 @@
             rankedPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.points}</td>
                     <td class="py-3 px-3 text-center">${player.efectividad}%</td>
                 `;
@@ -949,6 +1036,7 @@
 
             loadingMessage.classList.add('hidden');
             leaderboardTable.classList.remove('hidden');
+            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de Chamigo ---
@@ -960,7 +1048,7 @@
             chamigoTableBody.innerHTML = '';
             chamigoTable.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
-            loadingMessage.textContent = 'Cargando tabla de Chamigos...';
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Chamigos...`;
 
             const { players: rankedChamigoPlayers } = calculateStatsForPeriod('chamigo-year-select', 'chamigo-period-select');
 
@@ -968,7 +1056,7 @@
             rankedChamigoPlayers.sort((a, b) => b.chamigos - a.chamigos);
 
             if (rankedChamigoPlayers.length === 0) {
-                loadingMessage.textContent = 'No hay datos de Chamigos disponibles para los filtros seleccionados.';
+                loadingMessage.innerHTML = `No hay datos de Chamigos disponibles para los filtros seleccionados.`;
                 loadingMessage.classList.remove('hidden');
                 chamigoTable.classList.add('hidden');
                 return;
@@ -978,7 +1066,7 @@
             rankedChamigoPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.chamigos}</td>
                 `;
                 chamigoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
@@ -986,6 +1074,7 @@
 
             loadingMessage.classList.add('hidden');
             chamigoTable.classList.remove('hidden');
+            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de TT ---
@@ -997,7 +1086,7 @@
             ttTableBody.innerHTML = '';
             ttTable.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
-            loadingMessage.textContent = 'Cargando tabla de Asistencia TT...';
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Asistencia TT...`;
 
             const { players: rankedTTPlayers } = calculateStatsForPeriod('tt-year-select', 'tt-period-select');
 
@@ -1005,7 +1094,7 @@
             rankedTTPlayers.sort((a, b) => b.tt - a.tt);
 
             if (rankedTTPlayers.length === 0) {
-                loadingMessage.textContent = 'No hay datos de Asistencia TT disponibles para los filtros seleccionados.';
+                loadingMessage.innerHTML = `No hay datos de Asistencia TT disponibles para los filtros seleccionados.`;
                 loadingMessage.classList.remove('hidden');
                 ttTable.classList.add('hidden');
                 return;
@@ -1015,7 +1104,7 @@
             rankedTTPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.tt}</td>
                 `;
                 ttTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
@@ -1023,6 +1112,7 @@
 
             loadingMessage.classList.add('hidden');
             ttTable.classList.remove('hidden');
+            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de Presentismo ---
@@ -1034,7 +1124,7 @@
             presentismoTableBody.innerHTML = '';
             presentismoTable.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
-            loadingMessage.textContent = 'Cargando tabla de Presentismo...';
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Presentismo...`;
 
             const { players: rankedPJPlayers } = calculateStatsForPeriod('presentismo-year-select', 'presentismo-period-select');
 
@@ -1042,7 +1132,7 @@
             rankedPJPlayers.sort((a, b) => b.pj - a.pj);
 
             if (rankedPJPlayers.length === 0) {
-                loadingMessage.textContent = 'No hay datos de Presentismo disponibles para los filtros seleccionados.';
+                loadingMessage.innerHTML = `No hay datos de Presentismo disponibles para los filtros seleccionados.`;
                 loadingMessage.classList.remove('hidden');
                 presentismoTable.classList.add('hidden');
                 return;
@@ -1052,7 +1142,7 @@
             rankedPJPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.pj}</td>
                 `;
                 presentismoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
@@ -1060,6 +1150,7 @@
 
             loadingMessage.classList.add('hidden');
             presentismoTable.classList.remove('hidden');
+            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de Ausentismo ---
@@ -1071,7 +1162,7 @@
             ausentismoTableBody.innerHTML = '';
             ausentismoTable.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
-            loadingMessage.textContent = 'Cargando tabla de Ausentismo...';
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Ausentismo...`;
 
             const { players: rankedAusentePlayers } = calculateStatsForPeriod('ausentismo-year-select', 'ausentismo-period-select');
 
@@ -1079,8 +1170,8 @@
             rankedAusentePlayers.sort((a, b) => b.ausentes - a.ausentes);
 
             if (rankedAusentePlayers.length === 0) {
-                loadingMessage.textContent = 'No hay datos de Ausentismo disponibles para los filtros seleccionados.';
-                loadingMessage.classList.add('hidden');
+                loadingMessage.innerHTML = `No hay datos de Ausentismo disponibles para los filtros seleccionados.`;
+                loadingMessage.classList.remove('hidden');
                 ausentismoTable.classList.add('hidden');
                 return;
             }
@@ -1089,7 +1180,7 @@
             rankedAusentePlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.ausentes}</td>
                 `;
                 ausentismoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
@@ -1097,6 +1188,7 @@
 
             loadingMessage.classList.add('hidden');
             ausentismoTable.classList.remove('hidden');
+            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Tabla de Estadísticas ---
@@ -1110,7 +1202,7 @@
             estadisticasTableBody.innerHTML = '';
             estadisticasTable.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
-            loadingMessage.textContent = 'Cargando estadísticas...';
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando estadísticas...`;
 
             const { players: rankedEstadisticasPlayers } = calculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
 
@@ -1137,7 +1229,7 @@
             });
 
             if (rankedEstadisticasPlayers.length === 0) {
-                loadingMessage.textContent = 'No hay datos de Estadísticas disponibles para los filtros seleccionados.';
+                loadingMessage.innerHTML = `No hay datos de Estadísticas disponibles para los filtros seleccionados.`;
                 loadingMessage.classList.remove('hidden');
                 estadisticasTable.classList.add('hidden');
                 return;
@@ -1147,7 +1239,7 @@
             rankedEstadisticasPlayers.forEach((player, index) => {
                 const rowHTML = `
                     <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-left-player player-name-clickable" data-player-id="${player.id}">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.points}</td>
                     <td class="py-3 px-3 text-center">${player.pg}</td>
                     <td class="py-3 px-3 text-center">${player.pe}</td>
@@ -1163,6 +1255,7 @@
 
             loadingMessage.classList.add('hidden');
             estadisticasTable.classList.remove('hidden');
+            addPlayerNameClickListeners(); // Add listeners after rendering
         }
 
         // --- Renderizar Estadísticas de Equipos ---
@@ -1174,6 +1267,7 @@
             loadingMessage.classList.remove('hidden');
             equiposStatsDisplay.classList.add('hidden');
             equiposStatsDisplay.innerHTML = ''; // Limpiar contenido anterior
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando estadísticas de equipos...`;
 
             console.log('[renderEquiposStats] Starting render...'); // Debug log
             const { teamStats } = calculateStatsForPeriod('equipos-year-select', 'equipos-period-select');
@@ -1221,13 +1315,13 @@
             fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
             fixtureDetailsDisplay.classList.add('hidden'); // Hide details when re-rendering cards
             loadingMessage.classList.remove('hidden');
-            loadingMessage.textContent = 'Cargando partidos...';
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
 
             const filteredMatches = getFilteredMatches(fixtureYearSelect.id, fixtureMonthSelect.id, true); // Use month filter
             console.log(`[renderFixtureMatchCards] Found ${filteredMatches.length} matches for selection.`);
 
             if (filteredMatches.length === 0) {
-                loadingMessage.textContent = 'No hay partidos disponibles para los filtros seleccionados.';
+                loadingMessage.innerHTML = `No hay partidos disponibles para los filtros seleccionados.`;
                 return;
             }
 
@@ -1263,11 +1357,12 @@
 
             loadingMessage.classList.remove('hidden');
             fixtureDetailsDisplay.classList.add('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando detalles del partido...`;
             
             const selectedMatch = allMatchesData.find(match => match[0] === matchId);
 
             if (!selectedMatch) {
-                loadingMessage.textContent = 'Detalles del partido no encontrados.';
+                loadingMessage.innerHTML = `Detalles del partido no encontrados.`;
                 return;
             }
 
@@ -1322,6 +1417,128 @@
             fixtureDetailsDisplay.classList.remove('hidden');
         }
 
+        // --- Player Profile Functions ---
+        function showPlayerProfile(playerId) {
+            const player = allPlayersData.find(p => p[0] === playerId);
+            if (!player) {
+                console.error('Jugador no encontrado:', playerId);
+                return;
+            }
+
+            // Calculate stats for the player across all time (total)
+            const { players: allTimePlayersStats } = calculateStatsForPeriod('estadisticas-year-select', 'total');
+            const playerFullStats = allTimePlayersStats.find(p => p.id === playerId);
+
+            if (!playerFullStats) {
+                console.error('Estadísticas completas del jugador no encontradas:', playerId);
+                return;
+            }
+
+            // Hide general stats table and filters
+            estadisticasFilters.classList.add('hidden');
+            estadisticasTableContainer.classList.add('hidden');
+            
+            // Show player profile section
+            playerProfileSection.classList.remove('hidden');
+
+            // Populate player profile details
+            document.getElementById('player-profile-name').textContent = playerFullStats.name;
+            document.getElementById('profile-points').textContent = playerFullStats.points;
+            document.getElementById('profile-pj').textContent = playerFullStats.pj;
+            document.getElementById('profile-efectividad').textContent = `${playerFullStats.efectividad}%`;
+            document.getElementById('profile-chamigos').textContent = playerFullStats.chamigos;
+            document.getElementById('profile-tt').textContent = playerFullStats.tt;
+            document.getElementById('profile-ausentes').textContent = playerFullStats.ausentes;
+
+            renderPlayerStatsChart(playerFullStats);
+        }
+
+        function renderPlayerStatsChart(playerStats) {
+            const ctx = document.getElementById('playerStatsChart').getContext('2d');
+
+            // Destroy existing chart instance if it exists
+            if (playerStatsChartInstance) {
+                playerStatsChartInstance.destroy();
+            }
+
+            playerStatsChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Puntos', 'PG', 'PE', 'PP'],
+                    datasets: [{
+                        label: 'Rendimiento',
+                        data: [playerStats.points, playerStats.pg, playerStats.pe, playerStats.pp],
+                        backgroundColor: [
+                            'rgba(79, 70, 229, 0.6)', // Indigo-600
+                            'rgba(34, 197, 94, 0.6)', // Green-500
+                            'rgba(234, 179, 8, 0.6)', // Yellow-500
+                            'rgba(239, 68, 68, 0.6)'  // Red-500
+                        ],
+                        borderColor: [
+                            'rgba(79, 70, 229, 1)',
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(234, 179, 8, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#4a5568' // gray-600
+                            },
+                            grid: {
+                                color: '#e2e8f0' // gray-300
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#4a5568' // gray-600
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Estadísticas Clave',
+                            color: '#1a202c', // gray-900
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function addPlayerNameClickListeners() {
+            document.querySelectorAll('.player-name-clickable').forEach(element => {
+                element.removeEventListener('click', handlePlayerNameClick); // Prevent duplicate listeners
+                element.addEventListener('click', handlePlayerNameClick);
+            });
+        }
+
+        function handlePlayerNameClick(event) {
+            const playerId = event.target.dataset.playerId;
+            // First, switch to the 'estadisticas-content' tab
+            const estadisticasTabButton = document.querySelector('.tab-button[data-tab="estadisticas-content"]');
+            if (estadisticasTabButton) {
+                estadisticasTabButton.click(); // Simulate click to activate tab
+            }
+            // Then, show the player profile
+            showPlayerProfile(playerId);
+        }
 
         // --- Utilidades ---
         function parseDate(dateString) {
@@ -1329,7 +1546,7 @@
             return new Date(year, month - 1, day);
         }
 
-        function populateYearSelects(selectId) {
+        function populateYearSelects(selectId, storageKeyPrefix) {
             const yearSelect = document.getElementById(selectId);
             const years = new Set();
             allMatchesData.forEach(match => {
@@ -1356,9 +1573,30 @@
                     yearSelect.appendChild(option);
                 });
             }
+
+            // Restore from localStorage
+            const storedYear = localStorage.getItem(`${storageKeyPrefix}-year`);
+            if (storedYear && Array.from(yearSelect.options).some(option => option.value === storedYear)) {
+                yearSelect.value = storedYear;
+            } else {
+                // Set current year as default if no stored value or invalid
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                const yearOption = Array.from(yearSelect.options).find(option => parseInt(option.value) === currentYear);
+                if (yearOption) {
+                    yearSelect.value = currentYear;
+                } else {
+                    yearSelect.value = 'all';
+                }
+            }
+
+            // Save to localStorage on change
+            yearSelect.addEventListener('change', () => {
+                localStorage.setItem(`${storageKeyPrefix}-year`, yearSelect.value);
+            });
         }
 
-        function populateMonthSelects(selectId) {
+        function populateMonthSelects(selectId, storageKeyPrefix) {
             const monthSelect = document.getElementById(selectId);
             const months = [
                 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -1378,44 +1616,55 @@
                 monthSelect.appendChild(option);
             });
 
-            // Set current month as default
-            const today = new Date();
-            const currentMonth = today.getMonth() + 1; // getMonth is 0-indexed
-            const monthOption = Array.from(monthSelect.options).find(option => parseInt(option.value) === currentMonth);
-            if (monthOption) {
-                monthSelect.value = currentMonth;
+            // Restore from localStorage
+            const storedMonth = localStorage.getItem(`${storageKeyPrefix}-month`);
+            if (storedMonth && Array.from(monthSelect.options).some(option => option.value === storedMonth)) {
+                monthSelect.value = storedMonth;
             } else {
-                monthSelect.value = 'all'; // Fallback if current month is not in options (shouldn't happen)
+                // Set current month as default
+                const today = new Date();
+                const currentMonth = today.getMonth() + 1; // getMonth is 0-indexed
+                const monthOption = Array.from(monthSelect.options).find(option => parseInt(option.value) === currentMonth);
+                if (monthOption) {
+                    monthSelect.value = currentMonth;
+                } else {
+                    monthSelect.value = 'all';
+                }
             }
+
+            // Save to localStorage on change
+            monthSelect.addEventListener('change', () => {
+                localStorage.setItem(`${storageKeyPrefix}-month`, monthSelect.value);
+            });
         }
 
 
-        function populateAndSetCurrentPeriod(yearSelectId, periodSelectId) {
-            populateYearSelects(yearSelectId); // First populate years
+        function populateAndSetCurrentPeriod(yearSelectId, periodSelectId, storageKeyPrefix) {
+            populateYearSelects(yearSelectId, storageKeyPrefix); // First populate years
 
-            const yearSelect = document.getElementById(yearSelectId);
             const periodSelect = document.getElementById(periodSelectId);
-
-            const today = new Date();
-            const currentYear = today.getFullYear();
-            const currentMonth = today.getMonth(); // 0-indexed
-
-            // Set current year
-            const yearOption = Array.from(yearSelect.options).find(option => parseInt(option.value) === currentYear);
-            if (yearOption) {
-                yearSelect.value = currentYear;
+            
+            // Restore from localStorage
+            const storedPeriod = localStorage.getItem(`${storageKeyPrefix}-period`);
+            if (storedPeriod && Array.from(periodSelect.options).some(option => option.value === storedPeriod)) {
+                periodSelect.value = storedPeriod;
             } else {
-                yearSelect.value = 'all'; // Fallback if current year is not in options
+                // Set current period based on current month if no stored value or invalid
+                const today = new Date();
+                const currentMonth = today.getMonth(); // 0-indexed
+                if (currentMonth >= 0 && currentMonth <= 5) { // January to June (Apertura)
+                    periodSelect.value = 'apertura';
+                } else if (currentMonth >= 6 && currentMonth <= 11) { // July to December (Clausura)
+                    periodSelect.value = 'clausura';
+                } else {
+                    periodSelect.value = 'total';
+                }
             }
 
-            // Set current period based on current month
-            if (currentMonth >= 0 && currentMonth <= 5) { // January to June (Apertura)
-                periodSelect.value = 'apertura';
-            } else if (currentMonth >= 6 && currentMonth <= 11) { // July to December (Clausura)
-                periodSelect.value = 'clausura';
-            } else {
-                periodSelect.value = 'total'; // Default to Totales if outside specific periods (shouldn't happen with valid months)
-            }
+            // Save to localStorage on change
+            periodSelect.addEventListener('change', () => {
+                localStorage.setItem(`${storageKeyPrefix}-period`, periodSelect.value);
+            });
         }
 
 
@@ -1456,6 +1705,13 @@
             }
         });
 
+        backToStatsButton.addEventListener('click', () => {
+            playerProfileSection.classList.add('hidden');
+            estadisticasFilters.classList.remove('hidden');
+            estadisticasTableContainer.classList.remove('hidden');
+            renderEstadisticasTable(); // Re-render the main stats table
+        });
+
         // Evento para manejar el redimensionamiento de la ventana
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 768) {
@@ -1483,7 +1739,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('Tabla de Posiciones de Fútbol 5 cargada!');
+            console.log('Aplicación LA CLANDE cargada!');
             // Asegurarse de que el botón de hamburguesa y el menú lateral estén ocultos al inicio
             hamburgerButton.classList.add('hidden');
             sideMenu.classList.add('hidden'); // Explicitly hide sidebar on load
