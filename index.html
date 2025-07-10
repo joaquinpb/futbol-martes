@@ -191,6 +191,7 @@
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="ausentismo-content">Ausentismo</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="estadisticas-content">Estadísticas</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="equipos-content">Equipos</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="fixture-content">Fixture</button>
         </div>
     </nav>
 
@@ -461,6 +462,55 @@
             </div>
         </div>
 
+        <!-- Content for Fixture -->
+        <div id="fixture-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Detalles del Partido</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label for="fixture-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="fixture-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="fixture-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                    <select id="fixture-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Totales</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="fixture-match-select" class="block text-sm font-medium text-gray-700">Seleccionar Partido:</label>
+                    <select id="fixture-match-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+            </div>
+            <p id="fixture-loading-message" class="text-gray-500 text-center col-span-full">Cargando detalles del partido...</p>
+            <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 hidden">
+                <!-- Match details will be loaded here -->
+                <div class="bg-blue-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-blue-800 mb-2">Jugadores de Claros</h3>
+                    <ul id="claros-players-list" class="list-disc list-inside text-gray-700"></ul>
+                </div>
+                <div class="bg-red-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-red-800 mb-2">Jugadores de Oscuros</h3>
+                    <ul id="oscuros-players-list" class="list-disc list-inside text-gray-700"></ul>
+                </div>
+                <div class="bg-green-100 p-4 rounded-lg shadow-sm col-span-full">
+                    <h3 class="font-semibold text-green-800 mb-2">Equipo Ganador</h3>
+                    <p id="winner-team" class="text-gray-800 font-medium text-lg"></p>
+                </div>
+                <div class="bg-yellow-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-yellow-800 mb-2">Asistentes al TT</h3>
+                    <ul id="tt-attendees-list" class="list-disc list-inside text-gray-700"></ul>
+                </div>
+                <div class="bg-purple-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-purple-800 mb-2">Chamigo/s</h3>
+                    <ul id="chamigos-list" class="list-disc list-inside text-gray-700"></ul>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script async defer src="https://apis.google.com/js/api.js"></script>
@@ -493,6 +543,7 @@
         const ausentismoContent = document.getElementById('ausentismo-content');
         const estadisticasContent = document.getElementById('estadisticas-content');
         const equiposContent = document.getElementById('equipos-content');
+        const fixtureContent = document.getElementById('fixture-content'); // New fixture content
 
         // --- Funciones de Inicialización de Google API y Carga de Datos ---
 
@@ -519,6 +570,7 @@
                 document.getElementById('ausentismo-loading-message').textContent = errorMessage;
                 document.getElementById('estadisticas-loading-message').textContent = errorMessage;
                 document.getElementById('equipos-loading-message').textContent = errorMessage;
+                document.getElementById('fixture-loading-message').textContent = errorMessage; // New fixture loading message
             }
         }
 
@@ -550,6 +602,7 @@
                 document.getElementById('ausentismo-loading-message').textContent = errorMessage;
                 document.getElementById('estadisticas-loading-message').textContent = errorMessage;
                 document.getElementById('equipos-loading-message').textContent = errorMessage;
+                document.getElementById('fixture-loading-message').textContent = errorMessage; // New fixture loading message
             }
         }
 
@@ -600,7 +653,7 @@
             populateAndSetCurrentPeriod('ausentismo-year-select', 'ausentismo-period-select');
             populateAndSetCurrentPeriod('estadisticas-year-select', 'estadisticas-period-select');
             populateAndSetCurrentPeriod('equipos-year-select', 'equipos-period-select');
-
+            populateAndSetCurrentPeriod('fixture-year-select', 'fixture-period-select'); // New fixture filters
 
             // Activar la pestaña por defecto al cargar
             const defaultTabButton = document.querySelector('.tab-button[data-tab="leaderboard-content"]');
@@ -614,6 +667,7 @@
                 ausentismoContent.classList.add('hidden');
                 estadisticasContent.classList.add('hidden');
                 equiposContent.classList.add('hidden');
+                fixtureContent.classList.add('hidden'); // New fixture content
             }
             
             // Renderizar el contenido de la pestaña por defecto (leaderboard)
@@ -652,6 +706,8 @@
                 renderEstadisticasTable();
             } else if (targetTabId === 'equipos-content') {
                 renderEquiposStats();
+            } else if (targetTabId === 'fixture-content') { // New fixture content rendering
+                populateFixtureMatchSelect(); // Populate matches first
             }
         }
 
@@ -1107,7 +1163,7 @@
             // 2. Ocultar mensaje de carga
             loadingMessage.classList.add('hidden');
 
-            // 3. Siempre construir y mostrar las tarjetas de estadísticas, incluso si los valores son 0
+            // 3. Siempre construir y mostrar las tarjetas de estadísticas, incluso if los valores son 0
             const statsHtml = `
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center">
                     <span class="text-3xl font-bold">${teamStats.oscurosWins}</span>
@@ -1133,6 +1189,138 @@
             equiposStatsDisplay.innerHTML = statsHtml;
             equiposStatsDisplay.classList.remove('hidden'); // Mostrar el contenedor de stats
             console.log('[renderEquiposStats] Stats rendered successfully.'); // Debug log
+        }
+
+        // --- Fixture Functions ---
+        function populateFixtureMatchSelect() {
+            const fixtureMatchSelect = document.getElementById('fixture-match-select');
+            const fixtureYearSelect = document.getElementById('fixture-year-select');
+            const fixturePeriodSelect = document.getElementById('fixture-period-select');
+            
+            fixtureMatchSelect.innerHTML = ''; // Clear previous options
+
+            const filteredMatches = getFilteredMatches(fixtureYearSelect.id, fixturePeriodSelect.id);
+            console.log(`[populateFixtureMatchSelect] Found ${filteredMatches.length} matches for selection.`);
+
+            if (filteredMatches.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No hay partidos disponibles';
+                fixtureMatchSelect.appendChild(option);
+                fixtureMatchSelect.disabled = true;
+            } else {
+                fixtureMatchSelect.disabled = false;
+                // Sort matches by date descending (most recent first)
+                filteredMatches.sort((a, b) => parseDate(b[1]).getTime() - parseDate(a[1]).getTime());
+
+                filteredMatches.forEach(match => {
+                    const [matchId, date] = match;
+                    const option = document.createElement('option');
+                    option.value = matchId;
+                    option.textContent = `Partido del ${date}`;
+                    fixtureMatchSelect.appendChild(option);
+                });
+            }
+            // Automatically render details for the first match or if no match selected
+            renderFixtureDetails();
+        }
+
+        function renderFixtureDetails() {
+            const fixtureMatchSelect = document.getElementById('fixture-match-select');
+            const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
+            const loadingMessage = document.getElementById('fixture-loading-message');
+
+            loadingMessage.classList.remove('hidden');
+            fixtureDetailsDisplay.classList.add('hidden');
+            fixtureDetailsDisplay.innerHTML = ''; // Clear previous content
+
+            const selectedMatchId = fixtureMatchSelect.value;
+            console.log(`[renderFixtureDetails] Selected Match ID: ${selectedMatchId}`);
+
+            if (!selectedMatchId) {
+                loadingMessage.textContent = 'Selecciona un partido para ver los detalles.';
+                return;
+            }
+
+            const selectedMatch = allMatchesData.find(match => match[0] === selectedMatchId);
+
+            if (!selectedMatch) {
+                loadingMessage.textContent = 'Detalles del partido no encontrados.';
+                return;
+            }
+
+            const [matchId, date, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = selectedMatch;
+
+            // Helper to get player names from IDs
+            const getPlayerNames = (idsString) => {
+                if (!idsString || idsString.trim() === '') return []; // Return empty array for empty string
+                const ids = idsString.split(',').filter(Boolean);
+                return ids.map(id => {
+                    const player = allPlayersData.find(p => p[0] === id);
+                    return player ? player[1] : `ID Desconocido (${id})`;
+                }).filter(Boolean); // Filter out any null/undefined names
+            };
+
+            const clarosPlayers = getPlayerNames(clarosIDsStr);
+            const oscurosPlayers = getPlayerNames(oscurosIDsStr);
+            const winnerTeam = result || 'No definido';
+
+            let ttAttendees = getPlayerNames(ttAttendeesStr);
+            if (ttAttendees.length === 0) ttAttendees = ['No definido'];
+
+            let chamigos = [];
+            if (chamigoVotosStr) {
+                try {
+                    const chamigoVotos = JSON.parse(chamigoVotosStr);
+                    if (chamigoVotos.length > 0) {
+                        const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
+                        const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
+                        chamigos = chamigosDelPartido.map(chamigo => {
+                            const player = allPlayersData.find(p => p[0] === chamigo.id);
+                            return player ? player[1] : `ID Desconocido (${chamigo.id})`;
+                        }).filter(Boolean);
+                    } else {
+                        chamigos = ['No definido'];
+                    }
+                } catch (e) {
+                    console.warn('Error al parsear votos de chamigo en el partido', matchId, ':', e);
+                    chamigos = ['Error al cargar Chamigo'];
+                }
+            } else {
+                chamigos = ['No definido'];
+            }
+
+            const clarosList = clarosPlayers.length > 0 ? clarosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
+            const oscurosList = oscurosPlayers.length > 0 ? oscurosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
+            const ttList = ttAttendees.map(name => `<li>${name}</li>`).join('');
+            const chamigoList = chamigos.map(name => `<li>${name}</li>`).join('');
+
+            const detailsHtml = `
+                <div class="bg-blue-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-blue-800 mb-2">Jugadores de Claros</h3>
+                    <ul class="list-disc list-inside text-gray-700">${clarosList}</ul>
+                </div>
+                <div class="bg-red-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-red-800 mb-2">Jugadores de Oscuros</h3>
+                    <ul class="list-disc list-inside text-gray-700">${oscurosList}</ul>
+                </div>
+                <div class="bg-green-100 p-4 rounded-lg shadow-sm col-span-full">
+                    <h3 class="font-semibold text-green-800 mb-2">Equipo Ganador</h3>
+                    <p class="text-gray-800 font-medium text-lg">${winnerTeam}</p>
+                </div>
+                <div class="bg-yellow-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-yellow-800 mb-2">Asistentes al TT</h3>
+                    <ul class="list-disc list-inside text-gray-700">${ttList}</ul>
+                </div>
+                <div class="bg-purple-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-purple-800 mb-2">Chamigo/s</h3>
+                    <ul class="list-disc list-inside text-gray-700">${chamigoList}</ul>
+                </div>
+            `;
+
+            fixtureDetailsDisplay.innerHTML = detailsHtml;
+            loadingMessage.classList.add('hidden');
+            fixtureDetailsDisplay.classList.remove('hidden');
         }
 
 
@@ -1224,6 +1412,11 @@
 
         document.getElementById('equipos-year-select').addEventListener('change', renderEquiposStats);
         document.getElementById('equipos-period-select').addEventListener('change', renderEquiposStats);
+
+        // Event listeners for Fixture
+        document.getElementById('fixture-year-select').addEventListener('change', populateFixtureMatchSelect);
+        document.getElementById('fixture-period-select').addEventListener('change', populateFixtureMatchSelect);
+        document.getElementById('fixture-match-select').addEventListener('change', renderFixtureDetails);
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
         closeSideMenuButton.addEventListener('click', toggleSideMenu);
