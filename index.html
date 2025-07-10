@@ -208,19 +208,21 @@
             background-color: #e0e7ff; /* indigo-100 */
         }
 
-        /* Styles for the soccer field (mobile default - vertical) */
+        /* Styles for the soccer field (mobile default - vertical, original proportions) */
         #soccer-field-container {
             position: relative;
-            width: 100%;
-            padding-top: 150%; /* Aspect ratio for a vertical field (e.g., 2:3) */
+            width: 80%; /* Mobile width */
+            padding-top: 187.5%; /* Mobile aspect ratio (height is 1.875 times width) */
             background-color: #0f8d48; /* Green field color */
             border: 2px solid white; /* Outer perimeter */
             border-radius: 0.5rem; /* rounded-lg */
             overflow: hidden; /* Ensure players stay within bounds */
             margin-bottom: 1.5rem; /* mb-6 */
+            margin-left: auto; /* Center the field */
+            margin-right: auto; /* Center the field */
         }
 
-        /* Halfway line (vertical) */
+        /* Halfway line (vertical for mobile) */
         #soccer-field-container::before {
             content: '';
             position: absolute;
@@ -232,7 +234,7 @@
             transform: translateY(-50%);
         }
 
-        /* Center circle (vertical) */
+        /* Center circle (vertical for mobile) */
         #soccer-field-container::after {
             content: '';
             position: absolute;
@@ -245,7 +247,7 @@
             transform: translate(-50%, -50%);
         }
 
-        /* Goals (outside the green area - vertical) */
+        /* Goals (outside the green area - vertical for mobile) */
         .goal {
             position: absolute;
             width: 30%; /* Width of the goal */
@@ -265,7 +267,7 @@
             border-top: 2px solid white; /* Crossbar */
         }
 
-        /* Penalty Areas (vertical) - 2:1 ratio for lines */
+        /* Penalty Areas (vertical for mobile) - 2:1 ratio for lines */
         .penalty-area {
             position: absolute;
             width: 60%; /* Width of the penalty area */
@@ -286,7 +288,7 @@
             border-width: 2px 4px 0 4px; /* Top:2px, Right:4px, Bottom:0, Left:4px */
         }
 
-        /* Goal Areas (smaller box inside penalty area - vertical) - 2:1 ratio for lines */
+        /* Goal Areas (smaller box inside penalty area - vertical for mobile) - 2:1 ratio for lines */
         .goal-area {
             position: absolute;
             width: 30%; /* Width of the goal area */
@@ -367,117 +369,91 @@
             }
         }
         @media (min-width: 768px) { /* md breakpoint */
-            .player-marker {
-                width: 60px;
-                height: 60px;
-                font-size: 1rem; /* text-base */
-            }
-            .player-marker .fa-star {
-                font-size: 0.8em;
-            }
-
-            /* Desktop specific styles for horizontal field */
+            /* Soccer Field Container for Desktop (Vertical 1:2.3 width:length) */
             #soccer-field-container {
-                width: 60%; /* Reduced by 20% from 75% (75 * 0.8 = 60) */
-                padding-top: 45.45%; /* Retain 1:2.2 height to width ratio (1/2.2 = 0.4545) */
+                width: 30%; /* Adjust desktop width to fit layout */
+                padding-top: 230%; /* Height is 2.3 times width (1:2.3 ratio) */
             }
 
             /* Adjust TT details width for desktop */
             #fixture-details-display {
-                width: 40%; /* Take remaining space (100% - 60%) */
+                width: 70%; /* Take remaining space (100% - 30%) */
                 margin-top: 0; /* Align with the top of the field */
             }
 
-
-            /* Rotate and reposition field elements for horizontal view */
-            #soccer-field-container::before { /* Halfway line */
-                top: 0;
-                left: 50%;
-                height: 100%;
-                width: 2px;
+            /* Halfway line (vertical for desktop - same as mobile) */
+            #soccer-field-container::before {
+                top: 50%;
+                left: 0;
+                right: 0;
+                height: 2px;
+                width: auto; /* Let it stretch horizontally */
                 background-color: white;
-                transform: translateX(-50%);
+                transform: translateY(-50%);
             }
 
-            #soccer-field-container::after { /* Center circle */
-                width: 8vw; /* Smaller for desktop, adjust as needed */
-                height: 8vw;
+            /* Center circle (vertical for desktop - adjusted size) */
+            #soccer-field-container::after {
+                width: 20%; /* Relative to new desktop field width, consistent with mobile percentage */
+                height: 20%; /* Must be equal to width for a circle */
+                /* No need for transform: translate(-50%, -50%) here as it's already in base style */
             }
 
-            .goal.top { /* Now left goal */
-                top: 35%;
-                left: -15px; /* Position outside the left border */
-                border-bottom: none;
-                border-right: 2px solid white; /* Crossbar */
-                border-top: none; /* Remove top border */
-                border-left: none; /* Remove left border */
-                width: 15px; /* Depth of the goal structure */
-                height: 30%; /* Width of the goal */
+            /* Goals (vertical for desktop - same as mobile but within desktop media query) */
+            .goal.top {
+                top: -15px; /* Position outside the top border */
+                left: 35%;
+                border-bottom: 2px solid white; /* Crossbar */
+                border-left: 2px solid white;
+                border-right: 2px solid white;
+                width: 30%; /* Width of the goal */
+                height: 15px; /* Depth of the goal structure */
             }
-            .goal.bottom { /* Now right goal */
-                top: 35%;
-                right: -15px; /* Position outside the right border */
-                left: auto; /* Reset left */
-                border-top: none;
-                border-left: 2px solid white; /* Crossbar */
-                border-bottom: none; /* Remove bottom border */
-                border-right: none; /* Remove right border */
-                width: 15px; /* Depth of the goal structure */
-                height: 30%; /* Width of the goal */
+            .goal.bottom {
+                bottom: -15px; /* Position outside the bottom border */
+                left: 35%;
+                border-top: 2px solid white; /* Crossbar */
+                border-left: 2px solid white;
+                border-right: 2px solid white;
+                width: 30%; /* Width of the goal */
+                height: 15px; /* Depth of the goal structure */
             }
 
-            /* Penalty Areas (horizontal) - 2:1 ratio for lines */
-            .penalty-area.top { /* Now left penalty area */
-                top: 20%;
-                left: 0;
-                height: 60%; /* Width of the penalty area */
-                width: 20%; /* Depth from goal line */
-                border-width: 4px 2px 4px 0; /* Top:4px, Right:2px, Bottom:4px, Left:0 */
+            /* Penalty Areas (vertical for desktop - same as mobile but within desktop media query) */
+            .penalty-area.top {
+                top: 0;
+                left: 20%;
+                width: 60%; /* Width of the penalty area (relative to field width) */
+                height: 20%; /* Depth from goal line (relative to field height) */
+                border-width: 0 4px 2px 4px; /* Top:0, Right:4px, Bottom:2px, Left:4px */
             }
-            .penalty-area.bottom { /* Now right penalty area */
-                top: 20%;
-                right: 0;
-                left: auto; /* Reset left */
-                height: 60%; /* Width of the penalty area */
-                width: 20%; /* Depth from goal line */
-                border-width: 4px 0 4px 2px; /* Top:4px, Right:0, Bottom:4px, Left:2px */
-            }
-
-            /* Goal Areas (horizontal) - 2:1 ratio for lines */
-            .goal-area.top { /* Now left goal area */
-                top: 35%;
-                left: 0;
-                height: 30%; /* Width of the goal area */
-                width: 10%; /* Depth from goal line */
-                border-width: 4px 2px 4px 0; /* Top:4px, Right:2px, Bottom:4px, Left:0 */
-            }
-            .goal-area.bottom { /* Now right goal area */
-                top: 35%;
-                right: 0;
-                left: auto; /* Reset left */
-                height: 30%; /* Width of the goal area */
-                width: 10%; /* Depth from goal line */
-                border-width: 4px 0 4px 2px; /* Top:4px, Right:0, Bottom:4px, Left:2px */
+            .penalty-area.bottom {
+                bottom: 0;
+                left: 20%;
+                width: 60%; /* Width of the penalty area (relative to field width) */
+                height: 20%; /* Depth from goal line (relative to field height) */
+                border-width: 2px 4px 0 4px; /* Top:2px, Right:4px, Bottom:0, Left:4px */
             }
 
-            /* Player positions for horizontal field */
-            /* Claros (Right Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
-            .player-marker.claros:nth-child(1) { top: 50%; left: 90%; } /* Goalkeeper */
-            .player-marker.claros:nth-child(2) { top: 30%; left: 75%; } /* Defender 1 */
-            .player-marker.claros:nth-child(3) { top: 70%; left: 75%; } /* Defender 2 */
-            .player-marker.claros:nth-child(4) { top: 40%; left: 60%; } /* Midfielder/Forward 1 */
-            .player-marker.claros:nth-child(5) { top: 60%; left: 60%; } /* Midfielder/Forward 2 */
+            /* Goal Areas (vertical for desktop - same as mobile but within desktop media query) */
+            .goal-area.top {
+                top: 0;
+                left: 35%;
+                width: 30%; /* Width of the goal area */
+                height: 10%; /* Depth from goal line */
+                border-width: 0 4px 2px 4px; /* Top:0, Right:4px, Bottom:2px, Left:4px */
+            }
+            .goal-area.bottom {
+                bottom: 0;
+                left: 35%;
+                width: 30%; /* Width of the goal area */
+                height: 10%; /* Depth from goal line */
+                border-width: 2px 4px 0 4px; /* Top:2px, Right:4px, Bottom:0, Left:4px */
+            }
 
-            /* Oscuros (Left Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
-            .player-marker.oscuros:nth-child(1) { top: 50%; left: 10%; } /* Goalkeeper */
-            .player-marker.oscuros:nth-child(2) { top: 30%; left: 25%; } /* Defender 1 */
-            .player-marker.oscuros:nth-child(3) { top: 70%; left: 25%; } /* Defender 2 */
-            .player-marker.oscuros:nth-child(4) { top: 40%; left: 40%; } /* Midfielder/Forward 1 */
-            .player-marker.oscuros:nth-child(5) { top: 60%; left: 40%; }  /* Midfielder/Forward 2 */
-
-            /* Trophy positions for desktop */
-            .winner-trophy.claros { top: 95%; left: 90%; } /* Bottom-right */
-            .winner-trophy.oscuros { top: 95%; left: 10%; } /* Bottom-left */
+            /* Trophy positions for desktop (now vertical field) */
+            .winner-trophy.claros { top: 95%; left: 50%; } /* Bottom Center */
+            .winner-trophy.oscuros { top: 5%; left: 50%; } /* Top Center */
         }
     </style>
 </head>
@@ -697,7 +673,7 @@
         <!-- Content for Estadísticas -->
         <div id="estadisticas-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas de Jugadores</h2>
-            <div id="estadisticas-filters" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div>
                     <label for="estadisticas-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
                     <select id="estadisticas-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
@@ -794,7 +770,7 @@
             <!-- Container for field and details side-by-side on desktop -->
             <div class="flex flex-col md:flex-row md:space-x-6">
                 <!-- Soccer Field Container -->
-                <div id="soccer-field-container" class="hidden md:block md:w-3/4"> <!-- Adjusted width for desktop -->
+                <div id="soccer-field-container" class="hidden md:block"> <!-- Adjusted width for desktop is now in CSS -->
                     <!-- Goals -->
                     <div class="goal top"></div>
                     <div class="goal bottom"></div>
@@ -808,10 +784,19 @@
                 </div>
 
                 <!-- Match details will be loaded here -->
-                <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6 hidden md:w-1/4"> <!-- Adjusted width for desktop, removed mt-6 -->
-                    <div class="bg-yellow-100 p-4 rounded-lg shadow-sm">
-                        <h3 class="font-semibold text-yellow-800 mb-2">Asistentes al TT</h3>
-                        <ul id="tt-attendees-list" class="list-disc list-inside text-gray-700"></ul>
+                <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6 hidden"> <!-- Adjusted width for desktop, removed mt-6 -->
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <h3 class="font-semibold text-gray-700 mb-2">Asistentes al TT</h3>
+                        <table id="tt-attendees-table" class="bg-white rounded-lg shadow">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-3 text-left-player">Jugador</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light">
+                                <!-- TT attendees will be loaded here -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -883,6 +868,8 @@
     <!-- Script que contiene las funciones de inicialización de GAPI y carga de datos.
          Se coloca aquí para asegurar que las funciones estén definidas antes de que el script de la API de Google las llame. -->
     <script>
+        console.log('Script started parsing'); // Log para verificar si el script se inicia
+
         // ¡IMPORTANTE! Reemplaza 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM' con tu Clave de API de Google Cloud Console.
         // Esta clave es necesaria para acceder a Google Sheets API para hojas públicas sin autenticación de usuario.
         const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; 
@@ -916,6 +903,7 @@
         // --- Funciones de Inicialización de Google API y Carga de Datos ---
         // Se definen aquí para asegurar que estén disponibles cuando el script de la API de Google las llame.
         function gapiLoaded() {
+            console.log('gapiLoaded called'); // Log para verificar si gapiLoaded se ejecuta
             gapi.load('client', initializeGapiClient);
         }
 
@@ -930,16 +918,27 @@
             } catch (err) {
                 console.error("Error al inicializar gapi.client:", err);
                 // Actualizar todos los mensajes de carga con el error
-                const errorMessage = `Error al inicializar la API de Google: ${err.message || JSON.stringify(err)}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
-                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`; // New
+                let errorDetail;
+                if (err && err.message) {
+                    errorDetail = err.message;
+                } else {
+                    try {
+                        errorDetail = JSON.stringify(err);
+                    } catch (e) {
+                        errorDetail = String(err); // Fallback a conversión simple a string
+                    }
+                }
+                const errorMessageText = `Error al inicializar la API de Google: ${errorDetail}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
+
+                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
             }
         }
 
@@ -963,16 +962,26 @@
 
             } catch (error) {
                 console.error("Error al cargar datos iniciales:", error);
-                const errorMessage = `Error al cargar datos: ${error.message || JSON.stringify(error)}. Asegúrate de que la hoja sea accesible.`;
-                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`;
-                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessage}`; // New
+                let errorDetail;
+                if (error && error.message) {
+                    errorDetail = error.message;
+                } else {
+                    try {
+                        errorDetail = JSON.stringify(error);
+                    } catch (e) {
+                        errorDetail = String(error); // Fallback a conversión simple a string
+                    }
+                }
+                const errorMessageText = `Error al cargar datos: ${errorDetail}. Asegúrate de que la hoja sea accesible.`;
+                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
             }
         }
 
@@ -1589,7 +1598,14 @@
             fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
             fixtureDetailsDisplay.classList.add('hidden'); // Hide details when re-rendering cards
             soccerFieldContainer.classList.add('hidden'); // Hide soccer field
-            soccerFieldContainer.innerHTML = ''; // Clear players from field, but keep goals/areas
+            soccerFieldContainer.innerHTML = `
+                <div class="goal top"></div>
+                <div class="goal bottom"></div>
+                <div class="penalty-area top"></div>
+                <div class="penalty-area bottom"></div>
+                <div class="goal-area top"></div>
+                <div class="goal-area bottom"></div>
+            `; // Reset field elements
 
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
@@ -1632,6 +1648,8 @@
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const loadingMessage = document.getElementById('fixture-loading-message');
             const soccerFieldContainer = document.getElementById('soccer-field-container');
+            const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
+
 
             loadingMessage.classList.remove('hidden');
             fixtureDetailsDisplay.classList.add('hidden');
@@ -1639,6 +1657,7 @@
             
             // Clear only player markers and trophy from field
             soccerFieldContainer.querySelectorAll('.player-marker, .winner-trophy').forEach(el => el.remove());
+            ttAttendeesTableBody.innerHTML = ''; // Clear previous TT attendees
 
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando detalles del partido...`;
             
@@ -1666,7 +1685,18 @@
             const winnerTeam = result || 'No definido';
 
             let ttAttendees = getPlayerNames(ttAttendeesStr);
-            if (ttAttendees.length === 0) ttAttendees = ['No definido'];
+            // Populate TT attendees table
+            if (ttAttendees.length > 0) {
+                ttAttendees.forEach(name => {
+                    const rowHTML = `
+                        <td class="py-3 px-3 text-left-player">${name}</td>
+                    `;
+                    ttAttendeesTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+                });
+            } else {
+                ttAttendeesTableBody.innerHTML = `<tr><td class="py-3 px-3 text-center" colspan="1">No hay asistentes al TT registrados.</td></tr>`;
+            }
+
 
             let chamigosIds = [];
             if (chamigoVotosStr) {
@@ -1695,43 +1725,22 @@
             }
 
             // Define positions for 5 players on each side (relative to field container)
-            // Claros (bottom/right half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
-            // These positions are for the VERTICAL layout (mobile).
-            const clarosPositionsMobile = [
+            // Claros (bottom half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
+            const clarosPositions = [
                 { top: '88%', left: '50%' },  // Goalkeeper
                 { top: '75%', left: '30%' },  // Defender 1
                 { top: '75%', left: '70%' },  // Defender 2
                 { top: '60%', left: '40%' },  // Midfielder/Forward 1
                 { top: '60%', left: '60%' }   // Midfielder/Forward 2
             ];
-            // Oscuros (top/left half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
-            const oscurosPositionsMobile = [
+            // Oscuros (top half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
+            const oscurosPositions = [
                 { top: '12%', left: '50%' }, // Goalkeeper
                 { top: '25%', left: '30%' }, // Defender 1
                 { top: '25%', left: '70%' }, // Defender 2
                 { top: '40%', left: '40%' }, // Midfielder/Forward 1
                 { top: '40%', left: '60%' }  // Midfielder/Forward 2
             ];
-
-            // These positions are for the HORIZONTAL layout (desktop).
-            const clarosPositionsDesktop = [
-                { top: '50%', left: '90%' },  // Goalkeeper
-                { top: '30%', left: '75%' },  // Defender 1
-                { top: '70%', left: '75%' },  // Defender 2
-                { top: '40%', left: '60%' },  // Midfielder/Forward 1
-                { top: '60%', left: '60%' }   // Midfielder/Forward 2
-            ];
-            const oscurosPositionsDesktop = [
-                { top: '50%', left: '10%' }, // Goalkeeper
-                { top: '30%', left: '25%' }, // Defender 1
-                { top: '70%', left: '25%' }, // Defender 2
-                { top: '40%', left: '40%' }, // Midfielder/Forward 1
-                { top: '60%', left: '40%' }  // Midfielder/Forward 2
-            ];
-
-            const isDesktop = window.innerWidth >= 768;
-            const currentClarosPositions = isDesktop ? clarosPositionsDesktop : clarosPositionsMobile;
-            const currentOscurosPositions = isDesktop ? oscurosPositionsDesktop : oscurosPositionsMobile;
 
             // Add Claros players
             clarosPlayerIDs.slice(0, 5).forEach((playerId, index) => {
@@ -1741,8 +1750,8 @@
 
                 playerDiv.classList.add('player-marker', 'claros');
                 playerDiv.innerHTML = `<span class="player-name">${playerName.split(' ')[0]}</span> ${chamigosIds.includes(playerId) ? '<i class="fas fa-star text-yellow-400"></i>' : ''}`; // Add star if Chamigo
-                playerDiv.style.top = currentClarosPositions[index].top;
-                playerDiv.style.left = currentClarosPositions[index].left;
+                playerDiv.style.top = clarosPositions[index].top;
+                playerDiv.style.left = clarosPositions[index].left;
                 soccerFieldContainer.appendChild(playerDiv);
             });
 
@@ -1754,8 +1763,8 @@
 
                 playerDiv.classList.add('player-marker', 'oscuros');
                 playerDiv.innerHTML = `<span class="player-name">${playerName.split(' ')[0]}</span> ${chamigosIds.includes(playerId) ? '<i class="fas fa-star text-yellow-400"></i>' : ''}`; // Add star if Chamigo
-                playerDiv.style.top = currentOscurosPositions[index].top;
-                playerDiv.style.left = currentOscurosPositions[index].left;
+                playerDiv.style.top = oscurosPositions[index].top;
+                playerDiv.style.left = oscurosPositions[index].left;
                 soccerFieldContainer.appendChild(playerDiv);
             });
 
@@ -1765,23 +1774,13 @@
                 trophyDiv.classList.add('winner-trophy');
                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
                 
-                // Determine position based on desktop/mobile and winning team
-                if (isDesktop) {
-                    if (winnerTeam === 'Claros') {
-                        trophyDiv.style.top = '95%'; // Bottom-right of field
-                        trophyDiv.style.left = '90%'; 
-                    } else if (winnerTeam === 'Oscuros') {
-                        trophyDiv.style.top = '95%'; // Bottom-left of field
-                        trophyDiv.style.left = '10%'; 
-                    }
-                } else { // Mobile (vertical)
-                    if (winnerTeam === 'Claros') {
-                        trophyDiv.style.top = '95%'; // Bottom-left of field
-                        trophyDiv.style.left = '10%'; 
-                    } else if (winnerTeam === 'Oscuros') {
-                        trophyDiv.style.top = '5%'; // Top-left of field
-                        trophyDiv.style.left = '10%'; 
-                    }
+                // Consistent trophy positions for vertical field (both mobile and desktop)
+                if (winnerTeam === 'Claros') {
+                    trophyDiv.style.top = '95%'; // Bottom-center of field
+                    trophyDiv.style.left = '50%';
+                } else if (winnerTeam === 'Oscuros') {
+                    trophyDiv.style.top = '5%'; // Top-center of field
+                    trophyDiv.style.left = '50%';
                 }
                 soccerFieldContainer.appendChild(trophyDiv);
             }
@@ -1789,9 +1788,6 @@
             // Show soccer field
             soccerFieldContainer.classList.remove('hidden');
 
-            // Update details lists (only TT attendees remain)
-            document.getElementById('tt-attendees-list').innerHTML = ttAttendees.map(name => `<li>${name}</li>`).join('');
-            
             loadingMessage.classList.add('hidden');
             fixtureDetailsDisplay.classList.remove('hidden');
         }
@@ -2398,6 +2394,13 @@
 
         // Evento para manejar el redimensionamiento de la ventana
         window.addEventListener('resize', () => {
+            // Re-render fixture details to adjust player positions based on new orientation
+            const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100');
+            if (currentMatchCard) {
+                const currentMatchId = currentMatchCard.dataset.matchId;
+                renderFixtureDetails(currentMatchId);
+            }
+
             if (window.innerWidth >= 768) {
                 // Desktop view: sidebar always open, hamburger hidden
                 sideMenu.classList.remove('hidden'); // Ensure it's not display:none
@@ -2413,12 +2416,6 @@
                 overlay.classList.remove('open'); // Hide overlay
                 document.body.classList.remove('overflow-hidden'); // Allow scrolling
             }
-            // Re-render fixture details to adjust player positions based on new orientation
-            const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100');
-            if (currentMatchCard) {
-                const currentMatchId = currentMatchCard.dataset.matchId;
-                renderFixtureDetails(currentMatchId);
-            }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -2431,7 +2428,7 @@
             document.body.classList.remove('overflow-hidden'); // Ensure no overflow from previous state
         });
     </script>
-    <!-- Script de la API de Google. Se carga asíncronamente y llama a gapiLoaded() cuando está listo. -->
+    <!-- Script de la API de Google. Se carga asíncromamente y llama a gapiLoaded() cuando está listo. -->
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 </body>
 </html>
