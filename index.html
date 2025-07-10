@@ -238,38 +238,75 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 20%; /* Adjust size as needed */
-            height: 20%; /* Adjust size as needed */
+            width: 20%; /* Adjusted to be 20% of container width */
+            height: 13.33%; /* 20% of container width / 1.5 (aspect ratio) to make it a circle */
             border: 2px solid white;
             border-radius: 50%;
             transform: translate(-50%, -50%);
         }
 
-        /* Goals (simplified) */
+        /* Goals (outside the green area) */
         .goal {
             position: absolute;
             width: 30%; /* Width of the goal */
-            height: 5%; /* Depth of the goal area */
-            border: 2px solid white;
+            height: 15px; /* Height of the goal structure */
             box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            border-left: 2px solid white;
+            border-right: 2px solid white;
         }
         .goal.top {
+            top: -15px; /* Position outside the top border */
+            left: 35%;
+            border-bottom: 2px solid white; /* Crossbar */
+        }
+        .goal.bottom {
+            bottom: -15px; /* Position outside the bottom border */
+            left: 35%;
+            border-top: 2px solid white; /* Crossbar */
+        }
+
+        /* Penalty Areas */
+        .penalty-area {
+            position: absolute;
+            width: 60%; /* Width of the penalty area */
+            height: 20%; /* Height of the penalty area */
+            border: 2px solid white;
+            box-sizing: border-box;
+        }
+        .penalty-area.top {
+            top: 0;
+            left: 20%;
+            border-bottom: none; /* Only side borders and top/bottom lines of the area */
+        }
+        .penalty-area.bottom {
+            bottom: 0;
+            left: 20%;
+            border-top: none;
+        }
+
+        /* Goal Areas (smaller box inside penalty area) */
+        .goal-area {
+            position: absolute;
+            width: 30%; /* Width of the goal area */
+            height: 10%; /* Height of the goal area */
+            border: 2px solid white;
+            box-sizing: border-box;
+        }
+        .goal-area.top {
             top: 0;
             left: 35%;
             border-bottom: none;
         }
-        .goal.bottom {
+        .goal-area.bottom {
             bottom: 0;
             left: 35%;
             border-top: none;
         }
 
-
         .player-marker {
             position: absolute;
             width: 40px; /* Tamaño del marcador de jugador */
             height: 40px;
-            background-color: rgba(255, 255, 255, 0.8); /* Fondo blanco semitransparente */
             border-radius: 50%; /* Forma circular */
             display: flex;
             align-items: center;
@@ -277,7 +314,6 @@
             font-size: 0.75rem; /* text-xs */
             font-weight: bold;
             text-align: center;
-            color: #1a202c; /* text-gray-900 */
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             transform: translate(-50%, -50%); /* Centrar el marcador en la posición */
             border: 2px solid; /* Border for team color */
@@ -288,15 +324,15 @@
         }
 
         .player-marker.claros {
-            border-color: #4299e1; /* blue-500 */
-            background-color: rgba(66, 153, 225, 0.8); /* blue-500 with transparency */
-            color: white;
+            background-color: #ffffff; /* White jersey */
+            color: #1a202c; /* Black text */
+            border-color: #1a202c; /* Black border */
         }
 
         .player-marker.oscuros {
-            border-color: #e53e3e; /* red-500 */
-            background-color: rgba(229, 62, 62, 0.8); /* red-500 with transparency */
-            color: white;
+            background-color: #1a202c; /* Black jersey */
+            color: #ffffff; /* White text */
+            border-color: #ffffff; /* White border */
         }
 
         /* Responsive adjustments for player marker size */
@@ -631,6 +667,12 @@
                 <!-- Goals -->
                 <div class="goal top"></div>
                 <div class="goal bottom"></div>
+                <!-- Penalty Areas -->
+                <div class="penalty-area top"></div>
+                <div class="penalty-area bottom"></div>
+                <!-- Goal Areas -->
+                <div class="goal-area top"></div>
+                <div class="goal-area bottom"></div>
                 <!-- Players will be dynamically added here -->
             </div>
 
@@ -1423,7 +1465,7 @@
             fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
             fixtureDetailsDisplay.classList.add('hidden'); // Hide details when re-rendering cards
             soccerFieldContainer.classList.add('hidden'); // Hide soccer field
-            soccerFieldContainer.innerHTML = ''; // Clear players from field
+            soccerFieldContainer.innerHTML = ''; // Clear players from field, but keep goals/areas
 
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
@@ -1470,7 +1512,10 @@
             loadingMessage.classList.remove('hidden');
             fixtureDetailsDisplay.classList.add('hidden');
             soccerFieldContainer.classList.add('hidden'); // Hide field while loading
-            soccerFieldContainer.innerHTML = ''; // Clear existing players and goals
+            
+            // Clear only player markers, keep goals and areas
+            soccerFieldContainer.querySelectorAll('.player-marker').forEach(marker => marker.remove());
+
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando detalles del partido...`;
             
             const selectedMatch = allMatchesData.find(match => match[0] === matchId);
@@ -1521,25 +1566,22 @@
                 chamigos = ['No definido'];
             }
 
-            // Re-add goals to the field
-            soccerFieldContainer.innerHTML = '<div class="goal top"></div><div class="goal bottom"></div>';
-
             // Define positions for 5 players on each side (relative to field container)
-            // Claros (bottom half of the field)
+            // Claros (bottom half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
             const clarosPositions = [
-                { top: '90%', left: '50%' },  // Goalkeeper
-                { top: '75%', left: '25%' },
-                { top: '70%', left: '50%' },
-                { top: '75%', left: '75%' },
-                { top: '60%', left: '50%' }
+                { top: '88%', left: '50%' },  // Goalkeeper
+                { top: '75%', left: '30%' },  // Defender 1
+                { top: '75%', left: '70%' },  // Defender 2
+                { top: '60%', left: '40%' },  // Midfielder/Forward 1
+                { top: '60%', left: '60%' }   // Midfielder/Forward 2
             ];
-            // Oscuros (top half of the field)
+            // Oscuros (top half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
             const oscurosPositions = [
-                { top: '10%', left: '50%' }, // Goalkeeper
-                { top: '25%', left: '25%' },
-                { top: '30%', left: '50%' },
-                { top: '25%', left: '75%' },
-                { top: '40%', left: '50%' }
+                { top: '12%', left: '50%' }, // Goalkeeper
+                { top: '25%', left: '30%' }, // Defender 1
+                { top: '25%', left: '70%' }, // Defender 2
+                { top: '40%', left: '40%' }, // Midfielder/Forward 1
+                { top: '40%', left: '60%' }  // Midfielder/Forward 2
             ];
 
             // Add Claros players
