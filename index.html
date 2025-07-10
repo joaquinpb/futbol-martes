@@ -270,8 +270,11 @@
 
     <script>
         // ¡IMPORTANTE! Reemplaza 'TU_CLIENT_ID' con tu ID de Cliente de OAuth 2.0
+        // Este CLIENT_ID se usa para la inicialización de GSI, aunque en index.html solo se requiere para lectura pública.
         const CLIENT_ID = '490772160476-4cmd0dse3b74o65g1n9s1q5itlbjavbb.apps.googleusercontent.com';
         // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
+        // Asegúrate de que esta hoja de cálculo esté compartida públicamente con "Cualquier persona con el enlace puede ver"
+        // para que la aplicación pueda leer los datos sin necesidad de autenticación explícita del usuario.
         const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E';
 
         // Ámbitos de autorización necesarios (solo lectura para esta página)
@@ -326,10 +329,8 @@
         }
 
         function gisLoaded() {
-            // En index.html no necesitamos un tokenClient completo si solo es de lectura y no hay interacción de usuario para autorizar
-            // Sin embargo, mantenerlo simplifica la estructura si se necesita en el futuro.
-            // Para solo lectura, gapi.client.init es a menudo suficiente si la hoja es pública o ya autorizada.
-            // Si la hoja requiere autenticación, este tokenClient sería necesario.
+            // En index.html, solo necesitamos GSI para la compatibilidad con gapi.client.init si la hoja no es pública.
+            // Si la hoja es pública, este paso es menos crítico para la funcionalidad, pero se mantiene por consistencia.
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
@@ -341,11 +342,9 @@
 
         async function maybeLoadData() {
             if (gapiInited && gisInited) {
-                // Si la hoja es privada, necesitarías llamar a tokenClient.requestAccessToken() aquí
-                // Para hojas públicas o ya autorizadas, simplemente intentar cargar
                 try {
                     await loadAllData();
-                    handleAuthSuccess(); // Simula un éxito de autenticación para mostrar el contenido
+                    handleDataLoadSuccess(); // Manejar el éxito de la carga de datos
                 } catch (error) {
                     console.error("Error al cargar datos iniciales:", error);
                     loadingMessage.textContent = `Error al cargar datos: ${error.message || error.error_description || JSON.stringify(error)}. Asegúrate de que la hoja sea accesible o que la autorización esté configurada.`;
@@ -354,21 +353,22 @@
             }
         }
 
-        async function handleAuthSuccess() {
-            // Este método se llama cuando la API está lista para cargar datos
+        async function handleDataLoadSuccess() {
+            // Este método se llama cuando la API está lista y los datos se han cargado
             // Muestra el menú lateral y el contenido principal
             sideMenu.classList.remove('hidden'); 
             if (window.innerWidth >= 768) {
-                sideMenu.classList.add('open'); // Force 'open' on desktop
-                hamburgerButton.classList.add('hidden'); // Always hide hamburger on desktop
+                sideMenu.classList.add('open'); // Forzar 'open' en desktop para que sea visible
+                hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
             } else {
-                sideMenu.classList.remove('open'); // Ensure it's closed for mobile initial state
-                hamburgerButton.classList.remove('hidden'); // Show hamburger on mobile
+                sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para el estado inicial móvil
+                hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
             }
 
             // Cargar y renderizar el contenido de la pestaña activa por defecto (Tabla de Posiciones)
+            populateYearSelect(); // Llenar el selector de año antes de renderizar la tabla
             renderLeaderboard();
-            setupTabNavigation();
+            setupTabNavigation(); // Configurar la navegación por pestañas
         }
 
         // --- Funciones de Carga de Datos ---
@@ -505,8 +505,24 @@
 
             allPlayersData.forEach(player => {
                 const [id, name] = player;
-                playerStats[id] = { points: 0, games: 0, chamigos: parseInt(player[5] || 0), tt: parseInt(player[6] || 0), name: name };
+                // Asegurarse de que los valores numéricos sean enteros, manejando posibles valores vacíos
+                playerStats[id] = { 
+                    points: parseInt(player[3] || 0), 
+                    games: parseInt(player[4] || 0), 
+                    chamigos: parseInt(player[5] || 0), 
+                    tt: parseInt(player[6] || 0), 
+                    name: name 
+                };
             });
+
+            // Recalcular puntos y partidos jugados solo para los partidos filtrados
+            // Esto es crucial para que los filtros de año/período funcionen correctamente
+            const filteredPlayerStats = {};
+            allPlayersData.forEach(player => {
+                const [id, name] = player;
+                filteredPlayerStats[id] = { points: 0, games: 0, chamigos: parseInt(player[5] || 0), tt: parseInt(player[6] || 0), name: name };
+            });
+
 
             filteredMatches.forEach(match => {
                 const [id, date, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = match;
@@ -516,29 +532,29 @@
 
                 // Contar partidos jugados
                 allPlayersInMatch.forEach(pId => {
-                    if (playerStats[pId] && result !== 'Suspendido') {
-                        playerStats[pId].games += 1;
+                    if (filteredPlayerStats[pId] && result !== 'Suspendido') {
+                        filteredPlayerStats[pId].games += 1;
                     }
                 });
 
                 // Asignar puntos
                 if (result === 'Claros') {
                     clarosPlayers.forEach(pId => {
-                        if (playerStats[pId]) playerStats[pId].points += 3;
+                        if (filteredPlayerStats[pId]) filteredPlayerStats[pId].points += 3;
                     });
                 } else if (result === 'Oscuros') {
                     oscurosPlayers.forEach(pId => {
-                        if (playerStats[pId]) playerStats[pId].points += 3;
+                        if (filteredPlayerStats[pId]) filteredPlayerStats[pId].points += 3;
                     });
                 } else if (result === 'Empate') {
                     allPlayersInMatch.forEach(pId => {
-                        if (playerStats[pId]) playerStats[pId].points += 1;
+                        if (filteredPlayerStats[pId]) filteredPlayerStats[pId].points += 1;
                     });
                 }
             });
 
             // Convertir a array y filtrar jugadores inactivos o sin partidos
-            let rankedPlayers = Object.values(playerStats).filter(player => {
+            let rankedPlayers = Object.values(filteredPlayerStats).filter(player => {
                 const originalPlayer = allPlayersData.find(p => p[1] === player.name);
                 return originalPlayer && originalPlayer[2] === 'Activo';
             });
@@ -735,7 +751,9 @@
             script.onload = gisLoaded;
             document.head.appendChild(script);
 
-            populateYearSelect(); // Llenar el selector de año al inicio
+            // populateYearSelect() se llama ahora dentro de handleDataLoadSuccess
+            // renderLeaderboard() se llama ahora dentro de handleDataLoadSuccess
+            // setupTabNavigation() se llama ahora dentro de handleDataLoadSuccess
         });
     </script>
 </body>
