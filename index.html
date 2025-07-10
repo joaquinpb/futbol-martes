@@ -208,7 +208,7 @@
             background-color: #e0e7ff; /* indigo-100 */
         }
 
-        /* Styles for the soccer field */
+        /* Styles for the soccer field (mobile default - vertical) */
         #soccer-field-container {
             position: relative;
             width: 100%;
@@ -220,7 +220,7 @@
             margin-bottom: 1.5rem; /* mb-6 */
         }
 
-        /* Halfway line */
+        /* Halfway line (vertical) */
         #soccer-field-container::before {
             content: '';
             position: absolute;
@@ -232,7 +232,7 @@
             transform: translateY(-50%);
         }
 
-        /* Center circle */
+        /* Center circle (vertical) */
         #soccer-field-container::after {
             content: '';
             position: absolute;
@@ -245,7 +245,7 @@
             transform: translate(-50%, -50%);
         }
 
-        /* Goals (outside the green area) */
+        /* Goals (outside the green area - vertical) */
         .goal {
             position: absolute;
             width: 30%; /* Width of the goal */
@@ -265,7 +265,7 @@
             border-top: 2px solid white; /* Crossbar */
         }
 
-        /* Penalty Areas */
+        /* Penalty Areas (vertical) */
         .penalty-area {
             position: absolute;
             width: 60%; /* Width of the penalty area */
@@ -284,7 +284,7 @@
             border-top: none;
         }
 
-        /* Goal Areas (smaller box inside penalty area) */
+        /* Goal Areas (smaller box inside penalty area - vertical) */
         .goal-area {
             position: absolute;
             width: 30%; /* Width of the goal area */
@@ -349,6 +349,103 @@
                 height: 60px;
                 font-size: 1rem; /* text-base */
             }
+
+            /* Desktop specific styles for horizontal field */
+            #soccer-field-container {
+                padding-top: 66.66%; /* 3:2 aspect ratio (height is 2/3 of width) */
+                width: 66.66%; /* Make it take 2/3 of the parent container's width */
+            }
+
+            /* Rotate and reposition field elements for horizontal view */
+            #soccer-field-container::before { /* Halfway line */
+                top: 0;
+                left: 50%;
+                height: 100%;
+                width: 2px;
+                transform: translateX(-50%);
+            }
+
+            #soccer-field-container::after { /* Center circle */
+                width: 13.33%; /* 20% of original height, now width (20% of 150%) / 1.5 */
+                height: 20%; /* 20% of original width, now height */
+            }
+
+            .goal.top { /* Now left goal */
+                top: 35%;
+                left: -15px; /* Position outside the left border */
+                border-bottom: none;
+                border-right: 2px solid white; /* Crossbar */
+                border-top: none; /* Remove top border */
+                border-left: none; /* Remove left border */
+                width: 15px; /* Height of the goal structure */
+                height: 30%; /* Width of the goal */
+            }
+            .goal.bottom { /* Now right goal */
+                top: 35%;
+                right: -15px; /* Position outside the right border */
+                left: auto; /* Reset left */
+                border-top: none;
+                border-left: 2px solid white; /* Crossbar */
+                border-bottom: none; /* Remove bottom border */
+                border-right: none; /* Remove right border */
+                width: 15px; /* Height of the goal structure */
+                height: 30%; /* Width of the goal */
+            }
+
+            .penalty-area.top { /* Now left penalty area */
+                top: 20%;
+                left: 0;
+                height: 60%; /* Width of the penalty area */
+                width: 20%; /* Height of the penalty area */
+                border-right: none; /* Only side borders and right line of the area */
+                border-top: 2px solid white;
+                border-bottom: 2px solid white;
+            }
+            .penalty-area.bottom { /* Now right penalty area */
+                top: 20%;
+                right: 0;
+                left: auto; /* Reset left */
+                height: 60%; /* Width of the penalty area */
+                width: 20%; /* Height of the penalty area */
+                border-left: none; /* Only side borders and left line of the area */
+                border-top: 2px solid white;
+                border-bottom: 2px solid white;
+            }
+
+            .goal-area.top { /* Now left goal area */
+                top: 35%;
+                left: 0;
+                height: 30%; /* Width of the goal area */
+                width: 10%; /* Height of the goal area */
+                border-right: none;
+                border-top: 2px solid white;
+                border-bottom: 2px solid white;
+            }
+            .goal-area.bottom { /* Now right goal area */
+                top: 35%;
+                right: 0;
+                left: auto; /* Reset left */
+                height: 30%; /* Width of the goal area */
+                width: 10%; /* Height of the goal area */
+                border-left: none;
+                border-top: 2px solid white;
+                border-bottom: 2px solid white;
+            }
+
+            /* Player positions for horizontal field */
+            /* Claros (Right Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
+            .player-marker.claros:nth-child(1) { top: 50%; left: 90%; } /* Goalkeeper */
+            .player-marker.claros:nth-child(2) { top: 30%; left: 75%; } /* Defender 1 */
+            .player-marker.claros:nth-child(3) { top: 70%; left: 75%; } /* Defender 2 */
+            .player-marker.claros:nth-child(4) { top: 40%; left: 60%; } /* Midfielder/Forward 1 */
+            .player-marker.claros:nth-child(5) { top: 60%; left: 60%; } /* Midfielder/Forward 2 */
+
+            /* Oscuros (Left Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
+            .player-marker.oscuros:nth-child(1) { top: 50%; left: 10%; } /* Goalkeeper */
+            .player-marker.oscuros:nth-child(2) { top: 30%; left: 25%; } /* Defender 1 */
+            .player-marker.oscuros:nth-child(3) { top: 70%; left: 25%; } /* Defender 2 */
+            .player-marker.oscuros:nth-child(4) { top: 40%; left: 40%; } /* Midfielder/Forward 1 */
+            .player-marker.oscuros:nth-child(5) { top: 60%; left: 40%; } /* Midfielder/Forward 2 */
         }
     </style>
 </head>
@@ -662,39 +759,42 @@
         <div id="fixture-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Detalles del Partido</h2>
             
-            <!-- Soccer Field Container -->
-            <div id="soccer-field-container" class="hidden">
-                <!-- Goals -->
-                <div class="goal top"></div>
-                <div class="goal bottom"></div>
-                <!-- Penalty Areas -->
-                <div class="penalty-area top"></div>
-                <div class="penalty-area bottom"></div>
-                <!-- Goal Areas -->
-                <div class="goal-area top"></div>
-                <div class="goal-area bottom"></div>
-                <!-- Players will be dynamically added here -->
+            <!-- Container for field and details side-by-side on desktop -->
+            <div class="flex flex-col md:flex-row md:space-x-6">
+                <!-- Soccer Field Container -->
+                <div id="soccer-field-container" class="hidden md:block md:w-2/3"> <!-- Adjusted width for desktop -->
+                    <!-- Goals -->
+                    <div class="goal top"></div>
+                    <div class="goal bottom"></div>
+                    <!-- Penalty Areas -->
+                    <div class="penalty-area top"></div>
+                    <div class="penalty-area bottom"></div>
+                    <!-- Goal Areas -->
+                    <div class="goal-area top"></div>
+                    <div class="goal-area bottom"></div>
+                    <!-- Players will be dynamically added here -->
+                </div>
+
+                <!-- Match details will be loaded here -->
+                <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-1 gap-4 mt-6 mb-6 hidden md:w-1/3"> <!-- Adjusted width for desktop -->
+                    <div class="bg-green-100 p-4 rounded-lg shadow-sm">
+                        <h3 class="font-semibold text-green-800 mb-2">Equipo Ganador</h3>
+                        <p id="winner-team" class="text-gray-800 font-medium text-lg"></p>
+                    </div>
+                    <div class="bg-yellow-100 p-4 rounded-lg shadow-sm">
+                        <h3 class="font-semibold text-yellow-800 mb-2">Asistentes al TT</h3>
+                        <ul id="tt-attendees-list" class="list-disc list-inside text-gray-700"></ul>
+                    </div>
+                    <div class="bg-purple-100 p-4 rounded-lg shadow-sm">
+                        <h3 class="font-semibold text-purple-800 mb-2">Chamigo/s</h3>
+                        <ul id="chamigos-list" class="list-disc list-inside text-gray-700"></ul>
+                    </div>
+                </div>
             </div>
 
-            <!-- Match details will be loaded here -->
             <p id="fixture-loading-message" class="loading-message col-span-full">
                 <span class="loading-spinner"></span>Cargando detalles del partido...
             </p>
-            <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 mb-6 hidden">
-                <!-- Removed player lists, keeping other details -->
-                <div class="bg-green-100 p-4 rounded-lg shadow-sm col-span-full">
-                    <h3 class="font-semibold text-green-800 mb-2">Equipo Ganador</h3>
-                    <p id="winner-team" class="text-gray-800 font-medium text-lg"></p>
-                </div>
-                <div class="bg-yellow-100 p-4 rounded-lg shadow-sm">
-                    <h3 class="font-semibold text-yellow-800 mb-2">Asistentes al TT</h3>
-                    <ul id="tt-attendees-list" class="list-disc list-inside text-gray-700"></ul>
-                </div>
-                <div class="bg-purple-100 p-4 rounded-lg shadow-sm">
-                    <h3 class="font-semibold text-purple-800 mb-2">Chamigo/s</h3>
-                    <ul id="chamigos-list" class="list-disc list-inside text-gray-700"></ul>
-                </div>
-            </div>
 
             <h3 class="text-xl font-semibold text-gray-700 mb-4">Partidos del Mes</h3>
             <div id="fixture-matches-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -1566,17 +1666,30 @@
                 chamigos = ['No definido'];
             }
 
+            // Re-add goals and areas to the field (if they were removed, ensuring they are present)
+            if (soccerFieldContainer.children.length === 0) {
+                soccerFieldContainer.innerHTML = `
+                    <div class="goal top"></div>
+                    <div class="goal bottom"></div>
+                    <div class="penalty-area top"></div>
+                    <div class="penalty-area bottom"></div>
+                    <div class="goal-area top"></div>
+                    <div class="goal-area bottom"></div>
+                `;
+            }
+
             // Define positions for 5 players on each side (relative to field container)
-            // Claros (bottom half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
-            const clarosPositions = [
+            // Claros (bottom/right half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
+            // These positions are for the VERTICAL layout (mobile).
+            const clarosPositionsMobile = [
                 { top: '88%', left: '50%' },  // Goalkeeper
                 { top: '75%', left: '30%' },  // Defender 1
                 { top: '75%', left: '70%' },  // Defender 2
                 { top: '60%', left: '40%' },  // Midfielder/Forward 1
                 { top: '60%', left: '60%' }   // Midfielder/Forward 2
             ];
-            // Oscuros (top half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
-            const oscurosPositions = [
+            // Oscuros (top/left half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
+            const oscurosPositionsMobile = [
                 { top: '12%', left: '50%' }, // Goalkeeper
                 { top: '25%', left: '30%' }, // Defender 1
                 { top: '25%', left: '70%' }, // Defender 2
@@ -1584,13 +1697,34 @@
                 { top: '40%', left: '60%' }  // Midfielder/Forward 2
             ];
 
+            // These positions are for the HORIZONTAL layout (desktop).
+            const clarosPositionsDesktop = [
+                { top: '50%', left: '90%' },  // Goalkeeper
+                { top: '30%', left: '75%' },  // Defender 1
+                { top: '70%', left: '75%' },  // Defender 2
+                { top: '40%', left: '60%' },  // Midfielder/Forward 1
+                { top: '60%', left: '60%' }   // Midfielder/Forward 2
+            ];
+            const oscurosPositionsDesktop = [
+                { top: '50%', left: '10%' }, // Goalkeeper
+                { top: '30%', left: '25%' }, // Defender 1
+                { top: '70%', left: '25%' }, // Defender 2
+                { top: '40%', left: '40%' }, // Midfielder/Forward 1
+                { top: '60%', left: '40%' }  // Midfielder/Forward 2
+            ];
+
+            const isDesktop = window.innerWidth >= 768;
+            const currentClarosPositions = isDesktop ? clarosPositionsDesktop : clarosPositionsMobile;
+            const currentOscurosPositions = isDesktop ? oscurosPositionsDesktop : oscurosPositionsMobile;
+
+
             // Add Claros players
             clarosPlayers.slice(0, 5).forEach((playerName, index) => {
                 const playerDiv = document.createElement('div');
                 playerDiv.classList.add('player-marker', 'claros');
                 playerDiv.textContent = playerName.split(' ')[0]; // Show only first name
-                playerDiv.style.top = clarosPositions[index].top;
-                playerDiv.style.left = clarosPositions[index].left;
+                playerDiv.style.top = currentClarosPositions[index].top;
+                playerDiv.style.left = currentClarosPositions[index].left;
                 soccerFieldContainer.appendChild(playerDiv);
             });
 
@@ -1599,8 +1733,8 @@
                 const playerDiv = document.createElement('div');
                 playerDiv.classList.add('player-marker', 'oscuros');
                 playerDiv.textContent = playerName.split(' ')[0]; // Show only first name
-                playerDiv.style.top = oscurosPositions[index].top;
-                playerDiv.style.left = oscurosPositions[index].left;
+                playerDiv.style.top = currentOscurosPositions[index].top;
+                playerDiv.style.left = currentOscurosPositions[index].left;
                 soccerFieldContainer.appendChild(playerDiv);
             });
 
@@ -2239,6 +2373,11 @@
                 if (!sideMenu.classList.contains('open')) {
                     hamburgerButton.classList.remove('hidden');
                 }
+            }
+            // Re-render fixture details to adjust player positions based on new orientation
+            const currentMatchId = document.querySelector('#fixture-matches-cards-container .bg-gray-100')?.dataset.matchId;
+            if (currentMatchId) {
+                renderFixtureDetails(currentMatchId);
             }
         });
 
