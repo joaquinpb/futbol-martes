@@ -1,11 +1,9 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Clande - Los Martes</title>
+    <title>LA CLANDE</title> <!-- Título de la página actualizado a mayúsculas -->
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -13,13 +11,29 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5; /* Un gris claro para el fondo */
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex; /* Usar flexbox para el layout principal */
         }
         /* Estilos base para tablas */
         table {
-            @apply min-w-full bg-white rounded-lg shadow-md;
+            @apply bg-white rounded-lg shadow-md;
+            width: 100%; /* Ensure tables take full width */
+            border-collapse: collapse; /* For clean borders */
+            /* Removed table-layout: fixed; for most tables to allow auto width */
         }
-        th, td {
-            @apply py-3 px-6 text-left;
+        /* Encabezados de tabla: centrado por defecto */
+        th {
+            @apply py-3 px-3 text-center; /* Reducido padding para mejor ajuste en pantallas pequeñas */
+        }
+        /* Celdas de datos: centrado por defecto */
+        td {
+            @apply py-3 px-3 text-center text-xs sm:text-sm; /* Reducido padding y tamaño de fuente para mobile */
+        }
+        /* Alineación a la izquierda para la columna Jugador (encabezado y datos) */
+        .text-left-player {
+            text-align: left !important;
         }
         /* Encabezado de la tabla: fondo negro, texto blanco */
         thead th {
@@ -37,7 +51,6 @@
             background-color: #edf2f7 !important; /* Gris ligeramente más oscuro (bg-gray-200) */
         }
         tbody tr {
-            /* Borde inferior para separar filas y efecto hover */
             border-bottom: 1px solid #cbd5e0; /* border-gray-300 */
             transition: background-color 150ms ease-in-out; /* transition duration-150 ease-in-out */
         }
@@ -47,291 +60,801 @@
         tbody tr:last-child {
             border-bottom: 0; /* Eliminar borde inferior de la última fila */
         }
-        /* Asegurar color de texto para las celdas del cuerpo para legibilidad */
         tbody td {
             color: #4a5568; /* text-gray-600 */
         }
-    </style>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl">
-        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Tabla de Posiciones</h1>
 
-        <!-- Controles de Filtro Mejorados -->
-        <div class="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
-            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
-                <label for="year-select" class="block text-sm font-medium text-gray-700 mb-1">Año:</label>
-                <select id="year-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
-                    <!-- Opciones de año se generarán dinámicamente -->
-                </select>
-            </div>
-            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
-                <label for="period-select" class="block text-sm font-medium text-gray-700 mb-1">Período:</label>
-                <select id="period-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
-                    <option value="totales">Totales</option>
-                    <option value="apertura">Apertura</option>
-                    <option value="clausura">Clausura</option>
-                </select>
-            </div>
-            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
-                <label for="criterion-select" class="block text-sm font-medium text-gray-700 mb-1">Criterio:</label>
-                <select id="criterion-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
-                    <option value="puntos">Puntos</option>
-                    <option value="presentismo">Presentismo</option>
-                    <option value="ausentismo">Ausentismo</option>
-                    <option value="chamigos">Chamigo</option>
-                    <option value="tt">TT</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="leaderboard-container" class="overflow-x-auto">
-            <p id="loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
-            <table id="leaderboard-table" class="min-w-full bg-white rounded-lg shadow hidden">
-                <thead>
-                    <!-- Los encabezados se generarán dinámicamente según el criterio -->
-                </thead>
-                <tbody class="text-gray-600 text-sm font-light">
-                    <!-- Filas de jugadores se cargarán aquí -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet "Base de Datos".
-        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E'; // Asegúrate de que este sea tu ID real
-        // La API Key es necesaria para llamadas públicas sin autenticación de usuario.
-        // Asegúrate de que la API Key esté restringida a la API de Google Sheets y a tu dominio de GitHub Pages.
-        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; // ¡Tu API Key real!
-
-        let gapiInited = false;
-        let allPlayersData = []; // Para almacenar todos los datos de jugadores una vez
-        let allMatchesData = []; // Para almacenar todos los datos de partidos una vez
-
-        const loadingMessage = document.getElementById('loading-message');
-        const leaderboardTable = document.getElementById('leaderboard-table');
-        const leaderboardTableHead = leaderboardTable.querySelector('thead'); // Referencia al thead
-        const leaderboardTableBody = leaderboardTable.querySelector('tbody');
-        const yearSelect = document.getElementById('year-select');
-        const periodSelect = document.getElementById('period-select');
-        const criterionSelect = document.getElementById('criterion-select');
-
-        // Función para parsear fechas DD/MM/YYYY a objetos Date
-        function parseDate(dateString) {
-            const [day, month, year] = dateString.split('/').map(Number);
-            return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
+        /* Custom class to disable horizontal overflow */
+        .overflow-x-auto-off {
+            overflow-x: hidden;
         }
 
-        // Función que se ejecuta cuando la librería gapi (API de Google) está cargada
-        // ¡IMPORTANTE! Esta función debe estar definida ANTES del script de la API de Google.
+        /* --- Estilos para el menú lateral responsivo --- */
+        #side-menu {
+            position: fixed; /* Fixed for mobile sliding effect */
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 256px; /* w-64 */
+            background-color: #312e81; /* indigo-800 */
+            color: white;
+            transform: translateX(-100%); /* Hidden by default for mobile */
+            transition: transform 0.3s ease-in-out;
+            z-index: 40;
+            display: flex; /* Use flex for vertical layout of tabs */
+            flex-direction: column;
+            padding-top: 1rem; /* Add some padding at the top */
+        }
+
+        /* This class will be applied by JS to make it visible on mobile */
+        #side-menu.open {
+            transform: translateX(0);
+        }
+
+        #overlay {
+            position: fixed;
+            inset: 0; /* top:0, right:0, bottom:0, left:0 */
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            display: none; /* Hidden by default */
+        }
+
+        #overlay.open {
+            display: block; /* Show when side menu is open (mobile only) */
+        }
+
+        #hamburger-button {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 50;
+            padding: 0.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
+        }
+
+        #close-side-menu-button {
+            background: none;
+            border: none;
+            font-size: 2rem; /* text-2xl */
+            color: white;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        #side-menu .tab-button, #side-menu .sidebar-link {
+            padding-left: 1.5rem; /* px-6 */
+            padding-right: 1.5rem; /* px-6 */
+            text-align: left;
+            width: 100%; /* Full width within sidebar */
+            border-radius: 0; /* No rounded corners for vertical tabs */
+            margin-bottom: 0.25rem; /* mb-1 */
+            color: white; /* Text white for dark sidebar */
+            transition: background-color 0.15s ease-in-out;
+            display: flex; /* Para alinear el texto y el icono */
+            align-items: center; /* Para alinear el texto y el icono */
+            gap: 0.5rem; /* Espacio entre texto e icono */
+        }
+        #side-menu .tab-button.active {
+            background-color: #4338ca; /* indigo-700 */
+        }
+        #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
+            background-color: #4f46e5; /* indigo-600 */
+        }
+
+        /* Desktop Styles (min-width: 768px) */
+        @media (min-width: 768px) {
+            #side-menu {
+                position: relative; /* Make it part of the normal flow */
+                transform: translateX(0) !important; /* Always visible on desktop */
+                flex-shrink: 0; /* Prevent shrinking */
+                height: auto; /* Let content define height */
+                min-height: 100vh; /* Ensure it takes full viewport height */
+                border-right: 1px solid #e2e8f0; /* border-gray-200 */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06); /* shadow-lg */
+                display: flex !important; /* Override hidden class if present */
+            }
+            #hamburger-button {
+                display: none !important; /* Always hide hamburger on desktop */
+            }
+            #close-side-menu-button {
+                display: none !important; /* Hide close button on desktop */
+            }
+            #overlay {
+                display: none !important; /* Hide overlay on desktop */
+            }
+            .main-content-container {
+                flex-grow: 1; /* Take remaining space */
+                margin-left: 0 !important; /* Reset margin-left from mobile */
+                margin-right: 0 !important; /* Reset margin-right from mobile */
+                max-width: none !important; /* Allow it to expand fully */
+                width: auto !important; /* Let flexbox control width */
+            }
+        }
+
+        /* Removed specific width styles for leaderboard, chamigo, tt, presentismo, ausentismo tables */
+        /* They will now use auto layout, adjusting to content */
+
+        /* Estadísticas table remains auto layout and overflow-x-auto */
+        #estadisticas-table {
+            table-layout: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row p-4 md:p-0">
+    <!-- Hamburger Button (visible on mobile) -->
+    <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+
+    <!-- Side Navigation Menu -->
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
+        <div class="p-4 text-right">
+            <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
+        </div>
+        <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-content">Tabla de Posiciones</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-content">Chamigo</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-content">TT</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="presentismo-content">Presentismo</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="ausentismo-content">Ausentismo</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="estadisticas-content">Estadísticas</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="equipos-content">Equipos</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="fixture-content">Fixture</button>
+        </div>
+    </nav>
+
+    <!-- Overlay for when side menu is open (mobile only) -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8">
+        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">LA CLANDE</h1> <!-- Título principal actualizado a mayúsculas -->
+
+        <!-- Content for Tabla de Posiciones -->
+        <div id="leaderboard-content" class="tab-content">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Posiciones</h2>
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
+                <div>
+                    <label for="leaderboard-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="leaderboard-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="leaderboard-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                    <select id="leaderboard-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Totales</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto-off">
+                <p id="leaderboard-loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
+                <table id="leaderboard-table" class="bg-white rounded-lg shadow hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-3 text-center">#</th>
+                            <th class="py-3 px-3 text-left-player">Jugador</th>
+                            <th class="py-3 px-3 text-center">Puntos</th>
+                            <th class="py-3 px-3 text-center">Efectividad</th> <!-- Texto corregido -->
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Content for Chamigo -->
+        <div id="chamigo-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Chamigos</h2>
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
+                <div>
+                    <label for="chamigo-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="chamigo-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="chamigo-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                    <select id="chamigo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Totales</option>
+                    </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto-off">
+                <p id="chamigo-loading-message" class="text-gray-500 text-center">Cargando tabla de Chamigos...</p>
+                <table id="chamigo-table" class="bg-white rounded-lg shadow hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-3 text-center">#</th>
+                            <th class="py-3 px-3 text-left-player">Jugador</th>
+                            <th class="py-3 px-3 text-center">Chamigos</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Content for TT -->
+        <div id="tt-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Asistencia TT</h2>
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
+                <div>
+                    <label for="tt-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="tt-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="tt-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                    <select id="tt-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Totales</option>
+                    </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto-off">
+                <p id="tt-loading-message" class="text-gray-500 text-center">Cargando tabla de Asistencia TT...</p>
+                <table id="tt-table" class="bg-white rounded-lg shadow hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-3 text-center">#</th>
+                            <th class="py-3 px-3 text-left-player">Jugador</th>
+                            <th class="py-3 px-3 text-center">TT</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Content for Presentismo -->
+        <div id="presentismo-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Presentismo (PJ)</h2>
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
+                <div>
+                    <label for="presentismo-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="presentismo-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="presentismo-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                    <select id="presentismo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Totales</option>
+                    </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto-off">
+                <p id="presentismo-loading-message" class="text-gray-500 text-center">Cargando tabla de Presentismo...</p>
+                <table id="presentismo-table" class="bg-white rounded-lg shadow hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-3 text-center">#</th>
+                            <th class="py-3 px-3 text-left-player">Jugador</th>
+                            <th class="py-3 px-3 text-center">PJ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Content for Ausentismo -->
+        <div id="ausentismo-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Ausentismo</h2>
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
+                <div>
+                    <label for="ausentismo-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="ausentismo-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="ausentismo-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                    <select id="ausentismo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Totales</option>
+                    </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto-off">
+                <p id="ausentismo-loading-message" class="text-gray-500 text-center">Cargando tabla de Ausentismo...</p>
+                <table id="ausentismo-table" class="bg-white rounded-lg shadow hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-3 text-center">#</th>
+                            <th class="py-3 px-3 text-left-player">Jugador</th>
+                            <th class="py-3 px-3 text-center">Ausentes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Content for Estadísticas -->
+        <div id="estadisticas-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas de Jugadores</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div>
+                    <label for="estadisticas-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="estadisticas-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="estadisticas-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                    <select id="estadisticas-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Totales</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="estadisticas-sort-criterion" class="block text-sm font-medium text-gray-700">Ordenar por:</label>
+                    <select id="estadisticas-sort-criterion" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        <option value="points">Puntos</option>
+                        <option value="pg">PG</option>
+                        <option value="pe">PE</option>
+                        <option value="pp">PP</option>
+                        <option value="pj">PJ</option>
+                        <option value="efectividad">Efectividad</option>
+                        <option value="chamigos">Chamigo</option>
+                        <option value="tt">TT</option>
+                        <option value="ausentes">Ausentismo</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="estadisticas-sort-order" class="block text-sm font-medium text-gray-700">Orden:</label>
+                    <select id="estadisticas-sort-order" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        <option value="desc">Descendente</option>
+                        <option value="asc">Ascendente</option>
+                    </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto"> <!-- This one keeps overflow-x-auto -->
+                <p id="estadisticas-loading-message" class="text-gray-500 text-center">Cargando estadísticas...</p>
+                <table id="estadisticas-table" class="bg-white rounded-lg shadow hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-3 text-center">#</th>
+                            <th class="py-3 px-3 text-left-player">Jugador</th>
+                            <th class="py-3 px-3 text-center">Puntos</th>
+                            <th class="py-3 px-3 text-center">PG</th>
+                            <th class="py-3 px-3 text-center">PE</th>
+                            <th class="py-3 px-3 text-center">PP</th>
+                            <th class="py-3 px-3 text-center">PJ</th>
+                            <th class="py-3 px-3 text-center">Efectividad</th>
+                            <th class="py-3 px-3 text-center">Chamigo</th>
+                            <th class="py-3 px-3 text-center">TT</th>
+                            <th class="py-3 px-3 text-center">Ausentismo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Content for Equipos -->
+        <div id="equipos-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas de Equipos</h2>
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
+                <div>
+                    <label for="equipos-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="equipos-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="equipos-period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                    <select id="equipos-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Totales</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Loading message for Equipos, always present in DOM -->
+            <p id="equipos-loading-message" class="text-gray-500 text-center col-span-full">Cargando estadísticas de equipos...</p>
+            <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+                <!-- Estadísticas de equipos se cargarán aquí -->
+            </div>
+        </div>
+
+        <!-- Content for Fixture -->
+        <div id="fixture-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Detalles del Partido</h2>
+            <!-- Match details will be loaded here -->
+            <p id="fixture-loading-message" class="text-gray-500 text-center col-span-full">Cargando detalles del partido...</p>
+            <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 mb-6 hidden">
+                <div class="bg-blue-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-blue-800 mb-2">Jugadores de Claros</h3>
+                    <ul id="claros-players-list" class="list-disc list-inside text-gray-700"></ul>
+                </div>
+                <div class="bg-red-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-red-800 mb-2">Jugadores de Oscuros</h3>
+                    <ul id="oscuros-players-list" class="list-disc list-inside text-gray-700"></ul>
+                </div>
+                <div class="bg-green-100 p-4 rounded-lg shadow-sm col-span-full">
+                    <h3 class="font-semibold text-green-800 mb-2">Equipo Ganador</h3>
+                    <p id="winner-team" class="text-gray-800 font-medium text-lg"></p>
+                </div>
+                <div class="bg-yellow-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-yellow-800 mb-2">Asistentes al TT</h3>
+                    <ul id="tt-attendees-list" class="list-disc list-inside text-gray-700"></ul>
+                </div>
+                <div class="bg-purple-100 p-4 rounded-lg shadow-sm">
+                    <h3 class="font-semibold text-purple-800 mb-2">Chamigo/s</h3>
+                    <ul id="chamigos-list" class="list-disc list-inside text-gray-700"></ul>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-semibold text-gray-700 mb-4">Partidos del Mes</h3>
+            <div id="fixture-matches-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <!-- Match cards will be loaded here -->
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8">
+                <div>
+                    <label for="fixture-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="fixture-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+                <div>
+                    <label for="fixture-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
+                    <select id="fixture-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
+                        </select>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script async defer src="https://apis.google.com/js/api.js"></script>
+
+    <script>
+        // ¡IMPORTANTE! Reemplaza 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM' con tu Clave de API de Google Cloud Console.
+        // Esta clave es necesaria para acceder a Google Sheets API para hojas públicas sin autenticación de usuario.
+        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; 
+        
+        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
+        // Asegúrate de que esta hoja de cálculo esté compartida públicamente con "Cualquier persona con el enlace puede ver"
+        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E';
+
+        let gapiInited = false;
+        let allPlayersData = []; // Cache de todos los jugadores
+        let allMatchesData = []; // Cache de todos los partidos
+
+        // Elementos del DOM para el menú lateral
+        const hamburgerButton = document.getElementById('hamburger-button');
+        const sideMenu = document.getElementById('side-menu');
+        const closeSideMenuButton = document.getElementById('close-side-menu-button');
+        const overlay = document.getElementById('overlay');
+        const tabButtons = document.querySelectorAll('.tab-button');
+
+        // Referencias a los contenedores de contenido
+        const leaderboardContent = document.getElementById('leaderboard-content');
+        const chamigoContent = document.getElementById('chamigo-content');
+        const ttContent = document.getElementById('tt-content');
+        const presentismoContent = document.getElementById('presentismo-content');
+        const ausentismoContent = document.getElementById('ausentismo-content');
+        const estadisticasContent = document.getElementById('estadisticas-content');
+        const equiposContent = document.getElementById('equipos-content');
+        const fixtureContent = document.getElementById('fixture-content'); // New fixture content
+
+        // --- Funciones de Inicialización de Google API y Carga de Datos ---
+
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
         }
 
-        // Inicializa el cliente de la API de Google
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
-                    apiKey: API_KEY,
+                    apiKey: API_KEY, // Se usa la clave de API aquí
                     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
                 });
                 gapiInited = true;
-                await loadAllDataAndRenderLeaderboard(); // Carga todos los datos y renderiza
+                handleDataLoadSuccess(); // Cargar datos y mostrar contenido
             } catch (err) {
-                console.error('Error al inicializar cliente GAPI:', err);
-                loadingMessage.textContent = `Error al cargar la tabla: ${err.message}. Asegúrate de que la API Key sea válida y la hoja esté compartida públicamente como "Lector".`;
-                loadingMessage.classList.remove('hidden');
-                leaderboardTable.classList.add('hidden');
+                console.error("Error al inicializar gapi.client:", err);
+                // Actualizar todos los mensajes de carga con el error
+                const errorMessage = `Error al inicializar la API de Google: ${err.message || JSON.stringify(err)}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
+                document.getElementById('leaderboard-loading-message').textContent = errorMessage;
+                document.getElementById('chamigo-loading-message').textContent = errorMessage;
+                document.getElementById('tt-loading-message').textContent = errorMessage;
+                document.getElementById('presentismo-loading-message').textContent = errorMessage;
+                document.getElementById('ausentismo-loading-message').textContent = errorMessage;
+                document.getElementById('estadisticas-loading-message').textContent = errorMessage;
+                document.getElementById('equipos-loading-message').textContent = errorMessage;
+                document.getElementById('fixture-loading-message').textContent = errorMessage; // New fixture loading message
             }
         }
 
-        /**
-         * Carga todos los datos de jugadores y partidos de Google Sheets.
-         */
-        async function loadAllDataAndRenderLeaderboard() {
-            loadingMessage.textContent = 'Cargando datos...';
-            loadingMessage.classList.remove('hidden');
-            leaderboardTable.classList.add('hidden');
-
+        async function handleDataLoadSuccess() {
+            // Este método se llama cuando la API de Google Sheets está lista para ser usada
             try {
-                // Cargar jugadores
+                await loadAllData(); // Cargar todos los datos de la hoja
+                
+                // Mostrar el menú lateral y el contenido principal
+                sideMenu.classList.remove('hidden'); 
+                if (window.innerWidth >= 768) {
+                    sideMenu.classList.add('open'); // Forzar 'open' en desktop para que sea visible
+                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
+                } else {
+                    sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para el estado inicial móvil
+                    hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
+                }
+
+                // Configurar la navegación por pestañas y renderizar la activa por defecto
+                setupTabNavigation();
+
+            } catch (error) {
+                console.error("Error al cargar datos iniciales:", error);
+                const errorMessage = `Error al cargar datos: ${error.message || JSON.stringify(error)}. Asegúrate de que la hoja sea accesible.`;
+                document.getElementById('leaderboard-loading-message').textContent = errorMessage;
+                document.getElementById('chamigo-loading-message').textContent = errorMessage;
+                document.getElementById('tt-loading-message').textContent = errorMessage;
+                document.getElementById('presentismo-loading-message').textContent = errorMessage;
+                document.getElementById('ausentismo-loading-message').textContent = errorMessage;
+                document.getElementById('estadisticas-loading-message').textContent = errorMessage;
+                document.getElementById('equipos-loading-message').textContent = errorMessage;
+                document.getElementById('fixture-loading-message').textContent = errorMessage; // New fixture loading message
+            }
+        }
+
+        async function loadAllData() {
+            try {
+                if (!gapi.client.sheets) {
+                    throw new Error("API de Google Sheets no cargada correctamente. Verifica la consola.");
+                }
+
+                // Cargar datos de Jugadores
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:G', // ID_Jugador, Nombre, Estado, Puntos_Totales, Partidos_Jugados, Chamigos_Ganados, TT_Asistencias
+                    range: 'Jugadores!A:H', // [ID, Nombre, Estado, Puntos, PJ, Chamigos, TT, Ausentes]
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : []; // Ignorar encabezados
 
-                // Cargar partidos
+                // Cargar datos de Partidos
                 const matchesResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G', // ID_Partido, Fecha, Equipo_Claros_IDs, Equipo_Oscuros_IDs, Resultado, Chamigo_Votos, Asistencia_TT_IDs
+                    range: 'Partidos!A:G', // [ID, Fecha, ClarosIDs, OscurosIDs, Resultado, ChamigoVotos, TTAgendaIDs]
                 });
                 allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : []; // Ignorar encabezados
 
-                populateYearSelect(); // Rellenar el selector de año
-                setInitialPeriod(); // Establecer el período inicial
-                renderLeaderboard(); // Renderizar la tabla inicial
             } catch (err) {
                 console.error('Error al cargar todos los datos:', err);
-                // Mejorar el mensaje de error para el usuario en la interfaz
                 let userErrorMessage = 'Error desconocido al cargar datos.';
                 if (err && err.result && err.result.error && err.result.error.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
+                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Revisa la consola para más detalles.`;
                 } else if (err && err.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
+                    userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
                 }
-                loadingMessage.textContent = userErrorMessage;
-                loadingMessage.classList.remove('hidden');
-                leaderboardTable.classList.add('hidden');
+                throw new Error(userErrorMessage); // Propagar el error para que handleDataLoadSuccess lo maneje
             }
         }
 
-        /**
-         * Rellena el selector de año con los años disponibles en los partidos.
-         * Selecciona el año actual por defecto si existe, o el más reciente.
-         */
-        function populateYearSelect() {
-            const years = new Set();
-            allMatchesData.forEach(match => {
-                const dateString = match[1]; // Columna 'Fecha'
-                if (dateString) {
-                    const date = parseDate(dateString);
-                    years.add(date.getFullYear());
-                }
+        // --- Funciones de Pestañas ---
+        function setupTabNavigation() {
+            tabButtons.forEach(button => {
+                button.removeEventListener('click', handleTabButtonClick); // Evitar duplicados
+                button.addEventListener('click', handleTabButtonClick);
             });
 
-            const sortedYears = Array.from(years).sort((a, b) => b - a); // Ordenar de más reciente a más antiguo
+            // Llenar y seleccionar automáticamente año y período/mes para todas las secciones
+            populateAndSetCurrentPeriod('leaderboard-year-select', 'leaderboard-period-select');
+            populateAndSetCurrentPeriod('chamigo-year-select', 'chamigo-period-select');
+            populateAndSetCurrentPeriod('tt-year-select', 'tt-period-select');
+            populateAndSetCurrentPeriod('presentismo-year-select', 'presentismo-period-select');
+            populateAndSetCurrentPeriod('ausentismo-year-select', 'ausentismo-period-select');
+            populateAndSetCurrentPeriod('estadisticas-year-select', 'estadisticas-period-select');
+            populateAndSetCurrentPeriod('equipos-year-select', 'equipos-period-select');
+            
+            // For fixture, we need to populate months instead of periods
+            populateYearSelects('fixture-year-select');
+            populateMonthSelects('fixture-month-select');
 
-            yearSelect.innerHTML = ''; // Limpiar opciones existentes
-            if (sortedYears.length > 0) {
-                sortedYears.forEach(year => {
-                    const option = document.createElement('option');
-                    option.value = year;
-                    option.textContent = year;
-                    yearSelect.appendChild(option);
-                });
-                // Seleccionar el año actual por defecto si existe, o el más reciente
-                const currentYear = new Date().getFullYear();
-                if (sortedYears.includes(currentYear)) {
-                    yearSelect.value = currentYear;
+
+            // Activar la pestaña por defecto al cargar
+            const defaultTabButton = document.querySelector('.tab-button[data-tab="leaderboard-content"]');
+            if (defaultTabButton) {
+                defaultTabButton.classList.add('active');
+                leaderboardContent.classList.remove('hidden');
+                // Ocultar todas las demás al inicio
+                chamigoContent.classList.add('hidden');
+                ttContent.classList.add('hidden');
+                presentismoContent.classList.add('hidden');
+                ausentismoContent.classList.add('hidden');
+                estadisticasContent.classList.add('hidden');
+                equiposContent.classList.add('hidden');
+                fixtureContent.classList.add('hidden'); // New fixture content
+            }
+            
+            // Renderizar el contenido de la pestaña por defecto (leaderboard)
+            renderLeaderboard();
+        }
+
+        function handleTabButtonClick(event) {
+            const clickedButton = event.currentTarget;
+            
+            // Remover 'active' de todos los botones y ocultar todos los contenidos
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            // Añadir 'active' al botón clicado y mostrar su contenido
+            clickedButton.classList.add('active');
+            const targetTabId = clickedButton.dataset.tab;
+            document.getElementById(targetTabId).classList.remove('hidden');
+
+            // Cerrar el menú lateral en móvil después de seleccionar una pestaña
+            if (window.innerWidth < 768) {
+                toggleSideMenu();
+            }
+
+            // Renderizar el contenido específico de la pestaña
+            if (targetTabId === 'leaderboard-content') {
+                renderLeaderboard();
+            } else if (targetTabId === 'chamigo-content') {
+                renderChamigoTable();
+            } else if (targetTabId === 'tt-content') {
+                renderTTTable();
+            } else if (targetTabId === 'presentismo-content') {
+                renderPresentismoTable();
+            } else if (targetTabId === 'ausentismo-content') {
+                renderAusentismoTable();
+            } else if (targetTabId === 'estadisticas-content') {
+                renderEstadisticasTable();
+            } else if (targetTabId === 'equipos-content') {
+                renderEquiposStats();
+            } else if (targetTabId === 'fixture-content') { // New fixture content rendering
+                renderFixtureMatchCards(); // Populate matches cards
+            }
+        }
+
+        // --- Toggle Side Menu Functionality ---
+        function toggleSideMenu() {
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) { // Only toggle on mobile
+                sideMenu.classList.toggle('open');
+                overlay.classList.toggle('open');
+                document.body.classList.toggle('overflow-hidden'); // Evita el scroll del body
+                if (sideMenu.classList.contains('open')) {
+                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
                 } else {
-                    yearSelect.value = sortedYears[0];
+                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
                 }
-            } else {
-                const option = document.createElement('option');
-                option.value = new Date().getFullYear(); // Año actual si no hay datos
-                option.textContent = new Date().getFullYear();
-                yearSelect.appendChild(option);
             }
         }
 
-        /**
-         * Establece el período inicial (Apertura/Clausura/Totales) basado en la fecha actual.
-         */
-        function setInitialPeriod() {
-            const currentMonth = new Date().getMonth(); // 0-indexed (Enero es 0)
-            if (currentMonth >= 0 && currentMonth <= 5) { // Enero a Junio
-                periodSelect.value = 'apertura';
-            } else if (currentMonth >= 6 && currentMonth <= 11) { // Julio a Diciembre
-                periodSelect.value = 'clausura';
-            } else {
-                periodSelect.value = 'totales'; // Por defecto, si no cae en Apertura/Clausura
-            }
-        }
+        // --- Helper Function: Filter Matches by Year and Period/Month ---
+        function getFilteredMatches(yearSelectId, periodOrMonthSelectId, isMonthFilter = false) {
+            const selectedYear = document.getElementById(yearSelectId).value;
+            const selectedPeriodOrMonth = document.getElementById(periodOrMonthSelectId).value;
 
-        /**
-         * Filtra los partidos según el año y el período seleccionados.
-         * Esta función ahora solo filtra por fecha, sin considerar el resultado o suspensión.
-         */
-        function filterMatches(matches, selectedYear, selectedPeriod) {
-            return matches.filter(match => {
-                const dateString = match[1]; // Columna 'Fecha'
-                if (!dateString || dateString.trim() === '') return false; // Asegura que la fecha exista
+            console.log(`[getFilteredMatches] Called with Year: ${selectedYear}, Period/Month: ${selectedPeriodOrMonth}, IsMonthFilter: ${isMonthFilter}`); // Debug log
 
-                const matchDate = parseDate(dateString);
+            return allMatchesData.filter(match => {
+                const dateString = match[1]; // Fecha en formato DD/MM/YYYY
+                if (!dateString) return false;
+
+                const [day, month, year] = dateString.split('/').map(Number);
+                const matchDate = new Date(year, month - 1, day); // Mes es 0-indexado
+
                 const matchYear = matchDate.getFullYear();
-                const matchMonth = matchDate.getMonth(); // 0-indexed
+                const matchMonth = matchDate.getMonth(); // 0-11
 
-                const yearMatch = (selectedYear === 'all' || matchYear === parseInt(selectedYear));
-                let periodMatch = true;
+                const yearMatch = selectedYear === 'all' || matchYear === parseInt(selectedYear);
 
-                if (selectedPeriod === 'apertura') {
-                    periodMatch = (matchMonth >= 0 && matchMonth <= 5); // Enero (0) a Junio (5)
-                } else if (selectedPeriod === 'clausura') {
-                    periodMatch = (matchMonth >= 6 && matchMonth <= 11); // Julio (6) a Diciembre (11)
-                }
-                // Si selectedPeriod es 'totales', periodMatch sigue siendo true (no se filtra por mes)
-
-                return yearMatch && periodMatch;
-            });
-        }
-
-        /**
-         * Calcula las estadísticas de los jugadores basándose en los partidos filtrados.
-         * Incluye cálculo de Efectividad y Ausente.
-         */
-        function calculatePlayerStats(players, filteredMatches) {
-            const playerStats = {};
-            // totalMatchesInPeriod es el número de partidos en el período seleccionado,
-            // incluyendo suspendidos o sin resultado, ya que Chamigo y TT se cuentan de todos.
-            const totalMatchesInPeriod = filteredMatches.length;
-
-            // Inicializar estadísticas para todos los jugadores activos
-            players.forEach(player => {
-                const [id, nombre, estado] = player;
-                if (estado === 'Activo') {
-                    playerStats[id] = {
-                        id,
-                        nombre,
-                        puntos: 0,
-                        partidos: 0, // PJ (partidos jugados que cuentan para puntos)
-                        chamigos: 0, // Chamigo (total en el período)
-                        tt: 0,       // TT (total en el período)
-                        efectividad: '0.00%',
-                        ausente: 0 // Se calculará al final
-                    };
-                }
-            });
-
-            filteredMatches.forEach(match => {
-                const [
-                    idPartido,
-                    fecha,
-                    equipoClarosIDsStr = '',
-                    equipoOscurosIDsStr = '',
-                    resultado, // Resultado del partido
-                    chamigoVotosStr = '',
-                    asistenciaTTIDsStr = ''
-                ] = match;
-
-                const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean);
-                const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean);
-                const allPlayersInMatchForPJ = new Set([...equipoClarosIDs, ...equipoOscurosIDs]); // Jugadores que participaron en este partido
-
-                // --- Calcular Puntos y PJ (solo para partidos con resultado válido y no suspendidos) ---
-                const matchHasValidResult = (resultado && resultado.trim() !== '' && resultado !== 'Suspendido');
-
-                if (matchHasValidResult) {
-                    allPlayersInMatchForPJ.forEach(playerId => {
-                        if (playerStats[playerId]) {
-                            playerStats[playerId].partidos++; // Incrementar PJ
-                        }
-                    });
-
-                    if (resultado === 'Claros' || resultado === 'Oscuros') {
-                        const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
-                        winningTeam.forEach(playerId => {
-                            if (playerStats[playerId]) playerStats[playerId].puntos += 3; // Añadir puntos por victoria
-                        });
-                    } else if (resultado === 'Empate') {
-                        allPlayersInMatchForPJ.forEach(playerId => {
-                            if (playerStats[playerId]) playerStats[playerId].puntos += 1; // Añadir puntos por empate
-                        });
+                let periodOrMonthMatch = false;
+                if (isMonthFilter) {
+                    // For month filter
+                    periodOrMonthMatch = selectedPeriodOrMonth === 'all' || matchMonth === (parseInt(selectedPeriodOrMonth) - 1); // Month is 1-indexed in select, 0-indexed in Date
+                } else {
+                    // For period filter (apertura, clausura, total)
+                    if (selectedPeriodOrMonth === 'total') {
+                        periodOrMonthMatch = true; // Todos los meses
+                    } else if (selectedPeriodOrMonth === 'apertura') {
+                        periodOrMonthMatch = matchMonth >= 0 && matchMonth <= 5; // Enero (0) a Junio (5)
+                    } else if (selectedPeriodOrMonth === 'clausura') {
+                        periodOrMonthMatch = matchMonth >= 6 && matchMonth <= 11; // Julio (6) a Diciembre (11)
                     }
                 }
+                return yearMatch && periodOrMonthMatch;
+            });
+        }
 
-                // --- Calcular Chamigos (de cualquier partido en el período, independientemente del resultado) ---
+        // --- Centralized Stats Calculation ---
+        function calculateStatsForPeriod(yearSelectId, periodSelectId) {
+            const filteredMatches = getFilteredMatches(yearSelectId, periodSelectId, false); // Always use period filter here
+            console.log(`[calculateStatsForPeriod] Filtered matches count: ${filteredMatches.length}`); // Debug log
+            
+            const playerStats = {};
+            // Initialize all active players
+            allPlayersData.filter(p => p[2] === 'Activo').forEach(player => {
+                const [id, name] = player;
+                playerStats[id] = {
+                    name: name,
+                    points: 0,
+                    pg: 0, // Partidos Ganados
+                    pe: 0, // Partidos Empatados
+                    pp: 0, // Partidos Perdidos
+                    pj: 0, // Partidos Jugados
+                    efectividad: 0,
+                    chamigos: 0,
+                    tt: 0,
+                    ausentes: 0,
+                    id: id // Keep player ID for chamigo/TT lookup
+                };
+            });
+
+            // Overall team stats for the period
+            let clarosWins = 0;
+            let oscurosWins = 0;
+            let empates = 0;
+            let suspendidos = 0;
+            let totalPJMatches = 0; // Total matches played (not suspended)
+
+            filteredMatches.forEach(match => {
+                const [matchId, date, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = match;
+                const clarosPlayers = clarosIDsStr.split(',').filter(Boolean);
+                const oscurosPlayers = oscurosIDsStr.split(',').filter(Boolean);
+                const allPlayersInMatch = [...new Set([...clarosPlayers, ...oscurosPlayers])];
+
+                if (result !== 'Suspendido') {
+                    totalPJMatches++;
+                } else {
+                    suspendidos++;
+                }
+
+                // Update player stats
+                allPlayersInMatch.forEach(pId => {
+                    if (playerStats[pId]) {
+                        if (result !== 'Suspendido') {
+                            playerStats[pId].pj += 1;
+                        }
+                    }
+                });
+
+                if (result === 'Claros') {
+                    clarosWins++;
+                    clarosPlayers.forEach(pId => {
+                        if (playerStats[pId]) playerStats[pId].points += 3;
+                        if (playerStats[pId]) playerStats[pId].pg += 1;
+                    });
+                    oscurosPlayers.forEach(pId => {
+                        if (playerStats[pId]) playerStats[pId].pp += 1;
+                    });
+                } else if (result === 'Oscuros') {
+                    oscurosWins++;
+                    oscurosPlayers.forEach(pId => {
+                        if (playerStats[pId]) playerStats[pId].points += 3;
+                        if (playerStats[pId]) playerStats[pId].pg += 1;
+                    });
+                    clarosPlayers.forEach(pId => {
+                        if (playerStats[pId]) playerStats[pId].pp += 1;
+                    });
+                } else if (result === 'Empate') {
+                    empates++;
+                    allPlayersInMatch.forEach(pId => {
+                        if (playerStats[pId]) playerStats[pId].points += 1;
+                        if (playerStats[pId]) playerStats[pId].pe += 1;
+                    });
+                }
+
+                // Chamigo counts
                 if (chamigoVotosStr) {
                     try {
                         const chamigoVotos = JSON.parse(chamigoVotosStr);
@@ -340,192 +863,637 @@
                             const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
                             chamigosDelPartido.forEach(chamigo => {
                                 if (playerStats[chamigo.id]) {
-                                    playerStats[chamigo.id].chamigos++; // Incrementar Chamigo
+                                    playerStats[chamigo.id].chamigos += 1;
                                 }
                             });
                         }
                     } catch (e) {
-                        console.warn('Error al parsear votos de chamigo:', chamigoVotosStr, e);
+                        console.warn('Error al parsear votos de chamigo en el partido', matchId, ':', e);
                     }
                 }
 
-                // --- Calcular TT (de cualquier partido en el período, independientemente del resultado) ---
-                if (asistenciaTTIDsStr) {
-                    const ttAttendees = asistenciaTTIDsStr.split(',').filter(Boolean);
-                    ttAttendees.forEach(playerId => {
-                        if (playerStats[playerId]) {
-                            playerStats[playerId].tt++; // Incrementar TT
+                // TT counts
+                if (ttAttendeesStr) {
+                    const ttAttendees = ttAttendeesStr.split(',').filter(Boolean);
+                    ttAttendees.forEach(pId => {
+                        if (playerStats[pId]) {
+                            playerStats[pId].tt += 1;
                         }
                     });
                 }
             });
 
-            // --- Calcular Ausente y Efectividad para cada jugador ---
+            // Calculate Efectividad and Ausentes
             Object.values(playerStats).forEach(player => {
-                // Ausente: total de partidos en el período - partidos jugados (PJ) en el período
-                // PJ ya solo cuenta los partidos con resultado válido.
-                player.ausente = totalMatchesInPeriod - player.partidos;
-
                 // Efectividad
-                const maxPossiblePoints = player.partidos * 3;
+                const maxPossiblePoints = player.pj * 3;
                 if (maxPossiblePoints > 0) {
-                    player.efectividad = ((player.puntos / maxPossiblePoints) * 100).toFixed(2) + '%';
+                    player.efectividad = ((player.points / maxPossiblePoints) * 100).toFixed(2);
                 } else {
-                    player.efectividad = '0.00%';
+                    player.efectividad = 0;
                 }
+                
+                // Ausentes
+                player.ausentes = totalPJMatches - player.pj;
+                if (player.ausentes < 0) player.ausentes = 0; // Ensure it's not negative
             });
 
-            return Object.values(playerStats); // Convertir a array de objetos
+            const result = {
+                players: Object.values(playerStats).filter(player => player.name), // Filter out any invalid player entries
+                teamStats: {
+                    clarosWins,
+                    oscurosWins,
+                    empates,
+                    suspendidos,
+                    totalPJMatches
+                }
+            };
+            console.log('[calculateStatsForPeriod] Calculated Result:', result); // Debug log
+            return result;
         }
 
-        /**
-         * Renderiza la tabla de posiciones con los datos filtrados y ordenados,
-         * adaptando las columnas según el criterio seleccionado.
-         */
+
+        // --- Renderizar Tabla de Posiciones ---
         function renderLeaderboard() {
-            loadingMessage.textContent = 'Calculando posiciones...';
-            loadingMessage.classList.remove('hidden');
+            const leaderboardTable = document.getElementById('leaderboard-table');
+            const leaderboardTableBody = leaderboardTable.querySelector('tbody');
+            const loadingMessage = document.getElementById('leaderboard-loading-message');
+
+            leaderboardTableBody.innerHTML = '';
             leaderboardTable.classList.add('hidden');
-            leaderboardTableBody.innerHTML = ''; // Limpiar tabla
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando tabla de posiciones...';
 
-            const selectedYear = yearSelect.value;
-            const selectedPeriod = periodSelect.value;
-            const selectedCriterion = criterionSelect.value;
+            const { players: rankedPlayers } = calculateStatsForPeriod('leaderboard-year-select', 'leaderboard-period-select');
 
-            // 1. Filtrar partidos (solo por año y período, sin importar resultado/suspensión)
-            const filteredMatches = filterMatches(allMatchesData, selectedYear, selectedPeriod);
+            // Ordenar por puntos (descendente)
+            rankedPlayers.sort((a, b) => b.points - a.points);
 
-            // 2. Calcular estadísticas de jugadores (incluye Efectividad y Ausente)
-            let playersWithStats = calculatePlayerStats(allPlayersData, filteredMatches);
-
-            // Se muestran TODOS los jugadores activos, sin filtrar por PJ > 0
-            // como se solicitó en la última interacción.
-
-            // 3. Ordenar jugadores
-            playersWithStats.sort((a, b) => {
-                if (selectedCriterion === 'puntos') {
-                    return b.puntos - a.puntos;
-                } else if (selectedCriterion === 'presentismo') {
-                    return b.partidos - a.partidos; // Ordenar por PJ DESC
-                } else if (selectedCriterion === 'ausentismo') {
-                    return b.ausente - a.ausente; // Ordenar por Ausente DESC (más ausencias primero)
-                } else if (selectedCriterion === 'chamigos') {
-                    return b.chamigos - a.chamigos;
-                } else if (selectedCriterion === 'tt') {
-                    return b.tt - a.tt;
-                }
-                return 0; // Por defecto no ordena si el criterio no es reconocido
-            });
-
-            // 4. Actualizar encabezados de la tabla (<thead>)
-            let headerRowHTML = '';
-            if (selectedCriterion === 'puntos') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">Puntos</th>
-                        <th class="py-3 px-6 text-center">PJ</th>
-                        <th class="py-3 px-6 text-center">Efectividad</th>
-                    </tr>
-                `;
-            } else if (selectedCriterion === 'presentismo') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">PJ</th>
-                    </tr>
-                `;
-            } else if (selectedCriterion === 'ausentismo') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">Ausente</th>
-                    </tr>
-                `;
-            } else if (selectedCriterion === 'chamigos') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">Chamigo</th>
-                    </tr>
-                `;
-            } else if (selectedCriterion === 'tt') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">TT</th>
-                    </tr>
-                `;
-            }
-            leaderboardTableHead.innerHTML = headerRowHTML;
-
-            // 5. Llenar el cuerpo de la tabla (<tbody>)
-            if (playersWithStats.length > 0) {
-                playersWithStats.forEach((player, index) => {
-                    let rowHTML = '';
-                    if (selectedCriterion === 'puntos') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.puntos}</td>
-                            <td class="py-3 px-6 text-center">${player.partidos}</td>
-                            <td class="py-3 px-6 text-center">${player.efectividad}</td>
-                        `;
-                    } else if (selectedCriterion === 'presentismo') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.partidos}</td>
-                        `;
-                    } else if (selectedCriterion === 'ausentismo') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.ausente}</td>
-                        `;
-                    } else if (selectedCriterion === 'chamigos') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.chamigos}</td>
-                        `;
-                    } else if (selectedCriterion === 'tt') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.tt}</td>
-                        `;
-                    }
-                    leaderboardTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
-                });
-                loadingMessage.classList.add('hidden');
-                leaderboardTable.classList.remove('hidden');
-            } else {
+            if (rankedPlayers.length === 0) {
                 loadingMessage.textContent = 'No hay datos disponibles para los filtros seleccionados.';
                 loadingMessage.classList.remove('hidden');
                 leaderboardTable.classList.add('hidden');
+                return;
+            }
+
+            // Renderizar la tabla
+            rankedPlayers.forEach((player, index) => {
+                const rowHTML = `
+                    <td class="py-3 px-3 text-center">${index + 1}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-center">${player.points}</td>
+                    <td class="py-3 px-3 text-center">${player.efectividad}%</td>
+                `;
+                leaderboardTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+            });
+
+            loadingMessage.classList.add('hidden');
+            leaderboardTable.classList.remove('hidden');
+        }
+
+        // --- Renderizar Tabla de Chamigo ---
+        function renderChamigoTable() {
+            const chamigoTable = document.getElementById('chamigo-table');
+            const chamigoTableBody = chamigoTable.querySelector('tbody');
+            const loadingMessage = document.getElementById('chamigo-loading-message');
+
+            chamigoTableBody.innerHTML = '';
+            chamigoTable.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando tabla de Chamigos...';
+
+            const { players: rankedChamigoPlayers } = calculateStatsForPeriod('chamigo-year-select', 'chamigo-period-select');
+
+            // Ordenar por cantidad de chamigos (descendente)
+            rankedChamigoPlayers.sort((a, b) => b.chamigos - a.chamigos);
+
+            if (rankedChamigoPlayers.length === 0) {
+                loadingMessage.textContent = 'No hay datos de Chamigos disponibles para los filtros seleccionados.';
+                loadingMessage.classList.remove('hidden');
+                chamigoTable.classList.add('hidden');
+                return;
+            }
+
+            // Renderizar la tabla de Chamigo
+            rankedChamigoPlayers.forEach((player, index) => {
+                const rowHTML = `
+                    <td class="py-3 px-3 text-center">${index + 1}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-center">${player.chamigos}</td>
+                `;
+                chamigoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+            });
+
+            loadingMessage.classList.add('hidden');
+            chamigoTable.classList.remove('hidden');
+        }
+
+        // --- Renderizar Tabla de TT ---
+        function renderTTTable() {
+            const ttTable = document.getElementById('tt-table');
+            const ttTableBody = ttTable.querySelector('tbody');
+            const loadingMessage = document.getElementById('tt-loading-message');
+
+            ttTableBody.innerHTML = '';
+            ttTable.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando tabla de Asistencia TT...';
+
+            const { players: rankedTTPlayers } = calculateStatsForPeriod('tt-year-select', 'tt-period-select');
+
+            // Ordenar por cantidad de TT (descendente)
+            rankedTTPlayers.sort((a, b) => b.tt - a.tt);
+
+            if (rankedTTPlayers.length === 0) {
+                loadingMessage.textContent = 'No hay datos de Asistencia TT disponibles para los filtros seleccionados.';
+                loadingMessage.classList.remove('hidden');
+                ttTable.classList.add('hidden');
+                return;
+            }
+
+            // Renderizar la tabla de TT
+            rankedTTPlayers.forEach((player, index) => {
+                const rowHTML = `
+                    <td class="py-3 px-3 text-center">${index + 1}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-center">${player.tt}</td>
+                `;
+                ttTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+            });
+
+            loadingMessage.classList.add('hidden');
+            ttTable.classList.remove('hidden');
+        }
+
+        // --- Renderizar Tabla de Presentismo ---
+        function renderPresentismoTable() {
+            const presentismoTable = document.getElementById('presentismo-table');
+            const presentismoTableBody = presentismoTable.querySelector('tbody');
+            const loadingMessage = document.getElementById('presentismo-loading-message');
+
+            presentismoTableBody.innerHTML = '';
+            presentismoTable.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando tabla de Presentismo...';
+
+            const { players: rankedPJPlayers } = calculateStatsForPeriod('presentismo-year-select', 'presentismo-period-select');
+
+            // Ordenar por PJ (descendente)
+            rankedPJPlayers.sort((a, b) => b.pj - a.pj);
+
+            if (rankedPJPlayers.length === 0) {
+                loadingMessage.textContent = 'No hay datos de Presentismo disponibles para los filtros seleccionados.';
+                loadingMessage.classList.remove('hidden');
+                presentismoTable.classList.add('hidden');
+                return;
+            }
+
+            // Renderizar la tabla de Presentismo
+            rankedPJPlayers.forEach((player, index) => {
+                const rowHTML = `
+                    <td class="py-3 px-3 text-center">${index + 1}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-center">${player.pj}</td>
+                `;
+                presentismoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+            });
+
+            loadingMessage.classList.add('hidden');
+            presentismoTable.classList.remove('hidden');
+        }
+
+        // --- Renderizar Tabla de Ausentismo ---
+        function renderAusentismoTable() {
+            const ausentismoTable = document.getElementById('ausentismo-table');
+            const ausentismoTableBody = ausentismoTable.querySelector('tbody');
+            const loadingMessage = document.getElementById('ausentismo-loading-message');
+
+            ausentismoTableBody.innerHTML = '';
+            ausentismoTable.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando tabla de Ausentismo...';
+
+            const { players: rankedAusentePlayers } = calculateStatsForPeriod('ausentismo-year-select', 'ausentismo-period-select');
+
+            // Ordenar por Ausentes (descendente)
+            rankedAusentePlayers.sort((a, b) => b.ausentes - a.ausentes);
+
+            if (rankedAusentePlayers.length === 0) {
+                loadingMessage.textContent = 'No hay datos de Ausentismo disponibles para los filtros seleccionados.';
+                loadingMessage.classList.add('hidden');
+                ausentismoTable.classList.add('hidden');
+                return;
+            }
+
+            // Renderizar la tabla de Ausentismo
+            rankedAusentePlayers.forEach((player, index) => {
+                const rowHTML = `
+                    <td class="py-3 px-3 text-center">${index + 1}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-center">${player.ausentes}</td>
+                `;
+                ausentismoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+            });
+
+            loadingMessage.classList.add('hidden');
+            ausentismoTable.classList.remove('hidden');
+        }
+
+        // --- Renderizar Tabla de Estadísticas ---
+        function renderEstadisticasTable() {
+            const estadisticasTable = document.getElementById('estadisticas-table');
+            const estadisticasTableBody = estadisticasTable.querySelector('tbody');
+            const loadingMessage = document.getElementById('estadisticas-loading-message');
+            const sortCriterionSelect = document.getElementById('estadisticas-sort-criterion');
+            const sortOrderSelect = document.getElementById('estadisticas-sort-order');
+
+            estadisticasTableBody.innerHTML = '';
+            estadisticasTable.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando estadísticas...';
+
+            const { players: rankedEstadisticasPlayers } = calculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
+
+            // Get selected sort criterion and order
+            const sortCriterion = sortCriterionSelect.value;
+            const sortOrder = sortOrderSelect.value;
+
+            // Sort players based on selected criterion and order
+            rankedEstadisticasPlayers.sort((a, b) => {
+                let valA = a[sortCriterion];
+                let valB = b[sortCriterion];
+
+                // Special handling for 'efectividad' as it's a string with '%'
+                if (sortCriterion === 'efectividad') {
+                    valA = parseFloat(valA);
+                    valB = parseFloat(valB);
+                }
+
+                if (sortOrder === 'asc') {
+                    return valA - valB;
+                } else {
+                    return valB - valA;
+                }
+            });
+
+            if (rankedEstadisticasPlayers.length === 0) {
+                loadingMessage.textContent = 'No hay datos de Estadísticas disponibles para los filtros seleccionados.';
+                loadingMessage.classList.remove('hidden');
+                estadisticasTable.classList.add('hidden');
+                return;
+            }
+
+            // Renderizar la tabla de Estadísticas
+            rankedEstadisticasPlayers.forEach((player, index) => {
+                const rowHTML = `
+                    <td class="py-3 px-3 text-center">${index + 1}</td>
+                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-3 text-center">${player.points}</td>
+                    <td class="py-3 px-3 text-center">${player.pg}</td>
+                    <td class="py-3 px-3 text-center">${player.pe}</td>
+                    <td class="py-3 px-3 text-center">${player.pp}</td>
+                    <td class="py-3 px-3 text-center">${player.pj}</td>
+                    <td class="py-3 px-3 text-center">${player.efectividad}%</td>
+                    <td class="py-3 px-3 text-center">${player.chamigos}</td>
+                    <td class="py-3 px-3 text-center">${player.tt}</td>
+                    <td class="py-3 px-3 text-center">${player.ausentes}</td>
+                `;
+                estadisticasTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+            });
+
+            loadingMessage.classList.add('hidden');
+            estadisticasTable.classList.remove('hidden');
+        }
+
+        // --- Renderizar Estadísticas de Equipos ---
+        function renderEquiposStats() {
+            const equiposStatsDisplay = document.getElementById('equipos-stats-display');
+            const loadingMessage = document.getElementById('equipos-loading-message');
+
+            // 1. Mostrar mensaje de carga y ocultar display de stats
+            loadingMessage.classList.remove('hidden');
+            equiposStatsDisplay.classList.add('hidden');
+            equiposStatsDisplay.innerHTML = ''; // Limpiar contenido anterior
+
+            console.log('[renderEquiposStats] Starting render...'); // Debug log
+            const { teamStats } = calculateStatsForPeriod('equipos-year-select', 'equipos-period-select');
+            console.log('[renderEquiposStats] Calculated teamStats:', teamStats); // Debug log
+
+            // 2. Ocultar mensaje de carga
+            loadingMessage.classList.add('hidden');
+
+            // 3. Siempre construir y mostrar las tarjetas de estadísticas, incluso if los valores son 0
+            const statsHtml = `
+                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <span class="text-3xl font-bold">${teamStats.oscurosWins}</span>
+                    <span class="text-sm uppercase">Oscuros Ganados</span>
+                </div>
+                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <span class="text-3xl font-bold">${teamStats.clarosWins}</span>
+                    <span class="text-sm uppercase">Claros Ganados</span>
+                </div>
+                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <span class="text-3xl font-bold">${teamStats.empates}</span>
+                    <span class="text-sm uppercase">Empates</span>
+                </div>
+                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <span class="text-3xl font-bold">${teamStats.suspendidos}</span>
+                    <span class="text-sm uppercase">Suspendidos</span>
+                </div>
+                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center">
+                    <span class="text-3xl font-bold">${teamStats.totalPJMatches}</span>
+                    <span class="text-sm uppercase">Partidos Jugados</span>
+                </div>
+            `;
+            equiposStatsDisplay.innerHTML = statsHtml;
+            equiposStatsDisplay.classList.remove('hidden'); // Mostrar el contenedor de stats
+            console.log('[renderEquiposStats] Stats rendered successfully.'); // Debug log
+        }
+
+        // --- Fixture Functions ---
+        function renderFixtureMatchCards() {
+            const fixtureMatchesCardsContainer = document.getElementById('fixture-matches-cards-container');
+            const fixtureYearSelect = document.getElementById('fixture-year-select');
+            const fixtureMonthSelect = document.getElementById('fixture-month-select');
+            const loadingMessage = document.getElementById('fixture-loading-message');
+            const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
+
+            fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
+            fixtureDetailsDisplay.classList.add('hidden'); // Hide details when re-rendering cards
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando partidos...';
+
+            const filteredMatches = getFilteredMatches(fixtureYearSelect.id, fixtureMonthSelect.id, true); // Use month filter
+            console.log(`[renderFixtureMatchCards] Found ${filteredMatches.length} matches for selection.`);
+
+            if (filteredMatches.length === 0) {
+                loadingMessage.textContent = 'No hay partidos disponibles para los filtros seleccionados.';
+                return;
+            }
+
+            // Sort matches by date descending (most recent first)
+            filteredMatches.sort((a, b) => parseDate(b[1]).getTime() - parseDate(a[1]).getTime());
+
+            filteredMatches.forEach(match => {
+                const [matchId, date, clarosIDsStr, oscurosIDsStr, result] = match;
+                const cardHtml = `
+                    <div class="bg-white p-4 rounded-lg shadow-md cursor-pointer hover:bg-gray-100 transition duration-150 ease-in-out" data-match-id="${matchId}">
+                        <h4 class="font-semibold text-lg text-indigo-700 mb-2">Partido del ${date}</h4>
+                        <p class="text-gray-600">Ganador: ${result || 'No definido'}</p>
+                    </div>
+                `;
+                fixtureMatchesCardsContainer.innerHTML += cardHtml;
+            });
+
+            // Add event listeners to each newly created card
+            fixtureMatchesCardsContainer.querySelectorAll('[data-match-id]').forEach(card => {
+                card.addEventListener('click', (event) => {
+                    const matchId = event.currentTarget.dataset.matchId;
+                    renderFixtureDetails(matchId);
+                });
+            });
+
+            loadingMessage.classList.add('hidden');
+            fixtureMatchesCardsContainer.classList.remove('hidden'); // Ensure container is visible
+        }
+
+        function renderFixtureDetails(matchId) {
+            const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
+            const loadingMessage = document.getElementById('fixture-loading-message');
+
+            loadingMessage.classList.remove('hidden');
+            fixtureDetailsDisplay.classList.add('hidden');
+            
+            const selectedMatch = allMatchesData.find(match => match[0] === matchId);
+
+            if (!selectedMatch) {
+                loadingMessage.textContent = 'Detalles del partido no encontrados.';
+                return;
+            }
+
+            const [id, date, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = selectedMatch;
+
+            // Helper to get player names from IDs
+            const getPlayerNames = (idsString) => {
+                if (!idsString || idsString.trim() === '') return []; // Return empty array for empty string
+                const ids = idsString.split(',').filter(Boolean);
+                return ids.map(playerId => {
+                    const player = allPlayersData.find(p => p[0] === playerId);
+                    return player ? player[1] : `ID Desconocido (${playerId})`;
+                }).filter(Boolean); // Filter out any null/undefined names
+            };
+
+            const clarosPlayers = getPlayerNames(clarosIDsStr);
+            const oscurosPlayers = getPlayerNames(oscurosIDsStr);
+            const winnerTeam = result || 'No definido';
+
+            let ttAttendees = getPlayerNames(ttAttendeesStr);
+            if (ttAttendees.length === 0) ttAttendees = ['No definido'];
+
+            let chamigos = [];
+            if (chamigoVotosStr) {
+                try {
+                    const chamigoVotos = JSON.parse(chamigoVotosStr);
+                    if (chamigoVotos.length > 0) {
+                        const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
+                        const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
+                        chamigos = chamigosDelPartido.map(chamigo => {
+                            const player = allPlayersData.find(p => p[0] === chamigo.id);
+                            return player ? player[1] : `ID Desconocido (${chamigo.id})`;
+                        }).filter(Boolean);
+                    } else {
+                        chamigos = ['No definido'];
+                    }
+                } catch (e) {
+                    console.warn('Error al parsear votos de chamigo en el partido', id, ':', e);
+                    chamigos = ['Error al cargar Chamigo'];
+                }
+            } else {
+                chamigos = ['No definido'];
+            }
+
+            document.getElementById('claros-players-list').innerHTML = clarosPlayers.length > 0 ? clarosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
+            document.getElementById('oscuros-players-list').innerHTML = oscurosPlayers.length > 0 ? oscurosPlayers.map(name => `<li>${name}</li>`).join('') : '<li>No definido</li>';
+            document.getElementById('winner-team').textContent = winnerTeam;
+            document.getElementById('tt-attendees-list').innerHTML = ttAttendees.map(name => `<li>${name}</li>`).join('');
+            document.getElementById('chamigos-list').innerHTML = chamigos.map(name => `<li>${name}</li>`).join('');
+
+            loadingMessage.classList.add('hidden');
+            fixtureDetailsDisplay.classList.remove('hidden');
+        }
+
+
+        // --- Utilidades ---
+        function parseDate(dateString) {
+            const [day, month, year] = dateString.split('/').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function populateYearSelects(selectId) {
+            const yearSelect = document.getElementById(selectId);
+            const years = new Set();
+            allMatchesData.forEach(match => {
+                const dateString = match[1];
+                if (dateString) {
+                    const date = parseDate(dateString);
+                    years.add(date.getFullYear());
+                }
+            });
+
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
+
+            yearSelect.innerHTML = '';
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = 'Todos los Años';
+            yearSelect.appendChild(allOption);
+
+            if (sortedYears.length > 0) {
+                sortedYears.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    yearSelect.appendChild(option);
+                });
             }
         }
 
-        // Event Listeners para los selectores
-        yearSelect.addEventListener('change', renderLeaderboard);
-        periodSelect.addEventListener('change', renderLeaderboard);
-        criterionSelect.addEventListener('change', renderLeaderboard);
+        function populateMonthSelects(selectId) {
+            const monthSelect = document.getElementById(selectId);
+            const months = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
 
-        // Carga la librería de Google API cuando el DOM esté listo
+            monthSelect.innerHTML = '';
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = 'Todos los Meses';
+            monthSelect.appendChild(allOption);
+
+            months.forEach((monthName, index) => {
+                const option = document.createElement('option');
+                option.value = index + 1; // Month is 1-indexed for value
+                option.textContent = monthName;
+                monthSelect.appendChild(option);
+            });
+
+            // Set current month as default
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1; // getMonth is 0-indexed
+            const monthOption = Array.from(monthSelect.options).find(option => parseInt(option.value) === currentMonth);
+            if (monthOption) {
+                monthSelect.value = currentMonth;
+            } else {
+                monthSelect.value = 'all'; // Fallback if current month is not in options (shouldn't happen)
+            }
+        }
+
+
+        function populateAndSetCurrentPeriod(yearSelectId, periodSelectId) {
+            populateYearSelects(yearSelectId); // First populate years
+
+            const yearSelect = document.getElementById(yearSelectId);
+            const periodSelect = document.getElementById(periodSelectId);
+
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth(); // 0-indexed
+
+            // Set current year
+            const yearOption = Array.from(yearSelect.options).find(option => parseInt(option.value) === currentYear);
+            if (yearOption) {
+                yearSelect.value = currentYear;
+            } else {
+                yearSelect.value = 'all'; // Fallback if current year is not in options
+            }
+
+            // Set current period based on current month
+            if (currentMonth >= 0 && currentMonth <= 5) { // January to June (Apertura)
+                periodSelect.value = 'apertura';
+            } else if (currentMonth >= 6 && currentMonth <= 11) { // July to December (Clausura)
+                periodSelect.value = 'clausura';
+            } else {
+                periodSelect.value = 'total'; // Default to Totales if outside specific periods (shouldn't happen with valid months)
+            }
+        }
+
+
+        // --- Event Listeners e Inicialización ---
+        document.getElementById('leaderboard-year-select').addEventListener('change', renderLeaderboard);
+        document.getElementById('leaderboard-period-select').addEventListener('change', renderLeaderboard);
+
+        document.getElementById('chamigo-year-select').addEventListener('change', renderChamigoTable);
+        document.getElementById('chamigo-period-select').addEventListener('change', renderChamigoTable);
+
+        document.getElementById('tt-year-select').addEventListener('change', renderTTTable);
+        document.getElementById('tt-period-select').addEventListener('change', renderTTTable);
+
+        document.getElementById('presentismo-year-select').addEventListener('change', renderPresentismoTable);
+        document.getElementById('presentismo-period-select').addEventListener('change', renderPresentismoTable);
+
+        document.getElementById('ausentismo-year-select').addEventListener('change', renderAusentismoTable);
+        document.getElementById('ausentismo-period-select').addEventListener('change', renderAusentismoTable);
+        
+        // Event listeners for Estadísticas sorting
+        document.getElementById('estadisticas-year-select').addEventListener('change', renderEstadisticasTable);
+        document.getElementById('estadisticas-period-select').addEventListener('change', renderEstadisticasTable);
+        document.getElementById('estadisticas-sort-criterion').addEventListener('change', renderEstadisticasTable);
+        document.getElementById('estadisticas-sort-order').addEventListener('change', renderEstadisticasTable);
+
+        document.getElementById('equipos-year-select').addEventListener('change', renderEquiposStats);
+        document.getElementById('equipos-period-select').addEventListener('change', renderEquiposStats);
+
+        // Event listeners for Fixture
+        document.getElementById('fixture-year-select').addEventListener('change', renderFixtureMatchCards);
+        document.getElementById('fixture-month-select').addEventListener('change', renderFixtureMatchCards);
+
+        hamburgerButton.addEventListener('click', toggleSideMenu);
+        closeSideMenuButton.addEventListener('click', toggleSideMenu);
+        overlay.addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                toggleSideMenu();
+            }
+        });
+
+        // Evento para manejar el redimensionamiento de la ventana
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                // Si gapi está inicializado, asegurar que la barra lateral esté abierta y la hamburguesa oculta
+                if (gapiInited) { 
+                    sideMenu.classList.remove('hidden'); 
+                    sideMenu.classList.add('open'); 
+                    hamburgerButton.classList.add('hidden'); 
+                    overlay.classList.remove('open'); 
+                    document.body.classList.remove('overflow-hidden'); 
+                }
+            } else {
+                // Si se redimensiona a móvil
+                // Si la barra lateral estaba visible (estado de escritorio), ocultarla y mostrar hamburguesa
+                if (sideMenu.classList.contains('open')) { 
+                    sideMenu.classList.remove('open'); 
+                    overlay.classList.remove('open');
+                    document.body.classList.remove('overflow-hidden');
+                }
+                // Mostrar hamburguesa si el menú está cerrado en mobile
+                if (!sideMenu.classList.contains('open')) {
+                    hamburgerButton.classList.remove('hidden');
+                }
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Tabla de Posiciones de Fútbol 5 cargada!');
-            // La función gapiLoaded() ahora se llama a través del atributo 'onload' del script tag de la API de Google.
-            // Esto asegura que 'gapi' esté definido cuando se intente usar.
+            // Asegurarse de que el botón de hamburguesa y el menú lateral estén ocultos al inicio
+            hamburgerButton.classList.add('hidden');
+            sideMenu.classList.add('hidden'); // Explicitly hide sidebar on load
+            sideMenu.classList.remove('open'); // Ensure it's not open
+            overlay.classList.add('hidden'); // Ensure overlay is hidden
+            document.body.classList.remove('overflow-hidden'); // Ensure no overflow from previous state
+
+            // Cargar las librerías de Google
+            gapiLoaded();
         });
     </script>
-    <!-- Script de la API de Google -->
-    <!-- Este script debe estar DESPUÉS de la definición de gapiLoaded() -->
-    <script async src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 </body>
 </html>
