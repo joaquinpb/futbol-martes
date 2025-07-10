@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -13,6 +11,9 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5; /* Un gris claro para el fondo */
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
         /* Estilos base para tablas */
         table {
@@ -37,7 +38,6 @@
             background-color: #edf2f7 !important; /* Gris ligeramente más oscuro (bg-gray-200) */
         }
         tbody tr {
-            /* Borde inferior para separar filas y efecto hover */
             border-bottom: 1px solid #cbd5e0; /* border-gray-300 */
             transition: background-color 150ms ease-in-out; /* transition duration-150 ease-in-out */
         }
@@ -47,163 +47,630 @@
         tbody tr:last-child {
             border-bottom: 0; /* Eliminar borde inferior de la última fila */
         }
-        /* Asegurar color de texto para las celdas del cuerpo para legibilidad */
         tbody td {
             color: #4a5568; /* text-gray-600 */
         }
+
+        /* --- Estilos para el menú lateral responsivo (copiado de admin.html) --- */
+        #side-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 256px; /* w-64 */
+            background-color: #312e81; /* indigo-800 */
+            color: white;
+            transform: translateX(-100%); /* Hidden by default for both mobile and desktop */
+            transition: transform 0.3s ease-in-out;
+            z-index: 40;
+            display: flex; /* Use flex for vertical layout of tabs */
+            flex-direction: column;
+            padding-top: 1rem; /* Add some padding at the top */
+        }
+
+        /* This class will be applied by JS to make it visible */
+        #side-menu.open {
+            transform: translateX(0);
+        }
+
+        #overlay {
+            position: fixed;
+            inset: 0; /* top:0, right:0, bottom:0, left:0 */
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            display: none; /* Hidden by default */
+        }
+
+        #overlay.open {
+            display: block; /* Show when side menu is open (mobile only) */
+        }
+
+        #hamburger-button {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 50;
+            padding: 0.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
+        }
+
+        #close-side-menu-button {
+            background: none;
+            border: none;
+            font-size: 2rem; /* text-2xl */
+            color: white;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        #side-menu .tab-button, #side-menu .sidebar-link {
+            padding-left: 1.5rem; /* px-6 */
+            padding-right: 1.5rem; /* px-6 */
+            text-align: left;
+            width: 100%; /* Full width within sidebar */
+            border-radius: 0; /* No rounded corners for vertical tabs */
+            margin-bottom: 0.25rem; /* mb-1 */
+            color: white; /* Text white for dark sidebar */
+            transition: background-color 0.15s ease-in-out;
+            display: flex; /* Para alinear el texto y el icono */
+            align-items: center; /* Para alinear el texto y el icono */
+            gap: 0.5rem; /* Espacio entre texto e icono */
+        }
+        #side-menu .tab-button.active {
+            background-color: #4338ca; /* indigo-700 */
+        }
+        #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
+            background-color: #4f46e5; /* indigo-600 */
+        }
+
+        @media (min-width: 768px) {
+            #side-menu {
+                width: 256px; /* Wider for desktop */
+                background-color: #312e81; /* indigo-800 - Corrected color */
+                color: white; /* Ensure text remains white on dark background */
+                border-right: 1px solid #e2e8f0; /* border-gray-200 */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06); /* shadow-lg */
+            }
+            /* On desktop, if side-menu is not hidden, it should always be open */
+            #side-menu:not(.hidden) {
+                transform: translateX(0) !important;
+            }
+
+            #side-menu .tab-button, #side-menu .sidebar-link {
+                color: white; /* Ensure text remains white on dark background */
+            }
+            #side-menu .tab-button.active {
+                background-color: #4338ca; /* indigo-700 */
+                color: white; /* Ensure text remains white on dark background */
+                border-left: 4px solid #4f46e5; /* border-indigo-500 */
+            }
+            #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
+                background-color: #4f46e5; /* indigo-600 */
+            }
+
+            .main-content-container {
+                margin-left: 256px; /* Make space for the fixed sidebar */
+                margin-right: 2rem; /* Add some margin on the right */
+                max-width: calc(100% - 256px - 2rem); /* Adjust max-width */
+            }
+            #overlay {
+                display: none !important;
+            }
+            #hamburger-button {
+                display: none !important; /* Always hide hamburger on desktop */
+            }
+            #close-side-menu-button {
+                display: none !important; /* Hide close button on desktop */
+            }
+        }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl">
-        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Tabla de Posiciones</h1>
+<body class="bg-gray-100 min-h-screen p-4 md:p-0">
+    <!-- Hamburger Button (visible on mobile) -->
+    <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
 
-        <!-- Controles de Filtro Mejorados -->
-        <div class="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
-            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
-                <label for="year-select" class="block text-sm font-medium text-gray-700 mb-1">Año:</label>
-                <select id="year-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
-                    <!-- Opciones de año se generarán dinámicamente -->
-                </select>
+    <!-- Side Navigation Menu -->
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
+        <div class="p-4 text-right">
+            <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
+        </div>
+        <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-content">Tabla de Posiciones</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-content">Chamigo</button>
+        </div>
+    </nav>
+
+    <!-- Overlay for when side menu is open (mobile only) -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8">
+        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">La Clande - Los Martes</h1>
+
+        <!-- Content for Tabla de Posiciones -->
+        <div id="leaderboard-content" class="tab-content">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Posiciones</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label for="year-select" class="block text-sm font-medium text-gray-700">Año:</label>
+                    <select id="year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <!-- Opciones de año se generarán dinámicamente -->
+                    </select>
+                </div>
+                <div>
+                    <label for="period-select" class="block text-sm font-medium text-gray-700">Período:</label>
+                    <select id="period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="all">Todo el Año</option>
+                        <option value="q1">Q1 (Ene-Mar)</option>
+                        <option value="q2">Q2 (Abr-Jun)</option>
+                        <option value="q3">Q3 (Jul-Sep)</option>
+                        <option value="q4">Q4 (Oct-Dic)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="criterion-select" class="block text-sm font-medium text-gray-700">Criterio:</label>
+                    <select id="criterion-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="points">Puntos</option>
+                        <option value="games">Partidos Jugados</option>
+                        <option value="chamigos">Chamigos</option>
+                        <option value="tt">Asistencia TT</option>
+                    </select>
+                </div>
             </div>
-            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
-                <label for="period-select" class="block text-sm font-medium text-gray-700 mb-1">Período:</label>
-                <select id="period-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
-                    <option value="totales">Totales</option>
-                    <option value="apertura">Apertura</option>
-                    <option value="clausura">Clausura</option>
-                </select>
-            </div>
-            <div class="flex flex-col items-start w-full sm:w-auto flex-grow">
-                <label for="criterion-select" class="block text-sm font-medium text-gray-700 mb-1">Criterio:</label>
-                <select id="criterion-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 bg-white">
-                    <option value="puntos">Puntos</option>
-                    <option value="presentismo">Presentismo</option>
-                    <option value="ausentismo">Ausentismo</option>
-                    <option value="chamigos">Chamigo</option>
-                    <option value="tt">TT</option>
-                </select>
+
+            <div class="overflow-x-auto">
+                <p id="loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
+                <table id="leaderboard-table" class="min-w-full bg-white rounded-lg shadow hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-6 text-left">Posición</th>
+                            <th class="py-3 px-6 text-left">Jugador</th>
+                            <th class="py-3 px-6 text-left">Puntos</th>
+                            <th class="py-3 px-6 text-left">Partidos Jugados</th>
+                            <th class="py-3 px-6 text-left">Chamigos</th>
+                            <th class="py-3 px-6 text-left">Asistencia TT</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        <!-- Filas de la tabla de posiciones se cargarán aquí -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div id="leaderboard-container" class="overflow-x-auto">
-            <p id="loading-message" class="text-gray-500 text-center">Cargando tabla de posiciones...</p>
-            <table id="leaderboard-table" class="min-w-full bg-white rounded-lg shadow hidden">
-                <thead>
-                    <!-- Los encabezados se generarán dinámicamente según el criterio -->
-                </thead>
-                <tbody class="text-gray-600 text-sm font-light">
-                    <!-- Filas de jugadores se cargarán aquí -->
-                </tbody>
-            </table>
+        <!-- Content for Chamigo -->
+        <div id="chamigo-content" class="tab-content hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Chamigos</h2>
+            <div class="overflow-x-auto">
+                <p id="chamigo-loading-message" class="text-gray-500 text-center">Cargando tabla de Chamigos...</p>
+                <table id="chamigo-table" class="min-w-full bg-white rounded-lg shadow hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-6 text-left">Posición</th>
+                            <th class="py-3 px-6 text-left">Jugador</th>
+                            <th class="py-3 px-6 text-left">Chamigos</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        <!-- Filas de la tabla de Chamigo se cargarán aquí -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
+    <!-- Script de la API de Google -->
+    <script async defer src="https://apis.google.com/js/api.js"></script>
+    <script async defer src="https://accounts.google.com/gsi/client"></script>
+
     <script>
-        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet "Base de Datos".
-        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E'; // Asegúrate de que este sea tu ID real
-        // La API Key es necesaria para llamadas públicas sin autenticación de usuario.
-        // Asegúrate de que la API Key esté restringida a la API de Google Sheets y a tu dominio de GitHub Pages.
-        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; // ¡Tu API Key real!
+        // ¡IMPORTANTE! Reemplaza 'TU_CLIENT_ID' con tu ID de Cliente de OAuth 2.0
+        const CLIENT_ID = '490772160476-4cmd0dse3b74o65g1n9s1q5itlbjavbb.apps.googleusercontent.com';
+        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
+        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E';
 
+        // Ámbitos de autorización necesarios (solo lectura para esta página)
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+
+        let tokenClient;
         let gapiInited = false;
-        let allPlayersData = []; // Para almacenar todos los datos de jugadores una vez
-        let allMatchesData = []; // Para almacenar todos los datos de partidos una vez
+        let gisInited = false;
+        let allPlayersData = []; // Cache de todos los jugadores
+        let allMatchesData = []; // Cache de todos los partidos
 
-        const loadingMessage = document.getElementById('loading-message');
-        const leaderboardTable = document.getElementById('leaderboard-table');
-        const leaderboardTableHead = leaderboardTable.querySelector('thead'); // Referencia al thead
-        const leaderboardTableBody = leaderboardTable.querySelector('tbody');
+        // Elementos del DOM para la Tabla de Posiciones
         const yearSelect = document.getElementById('year-select');
         const periodSelect = document.getElementById('period-select');
         const criterionSelect = document.getElementById('criterion-select');
+        const leaderboardTable = document.getElementById('leaderboard-table');
+        const leaderboardTableBody = leaderboardTable.querySelector('tbody');
+        const loadingMessage = document.getElementById('loading-message');
 
-        // Función para parsear fechas DD/MM/YYYY a objetos Date
-        function parseDate(dateString) {
-            const [day, month, year] = dateString.split('/').map(Number);
-            return new Date(year, month - 1, day); // month - 1 porque los meses en Date son 0-indexados
-        }
+        // Nuevos elementos del DOM para el menú lateral
+        const hamburgerButton = document.getElementById('hamburger-button');
+        const sideMenu = document.getElementById('side-menu');
+        const closeSideMenuButton = document.getElementById('close-side-menu-button');
+        const overlay = document.getElementById('overlay');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const leaderboardContent = document.getElementById('leaderboard-content');
+        const chamigoContent = document.getElementById('chamigo-content');
 
-        // Función que se ejecuta cuando la librería gapi (API de Google) está cargada
-        // ¡IMPORTANTE! Esta función debe estar definida ANTES del script de la API de Google.
+        // Nuevos elementos del DOM para la tabla de Chamigo
+        const chamigoTable = document.getElementById('chamigo-table');
+        const chamigoTableBody = chamigoTable.querySelector('tbody');
+        const chamigoLoadingMessage = document.getElementById('chamigo-loading-message');
+
+        // --- Funciones de Autenticación e Inicialización de Google API ---
+
         function gapiLoaded() {
             gapi.load('client', initializeGapiClient);
         }
 
-        // Inicializa el cliente de la API de Google
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
-                    apiKey: API_KEY,
                     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
                 });
                 gapiInited = true;
-                await loadAllDataAndRenderLeaderboard(); // Carga todos los datos y renderiza
+                maybeLoadData(); // Intentar cargar datos después de inicializar gapi
             } catch (err) {
-                console.error('Error al inicializar cliente GAPI:', err);
-                loadingMessage.textContent = `Error al cargar la tabla: ${err.message}. Asegúrate de que la API Key sea válida y la hoja esté compartida públicamente como "Lector".`;
+                console.error("Error al inicializar gapi.client:", err);
+                loadingMessage.textContent = `Error al inicializar la API de Google: ${err.message || err.error_description || JSON.stringify(err)}. Revisa la consola.`;
                 loadingMessage.classList.remove('hidden');
-                leaderboardTable.classList.add('hidden');
             }
         }
 
-        /**
-         * Carga todos los datos de jugadores y partidos de Google Sheets.
-         */
-        async function loadAllDataAndRenderLeaderboard() {
-            loadingMessage.textContent = 'Cargando datos...';
-            loadingMessage.classList.remove('hidden');
-            leaderboardTable.classList.add('hidden');
+        function gisLoaded() {
+            // En index.html no necesitamos un tokenClient completo si solo es de lectura y no hay interacción de usuario para autorizar
+            // Sin embargo, mantenerlo simplifica la estructura si se necesita en el futuro.
+            // Para solo lectura, gapi.client.init es a menudo suficiente si la hoja es pública o ya autorizada.
+            // Si la hoja requiere autenticación, este tokenClient sería necesario.
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // No hay callback explícito ya que no hay botón de autorización
+            });
+            gisInited = true;
+            maybeLoadData(); // Intentar cargar datos después de inicializar gis
+        }
 
+        async function maybeLoadData() {
+            if (gapiInited && gisInited) {
+                // Si la hoja es privada, necesitarías llamar a tokenClient.requestAccessToken() aquí
+                // Para hojas públicas o ya autorizadas, simplemente intentar cargar
+                try {
+                    await loadAllData();
+                    handleAuthSuccess(); // Simula un éxito de autenticación para mostrar el contenido
+                } catch (error) {
+                    console.error("Error al cargar datos iniciales:", error);
+                    loadingMessage.textContent = `Error al cargar datos: ${error.message || error.error_description || JSON.stringify(error)}. Asegúrate de que la hoja sea accesible o que la autorización esté configurada.`;
+                    loadingMessage.classList.remove('hidden');
+                }
+            }
+        }
+
+        async function handleAuthSuccess() {
+            // Este método se llama cuando la API está lista para cargar datos
+            // Muestra el menú lateral y el contenido principal
+            sideMenu.classList.remove('hidden'); 
+            if (window.innerWidth >= 768) {
+                sideMenu.classList.add('open'); // Force 'open' on desktop
+                hamburgerButton.classList.add('hidden'); // Always hide hamburger on desktop
+            } else {
+                sideMenu.classList.remove('open'); // Ensure it's closed for mobile initial state
+                hamburgerButton.classList.remove('hidden'); // Show hamburger on mobile
+            }
+
+            // Cargar y renderizar el contenido de la pestaña activa por defecto (Tabla de Posiciones)
+            renderLeaderboard();
+            setupTabNavigation();
+        }
+
+        // --- Funciones de Carga de Datos ---
+
+        async function loadAllData() {
             try {
-                // Cargar jugadores
+                if (!gapi.client.sheets) {
+                    console.error("gapi.client.sheets no está disponible. ¿Se inicializó correctamente el cliente de la API de Google?");
+                    throw new Error("API de Google Sheets no cargada correctamente.");
+                }
+
+                // Cargar datos de Jugadores
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:G', // ID_Jugador, Nombre, Estado, Puntos_Totales, Partidos_Jugados, Chamigos_Ganados, TT_Asistencias
+                    range: 'Jugadores!A:H', // Ajusta el rango si tus datos de jugador van más allá de la columna H
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : []; // Ignorar encabezados
 
-                // Cargar partidos
+                // Cargar datos de Partidos
                 const matchesResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G', // ID_Partido, Fecha, Equipo_Claros_IDs, Equipo_Oscuros_IDs, Resultado, Chamigo_Votos, Asistencia_TT_IDs
+                    range: 'Partidos!A:G', // Ajusta el rango si tus datos de partido van más allá de la columna G
                 });
                 allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : []; // Ignorar encabezados
 
-                populateYearSelect(); // Rellenar el selector de año
-                setInitialPeriod(); // Establecer el período inicial
-                renderLeaderboard(); // Renderizar la tabla inicial
             } catch (err) {
                 console.error('Error al cargar todos los datos:', err);
-                // Mejorar el mensaje de error para el usuario en la interfaz
                 let userErrorMessage = 'Error desconocido al cargar datos.';
                 if (err && err.result && err.result.error && err.result.error.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
+                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Revisa la consola para más detalles.`;
                 } else if (err && err.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.message}. Verifica la configuración de tu hoja de cálculo y API Key.`;
+                    userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
                 }
-                loadingMessage.textContent = userErrorMessage;
-                loadingMessage.classList.remove('hidden');
-                leaderboardTable.classList.add('hidden');
+                throw new Error(userErrorMessage); // Propagar el error para que maybeLoadData lo maneje
             }
         }
 
-        /**
-         * Rellena el selector de año con los años disponibles en los partidos.
-         * Selecciona el año actual por defecto si existe, o el más reciente.
-         */
+        // --- Funciones de Pestañas ---
+        function setupTabNavigation() {
+            tabButtons.forEach(button => {
+                button.removeEventListener('click', handleTabButtonClick); // Evitar duplicados
+                button.addEventListener('click', handleTabButtonClick);
+            });
+
+            // Activar la pestaña por defecto al cargar
+            const defaultTabButton = document.querySelector('.tab-button[data-tab="leaderboard-content"]');
+            if (defaultTabButton) {
+                defaultTabButton.classList.add('active');
+                leaderboardContent.classList.remove('hidden');
+                chamigoContent.classList.add('hidden'); // Asegurarse de que Chamigo esté oculto al inicio
+            }
+        }
+
+        function handleTabButtonClick(event) {
+            const clickedButton = event.currentTarget;
+            
+            // Remover 'active' de todos los botones y ocultar todos los contenidos
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            // Añadir 'active' al botón clicado y mostrar su contenido
+            clickedButton.classList.add('active');
+            const targetTabId = clickedButton.dataset.tab;
+            document.getElementById(targetTabId).classList.remove('hidden');
+
+            // Cerrar el menú lateral en móvil después de seleccionar una pestaña
+            if (window.innerWidth < 768) {
+                toggleSideMenu();
+            }
+
+            // Renderizar el contenido específico de la pestaña
+            if (targetTabId === 'leaderboard-content') {
+                renderLeaderboard();
+            } else if (targetTabId === 'chamigo-content') {
+                renderChamigoTable();
+            }
+        }
+
+        // --- Toggle Side Menu Functionality ---
+        function toggleSideMenu() {
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) { // Only toggle on mobile
+                sideMenu.classList.toggle('open');
+                overlay.classList.toggle('open');
+                document.body.classList.toggle('overflow-hidden'); // Evita el scroll del body
+                if (sideMenu.classList.contains('open')) {
+                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
+                } else {
+                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
+                }
+            }
+            // On desktop, this function should do nothing, as the sidebar is always open/closed by auth state
+        }
+
+        // --- Renderizar Tabla de Posiciones (existente) ---
+        function renderLeaderboard() {
+            leaderboardTableBody.innerHTML = '';
+            leaderboardTable.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando tabla de posiciones...';
+
+            const selectedYear = yearSelect.value;
+            const selectedPeriod = periodSelect.value;
+            const selectedCriterion = criterionSelect.value;
+
+            // Filtrar partidos por año y período
+            const filteredMatches = allMatchesData.filter(match => {
+                const dateString = match[1]; // Fecha en formato DD/MM/YYYY
+                if (!dateString) return false;
+
+                const [day, month, year] = dateString.split('/').map(Number);
+                const matchDate = new Date(year, month - 1, day); // Mes es 0-indexado
+
+                const matchYear = matchDate.getFullYear();
+                const matchMonth = matchDate.getMonth(); // 0-11
+
+                const yearMatch = selectedYear === 'all' || matchYear === parseInt(selectedYear);
+
+                let periodMatch = true;
+                if (selectedPeriod !== 'all') {
+                    const quarterMap = {
+                        'q1': [0, 1, 2], // Ene, Feb, Mar
+                        'q2': [3, 4, 5], // Abr, May, Jun
+                        'q3': [6, 7, 8], // Jul, Ago, Sep
+                        'q4': [9, 10, 11] // Oct, Nov, Dic
+                    };
+                    periodMatch = quarterMap[selectedPeriod].includes(matchMonth);
+                }
+                return yearMatch && periodMatch;
+            });
+
+            // Calcular puntos, partidos, chamigos y asistencia TT por jugador
+            const playerStats = {}; // { playerId: { points: 0, games: 0, chamigos: 0, tt: 0, name: '' } }
+
+            allPlayersData.forEach(player => {
+                const [id, name] = player;
+                playerStats[id] = { points: 0, games: 0, chamigos: parseInt(player[5] || 0), tt: parseInt(player[6] || 0), name: name };
+            });
+
+            filteredMatches.forEach(match => {
+                const [id, date, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = match;
+                const clarosPlayers = clarosIDsStr.split(',').filter(Boolean);
+                const oscurosPlayers = oscurosIDsStr.split(',').filter(Boolean);
+                const allPlayersInMatch = [...new Set([...clarosPlayers, ...oscurosPlayers])];
+
+                // Contar partidos jugados
+                allPlayersInMatch.forEach(pId => {
+                    if (playerStats[pId] && result !== 'Suspendido') {
+                        playerStats[pId].games += 1;
+                    }
+                });
+
+                // Asignar puntos
+                if (result === 'Claros') {
+                    clarosPlayers.forEach(pId => {
+                        if (playerStats[pId]) playerStats[pId].points += 3;
+                    });
+                } else if (result === 'Oscuros') {
+                    oscurosPlayers.forEach(pId => {
+                        if (playerStats[pId]) playerStats[pId].points += 3;
+                    });
+                } else if (result === 'Empate') {
+                    allPlayersInMatch.forEach(pId => {
+                        if (playerStats[pId]) playerStats[pId].points += 1;
+                    });
+                }
+            });
+
+            // Convertir a array y filtrar jugadores inactivos o sin partidos
+            let rankedPlayers = Object.values(playerStats).filter(player => {
+                const originalPlayer = allPlayersData.find(p => p[1] === player.name);
+                return originalPlayer && originalPlayer[2] === 'Activo';
+            });
+
+            // Ordenar según el criterio seleccionado
+            rankedPlayers.sort((a, b) => {
+                if (selectedCriterion === 'points') {
+                    return b.points - a.points;
+                } else if (selectedCriterion === 'games') {
+                    return b.games - a.games;
+                } else if (selectedCriterion === 'chamigos') {
+                    return b.chamigos - a.chamigos;
+                } else if (selectedCriterion === 'tt') {
+                    return b.tt - a.tt;
+                }
+                return 0;
+            });
+
+            if (rankedPlayers.length === 0) {
+                loadingMessage.textContent = 'No hay datos disponibles para los filtros seleccionados.';
+                loadingMessage.classList.remove('hidden');
+                leaderboardTable.classList.add('hidden');
+                return;
+            }
+
+            // Renderizar la tabla
+            rankedPlayers.forEach((player, index) => {
+                const rowHTML = `
+                    <td class="py-3 px-6">${index + 1}</td>
+                    <td class="py-3 px-6 font-medium">${player.name}</td>
+                    <td class="py-3 px-6">${player.points}</td>
+                    <td class="py-3 px-6">${player.games}</td>
+                    <td class="py-3 px-6">${player.chamigos}</td>
+                    <td class="py-3 px-6">${player.tt}</td>
+                `;
+                leaderboardTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+            });
+
+            loadingMessage.classList.add('hidden');
+            leaderboardTable.classList.remove('hidden');
+        }
+
+        // --- Renderizar Tabla de Chamigo (nueva función) ---
+        function renderChamigoTable() {
+            chamigoTableBody.innerHTML = '';
+            chamigoTable.classList.add('hidden');
+            chamigoLoadingMessage.classList.remove('hidden');
+            chamigoLoadingMessage.textContent = 'Cargando tabla de Chamigos...';
+
+            const playerChamigoCounts = {}; // { playerId: { name: '', chamigos: 0 } }
+
+            // Inicializar todos los jugadores activos con 0 chamigos
+            allPlayersData.filter(p => p[2] === 'Activo').forEach(player => {
+                const [id, name] = player;
+                playerChamigoCounts[id] = { name: name, chamigos: 0 };
+            });
+
+            // Recorrer todos los partidos para sumar los chamigos
+            allMatchesData.forEach(match => {
+                const chamigoVotosStr = match[5]; // Columna F (índice 5)
+
+                if (chamigoVotosStr) {
+                    try {
+                        const chamigoVotos = JSON.parse(chamigoVotosStr);
+                        // Encontrar el/los jugador(es) con la mayor cantidad de votos en este partido
+                        if (chamigoVotos.length > 0) {
+                            const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
+                            const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
+                            
+                            chamigosDelPartido.forEach(chamigo => {
+                                if (playerChamigoCounts[chamigo.id]) {
+                                    playerChamigoCounts[chamigo.id].chamigos += 1;
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('Error al parsear votos de chamigo en el partido', match[0], ':', e);
+                    }
+                }
+            });
+
+            let rankedChamigoPlayers = Object.values(playerChamigoCounts).filter(player => player.chamigos > 0);
+
+            // Ordenar por cantidad de chamigos (descendente)
+            rankedChamigoPlayers.sort((a, b) => b.chamigos - a.chamigos);
+
+            if (rankedChamigoPlayers.length === 0) {
+                chamigoLoadingMessage.textContent = 'No hay datos de Chamigos disponibles.';
+                chamigoLoadingMessage.classList.remove('hidden');
+                chamigoTable.classList.add('hidden');
+                return;
+            }
+
+            // Renderizar la tabla de Chamigo
+            rankedChamigoPlayers.forEach((player, index) => {
+                const rowHTML = `
+                    <td class="py-3 px-6">${index + 1}</td>
+                    <td class="py-3 px-6 font-medium">${player.name}</td>
+                    <td class="py-3 px-6">${player.chamigos}</td>
+                `;
+                chamigoTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+            });
+
+            chamigoLoadingMessage.classList.add('hidden');
+            chamigoTable.classList.remove('hidden');
+        }
+
+
+        // --- Utilidades (copiadas de admin.html para consistencia) ---
+        function parseDate(dateString) {
+            const [day, month, year] = dateString.split('/').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
         function populateYearSelect() {
             const years = new Set();
             allMatchesData.forEach(match => {
-                const dateString = match[1]; // Columna 'Fecha'
+                const dateString = match[1];
                 if (dateString) {
                     const date = parseDate(dateString);
                     years.add(date.getFullYear());
                 }
             });
 
-            const sortedYears = Array.from(years).sort((a, b) => b - a); // Ordenar de más reciente a más antiguo
+            const sortedYears = Array.from(years).sort((a, b) => b - a);
 
-            yearSelect.innerHTML = ''; // Limpiar opciones existentes
+            yearSelect.innerHTML = '';
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = 'Todos los Años';
+            yearSelect.appendChild(allOption);
+
             if (sortedYears.length > 0) {
                 sortedYears.forEach(year => {
                     const option = document.createElement('option');
@@ -211,321 +678,65 @@
                     option.textContent = year;
                     yearSelect.appendChild(option);
                 });
-                // Seleccionar el año actual por defecto si existe, o el más reciente
-                const currentYear = new Date().getFullYear();
-                if (sortedYears.includes(currentYear)) {
-                    yearSelect.value = currentYear;
-                } else {
-                    yearSelect.value = sortedYears[0];
-                }
+                yearSelect.value = sortedYears[0]; // Seleccionar el año más reciente por defecto
             } else {
-                const option = document.createElement('option');
-                option.value = new Date().getFullYear(); // Año actual si no hay datos
-                option.textContent = new Date().getFullYear();
-                yearSelect.appendChild(option);
+                yearSelect.value = 'all';
             }
         }
 
-        /**
-         * Establece el período inicial (Apertura/Clausura/Totales) basado en la fecha actual.
-         */
-        function setInitialPeriod() {
-            const currentMonth = new Date().getMonth(); // 0-indexed (Enero es 0)
-            if (currentMonth >= 0 && currentMonth <= 5) { // Enero a Junio
-                periodSelect.value = 'apertura';
-            } else if (currentMonth >= 6 && currentMonth <= 11) { // Julio a Diciembre
-                periodSelect.value = 'clausura';
-            } else {
-                periodSelect.value = 'totales'; // Por defecto, si no cae en Apertura/Clausura
-            }
-        }
 
-        /**
-         * Filtra los partidos según el año y el período seleccionados.
-         * Esta función ahora solo filtra por fecha, sin considerar el resultado o suspensión.
-         */
-        function filterMatches(matches, selectedYear, selectedPeriod) {
-            return matches.filter(match => {
-                const dateString = match[1]; // Columna 'Fecha'
-                if (!dateString || dateString.trim() === '') return false; // Asegura que la fecha exista
-
-                const matchDate = parseDate(dateString);
-                const matchYear = matchDate.getFullYear();
-                const matchMonth = matchDate.getMonth(); // 0-indexed
-
-                const yearMatch = (selectedYear === 'all' || matchYear === parseInt(selectedYear));
-                let periodMatch = true;
-
-                if (selectedPeriod === 'apertura') {
-                    periodMatch = (matchMonth >= 0 && matchMonth <= 5); // Enero (0) a Junio (5)
-                } else if (selectedPeriod === 'clausura') {
-                    periodMatch = (matchMonth >= 6 && matchMonth <= 11); // Julio (6) a Diciembre (11)
-                }
-                // Si selectedPeriod es 'totales', periodMatch sigue siendo true (no se filtra por mes)
-
-                return yearMatch && periodMatch;
-            });
-        }
-
-        /**
-         * Calcula las estadísticas de los jugadores basándose en los partidos filtrados.
-         * Incluye cálculo de Efectividad y Ausente.
-         */
-        function calculatePlayerStats(players, filteredMatches) {
-            const playerStats = {};
-            // totalMatchesInPeriod es el número de partidos en el período seleccionado,
-            // incluyendo suspendidos o sin resultado, ya que Chamigo y TT se cuentan de todos.
-            const totalMatchesInPeriod = filteredMatches.length;
-
-            // Inicializar estadísticas para todos los jugadores activos
-            players.forEach(player => {
-                const [id, nombre, estado] = player;
-                if (estado === 'Activo') {
-                    playerStats[id] = {
-                        id,
-                        nombre,
-                        puntos: 0,
-                        partidos: 0, // PJ (partidos jugados que cuentan para puntos)
-                        chamigos: 0, // Chamigo (total en el período)
-                        tt: 0,       // TT (total en el período)
-                        efectividad: '0.00%',
-                        ausente: 0 // Se calculará al final
-                    };
-                }
-            });
-
-            filteredMatches.forEach(match => {
-                const [
-                    idPartido,
-                    fecha,
-                    equipoClarosIDsStr = '',
-                    equipoOscurosIDsStr = '',
-                    resultado, // Resultado del partido
-                    chamigoVotosStr = '',
-                    asistenciaTTIDsStr = ''
-                ] = match;
-
-                const equipoClarosIDs = equipoClarosIDsStr.split(',').filter(Boolean);
-                const equipoOscurosIDs = equipoOscurosIDsStr.split(',').filter(Boolean);
-                const allPlayersInMatchForPJ = new Set([...equipoClarosIDs, ...equipoOscurosIDs]); // Jugadores que participaron en este partido
-
-                // --- Calcular Puntos y PJ (solo para partidos con resultado válido y no suspendidos) ---
-                const matchHasValidResult = (resultado && resultado.trim() !== '' && resultado !== 'Suspendido');
-
-                if (matchHasValidResult) {
-                    allPlayersInMatchForPJ.forEach(playerId => {
-                        if (playerStats[playerId]) {
-                            playerStats[playerId].partidos++; // Incrementar PJ
-                        }
-                    });
-
-                    if (resultado === 'Claros' || resultado === 'Oscuros') {
-                        const winningTeam = resultado === 'Claros' ? equipoClarosIDs : equipoOscurosIDs;
-                        winningTeam.forEach(playerId => {
-                            if (playerStats[playerId]) playerStats[playerId].puntos += 3; // Añadir puntos por victoria
-                        });
-                    } else if (resultado === 'Empate') {
-                        allPlayersInMatchForPJ.forEach(playerId => {
-                            if (playerStats[playerId]) playerStats[playerId].puntos += 1; // Añadir puntos por empate
-                        });
-                    }
-                }
-
-                // --- Calcular Chamigos (de cualquier partido en el período, independientemente del resultado) ---
-                if (chamigoVotosStr) {
-                    try {
-                        const chamigoVotos = JSON.parse(chamigoVotosStr);
-                        if (chamigoVotos.length > 0) {
-                            const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
-                            const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
-                            chamigosDelPartido.forEach(chamigo => {
-                                if (playerStats[chamigo.id]) {
-                                    playerStats[chamigo.id].chamigos++; // Incrementar Chamigo
-                                }
-                            });
-                        }
-                    } catch (e) {
-                        console.warn('Error al parsear votos de chamigo:', chamigoVotosStr, e);
-                    }
-                }
-
-                // --- Calcular TT (de cualquier partido en el período, independientemente del resultado) ---
-                if (asistenciaTTIDsStr) {
-                    const ttAttendees = asistenciaTTIDsStr.split(',').filter(Boolean);
-                    ttAttendees.forEach(playerId => {
-                        if (playerStats[playerId]) {
-                            playerStats[playerId].tt++; // Incrementar TT
-                        }
-                    });
-                }
-            });
-
-            // --- Calcular Ausente y Efectividad para cada jugador ---
-            Object.values(playerStats).forEach(player => {
-                // Ausente: total de partidos en el período - partidos jugados (PJ) en el período
-                // PJ ya solo cuenta los partidos con resultado válido.
-                player.ausente = totalMatchesInPeriod - player.partidos;
-
-                // Efectividad
-                const maxPossiblePoints = player.partidos * 3;
-                if (maxPossiblePoints > 0) {
-                    player.efectividad = ((player.puntos / maxPossiblePoints) * 100).toFixed(2) + '%';
-                } else {
-                    player.efectividad = '0.00%';
-                }
-            });
-
-            return Object.values(playerStats); // Convertir a array de objetos
-        }
-
-        /**
-         * Renderiza la tabla de posiciones con los datos filtrados y ordenados,
-         * adaptando las columnas según el criterio seleccionado.
-         */
-        function renderLeaderboard() {
-            loadingMessage.textContent = 'Calculando posiciones...';
-            loadingMessage.classList.remove('hidden');
-            leaderboardTable.classList.add('hidden');
-            leaderboardTableBody.innerHTML = ''; // Limpiar tabla
-
-            const selectedYear = yearSelect.value;
-            const selectedPeriod = periodSelect.value;
-            const selectedCriterion = criterionSelect.value;
-
-            // 1. Filtrar partidos (solo por año y período, sin importar resultado/suspensión)
-            const filteredMatches = filterMatches(allMatchesData, selectedYear, selectedPeriod);
-
-            // 2. Calcular estadísticas de jugadores (incluye Efectividad y Ausente)
-            let playersWithStats = calculatePlayerStats(allPlayersData, filteredMatches);
-
-            // Se muestran TODOS los jugadores activos, sin filtrar por PJ > 0
-            // como se solicitó en la última interacción.
-
-            // 3. Ordenar jugadores
-            playersWithStats.sort((a, b) => {
-                if (selectedCriterion === 'puntos') {
-                    return b.puntos - a.puntos;
-                } else if (selectedCriterion === 'presentismo') {
-                    return b.partidos - a.partidos; // Ordenar por PJ DESC
-                } else if (selectedCriterion === 'ausentismo') {
-                    return b.ausente - a.ausente; // Ordenar por Ausente DESC (más ausencias primero)
-                } else if (selectedCriterion === 'chamigos') {
-                    return b.chamigos - a.chamigos;
-                } else if (selectedCriterion === 'tt') {
-                    return b.tt - a.tt;
-                }
-                return 0; // Por defecto no ordena si el criterio no es reconocido
-            });
-
-            // 4. Actualizar encabezados de la tabla (<thead>)
-            let headerRowHTML = '';
-            if (selectedCriterion === 'puntos') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">Puntos</th>
-                        <th class="py-3 px-6 text-center">PJ</th>
-                        <th class="py-3 px-6 text-center">Efectividad</th>
-                    </tr>
-                `;
-            } else if (selectedCriterion === 'presentismo') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">PJ</th>
-                    </tr>
-                `;
-            } else if (selectedCriterion === 'ausentismo') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">Ausente</th>
-                    </tr>
-                `;
-            } else if (selectedCriterion === 'chamigos') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">Chamigo</th>
-                    </tr>
-                `;
-            } else if (selectedCriterion === 'tt') {
-                headerRowHTML = `
-                    <tr>
-                        <th class="py-3 px-6 text-left">Posición</th>
-                        <th class="py-3 px-6 text-left">Jugador</th>
-                        <th class="py-3 px-6 text-center">TT</th>
-                    </tr>
-                `;
-            }
-            leaderboardTableHead.innerHTML = headerRowHTML;
-
-            // 5. Llenar el cuerpo de la tabla (<tbody>)
-            if (playersWithStats.length > 0) {
-                playersWithStats.forEach((player, index) => {
-                    let rowHTML = '';
-                    if (selectedCriterion === 'puntos') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.puntos}</td>
-                            <td class="py-3 px-6 text-center">${player.partidos}</td>
-                            <td class="py-3 px-6 text-center">${player.efectividad}</td>
-                        `;
-                    } else if (selectedCriterion === 'presentismo') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.partidos}</td>
-                        `;
-                    } else if (selectedCriterion === 'ausentismo') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.ausente}</td>
-                        `;
-                    } else if (selectedCriterion === 'chamigos') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.chamigos}</td>
-                        `;
-                    } else if (selectedCriterion === 'tt') {
-                        rowHTML = `
-                            <td class="py-3 px-6 text-left whitespace-nowrap font-medium">${index + 1}</td>
-                            <td class="py-3 px-6 text-left">${player.nombre}</td>
-                            <td class="py-3 px-6 text-center">${player.tt}</td>
-                        `;
-                    }
-                    leaderboardTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
-                });
-                loadingMessage.classList.add('hidden');
-                leaderboardTable.classList.remove('hidden');
-            } else {
-                loadingMessage.textContent = 'No hay datos disponibles para los filtros seleccionados.';
-                loadingMessage.classList.remove('hidden');
-                leaderboardTable.classList.add('hidden');
-            }
-        }
-
-        // Event Listeners para los selectores
+        // --- Event Listeners e Inicialización ---
         yearSelect.addEventListener('change', renderLeaderboard);
         periodSelect.addEventListener('change', renderLeaderboard);
         criterionSelect.addEventListener('change', renderLeaderboard);
 
-        // Carga la librería de Google API cuando el DOM esté listo
+        hamburgerButton.addEventListener('click', toggleSideMenu);
+        closeSideMenuButton.addEventListener('click', toggleSideMenu);
+        overlay.addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                toggleSideMenu();
+            }
+        });
+
+        // Evento para manejar el redimensionamiento de la ventana
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
+                sideMenu.classList.add('open'); // Asegurarse de que tenga 'open' para visibilidad
+                hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
+                overlay.classList.remove('open'); // Ocultar overlay en desktop
+                document.body.classList.remove('overflow-hidden'); // Restablecer el scroll
+            } else {
+                // Si se redimensiona a móvil
+                // Si la barra lateral estaba visible (estado de escritorio), ocultarla y mostrar hamburguesa
+                if (sideMenu.classList.contains('open')) { // Si estaba abierta (por desktop)
+                    sideMenu.classList.remove('open'); // Cerrarla para móvil
+                    overlay.classList.remove('open');
+                    document.body.classList.remove('overflow-hidden');
+                }
+                // Mostrar hamburguesa si el menú está cerrado en mobile
+                hamburgerButton.classList.remove('hidden');
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Tabla de Posiciones de Fútbol 5 cargada!');
-            // La función gapiLoaded() ahora se llama a través del atributo 'onload' del script tag de la API de Google.
-            // Esto asegura que 'gapi' esté definido cuando se intente usar.
+            // Asegurarse de que el botón de hamburguesa y el menú lateral estén ocultos al inicio
+            hamburgerButton.classList.add('hidden');
+            sideMenu.classList.add('hidden'); // Explicitly hide sidebar on load
+            sideMenu.classList.remove('open'); // Ensure it's not open
+
+            // Cargar las librerías de Google
+            gapiLoaded();
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.defer = true;
+            script.onload = gisLoaded;
+            document.head.appendChild(script);
+
+            populateYearSelect(); // Llenar el selector de año al inicio
         });
     </script>
-    <!-- Script de la API de Google -->
-    <!-- Este script debe estar DESPUÉS de la definición de gapiLoaded() -->
-    <script async src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 </body>
 </html>
