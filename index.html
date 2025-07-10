@@ -1721,6 +1721,15 @@
             const selectedPlayerIdInput = document.getElementById('selected-player-id');
             let timeoutId; // To debounce input
 
+            // Clear input on focus
+            playerSearchInput.addEventListener('focus', () => {
+                playerSearchInput.value = '';
+                selectedPlayerIdInput.value = '';
+                document.getElementById('individual-stats-table').classList.add('hidden');
+                document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                document.getElementById('individual-stats-loading-message').textContent = 'Escribe al menos 3 caracteres para buscar un jugador.';
+            });
+
             playerSearchInput.addEventListener('input', () => {
                 clearTimeout(timeoutId);
                 const searchTerm = playerSearchInput.value.toLowerCase();
@@ -1792,7 +1801,7 @@
             const individualStatsTableBody = individualStatsTable.querySelector('tbody');
             const loadingMessage = document.getElementById('individual-stats-loading-message');
 
-            individualStatsTableBody.innerHTML = '';
+            individualStatsTableBody.innerHTML = ''; // Clear previous content
             individualStatsTable.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando estadísticas individuales...`;
@@ -1836,11 +1845,11 @@
             sortedYears.forEach(year => {
                 const yearStats = playerStatsData.stats.years[year];
                 
-                // Only render year header and details if there's any data for this year
                 // Check if the player has any PJ in Apertura or Clausura for this specific year
                 const hasAnyPJInYear = yearStats.apertura.pj > 0 || yearStats.clausura.pj > 0;
 
                 if (hasAnyPJInYear) {
+                    // Year header row - always visible, acts as toggle
                     tableHTML += `
                         <tr class="bg-gray-200 font-semibold text-gray-700 cursor-pointer toggle-year-button" data-year="${year}">
                             <td class="py-3 px-3 text-center">${year}</td>
@@ -1849,14 +1858,10 @@
                         </tr>
                     `;
 
-                    // Start a new tbody for the collapsible content of this year
-                    // By default, it's hidden (grouped)
-                    tableHTML += `<tbody id="year-details-${year}" class="hidden">`;
-
-                    // Always render Apertura row, showing 0s if no data
+                    // Apertura row - initially hidden
                     const aperturaStats = yearStats.apertura;
                     tableHTML += `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                        <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
                             <td class="py-3 px-3 text-center"></td>
                             <td class="py-3 px-3 text-center">Apertura</td>
                             <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
@@ -1871,10 +1876,10 @@
                         </tr>
                     `;
 
-                    // Always render Clausura row, showing 0s if no data
+                    // Clausura row - initially hidden
                     const clausuraStats = yearStats.clausura;
                     tableHTML += `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                        <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
                             <td class="py-3 px-3 text-center"></td>
                             <td class="py-3 px-3 text-center">Clausura</td>
                             <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
@@ -1888,28 +1893,30 @@
                             <td class="py-3 px-3 text-center">${clausuraStats.ausentes}</td>
                         </tr>
                     `;
-                    tableHTML += `</tbody>`; // Close tbody for the year details
                 }
             });
 
             individualStatsTableBody.innerHTML = tableHTML;
 
-            // Add event listeners for toggle buttons
+            // Add event listeners for toggle buttons AFTER content is rendered
             document.querySelectorAll('.toggle-year-button').forEach(button => {
                 button.addEventListener('click', (event) => {
                     const year = event.currentTarget.dataset.year;
-                    const yearDetailsTbody = document.getElementById(`year-details-${year}`);
+                    // Select all detail rows for this year
+                    const yearDetailRows = document.querySelectorAll(`.year-detail-row.year-${year}`);
                     const toggleIcon = event.currentTarget.querySelector('.toggle-icon');
 
-                    if (yearDetailsTbody) {
-                        yearDetailsTbody.classList.toggle('hidden');
-                        if (yearDetailsTbody.classList.contains('hidden')) {
-                            toggleIcon.classList.remove('fa-minus-square');
-                            toggleIcon.classList.add('fa-plus-square');
-                        } else {
-                            toggleIcon.classList.remove('fa-plus-square');
-                            toggleIcon.classList.add('fa-minus-square');
-                        }
+                    yearDetailRows.forEach(row => {
+                        row.classList.toggle('hidden');
+                    });
+
+                    // Toggle icon
+                    if (yearDetailRows[0] && yearDetailRows[0].classList.contains('hidden')) {
+                        toggleIcon.classList.remove('fa-minus-square');
+                        toggleIcon.classList.add('fa-plus-square');
+                    } else {
+                        toggleIcon.classList.remove('fa-plus-square');
+                        toggleIcon.classList.add('fa-minus-square');
                     }
                 });
             });
@@ -1947,9 +1954,6 @@
         // Event listeners for Fixture
         document.getElementById('fixture-year-select').addEventListener('change', renderFixtureMatchCards);
         document.getElementById('fixture-month-select').addEventListener('change', renderFixtureMatchCards);
-
-        // Event listener for individual player search input (handled by setupPlayerSearch)
-        // document.getElementById('individual-player-select').addEventListener('change', renderIndividualStatsTable); // Removed, now handled by autocomplete click
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
         closeSideMenuButton.addEventListener('click', toggleSideMenu);
