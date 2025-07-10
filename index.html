@@ -378,13 +378,14 @@
 
             /* Desktop specific styles for horizontal field */
             #soccer-field-container {
-                padding-top: 45.45%; /* Adjusted for 1:2.2 height to width ratio (1/2.2 = 0.4545) */
-                width: 75%; /* Make it take 3/4 of the parent container's width */
+                width: 60%; /* Reduced by 20% from 75% (75 * 0.8 = 60) */
+                padding-top: 45.45%; /* Retain 1:2.2 height to width ratio (1/2.2 = 0.4545) */
             }
 
             /* Adjust TT details width for desktop */
             #fixture-details-display {
-                width: 25%; /* Take 1/4 of the parent container's width */
+                width: 40%; /* Take remaining space (100% - 60%) */
+                margin-top: 0; /* Align with the top of the field */
             }
 
 
@@ -472,7 +473,7 @@
             .player-marker.oscuros:nth-child(2) { top: 30%; left: 25%; } /* Defender 1 */
             .player-marker.oscuros:nth-child(3) { top: 70%; left: 25%; } /* Defender 2 */
             .player-marker.oscuros:nth-child(4) { top: 40%; left: 40%; } /* Midfielder/Forward 1 */
-            .player-marker.oscuros:nth-child(5) { top: 60%; left: 40%; } /* Midfielder/Forward 2 */
+            .player-marker.oscuros:nth-child(5) { top: 60%; left: 40%; }  /* Midfielder/Forward 2 */
 
             /* Trophy positions for desktop */
             .winner-trophy.claros { top: 95%; left: 90%; } /* Bottom-right */
@@ -807,7 +808,7 @@
                 </div>
 
                 <!-- Match details will be loaded here -->
-                <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-1 gap-4 mt-6 mb-6 hidden md:w-1/4"> <!-- Adjusted width for desktop -->
+                <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6 hidden md:w-1/4"> <!-- Adjusted width for desktop, removed mt-6 -->
                     <div class="bg-yellow-100 p-4 rounded-lg shadow-sm">
                         <h3 class="font-semibold text-yellow-800 mb-2">Asistentes al TT</h3>
                         <ul id="tt-attendees-list" class="list-disc list-inside text-gray-700"></ul>
@@ -2398,26 +2399,19 @@
         // Evento para manejar el redimensionamiento de la ventana
         window.addEventListener('resize', () => {
             if (window.innerWidth >= 768) {
-                // Si gapi está inicializado, asegurar que la barra lateral esté abierta y la hamburguesa oculta
-                if (gapiInited) { 
-                    sideMenu.classList.remove('hidden'); 
-                    sideMenu.classList.add('open'); 
-                    hamburgerButton.classList.add('hidden'); 
-                    overlay.classList.remove('open'); 
-                    document.body.classList.remove('overflow-hidden'); 
-                }
+                // Desktop view: sidebar always open, hamburger hidden
+                sideMenu.classList.remove('hidden'); // Ensure it's not display:none
+                sideMenu.classList.add('open'); // Ensure it's translated in
+                hamburgerButton.classList.add('hidden'); // Hide hamburger
+                overlay.classList.remove('open'); // Hide overlay
+                document.body.classList.remove('overflow-hidden'); // Allow scrolling
             } else {
-                // Si se redimensiona a móvil
-                // Si la barra lateral estaba visible (estado de escritorio), ocultarla y mostrar hamburguesa
-                if (sideMenu.classList.contains('open')) { 
-                    sideMenu.classList.remove('open'); 
-                    overlay.classList.remove('open');
-                    document.body.classList.remove('overflow-hidden');
-                }
-                // Mostrar hamburguesa si el menú está cerrado en mobile
-                if (!sideMenu.classList.contains('open')) {
-                    hamburgerButton.classList.remove('hidden');
-                }
+                // Mobile view: sidebar initially closed, hamburger visible
+                sideMenu.classList.add('hidden'); // Hide sidebar (display:none)
+                sideMenu.classList.remove('open'); // Ensure it's translated out
+                hamburgerButton.classList.remove('hidden'); // Show hamburger
+                overlay.classList.remove('open'); // Hide overlay
+                document.body.classList.remove('overflow-hidden'); // Allow scrolling
             }
             // Re-render fixture details to adjust player positions based on new orientation
             const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100');
