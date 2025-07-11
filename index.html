@@ -475,7 +475,7 @@
     </button>
 
     <!-- Side Navigation Menu -->
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
+    <nav id="side-menu" class="fixed top-0 left: 0; h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
         <div class="p-4 text-right">
             <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
         </div>
@@ -1776,42 +1776,47 @@
                 `;
             }
 
+            // Determine field orientation based on its rendered dimensions
+            // This is more robust as it reflects how CSS media queries are applied
+            const fieldWidth = soccerFieldContainer.offsetWidth;
+            const fieldHeight = soccerFieldContainer.offsetHeight;
+            const isHorizontalField = fieldWidth > fieldHeight;
+            console.log(`[renderFixtureDetails] Field dimensions: ${fieldWidth}x${fieldHeight}, isHorizontalField: ${isHorizontalField}`); // Debug log
+
+
             // Normalized positions (0 to 1, relative to field width/height)
             // These are for a vertical field (height > width)
             const clarosNormalizedPositionsPortrait = [
                 { x: 0.5, y: 0.88 }, // Goalkeeper
-                { x: 0.3, y: 0.75 }, // Defender 1
-                { x: 0.7, y: 0.75 }, // Defender 2
-                { x: 0.4, y: 0.60 }, // Midfielder/Forward 1
-                { x: 0.6, y: 0.60 }   // Midfielder/Forward 2
+                { x: 0.25, y: 0.75 }, // Defender 1 (moved slightly left)
+                { x: 0.75, y: 0.75 }, // Defender 2 (moved slightly right)
+                { x: 0.35, y: 0.60 }, // Midfielder/Forward 1 (moved slightly left)
+                { x: 0.65, y: 0.60 }   // Midfielder/Forward 2 (moved slightly right)
             ];
             const oscurosNormalizedPositionsPortrait = [
                 { x: 0.5, y: 0.12 }, // Goalkeeper
-                { x: 0.3, y: 0.25 }, // Defender 1
-                { x: 0.7, y: 0.25 }, // Defender 2
-                { x: 0.4, y: 0.40 }, // Midfielder/Forward 1
-                { x: 0.6, y: 0.40 }  // Midfielder/Forward 2
+                { x: 0.25, y: 0.25 }, // Defender 1 (moved slightly left)
+                { x: 0.75, y: 0.25 }, // Defender 2 (moved slightly right)
+                { x: 0.35, y: 0.40 }, // Midfielder/Forward 1 (moved slightly left)
+                { x: 0.65, y: 0.40 }  // Midfielder/Forward 2 (moved slightly right)
             ];
 
             // Normalized positions (0 to 1, relative to field width/height)
             // These are for a horizontal field (width > height)
             const clarosNormalizedPositionsLandscape = [
                 { x: 0.90, y: 0.50 }, // Goalkeeper
-                { x: 0.75, y: 0.30 }, // Defender 1
-                { x: 0.75, y: 0.70 }, // Defender 2
-                { x: 0.64, y: 0.40 }, // Midfielder/Forward 1 (Moved to midpoint)
-                { x: 0.64, y: 0.60 }  // Midfielder/Forward 2 (Moved to midpoint)
+                { x: 0.75, y: 0.25 }, // Defender 1 (more spread)
+                { x: 0.75, y: 0.75 }, // Defender 2 (more spread)
+                { x: 0.60, y: 0.35 }, // Midfielder/Forward 1 (more spread)
+                { x: 0.60, y: 0.65 }  // Midfielder/Forward 2 (more spread)
             ];
             const oscurosNormalizedPositionsLandscape = [
                 { x: 0.10, y: 0.50 }, // Goalkeeper
-                { x: 0.25, y: 0.30 }, // Defender 1
-                { x: 0.25, y: 0.70 }, // Defender 2
-                { x: 0.36, y: 0.40 }, // Midfielder/Forward 1 (Moved to midpoint)
-                { x: 0.36, y: 0.60 }  // Midfielder/Forward 2 (Moved to midpoint)
+                { x: 0.25, y: 0.25 }, // Defender 1 (more spread)
+                { x: 0.25, y: 0.75 }, // Defender 2 (more spread)
+                { x: 0.40, y: 0.35 }, // Midfielder/Forward 1 (more spread)
+                { x: 0.40, y: 0.65 }  // Midfielder/Forward 2 (more spread)
             ];
-
-            // Determine field orientation based on window orientation
-            const isHorizontalField = window.innerWidth > window.innerHeight;
 
             const currentClarosNormalizedPositions = isHorizontalField ? clarosNormalizedPositionsLandscape : clarosNormalizedPositionsPortrait;
             const currentOscurosNormalizedPositions = isHorizontalField ? oscurosNormalizedPositionsLandscape : oscurosNormalizedPositionsPortrait;
@@ -1851,18 +1856,18 @@
                 // Determine position based on field orientation and winning team
                 if (isHorizontalField) { // Desktop or mobile landscape
                     if (winnerTeam === 'Claros') {
-                        trophyDiv.style.top = '95%'; // Bottom-right
+                        trophyDiv.style.top = '90%'; // Bottom-right
                         trophyDiv.style.left = '90%'; 
                     } else if (winnerTeam === 'Oscuros') {
-                        trophyDiv.style.top = '95%'; // Bottom-left
+                        trophyDiv.style.top = '90%'; // Bottom-left
                         trophyDiv.style.left = '10%'; 
                     }
                 } else { // Mobile portrait
                     if (winnerTeam === 'Claros') {
-                        trophyDiv.style.top = '95%'; // Bottom-left
+                        trophyDiv.style.top = '90%'; // Bottom-left
                         trophyDiv.style.left = '10%'; 
                     } else if (winnerTeam === 'Oscuros') {
-                        trophyDiv.style.top = '5%'; // Top-right
+                        trophyDiv.style.top = '10%'; // Top-right
                         trophyDiv.style.left = '90%'; 
                     }
                 }
