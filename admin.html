@@ -120,6 +120,11 @@
             transform: translateX(0);
         }
 
+        /* Asegura que la clase 'hidden' siempre oculte el elemento */
+        #side-menu.hidden {
+            display: none !important;
+        }
+
         #overlay {
             position: fixed;
             inset: 0; /* top:0, right:0, bottom:0, left:0 */
@@ -182,15 +187,13 @@
             body {
                 flex-direction: row; /* Los elementos se colocan en fila en desktop */
                 align-items: flex-start; /* Alinea los ítems al inicio del contenedor flex */
-                /* justify-content se manejará dinámicamente por JS en el main-admin-content-container */
             }
             #side-menu {
                 position: relative; /* No fixed on desktop, part of the flow */
                 transform: translateX(0); /* Always visible when not 'hidden' */
-                display: flex; /* Ensure it's a flex container */
+                /* REMOVED: display: flex !important; - This was the culprit. 'hidden' class now handles it. */
                 flex-shrink: 0; /* Prevent it from shrinking */
                 height: 100vh; /* Maintain full height */
-                /* width is already defined above */
                 border-right: 1px solid #e2e8f0; /* border-gray-200 */
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
             }
@@ -731,14 +734,15 @@
                     authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
                     authStatus.classList.remove('hidden');
                     // Asegurarse de que el menú y el botón estén ocultos si no hay token
-                    sideMenu.classList.add('hidden');
-                    sideMenu.classList.remove('open'); // Asegurarse de que transform esté reseteado
+                    sideMenu.classList.add('hidden'); // Asegura que esté oculto
+                    sideMenu.classList.remove('open'); // Asegura que el transform esté reseteado
                     hamburgerButton.classList.add('hidden');
                     signoutButtonMobileSidebar.classList.add('hidden');
                     signoutButtonSidebar.classList.add('hidden');
                     adminContent.classList.add('hidden');
                     
                     // Centrar main content cuando sidebar está oculto
+                    mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Asegura que no tenga margen izquierdo
                     mainAdminContentContainer.style.marginLeft = 'auto';
                     mainAdminContentContainer.style.marginRight = 'auto';
                 }
@@ -779,13 +783,14 @@
                 // Aplicar márgenes específicos para desktop cuando sidebar está visible
                 mainAdminContentContainer.classList.add('has-sidebar-margin'); // Aplica margin-left: 2rem
             } else {
-                sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para estado inicial móvil
                 sideMenu.classList.add('hidden'); // Empezar oculto en móvil
+                sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para estado inicial móvil
                 hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
                 // Resetear márgenes para móvil
                 mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margin-left fijo
             }
             // Asegurarse de que el centrado horizontal funcione en ambos casos
+            mainAdminContentContainer.style.marginLeft = 'auto';
             mainAdminContentContainer.style.marginRight = 'auto';
 
 
@@ -2033,8 +2038,6 @@
                     overlay.classList.remove('open');
                     document.body.classList.remove('overflow-hidden');
                     mainAdminContentContainer.classList.add('has-sidebar-margin'); // Aplicar margen en desktop
-                    mainAdminContentContainer.style.marginLeft = '2rem'; // Ensure it's set
-                    mainAdminContentContainer.style.marginRight = 'auto';
                 } else { // Móvil
                     if (sideMenu.classList.contains('open')) { // Si estaba abierto (estado de escritorio)
                         sideMenu.classList.remove('open'); // Cerrar para móvil
@@ -2044,8 +2047,6 @@
                     sideMenu.classList.add('hidden'); // Asegurarse de que esté oculto por defecto en móvil
                     hamburgerButton.classList.remove('hidden');
                     mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margen en móvil
-                    mainAdminContentContainer.style.marginLeft = 'auto';
-                    mainAdminContentContainer.style.marginRight = 'auto';
                 }
             } else { // No autenticado (estado de login)
                 sideMenu.classList.add('hidden');
@@ -2054,9 +2055,10 @@
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
                 mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margen en login
-                mainAdminContentContainer.style.marginLeft = 'auto';
-                mainAdminContentContainer.style.marginRight = 'auto';
             }
+            // Asegurarse de que el centrado horizontal funcione en ambos casos
+            mainAdminContentContainer.style.marginLeft = 'auto';
+            mainAdminContentContainer.style.marginRight = 'auto';
         });
 
 
