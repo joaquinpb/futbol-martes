@@ -468,7 +468,7 @@
             .player-marker.claros:nth-child(2) { top: 30%; left: 75%; } /* Defender 1 */
             .player-marker.claros:nth-child(3) { top: 70%; left: 75%; } /* Defender 2 */
             .player-marker.claros:nth-child(4) { top: 40%; left: 64%; } /* Midfielder/Forward 1 (Moved to midpoint) */
-            .player-marker.claros:nth-child(5) { top: 60%; left: 64%; } /* Midfielder/Forward 2 (Moved to midpoint) */
+            .player-marker.claros:nth-child(5) { top: 60%; left: 64%; }   /* Midfielder/Forward 2 (Moved to midpoint) */
 
             /* Oscuros (Left Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
             .player-marker.oscuros:nth-child(1) { top: 50%; left: 10%; } /* Goalkeeper */
@@ -924,6 +924,19 @@
         const fixtureContent = document.getElementById('fixture-content');
         const individualStatsContent = document.getElementById('individual-stats-content'); // New content div
 
+        // Mapping of hash to tab content ID
+        const hashToTabMap = {
+            '#leaderboard': 'leaderboard-content',
+            '#chamigo': 'chamigo-content',
+            '#tt': 'tt-content',
+            '#presentismo': 'presentismo-content',
+            '#ausentismo': 'ausentismo-content',
+            '#estadisticas': 'estadisticas-content',
+            '#equipos': 'equipos-content',
+            '#fixture': 'fixture-content',
+            '#individual-stats': 'individual-stats-content'
+        };
+
         // --- Funciones de Inicialización de Google API y Carga de Datos ---
         // Se definen aquí para asegurar que estén disponibles cuando el script de la API de Google las llame.
         function gapiLoaded() {
@@ -1063,62 +1076,81 @@
             // Setup individual player search
             setupPlayerSearch(); // New call
 
-            // Activar la pestaña por defecto al cargar
-            const defaultTabButton = document.querySelector('.tab-button[data-tab="leaderboard-content"]');
-            if (defaultTabButton) {
-                defaultTabButton.classList.add('active');
-                leaderboardContent.classList.remove('hidden');
-                // Ocultar todas las demás al inicio
-                chamigoContent.classList.add('hidden');
-                ttContent.classList.add('hidden');
-                presentismoContent.classList.add('hidden');
-                ausentismoContent.classList.add('hidden');
-                estadisticasContent.classList.add('hidden');
-                equiposContent.classList.add('hidden');
-                fixtureContent.classList.add('hidden');
-                individualStatsContent.classList.add('hidden'); // New
+            // Determine which tab to activate based on URL hash
+            let initialTabId = 'leaderboard-content'; // Default tab
+            const hash = window.location.hash;
+            if (hash && hashToTabMap[hash]) {
+                initialTabId = hashToTabMap[hash];
             }
-            
-            // Renderizar el contenido de la pestaña por defecto (leaderboard)
-            renderLeaderboard();
+
+            // Activate the initial tab
+            activateTab(initialTabId);
+
+            // Add hashchange listener
+            window.addEventListener('hashchange', handleHashChange);
+        }
+
+        function activateTab(tabId) {
+            // Remove 'active' from all buttons and hide all contents
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            // Add 'active' to the corresponding button and show its content
+            const targetButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
+            document.getElementById(tabId).classList.remove('hidden');
+
+            // Render the specific content of the tab
+            if (tabId === 'leaderboard-content') {
+                renderLeaderboard();
+            } else if (tabId === 'chamigo-content') {
+                renderChamigoTable();
+            } else if (tabId === 'tt-content') {
+                renderTTTable();
+            } else if (tabId === 'presentismo-content') {
+                renderPresentismoTable();
+            } else if (tabId === 'ausentismo-content') {
+                renderAusentismoTable();
+            } else if (tabId === 'estadisticas-content') {
+                renderEstadisticasTable();
+            } else if (tabId === 'equipos-content') {
+                renderEquiposStats();
+            } else if (tabId === 'fixture-content') {
+                renderFixtureMatchCards();
+            } else if (tabId === 'individual-stats-content') {
+                renderIndividualStatsTable();
+            }
         }
 
         function handleTabButtonClick(event) {
             const clickedButton = event.currentTarget;
-            
-            // Remover 'active' de todos los botones y ocultar todos los contenidos
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-
-            // Añadir 'active' al botón clicado y mostrar su contenido
-            clickedButton.classList.add('active');
             const targetTabId = clickedButton.dataset.tab;
-            document.getElementById(targetTabId).classList.remove('hidden');
 
-            // Cerrar el menú lateral en móvil después de seleccionar una pestaña
+            // Update URL hash
+            const hash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === targetTabId);
+            if (hash && window.location.hash !== hash) {
+                window.location.hash = hash;
+            } else {
+                // If hash is already correct or no hash mapping, just activate the tab
+                activateTab(targetTabId);
+            }
+
+            // Close the side menu on mobile after selecting a tab
             if (window.innerWidth < 768) {
                 toggleSideMenu();
             }
+        }
 
-            // Renderizar el contenido específico de la pestaña
-            if (targetTabId === 'leaderboard-content') {
-                renderLeaderboard();
-            } else if (targetTabId === 'chamigo-content') {
-                renderChamigoTable();
-            } else if (targetTabId === 'tt-content') {
-                renderTTTable();
-            } else if (targetTabId === 'presentismo-content') {
-                renderPresentismoTable();
-            } else if (targetTabId === 'ausentismo-content') {
-                renderAusentismoTable();
-            } else if (targetTabId === 'estadisticas-content') {
-                renderEstadisticasTable();
-            } else if (targetTabId === 'equipos-content') {
-                renderEquiposStats();
-            } else if (targetTabId === 'fixture-content') {
-                renderFixtureMatchCards();
-            } else if (targetTabId === 'individual-stats-content') { // New case
-                renderIndividualStatsTable();
+        function handleHashChange() {
+            const hash = window.location.hash;
+            const targetTabId = hashToTabMap[hash];
+            if (targetTabId) {
+                activateTab(targetTabId);
+            } else {
+                // If hash is invalid or empty, default to leaderboard
+                activateTab('leaderboard-content');
             }
         }
 
@@ -1747,44 +1779,47 @@
                 `;
             }
 
-            // Define positions for 5 players on each side (relative to field container)
-            // Claros (bottom/right half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
-            // These positions are for the VERTICAL layout (mobile).
-            const clarosPositionsMobile = [
-                { top: '88%', left: '50%' },  // Goalkeeper
-                { top: '75%', left: '30%' },  // Defender 1
-                { top: '75%', left: '70%' },  // Defender 2
-                { top: '60%', left: '40%' },  // Midfielder/Forward 1
-                { top: '60%', left: '60%' }   // Midfielder/Forward 2
+            // Normalized positions (0 to 1, relative to field width/height)
+            // These are for a vertical field (height > width)
+            const clarosNormalizedPositionsVertical = [
+                { x: 0.5, y: 0.88 }, // Goalkeeper
+                { x: 0.3, y: 0.75 }, // Defender 1
+                { x: 0.7, y: 0.75 }, // Defender 2
+                { x: 0.4, y: 0.60 }, // Midfielder/Forward 1
+                { x: 0.6, y: 0.60 }   // Midfielder/Forward 2
             ];
-            // Oscuros (top/left half of the field) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards
-            const oscurosPositionsMobile = [
-                { top: '12%', left: '50%' }, // Goalkeeper
-                { top: '25%', left: '30%' }, // Defender 1
-                { top: '25%', left: '70%' }, // Defender 2
-                { top: '40%', left: '40%' }, // Midfielder/Forward 1
-                { top: '40%', left: '60%' }  // Midfielder/Forward 2
+            const oscurosNormalizedPositionsVertical = [
+                { x: 0.5, y: 0.12 }, // Goalkeeper
+                { x: 0.3, y: 0.25 }, // Defender 1
+                { x: 0.7, y: 0.25 }, // Defender 2
+                { x: 0.4, y: 0.40 }, // Midfielder/Forward 1
+                { x: 0.6, y: 0.40 }  // Midfielder/Forward 2
             ];
 
-            // These positions are for the HORIZONTAL layout (desktop).
-            const clarosPositionsDesktop = [
-                { top: '50%', left: '90%' },  // Goalkeeper
-                { top: '30%', left: '75%' },  // Defender 1
-                { top: '70%', left: '75%' },  // Defender 2
-                { top: '40%', left: '64%' },  // Midfielder/Forward 1 (Moved closer to defenders)
-                { top: '60%', left: '64%' }   // Midfielder/Forward 2 (Moved closer to defenders)
+            // Normalized positions (0 to 1, relative to field width/height)
+            // These are for a horizontal field (width > height)
+            const clarosNormalizedPositionsHorizontal = [
+                { x: 0.90, y: 0.50 }, // Goalkeeper
+                { x: 0.75, y: 0.30 }, // Defender 1
+                { x: 0.75, y: 0.70 }, // Defender 2
+                { x: 0.64, y: 0.40 }, // Midfielder/Forward 1 (Moved to midpoint)
+                { x: 0.64, y: 0.60 }  // Midfielder/Forward 2 (Moved to midpoint)
             ];
-            const oscurosPositionsDesktop = [
-                { top: '50%', left: '10%' }, // Goalkeeper
-                { top: '30%', left: '25%' }, // Defender 1
-                { top: '70%', left: '25%' }, // Defender 2
-                { top: '40%', left: '36%' }, // Midfielder/Forward 1 (Moved closer to defenders)
-                { top: '60%', left: '36%' }  // Midfielder/Forward 2 (Moved closer to defenders)
+            const oscurosNormalizedPositionsHorizontal = [
+                { x: 0.10, y: 0.50 }, // Goalkeeper
+                { x: 0.25, y: 0.30 }, // Defender 1
+                { x: 0.25, y: 0.70 }, // Defender 2
+                { x: 0.36, y: 0.40 }, // Midfielder/Forward 1 (Moved to midpoint)
+                { x: 0.36, y: 0.60 }  // Midfielder/Forward 2 (Moved to midpoint)
             ];
 
-            const isDesktop = window.innerWidth >= 768;
-            const currentClarosPositions = isDesktop ? clarosPositionsDesktop : clarosPositionsMobile;
-            const currentOscurosPositions = isDesktop ? oscurosPositionsDesktop : oscurosPositionsMobile;
+            // Determine field orientation dynamically based on its current dimensions
+            const fieldWidth = soccerFieldContainer.offsetWidth;
+            const fieldHeight = soccerFieldContainer.offsetHeight;
+            const isHorizontalField = fieldWidth > fieldHeight;
+
+            const currentClarosNormalizedPositions = isHorizontalField ? clarosNormalizedPositionsHorizontal : clarosNormalizedPositionsVertical;
+            const currentOscurosNormalizedPositions = isHorizontalField ? oscurosNormalizedPositionsHorizontal : oscurosNormalizedPositionsVertical;
 
             // Add Claros players
             clarosPlayerIDs.slice(0, 5).forEach((playerId, index) => {
@@ -1794,8 +1829,8 @@
 
                 playerDiv.classList.add('player-marker', 'claros');
                 playerDiv.innerHTML = `<span class="player-name">${playerName.split(' ')[0]}</span> ${chamigosIds.includes(playerId) ? '<i class="fas fa-star text-yellow-400"></i>' : ''}`; // Add star if Chamigo
-                playerDiv.style.top = currentClarosPositions[index].top;
-                playerDiv.style.left = currentClarosPositions[index].left;
+                playerDiv.style.top = `${currentClarosNormalizedPositions[index].y * 100}%`;
+                playerDiv.style.left = `${currentClarosNormalizedPositions[index].x * 100}%`;
                 soccerFieldContainer.appendChild(playerDiv);
             });
 
@@ -1807,8 +1842,8 @@
 
                 playerDiv.classList.add('player-marker', 'oscuros');
                 playerDiv.innerHTML = `<span class="player-name">${playerName.split(' ')[0]}</span> ${chamigosIds.includes(playerId) ? '<i class="fas fa-star text-yellow-400"></i>' : ''}`; // Add star if Chamigo
-                playerDiv.style.top = currentOscurosPositions[index].top;
-                playerDiv.style.left = currentOscurosPositions[index].left;
+                playerDiv.style.top = `${currentOscurosNormalizedPositions[index].y * 100}%`;
+                playerDiv.style.left = `${currentOscurosNormalizedPositions[index].x * 100}%`;
                 soccerFieldContainer.appendChild(playerDiv);
             });
 
@@ -1818,21 +1853,21 @@
                 trophyDiv.classList.add('winner-trophy');
                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
                 
-                // Determine position based on desktop/mobile and winning team
-                if (isDesktop) {
+                // Determine position based on field orientation and winning team
+                if (isHorizontalField) { // Desktop or mobile landscape
                     if (winnerTeam === 'Claros') {
-                        trophyDiv.style.top = '95%'; // Bottom-right of field
+                        trophyDiv.style.top = '95%'; // Bottom-right
                         trophyDiv.style.left = '90%'; 
                     } else if (winnerTeam === 'Oscuros') {
-                        trophyDiv.style.top = '95%'; // Bottom-left of field
+                        trophyDiv.style.top = '95%'; // Bottom-left
                         trophyDiv.style.left = '10%'; 
                     }
-                } else { // Mobile (vertical)
+                } else { // Mobile portrait
                     if (winnerTeam === 'Claros') {
-                        trophyDiv.style.top = '95%'; // Bottom-left of field
+                        trophyDiv.style.top = '95%'; // Bottom-left
                         trophyDiv.style.left = '10%'; 
                     } else if (winnerTeam === 'Oscuros') {
-                        trophyDiv.style.top = '5%'; // Top-right of field
+                        trophyDiv.style.top = '5%'; // Top-right
                         trophyDiv.style.left = '90%'; 
                     }
                 }
