@@ -134,7 +134,7 @@
         }
 
         #hamburger-button {
-            display: none; /* CAMBIADO: Inicialmente oculto por defecto en CSS */
+            display: block; /* CAMBIADO: Visible por defecto en mobile */
             position: fixed;
             top: 1rem;
             left: 1rem;
@@ -211,11 +211,11 @@
                 background-color: #4f46e5; /* indigo-600 */
             }
 
-            .main-admin-content-container {
-                flex-grow: 1; /* Modificado: Ocupa el espacio restante */
-                /* margin-left: 256px; ya se aplica con md:ml-64 en el HTML */
-                /* Eliminado: margin: 2rem; y max-width: calc(...) */
+            .main-admin-content-container.sidebar-visible { /* NUEVO: Clase para aplicar margen */
+                margin-left: 256px;
             }
+            /* Eliminado: md:ml-64 del HTML */
+
             #signout_button_mobile_sidebar {
                 display: none !important;
             }
@@ -226,13 +226,13 @@
                 display: none !important;
             }
             #hamburger-button {
-                display: none !important; /* Always hide hamburger on desktop */
+                display: none !important; /* CAMBIADO: Siempre oculto en desktop */
             }
         }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 md:p-0">
-    <!-- Hamburger Button (visible on all screens) -->
+    <!-- Hamburger Button (visible on mobile only, initially) -->
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
@@ -274,7 +274,7 @@
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
     <!-- Main Content Area -->
-    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg relative md:ml-64">
+    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg relative">
         <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Panel de Administración</h1>
 
         <!-- Authentication buttons (only authorize button remains here) -->
@@ -732,13 +732,14 @@
                     authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
                     authStatus.classList.remove('hidden');
                     // Asegurarse de que el menú y el botón estén ocultos si no hay token
-                    sideMenu.classList.add('hidden'); // Asegurarse de que esté oculto
+                    sideMenu.style.display = 'none'; // Asegurarse de que esté oculto
                     sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado
-                    hamburgerButton.classList.add('hidden'); // Asegurarse de que esté oculto
+                    hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile por defecto
                     signoutButtonMobileSidebar.classList.add('hidden');
                     signoutButtonSidebar.classList.add('hidden');
                     adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
                     overlay.classList.add('hidden'); // Asegurarse que el overlay esté oculto
+                    mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Remover margen en desktop login
                 }
             }
         }
@@ -771,15 +772,18 @@
             adminContent.classList.remove('hidden'); // Mostrar el contenido de administración
             
             // Mostrar el menú lateral
-            sideMenu.classList.remove('hidden'); // Remover hidden (display: none)
+            sideMenu.style.display = 'flex'; // CAMBIADO: Mostrar como flex
             // En desktop, la barra lateral siempre debe estar 'abierta'
             if (window.innerWidth >= 768) {
                 sideMenu.classList.add('open'); // Force 'open' on desktop
-                hamburgerButton.classList.add('hidden'); // Always hide hamburger on desktop
+                hamburgerButton.style.display = 'none'; // CAMBIADO: Ocultar hamburguesa en desktop
+                mainAdminContentContainer.classList.add('sidebar-visible'); // CAMBIADO: Añadir margen en desktop
             } else {
                 // En móvil, el menú está inicialmente cerrado, y el botón de hamburguesa visible
                 sideMenu.classList.remove('open'); // Ensure it's closed for mobile initial state
-                hamburgerButton.classList.remove('hidden'); // Show hamburger on mobile
+                sideMenu.style.display = 'none'; // CAMBIADO: Ocultar el menú lateral en mobile por defecto
+                hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile
+                mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Asegurarse de no tener margen en mobile
             }
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
@@ -808,11 +812,12 @@
                 signoutButtonMobileSidebar.classList.add('hidden');
                 adminContent.classList.add('hidden'); // Ocultar el contenido de administración
                 
-                sideMenu.classList.add('hidden'); // Asegurarse de que esté oculto
+                sideMenu.style.display = 'none'; // CAMBIADO: Asegurarse de que esté oculto
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado (para estado móvil)
-                hamburgerButton.classList.add('hidden'); // Asegurarse de que esté oculto
+                hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile después del logout
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
+                mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Remover margen en desktop después del logout
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
                 authStatus.classList.remove('hidden');
@@ -991,9 +996,9 @@
                 overlay.classList.toggle('open');
                 document.body.classList.toggle('overflow-hidden');
                 if (sideMenu.classList.contains('open')) {
-                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
+                    hamburgerButton.style.display = 'none'; // CAMBIADO: Ocultar hamburguesa cuando el sidebar se abre
                 } else {
-                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
+                    hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa cuando el sidebar se cierra
                 }
             }
             // On desktop, this function should do nothing, as the sidebar is always open/closed by auth state
@@ -2032,29 +2037,32 @@
             // Solo ajustar la visibilidad de la barra lateral si está autenticado
             if (gapi.client.getToken() !== null) {
                 if (window.innerWidth >= 768) {
-                    sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
+                    sideMenu.style.display = 'flex'; // CAMBIADO: Mostrar sidebar en desktop
                     sideMenu.classList.add('open'); // Asegurarse de que tenga 'open' para visibilidad
-                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
+                    hamburgerButton.style.display = 'none'; // CAMBIADO: Ocultar hamburguesa en desktop
                     overlay.classList.remove('open'); // Ocultar overlay en desktop
                     document.body.classList.remove('overflow-hidden'); // Restablecer el scroll
+                    mainAdminContentContainer.classList.add('sidebar-visible'); // CAMBIADO: Añadir margen en desktop
                 } else {
                     // Si se redimensiona a móvil
                     // Si la barra lateral estaba visible (estado de escritorio), ocultarla y mostrar hamburguesa
                     if (sideMenu.classList.contains('open')) { // Si estaba abierta (por desktop)
                         sideMenu.classList.remove('open'); // Cerrarla para móvil
+                        sideMenu.style.display = 'none'; // CAMBIADO: Ocultarla
                         overlay.classList.remove('open');
                         document.body.classList.remove('overflow-hidden');
                     }
-                    // Mostrar hamburguesa si el menú está cerrado en mobile
-                    hamburgerButton.classList.remove('hidden');
+                    hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile
+                    mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Asegurarse de no tener margen en mobile
                 }
             } else {
                 // Si no está autenticado, asegurar que todo permanezca oculto en cualquier redimensionamiento
-                sideMenu.classList.add('hidden');
+                sideMenu.style.display = 'none'; // CAMBIADO: Ocultar el menú lateral
                 sideMenu.classList.remove('open');
-                hamburgerButton.classList.add('hidden');
+                hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
+                mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Remover margen en desktop
             }
         });
 
@@ -2062,15 +2070,16 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
             // Asegurarse de que el botón de hamburguesa y el menú lateral estén ocultos al inicio
-            // Estas líneas ahora son redundantes con el CSS, pero las mantenemos por seguridad.
-            hamburgerButton.classList.add('hidden');
-            sideMenu.classList.add('hidden'); 
+            // Estas líneas ahora son redundantes con el CSS y la lógica de maybeEnableAuthButtons, pero las mantenemos por seguridad.
+            hamburgerButton.style.display = 'block'; // CAMBIADO: Asegurar que la hamburguesa esté visible por defecto en mobile
+            sideMenu.style.display = 'none'; // CAMBIADO: Asegurar que el menú lateral esté oculto por defecto
             sideMenu.classList.remove('open'); 
             signoutButtonMobileSidebar.classList.add('hidden');
             signoutButtonSidebar.classList.add('hidden');
             adminContent.classList.add('hidden'); 
             overlay.classList.add('hidden'); 
             document.body.classList.remove('overflow-hidden'); 
+            mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Asegurar que no haya margen al cargar
 
             gapiLoaded();
             const script = document.createElement('script');
