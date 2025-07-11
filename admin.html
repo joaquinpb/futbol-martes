@@ -191,7 +191,6 @@
             #side-menu {
                 position: relative; /* No fixed on desktop, part of the flow */
                 transform: translateX(0); /* Always visible when not 'hidden' */
-                /* REMOVED: display: flex !important; - This was the culprit. 'hidden' class now handles it. */
                 flex-shrink: 0; /* Prevent it from shrinking */
                 height: 100vh; /* Maintain full height */
                 border-right: 1px solid #e2e8f0; /* border-gray-200 */
@@ -1000,17 +999,20 @@
         // --- Toggle Side Menu Functionality ---
         function toggleSideMenu() {
             const isMobile = window.innerWidth < 768;
-            if (isMobile) { // Solo alternar en móvil
+            if (isMobile) {
+                if (sideMenu.classList.contains('hidden')) {
+                    sideMenu.classList.remove('hidden'); // Remove hidden before toggling open
+                }
                 sideMenu.classList.toggle('open');
                 overlay.classList.toggle('open');
                 document.body.classList.toggle('overflow-hidden');
                 if (sideMenu.classList.contains('open')) {
-                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa cuando sidebar se abre en móvil
+                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
                 } else {
-                    hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa cuando sidebar se cierra en móvil
+                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
+                    sideMenu.classList.add('hidden'); // Add hidden back when closing on mobile
                 }
             }
-            // En desktop, esta función no debería hacer nada, ya que la barra lateral siempre está abierta/cerrada por el estado de autenticación
         }
 
         // --- Gestión de Jugadores (AMB) ---
@@ -2039,13 +2041,12 @@
                     document.body.classList.remove('overflow-hidden');
                     mainAdminContentContainer.classList.add('has-sidebar-margin'); // Aplicar margen en desktop
                 } else { // Móvil
-                    if (sideMenu.classList.contains('open')) { // Si estaba abierto (estado de escritorio)
-                        sideMenu.classList.remove('open'); // Cerrar para móvil
-                        overlay.classList.remove('open');
-                        document.body.classList.remove('overflow-hidden');
-                    }
-                    sideMenu.classList.add('hidden'); // Asegurarse de que esté oculto por defecto en móvil
+                    // Al redimensionar a móvil, el menú debe estar oculto por defecto
+                    sideMenu.classList.add('hidden');
+                    sideMenu.classList.remove('open'); // Asegura que el transform esté reseteado
                     hamburgerButton.classList.remove('hidden');
+                    overlay.classList.remove('open');
+                    document.body.classList.remove('overflow-hidden');
                     mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margen en móvil
                 }
             } else { // No autenticado (estado de login)
