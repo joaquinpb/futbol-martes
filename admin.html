@@ -14,8 +14,6 @@
             min-height: 100vh; /* Asegura que el cuerpo ocupe toda la altura del viewport */
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
-            /* REMOVED: display: flex; - Removed to simplify layout with fixed sidebar */
-            /* REMOVED: align-items: start; - Removed with flex */
         }
         /* Estilos para el efecto de arrastre */
         .player-draggable {
@@ -88,7 +86,7 @@
             border-bottom: 1px solid #cbd5e0; /* border-gray-300 */
             transition: background-color 150ms ease-in-out; /* transition duration-150 ease-in-out */
         }
-        #leaderboard-table-admin tbody tr:hover {
+        tbody tr:hover {
             background-color: #e2e8f0 !important; /* Tono de gris al pasar el cursor (hover:bg-gray-300) */
         }
         #leaderboard-table-admin tbody tr:last-child {
@@ -178,6 +176,7 @@
             margin-bottom: 2rem; /* Unificado: 2rem de separación del borde inferior */
         }
 
+        /* Desktop Styles (min-width: 768px) */
         @media (min-width: 768px) {
             #side-menu {
                 width: 256px; /* Wider for desktop */
@@ -185,7 +184,6 @@
                 color: white; /* Ensure text remains white on dark background */
                 border-right: 1px solid #e2e8f0; /* border-gray-200 */
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
-                /* REMOVED: transform: translateX(0); - Now controlled by .open class */
             }
             /* On desktop, if side-menu is not hidden, it should always be open */
             #side-menu:not(.hidden) {
@@ -205,8 +203,10 @@
             }
 
             .main-admin-content-container {
-                margin: 2rem; /* Add some margin around the main content */
-                max-width: calc(100% - 256px - 4rem); /* Sidebar width + 2rem left + 2rem right margin */
+                flex-grow: 1; /* Allow it to take up remaining space */
+                padding: 2rem; /* Keep padding for content inside */
+                margin-left: 256px; /* Offset for the fixed sidebar */
+                width: calc(100% - 256px); /* Take full width minus sidebar */
             }
             #signout_button_mobile_sidebar {
                 display: none !important;
@@ -266,7 +266,7 @@
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
     <!-- Main Content Area -->
-    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl relative md:ml-64 mx-auto">
+    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg w-full relative md:ml-64">
         <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Panel de Administración</h1>
 
         <!-- Authentication buttons (only authorize button remains here) -->
@@ -345,7 +345,7 @@
                                 <option value="Inactivo">Inactivo</option>
                             </select>
                         </div>
-                        <!-- Nuevo campo para el Rol (Titular/Suplente) -->
+                        <!-- Campo para el Rol (Titular/Suplente) - MANTENIDO -->
                         <div>
                             <label for="player-role" class="block text-sm font-medium text-gray-700">Rol:</label>
                             <select id="player-role" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
@@ -397,7 +397,7 @@
                                 <th class="py-3 px-6 text-left">ID</th>
                                 <th class="py-3 px-6 text-left">Nombre</th>
                                 <th class="py-3 px-6 text-left">Estado</th>
-                                <th class="py-3 px-6 text-left">Rol</th> <!-- Nueva columna para Rol -->
+                                <th class="py-3 px-6 text-left">Rol</th> <!-- Columna para Rol -->
                                 <th class="py-3 px-6 text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -411,7 +411,7 @@
             <div id="match-results" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Resultados</h2>
                 <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <!-- Sección de Detalles del Partido Seleccionado - MOVIDA ARRIBA -->
+                    <!-- Sección de Detalles del Partido Seleccionado -->
                     <h3 class="text-xl font-medium text-gray-800 mb-3">Partido Seleccionado</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
@@ -431,7 +431,7 @@
                     </div>
                     <div class="flex space-x-3 mt-6">
                         <button id="register-match-button" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 flex-1">
-                            Registrar Resultado y Puntos
+                            Registrar Resultado
                         </button>
                         <button id="delete-match-button" class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 flex-1">
                             Eliminar Partido
@@ -637,7 +637,7 @@
         const playerIdInput = document.getElementById('player-id');
         const playerNameInput = document.getElementById('player-name');
         const playerStatusSelect = document.getElementById('player-status');
-        const playerRoleSelect = document.getElementById('player-role'); // Nuevo: Selector de Rol
+        const playerRoleSelect = document.getElementById('player-role'); // Selector de Rol
         const savePlayerButton = document.getElementById('save-player-button');
         const deletePlayerButton = document.getElementById('delete-player-button');
         const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
@@ -649,9 +649,9 @@
 
 
         // Armar Equipos
-        const teamMatchDateInput = document.getElementById('team-match-date'); // Nuevo: Fecha en Armar Equipos
-        const titularesPlayersDiv = document.getElementById('titulares-players'); // Nuevo: Jugadores Titulares
-        const suplentesPlayersDiv = document.getElementById('suplentes-players'); // Nuevo: Jugadores Suplentes
+        const teamMatchDateInput = document.getElementById('team-match-date'); // Fecha en Armar Equipos
+        const titularesPlayersDiv = document.getElementById('titulares-players'); // Jugadores Titulares
+        const suplentesPlayersDiv = document.getElementById('suplentes-players'); // Jugadores Suplentes
         const teamClarosDiv = document.getElementById('team-claros');
         const teamOscurosDiv = document.getElementById('team-oscuros');
         const clarosCountSpan = document.getElementById('claros-count');
@@ -659,27 +659,30 @@
         const saveTeamsButton = document.getElementById('save-teams-button');
 
         // Resultados
+        let selectedMatchIdForResults = null; // Variable para almacenar el ID del partido seleccionado en Resultados
         const matchDateInput = document.getElementById('match-date');
         const matchResultSelect = document.getElementById('match-result');
         const resultsMatchYearSelect = document.getElementById('results-match-year-select');
         const resultsMatchMonthSelect = document.getElementById('results-match-month-select');
         const resultsMatchListDiv = document.getElementById('results-match-list'); // Ahora es un div, no un select
         const registerMatchButton = document.getElementById('register-match-button');
-        const deleteMatchButton = document.getElementById('delete-match-button'); // Nuevo botón de eliminar partido
+        const deleteMatchButton = document.getElementById('delete-match-button'); // Botón de eliminar partido
 
         // Chamigo
+        let selectedMatchIdForChamigo = null; // Variable para almacenar el ID del partido seleccionado en Chamigo
         const chamigoVotingPlayersDiv = document.getElementById('chamigo-voting-players');
         const registerChamigoButton = document.getElementById('register-chamigo-button');
-        const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select'); // Nuevo
-        const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select'); // Nuevo
-        const chamigoMatchListDiv = document.getElementById('chamigo-match-list'); // Nuevo
+        const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select');
+        const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select');
+        const chamigoMatchListDiv = document.getElementById('chamigo-match-list');
 
         // TT
+        let selectedMatchIdForTt = null; // Variable para almacenar el ID del partido seleccionado en TT
         const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
         const registerTtButton = document.getElementById('register-tt-button');
-        const ttMatchYearSelect = document.getElementById('tt-match-year-select'); // Nuevo
-        const ttMatchMonthSelect = document.getElementById('tt-match-month-select'); // Nuevo
-        const ttMatchListDiv = document.getElementById('tt-match-list'); // Nuevo
+        const ttMatchYearSelect = document.getElementById('tt-match-year-select');
+        const ttMatchMonthSelect = document.getElementById('tt-match-month-select');
+        const ttMatchListDiv = document.getElementById('tt-match-list');
 
 
         // --- Funciones de Autenticación ---
@@ -883,9 +886,10 @@
                     sheetIds['Jugadores'] = 0;
                 }
 
+                // Cargar datos de Jugadores: ahora solo ID_Jugador, Nombre, Estado, Rol
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:H',
+                    range: 'Jugadores!A:D', // Modificado: solo hasta la columna D (Rol)
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
 
@@ -954,16 +958,19 @@
                 populateMatchSelects();
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
+                selectedMatchIdForResults = null; // Reset selected match
             } else if (clickedButton.dataset.tab === 'chamigo-management') {
                 populateChamigoTtMatchYearSelect();
                 chamigoMatchMonthSelect.value = 'all';
                 populateChamigoTtMatchLists();
                 chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
+                selectedMatchIdForChamigo = null; // Reset selected match
             } else if (clickedButton.dataset.tab === 'tt-attendance') {
                 populateChamigoTtMatchYearSelect();
                 ttMatchMonthSelect.value = 'all';
                 populateChamigoTtMatchLists();
                 ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
+                selectedMatchIdForTt = null; // Reset selected match
             }
         }
 
@@ -996,7 +1003,8 @@
             const roleFilter = playerListRoleFilter.value;
 
             const filteredPlayers = allPlayersData.filter(player => {
-                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
+                // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
+                const [id, nombre, estado, rol = 'Titular'] = player; // Adjusted destructuring
                 const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
                 const matchesStatus = statusFilter === 'Todos' || estado === statusFilter;
                 const matchesRole = roleFilter === 'Todos' || rol === roleFilter;
@@ -1009,7 +1017,8 @@
             }
 
             filteredPlayers.forEach((player, index) => {
-                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
+                // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
+                const [id, nombre, estado, rol = 'Titular'] = player; // Adjusted destructuring
                 const row = `
                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                         <td class="py-3 px-6 text-left">${id}</td>
@@ -1080,17 +1089,19 @@
                         return Math.max(max, num);
                     }, 0);
                     newPlayerId = 'J' + String(maxIdNum + 1).padStart(3, '0');
-                    const newPlayerRow = [newPlayerId, name, status, 0, 0, 0, 0, role];
+                    // New player row only contains relevant fields
+                    const newPlayerRow = [newPlayerId, name, status, role];
                     allPlayersData.push(newPlayerRow);
                     rowToUpdateIndex = allPlayersData.length - 1;
                 } else {
                     allPlayersData[rowToUpdateIndex][1] = name;
                     allPlayersData[rowToUpdateIndex][2] = status;
-                    allPlayersData[rowToUpdateIndex][7] = role;
+                    allPlayersData[rowToUpdateIndex][3] = role; // Rol is now at index 3
                 }
 
                 const values = [allPlayersData[rowToUpdateIndex]];
-                const range = `Jugadores!A${rowToUpdateIndex + 2}:H${rowToUpdateIndex + 2}`;
+                // Update range to reflect new column count (A:D)
+                const range = `Jugadores!A${rowToUpdateIndex + 2}:D${rowToUpdateIndex + 2}`;
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -1130,9 +1141,10 @@
                     return;
                 }
 
-                allPlayersData[rowIndex][2] = 'Inactivo';
+                allPlayersData[rowIndex][2] = 'Inactivo'; // Update status to Inactivo
                 const values = [allPlayersData[rowIndex]];
-                const range = `Jugadores!A${rowIndex + 2}:H${rowIndex + 2}`;
+                // Update range to reflect new column count (A:D)
+                const range = `Jugadores!A${rowIndex + 2}:D${rowIndex + 2}`;
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -1171,7 +1183,8 @@
             suplentesPlayersDiv.innerHTML = '';
 
             activePlayers.forEach(player => {
-                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
+                // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
+                const [id, nombre, estado, rol = 'Titular'] = player; // Adjusted destructuring
                 const playerElement = document.createElement('div');
                 playerElement.className = 'player-draggable';
                 playerElement.draggable = true;
@@ -1399,25 +1412,27 @@
                 }, 0);
                 const newMatchId = 'P' + String(maxIdNum + 1).padStart(3, '0');
 
+                // The new match row for 'Partidos' sheet
                 const newMatchRow = [
                     newMatchId,
                     formattedDate,
                     clarosPlayers.join(','),
                     oscurosPlayers.join(','),
-                    '',
-                    '',
-                    ''
+                    '', // Resultado (vacío al crear)
+                    '', // ChamigoVotos (vacío al crear)
+                    ''  // TtAttendees (vacío al crear)
                 ];
 
                 await gapi.client.sheets.spreadsheets.values.append({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G',
+                    spreadsheetId: SPREADSHEID_ID,
+                    range: 'Partidos!A:G', // Append to Partidos sheet
                     valueInputOption: 'RAW',
                     resource: { values: [newMatchRow] },
                 });
 
                 alert(`Equipos guardados para el partido ${newMatchId} en la fecha ${formattedDate}.`);
                 await loadAllDataAndDisplayAllContent();
+                // Clear team formation UI
                 titularesPlayersDiv.innerHTML = '';
                 suplentesPlayersDiv.innerHTML = '';
                 teamClarosDiv.innerHTML = '';
@@ -1528,6 +1543,7 @@
                     document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
                     matchItem.classList.add('selected');
 
+                    selectedMatchIdForResults = id; // Store selected match ID
                     const selectedMatch = allMatchesData.find(m => m[0] === id);
                     if (selectedMatch) {
                         const [mId, mFecha, mClarosIDs, mOscurosIDs, mResultado] = selectedMatch;
@@ -1677,143 +1693,39 @@
                 alert('Por favor, selecciona un partido de la lista.');
                 return;
             }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
+            selectedMatchIdForResults = selectedMatchItem.dataset.matchId; // Ensure this is set
             const result = matchResultSelect.value;
             const matchDateInputVal = matchDateInput.value;
 
-            if (!selectedMatchId || !result || !matchDateInputVal) {
+            if (!selectedMatchIdForResults || !result || !matchDateInputVal) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
                 return;
             }
 
             try {
-                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
+                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchIdForResults);
                 if (matchIndex === -1) {
                     alert('Partido no encontrado.');
                     return;
                 }
 
                 const currentMatch = allMatchesData[matchIndex];
-                const [id, oldDate, clarosIDsStr, oscurosIDsStr, oldResult, chamigoVotosStr, ttAttendeesStr] = currentMatch;
-
-                if (oldResult && oldResult.trim() !== '' && oldResult !== 'Suspendido') {
-                    const playersInOldMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
-                    const oldPlayerUpdates = {};
-
-                    playersInOldMatchIDs.forEach(pId => {
-                        oldPlayerUpdates[pId] = oldPlayerUpdates[pId] || { pointsChange: 0, gamesChange: 0 };
-                        oldPlayerUpdates[pId].gamesChange -= 1;
-                    });
-
-                    if (oldResult === 'Claros') {
-                        (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                            oldPlayerUpdates[pId].pointsChange -= 3;
-                        });
-                    } else if (oldResult === 'Oscuros') {
-                        (oscurosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                            oldPlayerUpdates[pId].pointsChange -= 3;
-                        });
-                    } else if (oldResult === 'Empate') {
-                        playersInOldMatchIDs.forEach(pId => {
-                            oldPlayerUpdates[pId].pointsChange -= 1;
-                        });
-                    }
-
-                    const batchRevertRequests = [];
-                    for (const playerId of Object.keys(oldPlayerUpdates)) {
-                        const playerUpdate = oldPlayerUpdates[playerId];
-                        const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                        if (playerGlobalIndex !== -1) {
-                            const currentPlayer = allPlayersData[playerGlobalIndex];
-                            currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange;
-                            currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange;
-
-                            batchRevertRequests.push({
-                                range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`,
-                                values: [[currentPlayer[3], currentPlayer[4]]]
-                            });
-                        }
-                    }
-                    if (batchRevertRequests.length > 0) {
-                        await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                            spreadsheetId: SPREADSHEET_ID,
-                            resource: {
-                                data: batchRevertRequests,
-                                valueInputOption: 'RAW'
-                            }
-                        });
-                    }
-                }
-
+                // Update match date and result in allMatchesData
                 currentMatch[1] = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal));
-                currentMatch[4] = result;
+                currentMatch[4] = result; // Update result column
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!A${matchIndex + 2}:G${matchIndex + 2}`,
+                    range: `Partidos!A${matchIndex + 2}:G${matchIndex + 2}`, // Update the entire row for the match
                     valueInputOption: 'RAW',
                     resource: { values: [currentMatch] },
                 });
 
-                const clarosPlayers = clarosIDsStr.split(',').filter(Boolean);
-                const oscurosPlayers = oscurosIDsStr.split(',').filter(Boolean);
-
-                let playersToUpdate = {};
-
-                if (result !== 'Suspendido') {
-                    [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].games += 1;
-                    });
-                }
-
-                if (result === 'Claros') {
-                    clarosPlayers.forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].points += 3;
-                    });
-                } else if (result === 'Oscuros') {
-                    oscurosPlayers.forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].points += 3;
-                    });
-                } else if (result === 'Empate') {
-                    [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].points += 1;
-                    });
-                }
-
-                const updateRequests = [];
-                for (const pId of Object.keys(playersToUpdate)) {
-                    const playerUpdate = playersToUpdate[pId];
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === pId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.points;
-                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.games;
-
-                        updateRequests.push({
-                            range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[3], currentPlayer[4]]]
-                        });
-                    }
-                }
-
-                if (updateRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: updateRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
-                alert('Resultado del partido y puntos actualizados exitosamente.');
+                alert('Resultado del partido actualizado exitosamente.');
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
                 document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
+                selectedMatchIdForResults = null; // Clear selected match
                 await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al registrar partido:', err);
@@ -1827,11 +1739,11 @@
                 alert('Por favor, selecciona un partido de la lista para eliminar.');
                 return;
             }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
+            selectedMatchIdForResults = selectedMatchItem.dataset.matchId; // Ensure this is set
 
             const confirmed = await showCustomConfirm(
                 'Confirmar Eliminación de Partido',
-                `¿Estás seguro de que quieres eliminar el partido seleccionado (ID: ${selectedMatchId})? Esto revertirá todos los puntos, chamigos y asistencias TT asociados a este partido. Esta acción es irreversible.`
+                `¿Estás seguro de que quieres eliminar el partido seleccionado (ID: ${selectedMatchIdForResults})? Esta acción es irreversible.`
             );
 
             if (!confirmed) {
@@ -1839,93 +1751,13 @@
             }
 
             try {
-                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
+                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchIdForResults);
                 if (matchIndex === -1) {
                     alert('Partido no encontrado.');
                     return;
                 }
 
-                const matchToDelete = allMatchesData[matchIndex];
-                const [id, date, clarosIDsStr = '', oscurosIDsStr = '', result, chamigoVotosStr = '', ttAttendeesStr = ''] = matchToDelete;
-
-                const playersInMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
-                const playerUpdates = {};
-
-                if (result && result.trim() !== '' && result !== 'Suspendido') {
-                    playersInMatchIDs.forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].gamesChange -= 1;
-                    });
-                }
-
-                if (result === 'Claros') {
-                    (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].pointsChange -= 3;
-                    });
-                } else if (result === 'Oscuros') {
-                    (oscurosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].pointsChange -= 3;
-                    });
-                } else if (result === 'Empate') {
-                    playersInMatchIDs.forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].pointsChange -= 1;
-                    });
-                }
-
-                if (chamigoVotosStr) {
-                    try {
-                        const chamigoVotos = JSON.parse(chamigoVotosStr);
-                        const maxVotes = chamigoVotos.length > 0 ? Math.max(...chamigoVotos.map(v => v.votos)) : 0;
-                        const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
-                        chamigosDelPartido.forEach(chamigo => {
-                            playerUpdates[chamigo.id] = playerUpdates[chamigo.id] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                            playerUpdates[chamigo.id].chamigoChange -= 1;
-                        });
-                    } catch (e) {
-                        console.warn('Error al parsear votos de chamigo al eliminar:', chamigoVotosStr, e);
-                    }
-                }
-
-                if (ttAttendeesStr) {
-                    const ttAttendees = ttAttendeesStr.split(',').filter(Boolean);
-                    ttAttendees.forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].ttChange -= 1;
-                    });
-                }
-
-                const batchUpdatePlayerRequests = [];
-                for (const playerId of Object.keys(playerUpdates)) {
-                    const playerUpdate = playerUpdates[playerId];
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange;
-                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange;
-                        currentPlayer[5] = parseInt(currentPlayer[5] || 0) + playerUpdate.chamigoChange;
-                        currentPlayer[6] = parseInt(currentPlayer[6] || 0) + playerUpdate.ttChange;
-
-                        batchUpdatePlayerRequests.push({
-                            range: `Jugadores!D${playerGlobalIndex + 2}:G${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[3], currentPlayer[4], currentPlayer[5], currentPlayer[6]]]
-                        });
-                    }
-                }
-
-                if (batchUpdatePlayerRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: batchUpdatePlayerRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
-                const sheetRowIndex = matchIndex + 2;
+                const sheetRowIndex = matchIndex + 2; // +2 because Sheets is 1-indexed and has a header row
 
                 if (sheetIds['Partidos'] === undefined) {
                     console.error("Sheet ID for 'Partidos' not found. Cannot delete row.");
@@ -1941,19 +1773,20 @@
                                 range: {
                                     sheetId: sheetIds['Partidos'],
                                     dimension: 'ROWS',
-                                    startIndex: sheetRowIndex - 1,
-                                    endIndex: sheetRowIndex
+                                    startIndex: sheetRowIndex - 1, // API is 0-indexed for startIndex
+                                    endIndex: sheetRowIndex // API is exclusive for endIndex
                                 }
                             }
                         }]
                     }
                 });
 
-                alert('Partido eliminado y estadísticas revertidas exitosamente.');
+                alert('Partido eliminado exitosamente.');
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
                 document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                await loadAllDataAndDisplayAllContent();
+                selectedMatchIdForResults = null; // Clear selected match
+                await loadAllDataAndDisplayAllContent(); // Reload all data after deletion
             } catch (err) {
                 console.error('Error al eliminar partido:', err);
                 alert(`Error al eliminar partido: ${err.message}. Revisa la consola.`);
@@ -1964,6 +1797,7 @@
         // --- Funciones de Chamigo ---
 
         function handleChamigoMatchSelection(selectedMatchId) {
+            selectedMatchIdForChamigo = selectedMatchId; // Store selected match ID
             chamigoVotingPlayersDiv.innerHTML = '';
             if (selectedMatchId) {
                 const match = allMatchesData.find(m => m[0] === selectedMatchId);
@@ -1978,7 +1812,7 @@
                     });
                     renderChamigoVotingPlayers(playersInMatch);
 
-                    if (match[5]) {
+                    if (match[5]) { // ChamigoVotos column
                         try {
                             const existingVotes = JSON.parse(match[5]);
                             existingVotes.forEach(vote => {
@@ -2021,9 +1855,9 @@
                 alert('Por favor, selecciona un partido de la lista para registrar el Chamigo.');
                 return;
             }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
+            selectedMatchIdForChamigo = selectedMatchItem.dataset.matchId; // Ensure this is set
 
-            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
+            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchIdForChamigo);
             if (matchIndex === -1) {
                 alert('Partido no encontrado.');
                 return;
@@ -2045,47 +1879,22 @@
                 return;
             }
 
-            const maxVotes = Math.max(...votes.map(v => v.votos));
-            const chamigosDelPartido = votes.filter(v => v.votos === maxVotes);
-
-            currentMatch[5] = JSON.stringify(votes);
+            // No need to calculate maxVotes or chamigosDelPartido here for updating Jugadores sheet
+            // This is only for storing in the Partidos sheet.
+            currentMatch[5] = JSON.stringify(votes); // Update ChamigoVotos column
 
             try {
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!F${matchIndex + 2}`,
+                    range: `Partidos!F${matchIndex + 2}`, // Update only the ChamigoVotos column
                     valueInputOption: 'RAW',
                     resource: { values: [[currentMatch[5]]] },
                 });
 
-                const updateRequests = [];
-                chamigosDelPartido.forEach(chamigo => {
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === chamigo.id);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentChamigos = parseInt(currentPlayer[5] || 0);
-                        currentPlayer[5] = currentChamigos + 1;
-
-                        updateRequests.push({
-                            range: `Jugadores!F${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[5]]]
-                        });
-                    }
-                });
-
-                if (updateRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: updateRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
                 alert('Chamigo(s) registrado(s) exitosamente.');
                 document.querySelectorAll('.chamigo-vote-input').forEach(input => input.value = '0');
-                await loadAllDataAndDisplayAllContent();
+                selectedMatchIdForChamigo = null; // Clear selected match
+                await loadAllDataAndDisplayAllContent(); // Reload all data
             } catch (err) {
                 console.error('Error al registrar Chamigo:', err);
                 alert(`Error al registrar Chamigo: ${err.message}. Revisa la consola.`);
@@ -2095,13 +1904,14 @@
         // --- Funciones de Asistencia TT ---
 
         function handleTtMatchSelection(selectedMatchId) {
+            selectedMatchIdForTt = selectedMatchId; // Store selected match ID
             ttAttendancePlayersDiv.innerHTML = '';
             if (selectedMatchId) {
                 const match = allMatchesData.find(m => m[0] === selectedMatchId);
                 if (match) {
                     renderTtAttendancePlayers(allPlayersData.filter(p => p[2] === 'Activo').map(p => ({id: p[0], name: p[1]})));
 
-                    if (match[6]) {
+                    if (match[6]) { // TtAttendees column
                         const existingAttendees = match[6].split(',');
                         existingAttendees.forEach(id => {
                             const checkbox = ttAttendancePlayersDiv.querySelector(`input[data-id="${id}"]`);
@@ -2140,9 +1950,9 @@
                 alert('Por favor, selecciona un partido de la lista para registrar la asistencia TT.');
                 return;
             }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
+            selectedMatchIdForTt = selectedMatchItem.dataset.matchId; // Ensure this is set
 
-            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
+            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchIdForTt);
             if (matchIndex === -1) {
                 alert('Partido no encontrado.');
                 return;
@@ -2151,63 +1961,23 @@
             const currentMatch = allMatchesData[matchIndex];
             const ttAttendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
 
-            const prevTtAttendees = currentMatch[6] ? currentMatch[6].split(',').filter(Boolean) : [];
-            const newAttendeesForPoints = ttAttendees.filter(id => !prevTtAttendees.includes(id));
-            const removedAttendeesForPoints = prevTtAttendees.filter(id => !ttAttendees.includes(id));
-
-
-            currentMatch[6] = ttAttendees.join(',');
+            // No need to calculate prevTtAttendees or new/removed attendees for updating Jugadores sheet
+            // This is only for storing in the Partidos sheet.
+            currentMatch[6] = ttAttendees.join(','); // Update TtAttendees column
 
             try {
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!G${matchIndex + 2}`,
+                    range: `Partidos!G${matchIndex + 2}`, // Update only the TtAttendees column
                     valueInputOption: 'RAW',
                     resource: { values: [[currentMatch[6]]] },
                 });
 
-                const updateRequests = [];
-                newAttendeesForPoints.forEach(playerId => {
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentTtAsistencias = parseInt(currentPlayer[6] || 0);
-                        currentPlayer[6] = currentTtAsistencias + 1;
-
-                        updateRequests.push({
-                            range: `Jugadores!G${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[6]]]
-                        });
-                    }
-                });
-
-                removedAttendeesForPoints.forEach(playerId => {
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentTtAsistencias = parseInt(currentPlayer[6] || 0);
-                        currentPlayer[6] = currentTtAsistencias - 1;
-
-                        updateRequests.push({
-                            range: `Jugadores!G${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[6]]]
-                        });
-                    }
-                });
-
-
-                if (updateRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: updateRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
                 alert('Asistencia al Tercer Tiempo registrada exitosamente.');
-                await loadAllDataAndDisplayAllContent();
+                // Uncheck all checkboxes after saving
+                document.querySelectorAll('.tt-checkbox').forEach(cb => cb.checked = false);
+                selectedMatchIdForTt = null; // Clear selected match
+                await loadAllDataAndDisplayAllContent(); // Reload all data
             } catch (err) {
                 console.error('Error al registrar asistencia TT:', err);
                 alert(`Error al registrar asistencia TT: ${err.message}. Revisa la consola.`);
