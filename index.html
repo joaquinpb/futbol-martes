@@ -983,7 +983,7 @@
                     try {
                         errorDetail = JSON.stringify(error);
                     } catch (e) {
-                        errorDetail = String(error); // Fallback a conversión simple a string
+                        errorDetail = String(e); // Fallback a conversión simple a string
                     }
                 }
                 const errorMessageText = `Error al cargar datos: ${errorDetail}. Asegúrate de que la hoja sea accesible.`;
@@ -1102,6 +1102,12 @@
                 renderEquiposStats();
             } else if (tabId === 'fixture-content') {
                 renderFixtureMatchCards();
+                // After rendering cards, select the latest one
+                const fixtureMatchesCardsContainer = document.getElementById('fixture-matches-cards-container');
+                const latestMatchCard = fixtureMatchesCardsContainer.querySelector('[data-match-id]'); // First one is the latest due to sorting
+                if (latestMatchCard) {
+                    latestMatchCard.click(); // Simulate click to render details
+                }
             } else if (tabId === 'individual-stats-content') {
                 renderIndividualStatsTable();
             }
@@ -1763,14 +1769,14 @@
 
             // Normalized positions (0 to 1, relative to field width/height)
             // These are for a vertical field (height > width)
-            const clarosNormalizedPositionsVertical = [
+            const clarosNormalizedPositionsPortrait = [
                 { x: 0.5, y: 0.88 }, // Goalkeeper
                 { x: 0.3, y: 0.75 }, // Defender 1
                 { x: 0.7, y: 0.75 }, // Defender 2
                 { x: 0.4, y: 0.60 }, // Midfielder/Forward 1
                 { x: 0.6, y: 0.60 }   // Midfielder/Forward 2
             ];
-            const oscurosNormalizedPositionsVertical = [
+            const oscurosNormalizedPositionsPortrait = [
                 { x: 0.5, y: 0.12 }, // Goalkeeper
                 { x: 0.3, y: 0.25 }, // Defender 1
                 { x: 0.7, y: 0.25 }, // Defender 2
@@ -1780,14 +1786,14 @@
 
             // Normalized positions (0 to 1, relative to field width/height)
             // These are for a horizontal field (width > height)
-            const clarosNormalizedPositionsHorizontal = [
+            const clarosNormalizedPositionsLandscape = [
                 { x: 0.90, y: 0.50 }, // Goalkeeper
                 { x: 0.75, y: 0.30 }, // Defender 1
                 { x: 0.75, y: 0.70 }, // Defender 2
                 { x: 0.64, y: 0.40 }, // Midfielder/Forward 1 (Moved to midpoint)
                 { x: 0.64, y: 0.60 }  // Midfielder/Forward 2 (Moved to midpoint)
             ];
-            const oscurosNormalizedPositionsHorizontal = [
+            const oscurosNormalizedPositionsLandscape = [
                 { x: 0.10, y: 0.50 }, // Goalkeeper
                 { x: 0.25, y: 0.30 }, // Defender 1
                 { x: 0.25, y: 0.70 }, // Defender 2
@@ -1795,13 +1801,11 @@
                 { x: 0.36, y: 0.60 }  // Midfielder/Forward 2 (Moved to midpoint)
             ];
 
-            // Determine field orientation dynamically based on its current dimensions
-            const fieldWidth = soccerFieldContainer.offsetWidth;
-            const fieldHeight = soccerFieldContainer.offsetHeight;
-            const isHorizontalField = fieldWidth > fieldHeight;
+            // Determine field orientation based on viewport orientation
+            const isLandscapeViewport = window.innerWidth > window.innerHeight;
 
-            const currentClarosNormalizedPositions = isHorizontalField ? clarosNormalizedPositionsHorizontal : clarosNormalizedPositionsVertical;
-            const currentOscurosNormalizedPositions = isHorizontalField ? oscurosNormalizedPositionsHorizontal : oscurosNormalizedPositionsVertical;
+            const currentClarosNormalizedPositions = isLandscapeViewport ? clarosNormalizedPositionsLandscape : clarosNormalizedPositionsPortrait;
+            const currentOscurosNormalizedPositions = isLandscapeViewport ? oscurosNormalizedPositionsLandscape : oscurosNormalizedPositionsPortrait;
 
             // Add Claros players
             clarosPlayerIDs.slice(0, 5).forEach((playerId, index) => {
@@ -1835,8 +1839,8 @@
                 trophyDiv.classList.add('winner-trophy');
                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
                 
-                // Determine position based on field orientation and winning team
-                if (isHorizontalField) { // Desktop or mobile landscape
+                // Determine position based on viewport orientation and winning team
+                if (isLandscapeViewport) { // Desktop or mobile landscape
                     if (winnerTeam === 'Claros') {
                         trophyDiv.style.top = '95%'; // Bottom-right
                         trophyDiv.style.left = '90%'; 
