@@ -110,7 +110,7 @@
             transform: translateX(-100%); /* Hidden by default for both mobile and desktop */
             transition: transform 0.3s ease-in-out;
             z-index: 40;
-            display: none; /* CAMBIADO: Inicialmente oculto por defecto en CSS */
+            display: flex; /* Use flex for vertical layout of tabs */
             flex-direction: column;
             padding-top: 1rem; /* Add some padding at the top */
         }
@@ -118,7 +118,6 @@
         /* This class will be applied by JS to make it visible */
         #side-menu.open {
             transform: translateX(0);
-            display: flex; /* CAMBIADO: Mostrar como flex cuando está abierto */
         }
 
         #overlay {
@@ -134,7 +133,6 @@
         }
 
         #hamburger-button {
-            display: block; /* CAMBIADO: Visible por defecto en mobile */
             position: fixed;
             top: 1rem;
             left: 1rem;
@@ -180,21 +178,16 @@
             margin-bottom: 2rem; /* Unificado: 2rem de separación del borde inferior */
         }
 
-        /* Desktop Styles (min-width: 768px) */
         @media (min-width: 768px) {
-            body {
-                flex-direction: row; /* Modificado: Los elementos se colocan en fila en desktop */
-            }
             #side-menu {
-                position: fixed; /* Mantenemos fixed para el efecto de deslizamiento */
-                top: 0;
-                left: 0;
-                height: 100vh;
-                width: 256px; /* Ancho fijo para el menú */
-                /* ... otros estilos ... */
-                transform: translateX(0) !important; /* Siempre visible en desktop */
+                width: 256px; /* Wider for desktop */
+                background-color: #312e81; /* indigo-800 - Corrected color */
+                color: white; /* Ensure text remains white on dark background */
+                border-right: 1px solid #e2e8f0; /* border-gray-200 */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+                /* REMOVED: transform: translateX(0); - Now controlled by .open class */
             }
-
+            /* On desktop, if side-menu is not hidden, it should always be open */
             #side-menu:not(.hidden) {
                 transform: translateX(0) !important;
             }
@@ -211,11 +204,10 @@
                 background-color: #4f46e5; /* indigo-600 */
             }
 
-            .main-admin-content-container.sidebar-visible { /* NUEVO: Clase para aplicar margen */
-                margin-left: 256px;
+            .main-admin-content-container {
+                margin: 2rem; /* Add some margin around the main content */
+                max-width: calc(100% - 256px - 4rem); /* Sidebar width + 2rem left + 2rem right margin */
             }
-            /* Eliminado: md:ml-64 del HTML */
-
             #signout_button_mobile_sidebar {
                 display: none !important;
             }
@@ -226,19 +218,19 @@
                 display: none !important;
             }
             #hamburger-button {
-                display: none !important; /* CAMBIADO: Siempre oculto en desktop */
+                display: none !important; /* Always hide hamburger on desktop */
             }
         }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4 md:p-0">
-    <!-- Hamburger Button (visible on mobile only, initially) -->
-    <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
+    <!-- Hamburger Button (visible on all screens) -->
+    <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
     <!-- Side Navigation Menu (fixed, slides in/out on all screens) -->
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40">
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
         <div class="p-4 text-right">
             <!-- Botón de cruz (oculto en desktop) -->
             <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
@@ -274,7 +266,7 @@
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
     <!-- Main Content Area -->
-    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg relative">
+    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl relative md:ml-64 mx-auto">
         <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Panel de Administración</h1>
 
         <!-- Authentication buttons (only authorize button remains here) -->
@@ -353,7 +345,7 @@
                                 <option value="Inactivo">Inactivo</option>
                             </select>
                         </div>
-                        <!-- Campo para el Rol (Titular/Suplente) - MANTENIDO -->
+                        <!-- Nuevo campo para el Rol (Titular/Suplente) -->
                         <div>
                             <label for="player-role" class="block text-sm font-medium text-gray-700">Rol:</label>
                             <select id="player-role" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
@@ -405,7 +397,7 @@
                                 <th class="py-3 px-6 text-left">ID</th>
                                 <th class="py-3 px-6 text-left">Nombre</th>
                                 <th class="py-3 px-6 text-left">Estado</th>
-                                <th class="py-3 px-6 text-left">Rol</th> <!-- Columna para Rol -->
+                                <th class="py-3 px-6 text-left">Rol</th> <!-- Nueva columna para Rol -->
                                 <th class="py-3 px-6 text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -419,7 +411,7 @@
             <div id="match-results" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Resultados</h2>
                 <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <!-- Sección de Detalles del Partido Seleccionado -->
+                    <!-- Sección de Detalles del Partido Seleccionado - MOVIDA ARRIBA -->
                     <h3 class="text-xl font-medium text-gray-800 mb-3">Partido Seleccionado</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
@@ -645,7 +637,7 @@
         const playerIdInput = document.getElementById('player-id');
         const playerNameInput = document.getElementById('player-name');
         const playerStatusSelect = document.getElementById('player-status');
-        const playerRoleSelect = document.getElementById('player-role'); // Selector de Rol
+        const playerRoleSelect = document.getElementById('player-role'); // Nuevo: Selector de Rol
         const savePlayerButton = document.getElementById('save-player-button');
         const deletePlayerButton = document.getElementById('delete-player-button');
         const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
@@ -657,9 +649,9 @@
 
 
         // Armar Equipos
-        const teamMatchDateInput = document.getElementById('team-match-date'); // Fecha en Armar Equipos
-        const titularesPlayersDiv = document.getElementById('titulares-players'); // Jugadores Titulares
-        const suplentesPlayersDiv = document.getElementById('suplentes-players'); // Jugadores Suplentes
+        const teamMatchDateInput = document.getElementById('team-match-date'); // Nuevo: Fecha en Armar Equipos
+        const titularesPlayersDiv = document.getElementById('titulares-players'); // Nuevo: Jugadores Titulares
+        const suplentesPlayersDiv = document.getElementById('suplentes-players'); // Nuevo: Jugadores Suplentes
         const teamClarosDiv = document.getElementById('team-claros');
         const teamOscurosDiv = document.getElementById('team-oscuros');
         const clarosCountSpan = document.getElementById('claros-count');
@@ -667,30 +659,27 @@
         const saveTeamsButton = document.getElementById('save-teams-button');
 
         // Resultados
-        let selectedMatchIdForResults = null; // Variable para almacenar el ID del partido seleccionado en Resultados
         const matchDateInput = document.getElementById('match-date');
         const matchResultSelect = document.getElementById('match-result');
         const resultsMatchYearSelect = document.getElementById('results-match-year-select');
         const resultsMatchMonthSelect = document.getElementById('results-match-month-select');
         const resultsMatchListDiv = document.getElementById('results-match-list'); // Ahora es un div, no un select
         const registerMatchButton = document.getElementById('register-match-button');
-        const deleteMatchButton = document.getElementById('delete-match-button'); // Botón de eliminar partido
+        const deleteMatchButton = document.getElementById('delete-match-button'); // Nuevo botón de eliminar partido
 
         // Chamigo
-        let selectedMatchIdForChamigo = null; // Variable para almacenar el ID del partido seleccionado en Chamigo
         const chamigoVotingPlayersDiv = document.getElementById('chamigo-voting-players');
         const registerChamigoButton = document.getElementById('register-chamigo-button');
-        const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select');
-        const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select');
-        const chamigoMatchListDiv = document.getElementById('chamigo-match-list');
+        const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select'); // Nuevo
+        const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select'); // Nuevo
+        const chamigoMatchListDiv = document.getElementById('chamigo-match-list'); // Nuevo
 
         // TT
-        let selectedMatchIdForTt = null; // Variable para almacenar el ID del partido seleccionado en TT
         const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
         const registerTtButton = document.getElementById('register-tt-button');
-        const ttMatchYearSelect = document.getElementById('tt-match-year-select');
-        const ttMatchMonthSelect = document.getElementById('tt-match-month-select');
-        const ttMatchListDiv = document.getElementById('tt-match-list');
+        const ttMatchYearSelect = document.getElementById('tt-match-year-select'); // Nuevo
+        const ttMatchMonthSelect = document.getElementById('tt-match-month-select'); // Nuevo
+        const ttMatchListDiv = document.getElementById('tt-match-list'); // Nuevo
 
 
         // --- Funciones de Autenticación ---
@@ -732,14 +721,12 @@
                     authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
                     authStatus.classList.remove('hidden');
                     // Asegurarse de que el menú y el botón estén ocultos si no hay token
-                    sideMenu.style.display = 'none'; // Asegurarse de que esté oculto
-                    sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado
-                    hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile por defecto
+                    sideMenu.classList.add('hidden'); // Ensure it's hidden
+                    sideMenu.classList.remove('open'); // Ensure it's closed
+                    hamburgerButton.classList.add('hidden'); // Ensure hamburger is hidden
                     signoutButtonMobileSidebar.classList.add('hidden');
                     signoutButtonSidebar.classList.add('hidden');
                     adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
-                    overlay.classList.add('hidden'); // Asegurarse que el overlay esté oculto
-                    mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Remover margen en desktop login
                 }
             }
         }
@@ -772,18 +759,15 @@
             adminContent.classList.remove('hidden'); // Mostrar el contenido de administración
             
             // Mostrar el menú lateral
-            sideMenu.style.display = 'flex'; // CAMBIADO: Mostrar como flex
+            sideMenu.classList.remove('hidden'); 
             // En desktop, la barra lateral siempre debe estar 'abierta'
             if (window.innerWidth >= 768) {
                 sideMenu.classList.add('open'); // Force 'open' on desktop
-                hamburgerButton.style.display = 'none'; // CAMBIADO: Ocultar hamburguesa en desktop
-                mainAdminContentContainer.classList.add('sidebar-visible'); // CAMBIADO: Añadir margen en desktop
+                hamburgerButton.classList.add('hidden'); // Always hide hamburger on desktop
             } else {
                 // En móvil, el menú está inicialmente cerrado, y el botón de hamburguesa visible
                 sideMenu.classList.remove('open'); // Ensure it's closed for mobile initial state
-                sideMenu.style.display = 'none'; // CAMBIADO: Ocultar el menú lateral en mobile por defecto
-                hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile
-                mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Asegurarse de no tener margen en mobile
+                hamburgerButton.classList.remove('hidden'); // Show hamburger on mobile
             }
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
@@ -812,12 +796,11 @@
                 signoutButtonMobileSidebar.classList.add('hidden');
                 adminContent.classList.add('hidden'); // Ocultar el contenido de administración
                 
-                sideMenu.style.display = 'none'; // CAMBIADO: Asegurarse de que esté oculto
-                sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado (para estado móvil)
-                hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile después del logout
+                sideMenu.classList.add('hidden'); // Ensure sidebar is hidden
+                sideMenu.classList.remove('open'); // Ensure it's closed (for mobile state)
+                hamburgerButton.classList.add('hidden');
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
-                mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Remover margen en desktop después del logout
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
                 authStatus.classList.remove('hidden');
@@ -900,10 +883,10 @@
                     sheetIds['Jugadores'] = 0;
                 }
 
-                // Cargar datos de Jugadores: ahora solo ID_Jugador, Nombre, Estado, Rol
+                // MODIFICADO: Rango de Jugadores ahora es A:D (ID_Jugador, Nombre, Estado, Rol)
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:D', // Modificado: solo hasta la columna D (Rol)
+                    range: 'Jugadores!A:D', 
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
 
@@ -972,19 +955,16 @@
                 populateMatchSelects();
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
-                selectedMatchIdForResults = null; // Reset selected match
             } else if (clickedButton.dataset.tab === 'chamigo-management') {
                 populateChamigoTtMatchYearSelect();
                 chamigoMatchMonthSelect.value = 'all';
                 populateChamigoTtMatchLists();
                 chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-                selectedMatchIdForChamigo = null; // Reset selected match
             } else if (clickedButton.dataset.tab === 'tt-attendance') {
                 populateChamigoTtMatchYearSelect();
                 ttMatchMonthSelect.value = 'all';
                 populateChamigoTtMatchLists();
                 ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-                selectedMatchIdForTt = null; // Reset selected match
             }
         }
 
@@ -996,9 +976,9 @@
                 overlay.classList.toggle('open');
                 document.body.classList.toggle('overflow-hidden');
                 if (sideMenu.classList.contains('open')) {
-                    hamburgerButton.style.display = 'none'; // CAMBIADO: Ocultar hamburguesa cuando el sidebar se abre
+                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
                 } else {
-                    hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa cuando el sidebar se cierra
+                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
                 }
             }
             // On desktop, this function should do nothing, as the sidebar is always open/closed by auth state
@@ -1018,7 +998,7 @@
 
             const filteredPlayers = allPlayersData.filter(player => {
                 // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
-                const [id, nombre, estado, rol = 'Titular'] = player; // Adjusted destructuring
+                const [id, nombre, estado, rol = 'Titular'] = player; // MODIFICADO: Destructuring ajustado
                 const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
                 const matchesStatus = statusFilter === 'Todos' || estado === statusFilter;
                 const matchesRole = roleFilter === 'Todos' || rol === roleFilter;
@@ -1032,7 +1012,7 @@
 
             filteredPlayers.forEach((player, index) => {
                 // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
-                const [id, nombre, estado, rol = 'Titular'] = player; // Adjusted destructuring
+                const [id, nombre, estado, rol = 'Titular'] = player; // MODIFICADO: Destructuring ajustado
                 const row = `
                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                         <td class="py-3 px-6 text-left">${id}</td>
@@ -1103,8 +1083,8 @@
                         return Math.max(max, num);
                     }, 0);
                     newPlayerId = 'J' + String(maxIdNum + 1).padStart(3, '0');
-                    // New player row only contains relevant fields
-                    const newPlayerRow = [newPlayerId, name, status, role];
+                    // New player row only contains relevant fields: ID, Nombre, Estado, Rol
+                    const newPlayerRow = [newPlayerId, name, status, role]; // MODIFICADO: Eliminados campos de estadísticas
                     allPlayersData.push(newPlayerRow);
                     rowToUpdateIndex = allPlayersData.length - 1;
                 } else {
@@ -1115,7 +1095,7 @@
 
                 const values = [allPlayersData[rowToUpdateIndex]];
                 // Update range to reflect new column count (A:D)
-                const range = `Jugadores!A${rowToUpdateIndex + 2}:D${rowToUpdateIndex + 2}`;
+                const range = `Jugadores!A${rowToUpdateIndex + 2}:D${rowToUpdateIndex + 2}`; // MODIFICADO: Rango ajustado a A:D
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -1158,7 +1138,7 @@
                 allPlayersData[rowIndex][2] = 'Inactivo'; // Update status to Inactivo
                 const values = [allPlayersData[rowIndex]];
                 // Update range to reflect new column count (A:D)
-                const range = `Jugadores!A${rowIndex + 2}:D${rowIndex + 2}`;
+                const range = `Jugadores!A${rowIndex + 2}:D${rowIndex + 2}`; // MODIFICADO: Rango ajustado a A:D
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -1198,7 +1178,7 @@
 
             activePlayers.forEach(player => {
                 // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
-                const [id, nombre, estado, rol = 'Titular'] = player; // Adjusted destructuring
+                const [id, nombre, estado, rol = 'Titular'] = player; // MODIFICADO: Destructuring ajustado
                 const playerElement = document.createElement('div');
                 playerElement.className = 'player-draggable';
                 playerElement.draggable = true;
@@ -1426,27 +1406,25 @@
                 }, 0);
                 const newMatchId = 'P' + String(maxIdNum + 1).padStart(3, '0');
 
-                // The new match row for 'Partidos' sheet
                 const newMatchRow = [
                     newMatchId,
                     formattedDate,
                     clarosPlayers.join(','),
                     oscurosPlayers.join(','),
-                    '', // Resultado (vacío al crear)
-                    '', // ChamigoVotos (vacío al crear)
-                    ''  // TtAttendees (vacío al crear)
+                    '',
+                    '',
+                    ''
                 ];
 
                 await gapi.client.sheets.spreadsheets.values.append({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G', // Append to Partidos sheet
+                    range: 'Partidos!A:G',
                     valueInputOption: 'RAW',
                     resource: { values: [newMatchRow] },
                 });
 
                 alert(`Equipos guardados para el partido ${newMatchId} en la fecha ${formattedDate}.`);
                 await loadAllDataAndDisplayAllContent();
-                // Clear team formation UI
                 titularesPlayersDiv.innerHTML = '';
                 suplentesPlayersDiv.innerHTML = '';
                 teamClarosDiv.innerHTML = '';
@@ -1557,7 +1535,6 @@
                     document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
                     matchItem.classList.add('selected');
 
-                    selectedMatchIdForResults = id; // Store selected match ID
                     const selectedMatch = allMatchesData.find(m => m[0] === id);
                     if (selectedMatch) {
                         const [mId, mFecha, mClarosIDs, mOscurosIDs, mResultado] = selectedMatch;
@@ -1707,17 +1684,17 @@
                 alert('Por favor, selecciona un partido de la lista.');
                 return;
             }
-            selectedMatchIdForResults = selectedMatchItem.dataset.matchId; // Ensure this is set
+            const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
             const matchDateInputVal = matchDateInput.value;
 
-            if (!selectedMatchIdForResults || !result || !matchDateInputVal) {
+            if (!selectedMatchId || !result || !matchDateInputVal) {
                 alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
                 return;
             }
 
             try {
-                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchIdForResults);
+                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
                 if (matchIndex === -1) {
                     alert('Partido no encontrado.');
                     return;
@@ -1739,7 +1716,6 @@
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
                 document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                selectedMatchIdForResults = null; // Clear selected match
                 await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al registrar partido:', err);
@@ -1753,11 +1729,11 @@
                 alert('Por favor, selecciona un partido de la lista para eliminar.');
                 return;
             }
-            selectedMatchIdForResults = selectedMatchItem.dataset.matchId; // Ensure this is set
+            const selectedMatchId = selectedMatchItem.dataset.matchId;
 
             const confirmed = await showCustomConfirm(
                 'Confirmar Eliminación de Partido',
-                `¿Estás seguro de que quieres eliminar el partido seleccionado (ID: ${selectedMatchIdForResults})? Esta acción es irreversible.`
+                `¿Estás seguro de que quieres eliminar el partido seleccionado (ID: ${selectedMatchId})? Esta acción es irreversible.`
             );
 
             if (!confirmed) {
@@ -1765,7 +1741,7 @@
             }
 
             try {
-                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchIdForResults);
+                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
                 if (matchIndex === -1) {
                     alert('Partido no encontrado.');
                     return;
@@ -1799,7 +1775,6 @@
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
                 document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                selectedMatchIdForResults = null; // Clear selected match
                 await loadAllDataAndDisplayAllContent(); // Reload all data after deletion
             } catch (err) {
                 console.error('Error al eliminar partido:', err);
@@ -1811,7 +1786,6 @@
         // --- Funciones de Chamigo ---
 
         function handleChamigoMatchSelection(selectedMatchId) {
-            selectedMatchIdForChamigo = selectedMatchId; // Store selected match ID
             chamigoVotingPlayersDiv.innerHTML = '';
             if (selectedMatchId) {
                 const match = allMatchesData.find(m => m[0] === selectedMatchId);
@@ -1869,9 +1843,9 @@
                 alert('Por favor, selecciona un partido de la lista para registrar el Chamigo.');
                 return;
             }
-            selectedMatchIdForChamigo = selectedMatchItem.dataset.matchId; // Ensure this is set
+            const selectedMatchId = selectedMatchItem.dataset.matchId;
 
-            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchIdForChamigo);
+            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
             if (matchIndex === -1) {
                 alert('Partido no encontrado.');
                 return;
@@ -1893,8 +1867,6 @@
                 return;
             }
 
-            // No need to calculate maxVotes or chamigosDelPartido here for updating Jugadores sheet
-            // This is only for storing in the Partidos sheet.
             currentMatch[5] = JSON.stringify(votes); // Update ChamigoVotos column
 
             try {
@@ -1907,7 +1879,6 @@
 
                 alert('Chamigo(s) registrado(s) exitosamente.');
                 document.querySelectorAll('.chamigo-vote-input').forEach(input => input.value = '0');
-                selectedMatchIdForChamigo = null; // Clear selected match
                 await loadAllDataAndDisplayAllContent(); // Reload all data
             } catch (err) {
                 console.error('Error al registrar Chamigo:', err);
@@ -1918,7 +1889,6 @@
         // --- Funciones de Asistencia TT ---
 
         function handleTtMatchSelection(selectedMatchId) {
-            selectedMatchIdForTt = selectedMatchId; // Store selected match ID
             ttAttendancePlayersDiv.innerHTML = '';
             if (selectedMatchId) {
                 const match = allMatchesData.find(m => m[0] === selectedMatchId);
@@ -1964,9 +1934,9 @@
                 alert('Por favor, selecciona un partido de la lista para registrar la asistencia TT.');
                 return;
             }
-            selectedMatchIdForTt = selectedMatchItem.dataset.matchId; // Ensure this is set
+            const selectedMatchId = selectedMatchItem.dataset.matchId;
 
-            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchIdForTt);
+            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
             if (matchIndex === -1) {
                 alert('Partido no encontrado.');
                 return;
@@ -1975,8 +1945,6 @@
             const currentMatch = allMatchesData[matchIndex];
             const ttAttendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
 
-            // No need to calculate prevTtAttendees or new/removed attendees for updating Jugadores sheet
-            // This is only for storing in the Partidos sheet.
             currentMatch[6] = ttAttendees.join(','); // Update TtAttendees column
 
             try {
@@ -1990,7 +1958,6 @@
                 alert('Asistencia al Tercer Tiempo registrada exitosamente.');
                 // Uncheck all checkboxes after saving
                 document.querySelectorAll('.tt-checkbox').forEach(cb => cb.checked = false);
-                selectedMatchIdForTt = null; // Clear selected match
                 await loadAllDataAndDisplayAllContent(); // Reload all data
             } catch (err) {
                 console.error('Error al registrar asistencia TT:', err);
@@ -2037,32 +2004,29 @@
             // Solo ajustar la visibilidad de la barra lateral si está autenticado
             if (gapi.client.getToken() !== null) {
                 if (window.innerWidth >= 768) {
-                    sideMenu.style.display = 'flex'; // CAMBIADO: Mostrar sidebar en desktop
+                    sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
                     sideMenu.classList.add('open'); // Asegurarse de que tenga 'open' para visibilidad
-                    hamburgerButton.style.display = 'none'; // CAMBIADO: Ocultar hamburguesa en desktop
+                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
                     overlay.classList.remove('open'); // Ocultar overlay en desktop
                     document.body.classList.remove('overflow-hidden'); // Restablecer el scroll
-                    mainAdminContentContainer.classList.add('sidebar-visible'); // CAMBIADO: Añadir margen en desktop
                 } else {
                     // Si se redimensiona a móvil
                     // Si la barra lateral estaba visible (estado de escritorio), ocultarla y mostrar hamburguesa
                     if (sideMenu.classList.contains('open')) { // Si estaba abierta (por desktop)
                         sideMenu.classList.remove('open'); // Cerrarla para móvil
-                        sideMenu.style.display = 'none'; // CAMBIADO: Ocultarla
                         overlay.classList.remove('open');
                         document.body.classList.remove('overflow-hidden');
                     }
-                    hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile
-                    mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Asegurarse de no tener margen en mobile
+                    // Mostrar hamburguesa si el menú está cerrado en mobile
+                    hamburgerButton.classList.remove('hidden');
                 }
             } else {
                 // Si no está autenticado, asegurar que todo permanezca oculto en cualquier redimensionamiento
-                sideMenu.style.display = 'none'; // CAMBIADO: Ocultar el menú lateral
+                sideMenu.classList.add('hidden');
                 sideMenu.classList.remove('open');
-                hamburgerButton.style.display = 'block'; // CAMBIADO: Mostrar hamburguesa en mobile
+                hamburgerButton.classList.add('hidden');
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
-                mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Remover margen en desktop
             }
         });
 
@@ -2070,16 +2034,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
             // Asegurarse de que el botón de hamburguesa y el menú lateral estén ocultos al inicio
-            // Estas líneas ahora son redundantes con el CSS y la lógica de maybeEnableAuthButtons, pero las mantenemos por seguridad.
-            hamburgerButton.style.display = 'block'; // CAMBIADO: Asegurar que la hamburguesa esté visible por defecto en mobile
-            sideMenu.style.display = 'none'; // CAMBIADO: Asegurar que el menú lateral esté oculto por defecto
-            sideMenu.classList.remove('open'); 
+            hamburgerButton.classList.add('hidden');
+            sideMenu.classList.add('hidden'); // Explicitly hide sidebar on load
+            sideMenu.classList.remove('open'); // Ensure it's not open
             signoutButtonMobileSidebar.classList.add('hidden');
             signoutButtonSidebar.classList.add('hidden');
-            adminContent.classList.add('hidden'); 
-            overlay.classList.add('hidden'); 
-            document.body.classList.remove('overflow-hidden'); 
-            mainAdminContentContainer.classList.remove('sidebar-visible'); // CAMBIADO: Asegurar que no haya margen al cargar
+            adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
 
             gapiLoaded();
             const script = document.createElement('script');
