@@ -14,8 +14,8 @@
             min-height: 100vh; /* Asegura que el cuerpo ocupe toda la altura del viewport */
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
-            /* REMOVED: display: flex; - Removed to simplify layout with fixed sidebar */
-            /* REMOVED: align-items: start; - Removed with flex */
+            display: flex; /* Añadido: Hace el body un contenedor flex */
+            flex-direction: column; /* Añadido: Por defecto, los elementos se apilan en columna (mobile-first) */
         }
         /* Estilos para el efecto de arrastre */
         .player-draggable {
@@ -88,7 +88,7 @@
             border-bottom: 1px solid #cbd5e0; /* border-gray-300 */
             transition: background-color 150ms ease-in-out; /* transition duration-150 ease-in-out */
         }
-        #leaderboard-table-admin tbody tr:hover {
+        tbody tr:hover {
             background-color: #e2e8f0 !important; /* Tono de gris al pasar el cursor (hover:bg-gray-300) */
         }
         #leaderboard-table-admin tbody tr:last-child {
@@ -431,7 +431,7 @@
                     </div>
                     <div class="flex space-x-3 mt-6">
                         <button id="register-match-button" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 flex-1">
-                            Registrar Resultado y Puntos
+                            Registrar Resultado
                         </button>
                         <button id="delete-match-button" class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 flex-1">
                             Eliminar Partido
@@ -883,9 +883,10 @@
                     sheetIds['Jugadores'] = 0;
                 }
 
+                // MODIFICADO: Rango de Jugadores ahora es A:D (ID_Jugador, Nombre, Estado, Rol)
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:H',
+                    range: 'Jugadores!A:D', 
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
 
@@ -996,7 +997,8 @@
             const roleFilter = playerListRoleFilter.value;
 
             const filteredPlayers = allPlayersData.filter(player => {
-                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
+                // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
+                const [id, nombre, estado, rol = 'Titular'] = player; // MODIFICADO: Destructuring ajustado
                 const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
                 const matchesStatus = statusFilter === 'Todos' || estado === statusFilter;
                 const matchesRole = roleFilter === 'Todos' || rol === roleFilter;
@@ -1009,7 +1011,8 @@
             }
 
             filteredPlayers.forEach((player, index) => {
-                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
+                // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
+                const [id, nombre, estado, rol = 'Titular'] = player; // MODIFICADO: Destructuring ajustado
                 const row = `
                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                         <td class="py-3 px-6 text-left">${id}</td>
@@ -1080,17 +1083,19 @@
                         return Math.max(max, num);
                     }, 0);
                     newPlayerId = 'J' + String(maxIdNum + 1).padStart(3, '0');
-                    const newPlayerRow = [newPlayerId, name, status, 0, 0, 0, 0, role];
+                    // New player row only contains relevant fields: ID, Nombre, Estado, Rol
+                    const newPlayerRow = [newPlayerId, name, status, role]; // MODIFICADO: Eliminados campos de estadísticas
                     allPlayersData.push(newPlayerRow);
                     rowToUpdateIndex = allPlayersData.length - 1;
                 } else {
                     allPlayersData[rowToUpdateIndex][1] = name;
                     allPlayersData[rowToUpdateIndex][2] = status;
-                    allPlayersData[rowToUpdateIndex][7] = role;
+                    allPlayersData[rowToUpdateIndex][3] = role; // Rol is now at index 3
                 }
 
                 const values = [allPlayersData[rowToUpdateIndex]];
-                const range = `Jugadores!A${rowToUpdateIndex + 2}:H${rowToUpdateIndex + 2}`;
+                // Update range to reflect new column count (A:D)
+                const range = `Jugadores!A${rowToUpdateIndex + 2}:D${rowToUpdateIndex + 2}`; // MODIFICADO: Rango ajustado a A:D
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -1130,9 +1135,10 @@
                     return;
                 }
 
-                allPlayersData[rowIndex][2] = 'Inactivo';
+                allPlayersData[rowIndex][2] = 'Inactivo'; // Update status to Inactivo
                 const values = [allPlayersData[rowIndex]];
-                const range = `Jugadores!A${rowIndex + 2}:H${rowIndex + 2}`;
+                // Update range to reflect new column count (A:D)
+                const range = `Jugadores!A${rowIndex + 2}:D${rowIndex + 2}`; // MODIFICADO: Rango ajustado a A:D
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
@@ -1171,7 +1177,8 @@
             suplentesPlayersDiv.innerHTML = '';
 
             activePlayers.forEach(player => {
-                const [id, nombre, estado, puntos, partidos, chamigos, tt, rol = 'Titular'] = player;
+                // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
+                const [id, nombre, estado, rol = 'Titular'] = player; // MODIFICADO: Destructuring ajustado
                 const playerElement = document.createElement('div');
                 playerElement.className = 'player-draggable';
                 playerElement.draggable = true;
@@ -1694,123 +1701,18 @@
                 }
 
                 const currentMatch = allMatchesData[matchIndex];
-                const [id, oldDate, clarosIDsStr, oscurosIDsStr, oldResult, chamigoVotosStr, ttAttendeesStr] = currentMatch;
-
-                if (oldResult && oldResult.trim() !== '' && oldResult !== 'Suspendido') {
-                    const playersInOldMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
-                    const oldPlayerUpdates = {};
-
-                    playersInOldMatchIDs.forEach(pId => {
-                        oldPlayerUpdates[pId] = oldPlayerUpdates[pId] || { pointsChange: 0, gamesChange: 0 };
-                        oldPlayerUpdates[pId].gamesChange -= 1;
-                    });
-
-                    if (oldResult === 'Claros') {
-                        (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                            oldPlayerUpdates[pId].pointsChange -= 3;
-                        });
-                    } else if (oldResult === 'Oscuros') {
-                        (oscurosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                            oldPlayerUpdates[pId].pointsChange -= 3;
-                        });
-                    } else if (oldResult === 'Empate') {
-                        playersInOldMatchIDs.forEach(pId => {
-                            oldPlayerUpdates[pId].pointsChange -= 1;
-                        });
-                    }
-
-                    const batchRevertRequests = [];
-                    for (const playerId of Object.keys(oldPlayerUpdates)) {
-                        const playerUpdate = oldPlayerUpdates[playerId];
-                        const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                        if (playerGlobalIndex !== -1) {
-                            const currentPlayer = allPlayersData[playerGlobalIndex];
-                            currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange;
-                            currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange;
-
-                            batchRevertRequests.push({
-                                range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`,
-                                values: [[currentPlayer[3], currentPlayer[4]]]
-                            });
-                        }
-                    }
-                    if (batchRevertRequests.length > 0) {
-                        await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                            spreadsheetId: SPREADSHEET_ID,
-                            resource: {
-                                data: batchRevertRequests,
-                                valueInputOption: 'RAW'
-                            }
-                        });
-                    }
-                }
-
+                // Update match date and result in allMatchesData
                 currentMatch[1] = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal));
-                currentMatch[4] = result;
+                currentMatch[4] = result; // Update result column
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!A${matchIndex + 2}:G${matchIndex + 2}`,
+                    range: `Partidos!A${matchIndex + 2}:G${matchIndex + 2}`, // Update the entire row for the match
                     valueInputOption: 'RAW',
                     resource: { values: [currentMatch] },
                 });
 
-                const clarosPlayers = clarosIDsStr.split(',').filter(Boolean);
-                const oscurosPlayers = oscurosIDsStr.split(',').filter(Boolean);
-
-                let playersToUpdate = {};
-
-                if (result !== 'Suspendido') {
-                    [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].games += 1;
-                    });
-                }
-
-                if (result === 'Claros') {
-                    clarosPlayers.forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].points += 3;
-                    });
-                } else if (result === 'Oscuros') {
-                    oscurosPlayers.forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].points += 3;
-                    });
-                } else if (result === 'Empate') {
-                    [...clarosPlayers, ...oscurosPlayers].forEach(pId => {
-                        playersToUpdate[pId] = playersToUpdate[pId] || { points: 0, games: 0 };
-                        playersToUpdate[pId].points += 1;
-                    });
-                }
-
-                const updateRequests = [];
-                for (const pId of Object.keys(playersToUpdate)) {
-                    const playerUpdate = playersToUpdate[pId];
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === pId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.points;
-                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.games;
-
-                        updateRequests.push({
-                            range: `Jugadores!D${playerGlobalIndex + 2}:E${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[3], currentPlayer[4]]]
-                        });
-                    }
-                }
-
-                if (updateRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: updateRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
-                alert('Resultado del partido y puntos actualizados exitosamente.');
+                alert('Resultado del partido actualizado exitosamente.');
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
                 document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
@@ -1831,7 +1733,7 @@
 
             const confirmed = await showCustomConfirm(
                 'Confirmar Eliminación de Partido',
-                `¿Estás seguro de que quieres eliminar el partido seleccionado (ID: ${selectedMatchId})? Esto revertirá todos los puntos, chamigos y asistencias TT asociados a este partido. Esta acción es irreversible.`
+                `¿Estás seguro de que quieres eliminar el partido seleccionado (ID: ${selectedMatchId})? Esta acción es irreversible.`
             );
 
             if (!confirmed) {
@@ -1845,87 +1747,7 @@
                     return;
                 }
 
-                const matchToDelete = allMatchesData[matchIndex];
-                const [id, date, clarosIDsStr = '', oscurosIDsStr = '', result, chamigoVotosStr = '', ttAttendeesStr = ''] = matchToDelete;
-
-                const playersInMatchIDs = [...new Set([...(clarosIDsStr.split(',').filter(Boolean)), ...(oscurosIDsStr.split(',').filter(Boolean))])];
-                const playerUpdates = {};
-
-                if (result && result.trim() !== '' && result !== 'Suspendido') {
-                    playersInMatchIDs.forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].gamesChange -= 1;
-                    });
-                }
-
-                if (result === 'Claros') {
-                    (clarosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].pointsChange -= 3;
-                    });
-                } else if (result === 'Oscuros') {
-                    (oscurosIDsStr.split(',').filter(Boolean)).forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].pointsChange -= 3;
-                    });
-                } else if (result === 'Empate') {
-                    playersInMatchIDs.forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].pointsChange -= 1;
-                    });
-                }
-
-                if (chamigoVotosStr) {
-                    try {
-                        const chamigoVotos = JSON.parse(chamigoVotosStr);
-                        const maxVotes = chamigoVotos.length > 0 ? Math.max(...chamigoVotos.map(v => v.votos)) : 0;
-                        const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
-                        chamigosDelPartido.forEach(chamigo => {
-                            playerUpdates[chamigo.id] = playerUpdates[chamigo.id] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                            playerUpdates[chamigo.id].chamigoChange -= 1;
-                        });
-                    } catch (e) {
-                        console.warn('Error al parsear votos de chamigo al eliminar:', chamigoVotosStr, e);
-                    }
-                }
-
-                if (ttAttendeesStr) {
-                    const ttAttendees = ttAttendeesStr.split(',').filter(Boolean);
-                    ttAttendees.forEach(pId => {
-                        playerUpdates[pId] = playerUpdates[pId] || { pointsChange: 0, gamesChange: 0, chamigoChange: 0, ttChange: 0 };
-                        playerUpdates[pId].ttChange -= 1;
-                    });
-                }
-
-                const batchUpdatePlayerRequests = [];
-                for (const playerId of Object.keys(playerUpdates)) {
-                    const playerUpdate = playerUpdates[playerId];
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        currentPlayer[3] = parseInt(currentPlayer[3] || 0) + playerUpdate.pointsChange;
-                        currentPlayer[4] = parseInt(currentPlayer[4] || 0) + playerUpdate.gamesChange;
-                        currentPlayer[5] = parseInt(currentPlayer[5] || 0) + playerUpdate.chamigoChange;
-                        currentPlayer[6] = parseInt(currentPlayer[6] || 0) + playerUpdate.ttChange;
-
-                        batchUpdatePlayerRequests.push({
-                            range: `Jugadores!D${playerGlobalIndex + 2}:G${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[3], currentPlayer[4], currentPlayer[5], currentPlayer[6]]]
-                        });
-                    }
-                }
-
-                if (batchUpdatePlayerRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: batchUpdatePlayerRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
-                const sheetRowIndex = matchIndex + 2;
+                const sheetRowIndex = matchIndex + 2; // +2 because Sheets is 1-indexed and has a header row
 
                 if (sheetIds['Partidos'] === undefined) {
                     console.error("Sheet ID for 'Partidos' not found. Cannot delete row.");
@@ -1941,19 +1763,19 @@
                                 range: {
                                     sheetId: sheetIds['Partidos'],
                                     dimension: 'ROWS',
-                                    startIndex: sheetRowIndex - 1,
-                                    endIndex: sheetRowIndex
+                                    startIndex: sheetRowIndex - 1, // API is 0-indexed for startIndex
+                                    endIndex: sheetRowIndex // API is exclusive for endIndex
                                 }
                             }
                         }]
                     }
                 });
 
-                alert('Partido eliminado y estadísticas revertidas exitosamente.');
+                alert('Partido eliminado exitosamente.');
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
                 document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                await loadAllDataAndDisplayAllContent();
+                await loadAllDataAndDisplayAllContent(); // Reload all data after deletion
             } catch (err) {
                 console.error('Error al eliminar partido:', err);
                 alert(`Error al eliminar partido: ${err.message}. Revisa la consola.`);
@@ -1978,7 +1800,7 @@
                     });
                     renderChamigoVotingPlayers(playersInMatch);
 
-                    if (match[5]) {
+                    if (match[5]) { // ChamigoVotos column
                         try {
                             const existingVotes = JSON.parse(match[5]);
                             existingVotes.forEach(vote => {
@@ -2045,47 +1867,19 @@
                 return;
             }
 
-            const maxVotes = Math.max(...votes.map(v => v.votos));
-            const chamigosDelPartido = votes.filter(v => v.votos === maxVotes);
-
-            currentMatch[5] = JSON.stringify(votes);
+            currentMatch[5] = JSON.stringify(votes); // Update ChamigoVotos column
 
             try {
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!F${matchIndex + 2}`,
+                    range: `Partidos!F${matchIndex + 2}`, // Update only the ChamigoVotos column
                     valueInputOption: 'RAW',
                     resource: { values: [[currentMatch[5]]] },
                 });
 
-                const updateRequests = [];
-                chamigosDelPartido.forEach(chamigo => {
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === chamigo.id);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentChamigos = parseInt(currentPlayer[5] || 0);
-                        currentPlayer[5] = currentChamigos + 1;
-
-                        updateRequests.push({
-                            range: `Jugadores!F${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[5]]]
-                        });
-                    }
-                });
-
-                if (updateRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: updateRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
                 alert('Chamigo(s) registrado(s) exitosamente.');
                 document.querySelectorAll('.chamigo-vote-input').forEach(input => input.value = '0');
-                await loadAllDataAndDisplayAllContent();
+                await loadAllDataAndDisplayAllContent(); // Reload all data
             } catch (err) {
                 console.error('Error al registrar Chamigo:', err);
                 alert(`Error al registrar Chamigo: ${err.message}. Revisa la consola.`);
@@ -2101,7 +1895,7 @@
                 if (match) {
                     renderTtAttendancePlayers(allPlayersData.filter(p => p[2] === 'Activo').map(p => ({id: p[0], name: p[1]})));
 
-                    if (match[6]) {
+                    if (match[6]) { // TtAttendees column
                         const existingAttendees = match[6].split(',');
                         existingAttendees.forEach(id => {
                             const checkbox = ttAttendancePlayersDiv.querySelector(`input[data-id="${id}"]`);
@@ -2151,63 +1945,20 @@
             const currentMatch = allMatchesData[matchIndex];
             const ttAttendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
 
-            const prevTtAttendees = currentMatch[6] ? currentMatch[6].split(',').filter(Boolean) : [];
-            const newAttendeesForPoints = ttAttendees.filter(id => !prevTtAttendees.includes(id));
-            const removedAttendeesForPoints = prevTtAttendees.filter(id => !ttAttendees.includes(id));
-
-
-            currentMatch[6] = ttAttendees.join(',');
+            currentMatch[6] = ttAttendees.join(','); // Update TtAttendees column
 
             try {
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!G${matchIndex + 2}`,
+                    range: `Partidos!G${matchIndex + 2}`, // Update only the TtAttendees column
                     valueInputOption: 'RAW',
                     resource: { values: [[currentMatch[6]]] },
                 });
 
-                const updateRequests = [];
-                newAttendeesForPoints.forEach(playerId => {
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentTtAsistencias = parseInt(currentPlayer[6] || 0);
-                        currentPlayer[6] = currentTtAsistencias + 1;
-
-                        updateRequests.push({
-                            range: `Jugadores!G${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[6]]]
-                        });
-                    }
-                });
-
-                removedAttendeesForPoints.forEach(playerId => {
-                    const playerGlobalIndex = allPlayersData.findIndex(p => p[0] === playerId);
-                    if (playerGlobalIndex !== -1) {
-                        const currentPlayer = allPlayersData[playerGlobalIndex];
-                        const currentTtAsistencias = parseInt(currentPlayer[6] || 0);
-                        currentPlayer[6] = currentTtAsistencias - 1;
-
-                        updateRequests.push({
-                            range: `Jugadores!G${playerGlobalIndex + 2}`,
-                            values: [[currentPlayer[6]]]
-                        });
-                    }
-                });
-
-
-                if (updateRequests.length > 0) {
-                    await gapi.client.sheets.spreadsheets.values.batchUpdate({
-                        spreadsheetId: SPREADSHEET_ID,
-                        resource: {
-                            data: updateRequests,
-                            valueInputOption: 'RAW'
-                        }
-                    });
-                }
-
                 alert('Asistencia al Tercer Tiempo registrada exitosamente.');
-                await loadAllDataAndDisplayAllContent();
+                // Uncheck all checkboxes after saving
+                document.querySelectorAll('.tt-checkbox').forEach(cb => cb.checked = false);
+                await loadAllDataAndDisplayAllContent(); // Reload all data
             } catch (err) {
                 console.error('Error al registrar asistencia TT:', err);
                 alert(`Error al registrar asistencia TT: ${err.message}. Revisa la consola.`);
