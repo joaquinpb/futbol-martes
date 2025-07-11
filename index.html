@@ -929,6 +929,41 @@
             gapi.load('client', initializeGapiClient);
         }
 
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({
+                    apiKey: API_KEY, // Se usa la clave de API aquí
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                });
+                gapiInited = true;
+                handleDataLoadSuccess(); // Cargar datos y mostrar contenido
+            } catch (err) {
+                console.error("Error al inicializar gapi.client:", err);
+                // Actualizar todos los mensajes de carga con el error
+                let errorDetail;
+                if (err && err.message) {
+                    errorDetail = err.message;
+                } else {
+                    try {
+                        errorDetail = JSON.stringify(err);
+                    } catch (e) {
+                        errorDetail = String(e); // Fallback a conversión simple a string
+                    }
+                }
+                const errorMessageText = `Error al inicializar la API de Google: ${errorDetail}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
+
+                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
+            }
+        }
+
         async function loadAllData() {
             try {
                 if (!gapi.client.sheets) {
@@ -992,41 +1027,6 @@
                     }
                 }
                 const errorMessageText = `Error al cargar datos: ${errorDetail}. Asegúrate de que la hoja sea accesible.`;
-                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
-            }
-        }
-
-        async function initializeGapiClient() {
-            try {
-                await gapi.client.init({
-                    apiKey: API_KEY, // Se usa la clave de API aquí
-                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                });
-                gapiInited = true;
-                handleDataLoadSuccess(); // Cargar datos y mostrar contenido
-            } catch (err) {
-                console.error("Error al inicializar gapi.client:", err);
-                // Actualizar todos los mensajes de carga con el error
-                let errorDetail;
-                if (err && err.message) {
-                    errorDetail = err.message;
-                } else {
-                    try {
-                        errorDetail = JSON.stringify(err);
-                    } catch (e) {
-                        errorDetail = String(e); // Fallback a conversión simple a string
-                    }
-                }
-                const errorMessageText = `Error al inicializar la API de Google: ${errorDetail}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
-
                 document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
@@ -1804,18 +1804,18 @@
             // Normalized positions (0 to 1, relative to field width/height)
             // These are for a horizontal field (width > height)
             const clarosNormalizedPositionsLandscape = [
-                { x: 0.90, y: 0.50 }, // Goalkeeper
-                { x: 0.75, y: 0.25 }, // Defender 1 (more spread)
-                { x: 0.75, y: 0.75 }, // Defender 2 (more spread)
-                { x: 0.60, y: 0.35 }, // Midfielder/Forward 1 (more spread)
-                { x: 0.60, y: 0.65 }  // Midfielder/Forward 2 (more spread)
+                { x: 0.90, y: 0.50 }, // Goalkeeper (far right, center)
+                { x: 0.75, y: 0.35 }, // Defender 1 (right, slightly above center)
+                { x: 0.75, y: 0.65 }, // Defender 2 (right, slightly below center)
+                { x: 0.60, y: 0.40 }, // Midfielder/Forward 1 (mid-right, slightly above center)
+                { x: 0.60, y: 0.60 }   // Midfielder/Forward 2 (mid-right, slightly below center)
             ];
             const oscurosNormalizedPositionsLandscape = [
-                { x: 0.10, y: 0.50 }, // Goalkeeper
-                { x: 0.25, y: 0.25 }, // Defender 1 (more spread)
-                { x: 0.25, y: 0.75 }, // Defender 2 (more spread)
-                { x: 0.40, y: 0.35 }, // Midfielder/Forward 1 (more spread)
-                { x: 0.40, y: 0.65 }  // Midfielder/Forward 2 (more spread)
+                { x: 0.10, y: 0.50 }, // Goalkeeper (far left, center)
+                { x: 0.25, y: 0.35 }, // Defender 1 (left, slightly above center)
+                { x: 0.25, y: 0.65 }, // Defender 2 (left, slightly below center)
+                { x: 0.40, y: 0.40 }, // Midfielder/Forward 1 (mid-left, slightly above center)
+                { x: 0.40, y: 0.60 }  // Midfielder/Forward 2 (mid-left, slightly below center)
             ];
 
             const currentClarosNormalizedPositions = isHorizontalField ? clarosNormalizedPositionsLandscape : clarosNormalizedPositionsPortrait;
@@ -1856,10 +1856,10 @@
                 // Determine position based on field orientation and winning team
                 if (isHorizontalField) { // Desktop or mobile landscape
                     if (winnerTeam === 'Claros') {
-                        trophyDiv.style.top = '90%'; // Bottom-right
+                        trophyDiv.style.top = '10%'; // Top-right corner (Claros' side)
                         trophyDiv.style.left = '90%'; 
                     } else if (winnerTeam === 'Oscuros') {
-                        trophyDiv.style.top = '90%'; // Bottom-left
+                        trophyDiv.style.top = '10%'; // Top-left corner (Oscuros' side)
                         trophyDiv.style.left = '10%'; 
                     }
                 } else { // Mobile portrait
@@ -1886,6 +1886,19 @@
             const [day, month, year] = dateString.split('/').map(Number);
             return new Date(year, month - 1, day);
         }
+
+        function parseYYYYMMDDToLocalDate(dateString) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function formatDateToDDMMYYYY(date) {
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        }
+
 
         function populateYearSelects(selectId, storageKeyPrefix) {
             const yearSelect = document.getElementById(selectId);
