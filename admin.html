@@ -181,6 +181,7 @@
         @media (min-width: 768px) {
             body {
                 flex-direction: row; /* Los elementos se colocan en fila en desktop */
+                /* align-items: flex-start; /* Alinea los ítems al inicio del contenedor flex */
             }
             #side-menu {
                 width: 256px; /* Ancho fijo para el menú */
@@ -204,11 +205,10 @@
                 background-color: #4f46e5; /* indigo-600 */
             }
 
-            /* No se necesita un margen explícito aquí, ya que md:ml-64 en el HTML maneja el desplazamiento */
-            /* y mx-auto en el HTML lo centrará dentro del espacio restante */
-            .main-admin-content-container {
-                /* Asegurarse de que el padding se aplique correctamente en desktop */
-                padding: 2rem; /* Restaura el padding de desktop */
+            /* Clase para aplicar margen cuando el sidebar está activo en desktop */
+            .main-admin-content-container.sidebar-offset-active {
+                margin-left: 256px; /* Coincide con el ancho del sidebar */
+                margin-right: auto; /* Permite que mx-auto funcione correctamente */
             }
 
             #signout_button_mobile_sidebar {
@@ -226,7 +226,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen"> <!-- Eliminado p-4 md:p-0 del body -->
+<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row"> <!-- Añadido flex-row para desktop -->
     <!-- Hamburger Button (visible on all screens) -->
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -270,8 +270,8 @@
 
     <!-- Main Content Area -->
     <!-- Ajustado padding a p-4 (mobile) y md:p-8 (desktop) -->
-    <!-- md:ml-64 y mx-auto se mantienen para el centrado y desplazamiento en desktop -->
-    <div class="main-admin-content-container bg-white p-4 md:p-8 rounded-xl shadow-lg w-full max-w-5xl relative md:ml-64 mx-auto">
+    <!-- mx-auto se mantiene para el centrado. sidebar-offset-active se controla por JS -->
+    <div class="main-admin-content-container bg-white p-4 md:p-8 rounded-xl shadow-lg w-full max-w-5xl relative mx-auto">
         <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Panel de Administración</h1>
 
         <!-- Authentication buttons (only authorize button remains here) -->
@@ -732,6 +732,9 @@
                     signoutButtonMobileSidebar.classList.add('hidden');
                     signoutButtonSidebar.classList.add('hidden');
                     adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
+                    
+                    // Asegurarse de que el main content no tenga margen izquierdo cuando el sidebar está oculto
+                    mainAdminContentContainer.classList.remove('sidebar-offset-active');
                 }
             }
         }
@@ -769,10 +772,14 @@
             if (window.innerWidth >= 768) {
                 sideMenu.classList.add('open'); // Force 'open' on desktop
                 hamburgerButton.classList.add('hidden'); // Always hide hamburger on desktop
+                // Aplicar margen al main content cuando el sidebar está activo en desktop
+                mainAdminContentContainer.classList.add('sidebar-offset-active');
             } else {
                 // En móvil, el menú está inicialmente cerrado, y el botón de hamburguesa visible
                 sideMenu.classList.remove('open'); // Ensure it's closed for mobile initial state
                 hamburgerButton.classList.remove('hidden'); // Show hamburger on mobile
+                // Asegurarse de que el main content no tenga margen izquierdo en mobile
+                mainAdminContentContainer.classList.remove('sidebar-offset-active');
             }
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
@@ -806,6 +813,9 @@
                 hamburgerButton.classList.add('hidden');
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
+
+                // Asegurarse de que el main content no tenga margen izquierdo al cerrar sesión
+                mainAdminContentContainer.classList.remove('sidebar-offset-active');
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
                 authStatus.classList.remove('hidden');
@@ -2014,6 +2024,7 @@
                     hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
                     overlay.classList.remove('open'); // Ocultar overlay en desktop
                     document.body.classList.remove('overflow-hidden'); // Restablecer el scroll
+                    mainAdminContentContainer.classList.add('sidebar-offset-active'); // Aplicar margen en desktop
                 } else {
                     // Si se redimensiona a móvil
                     // Si la barra lateral estaba visible (estado de escritorio), ocultarla y mostrar hamburguesa
@@ -2024,6 +2035,7 @@
                     }
                     // Mostrar hamburguesa si el menú está cerrado en mobile
                     hamburgerButton.classList.remove('hidden');
+                    mainAdminContentContainer.classList.remove('sidebar-offset-active'); // Remover margen en mobile
                 }
             } else {
                 // Si no está autenticado, asegurar que todo permanezca oculto en cualquier redimensionamiento
@@ -2032,6 +2044,7 @@
                 hamburgerButton.classList.add('hidden');
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
+                mainAdminContentContainer.classList.remove('sidebar-offset-active'); // Remover margen en login
             }
         });
 
@@ -2045,6 +2058,7 @@
             signoutButtonMobileSidebar.classList.add('hidden');
             signoutButtonSidebar.classList.add('hidden');
             adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
+            mainAdminContentContainer.classList.remove('sidebar-offset-active'); // Asegurar que no haya margen al cargar
 
             gapiLoaded();
             const script = document.createElement('script');
