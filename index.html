@@ -923,6 +923,7 @@
         const equiposContent = document.getElementById('equipos-content');
         const fixtureContent = document.getElementById('fixture-content');
         const individualStatsContent = document.getElementById('individual-stats-content'); // New content div
+        const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
 
         // Mapping of hash to tab content ID
         const hashToTabMap = {
@@ -966,49 +967,6 @@
                 }
                 const errorMessageText = `Error al inicializar la API de Google: ${errorDetail}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
 
-                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
-            }
-        }
-
-        async function handleDataLoadSuccess() {
-            // Este método se llama cuando la API de Google Sheets está lista para ser usada
-            try {
-                await loadAllData(); // Cargar todos los datos de la hoja
-                
-                // Mostrar el menú lateral y el contenido principal
-                sideMenu.classList.remove('hidden'); 
-                if (window.innerWidth >= 768) {
-                    sideMenu.classList.add('open'); // Forzar 'open' en desktop para que sea visible
-                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
-                } else {
-                    sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para el estado inicial móvil
-                    hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
-                }
-
-                // Configurar la navegación por pestañas y renderizar la activa por defecto
-                setupTabNavigation();
-
-            } catch (error) {
-                console.error("Error al cargar datos iniciales:", error);
-                let errorDetail;
-                if (error && error.message) {
-                    errorDetail = error.message;
-                } else {
-                    try {
-                        errorDetail = JSON.stringify(error);
-                    } catch (e) {
-                        errorDetail = String(error); // Fallback a conversión simple a string
-                    }
-                }
-                const errorMessageText = `Error al cargar datos: ${errorDetail}. Asegúrate de que la hoja sea accesible.`;
                 document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
@@ -1119,6 +1077,12 @@
                 renderEquiposStats();
             } else if (tabId === 'fixture-content') {
                 renderFixtureMatchCards();
+                // After rendering cards, select the latest one
+                const fixtureMatchesCardsContainer = document.getElementById('fixture-matches-cards-container');
+                const latestMatchCard = fixtureMatchesCardsContainer.querySelector('[data-match-id]'); // First one is the latest due to sorting
+                if (latestMatchCard) {
+                    latestMatchCard.click(); // Simulate click to render details
+                }
             } else if (tabId === 'individual-stats-content') {
                 renderIndividualStatsTable();
             }
