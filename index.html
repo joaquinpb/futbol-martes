@@ -921,6 +921,81 @@
             gapi.load('client', initializeGapiClient);
         }
 
+        async function loadAllData() {
+            try {
+                if (!gapi.client.sheets) {
+                    throw new Error("API de Google Sheets no cargada correctamente. Verifica la consola.");
+                }
+
+                // Cargar datos de Jugadores
+                const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'Jugadores!A:H',
+                });
+                allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
+
+                // Cargar datos de Partidos
+                const matchesResponse = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'Partidos!A:G',
+                });
+                allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : [];
+
+            } catch (err) {
+                console.error('Error al cargar todos los datos:', err);
+                let userErrorMessage = 'Error desconocido al cargar datos.';
+                if (err && err.result && err.result.error && err.result.error.message) {
+                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Revisa la consola para más detalles.`;
+                } else if (err && err.message) {
+                    userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
+                }
+                throw new Error(userErrorMessage); // Propagar el error para que handleDataLoadSuccess lo maneje
+            }
+        }
+
+        async function handleDataLoadSuccess() {
+            // Este método se llama cuando la API de Google Sheets está lista para ser usada
+            try {
+                await loadAllData(); // Cargar todos los datos de la hoja
+                
+                // Mostrar el menú lateral y el contenido principal
+                sideMenu.classList.remove('hidden'); 
+                if (window.innerWidth >= 768) {
+                    sideMenu.classList.add('open'); // Forzar 'open' en desktop para que sea visible
+                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
+                } else {
+                    sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para el estado inicial móvil
+                    hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
+                }
+
+                // Configurar la navegación por pestañas y renderizar la activa por defecto
+                setupTabNavigation();
+
+            } catch (error) {
+                console.error("Error al cargar datos iniciales:", error);
+                let errorDetail;
+                if (error && error.message) {
+                    errorDetail = error.message;
+                } else {
+                    try {
+                        errorDetail = JSON.stringify(error);
+                    } catch (e) {
+                        errorDetail = String(e); // Fallback a conversión simple a string
+                    }
+                }
+                const errorMessageText = `Error al cargar datos: ${errorDetail}. Asegúrate de que la hoja sea accesible.`;
+                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
+            }
+        }
+
         async function initializeGapiClient() {
             try {
                 await gapi.client.init({
@@ -956,37 +1031,6 @@
             }
         }
 
-        async function loadAllData() {
-            try {
-                if (!gapi.client.sheets) {
-                    throw new Error("API de Google Sheets no cargada correctamente. Verifica la consola.");
-                }
-
-                // Cargar datos de Jugadores
-                const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:H',
-                });
-                allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
-
-                // Cargar datos de Partidos
-                const matchesResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G',
-                });
-                allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : [];
-
-            } catch (err) {
-                console.error('Error al cargar todos los datos:', err);
-                let userErrorMessage = 'Error desconocido al cargar datos.';
-                if (err && err.result && err.result.error && err.result.error.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Revisa la consola para más detalles.`;
-                } else if (err && err.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
-                }
-                throw new Error(userErrorMessage); // Propagar el error para que handleDataLoadSuccess lo maneje
-            }
-        }
 
         // --- Funciones de Pestañas ---
         function setupTabNavigation() {
