@@ -14,6 +14,8 @@
             min-height: 100vh; /* Asegura que el cuerpo ocupe toda la altura del viewport */
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
+            display: flex; /* Añadido: Hace el body un contenedor flex */
+            flex-direction: column; /* Añadido: Por defecto, los elementos se apilan en columna (mobile-first) */
         }
         /* Estilos para el efecto de arrastre */
         .player-draggable {
@@ -178,14 +180,19 @@
 
         /* Desktop Styles (min-width: 768px) */
         @media (min-width: 768px) {
-            #side-menu {
-                width: 256px; /* Wider for desktop */
-                background-color: #312e81; /* indigo-800 - Corrected color */
-                color: white; /* Ensure text remains white on dark background */
-                border-right: 1px solid #e2e8f0; /* border-gray-200 */
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            body {
+                flex-direction: row; /* Modificado: Los elementos se colocan en fila en desktop */
             }
-            /* On desktop, if side-menu is not hidden, it should always be open */
+            #side-menu {
+                position: fixed; /* Mantenemos fixed para el efecto de deslizamiento */
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 256px; /* Ancho fijo para el menú */
+                /* ... otros estilos ... */
+                transform: translateX(0) !important; /* Siempre visible en desktop */
+            }
+
             #side-menu:not(.hidden) {
                 transform: translateX(0) !important;
             }
@@ -203,10 +210,9 @@
             }
 
             .main-admin-content-container {
-                flex-grow: 1; /* Allow it to take up remaining space */
-                padding: 2rem; /* Keep padding for content inside */
-                margin-left: 256px; /* Offset for the fixed sidebar */
-                width: calc(100% - 256px); /* Take full width minus sidebar */
+                flex-grow: 1; /* Modificado: Ocupa el espacio restante */
+                /* margin-left: 256px; ya se aplica con md:ml-64 en el HTML */
+                /* Eliminado: margin: 2rem; y max-width: calc(...) */
             }
             #signout_button_mobile_sidebar {
                 display: none !important;
@@ -266,7 +272,7 @@
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
     <!-- Main Content Area -->
-    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg w-full relative md:ml-64">
+    <div class="main-admin-content-container bg-white p-8 rounded-xl shadow-lg relative md:ml-64">
         <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Panel de Administración</h1>
 
         <!-- Authentication buttons (only authorize button remains here) -->
@@ -1424,7 +1430,7 @@
                 ];
 
                 await gapi.client.sheets.spreadsheets.values.append({
-                    spreadsheetId: SPREADSHEID_ID,
+                    spreadsheetId: SPREADSHEET_ID,
                     range: 'Partidos!A:G', // Append to Partidos sheet
                     valueInputOption: 'RAW',
                     resource: { values: [newMatchRow] },
