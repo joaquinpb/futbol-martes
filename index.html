@@ -208,11 +208,11 @@
             background-color: #e0e7ff; /* indigo-100 */
         }
 
-        /* Styles for the soccer field */
+        /* Styles for the soccer field (mobile default - vertical) */
         #soccer-field-container {
             position: relative;
-            width: 100%;
-            aspect-ratio: 9 / 16; /* Default for portrait mobile */
+            width: 100%; /* Mobile width: match TT table width */
+            padding-top: 168.75%; /* Height reduced by 10% (187.5% * 0.9) */
             background-color: #0f8d48; /* Green field color */
             border: 2px solid white; /* Outer perimeter */
             border-radius: 0.5rem; /* rounded-lg */
@@ -220,13 +220,9 @@
             margin-bottom: 1.5rem; /* mb-6 */
             margin-left: auto; /* Center the field */
             margin-right: auto; /* Center the field */
-            display: none; /* Hidden by default, controlled by JS */
-        }
-        #soccer-field-container.field-active {
-            display: block; /* Show when active */
         }
 
-        /* Halfway line (vertical for portrait, horizontal for landscape) */
+        /* Halfway line (vertical for mobile) */
         #soccer-field-container::before {
             content: '';
             position: absolute;
@@ -238,7 +234,7 @@
             transform: translateY(-50%);
         }
 
-        /* Center circle */
+        /* Center circle (vertical for mobile) */
         #soccer-field-container::after {
             content: '';
             position: absolute;
@@ -251,74 +247,66 @@
             transform: translate(-50%, -50%);
         }
 
-        /* Goals */
+        /* Goals (outside the green area - vertical for mobile) */
         .goal {
             position: absolute;
+            width: 30%; /* Width of the goal */
+            height: 15px; /* Depth of the goal structure */
             box-sizing: border-box;
-        }
-        .goal.top { /* Top goal in portrait, left goal in landscape */
-            top: -15px;
-            left: 35%;
-            width: 30%;
-            height: 15px;
             border-left: 2px solid white;
             border-right: 2px solid white;
-            border-bottom: 2px solid white;
         }
-        .goal.bottom { /* Bottom goal in portrait, right goal in landscape */
-            bottom: -15px;
+        .goal.top {
+            top: -15px; /* Position outside the top border */
             left: 35%;
-            width: 30%;
-            height: 15px;
-            border-left: 2px solid white;
-            border-right: 2px solid white;
-            border-top: 2px solid white;
+            border-bottom: 2px solid white; /* Crossbar */
+        }
+        .goal.bottom {
+            bottom: -15px; /* Position outside the bottom border */
+            left: 35%;
+            border-top: 2px solid white; /* Crossbar */
         }
 
-        /* Penalty Areas */
+        /* Penalty Areas (vertical for mobile) - 2:1 ratio for lines */
         .penalty-area {
             position: absolute;
+            width: 60%; /* Width of the penalty area */
+            height: 20%; /* Depth from goal line */
             box-sizing: border-box;
             border-color: white;
             border-style: solid;
-            border-width: 0;
+            border-width: 0; /* Reset default */
         }
-        .penalty-area.top { /* Top penalty area in portrait, left in landscape */
+        .penalty-area.top {
             top: 0;
             left: 20%;
-            width: 60%;
-            height: 20%;
-            border-width: 0 4px 2px 4px;
+            border-width: 0 4px 2px 4px; /* Top:0, Right:4px, Bottom:2px, Left:4px */
         }
-        .penalty-area.bottom { /* Bottom penalty area in portrait, right in landscape */
+        .penalty-area.bottom {
             bottom: 0;
             left: 20%;
-            width: 60%;
-            height: 20%;
-            border-width: 2px 4px 0 4px;
+            border-width: 2px 4px 0 4px; /* Top:2px, Right:4px, Bottom:0, Left:4px */
         }
 
-        /* Goal Areas */
+        /* Goal Areas (smaller box inside penalty area - vertical for mobile) - 2:1 ratio for lines */
         .goal-area {
             position: absolute;
+            width: 30%; /* Width of the goal area */
+            height: 10%; /* Depth from goal line */
             box-sizing: border-box;
             border-color: white;
             border-style: solid;
-            border-width: 0;
+            border-width: 0; /* Reset default */
         }
-        .goal-area.top { /* Top goal area in portrait, left in landscape */
+        .goal-area.top {
             top: 0;
             left: 35%;
-            width: 30%;
-            height: 10%;
-            border-width: 0 4px 2px 4px;
+            border-width: 0 4px 2px 4px; /* Top:0, Right:4px, Bottom:2px, Left:4px */
         }
-        .goal-area.bottom { /* Bottom goal area in portrait, right in landscape */
+        .goal-area.bottom {
             bottom: 0;
             left: 35%;
-            width: 30%;
-            height: 10%;
-            border-width: 2px 4px 0 4px;
+            border-width: 2px 4px 0 4px; /* Top:2px, Right:4px, Bottom:0, Left:4px */
         }
 
         .player-marker {
@@ -380,12 +368,20 @@
                 font-size: 0.7em;
             }
         }
+        @media (min-width: 768px) { /* md breakpoint */
+            .player-marker {
+                width: 60px;
+                height: 60px;
+                font-size: 1rem; /* text-base */
+            }
+            .player-marker .fa-star {
+                font-size: 0.8em;
+            }
 
-        /* Media query for landscape orientation (mobile landscape and desktop) */
-        @media (orientation: landscape) and (max-width: 767px), (min-width: 768px) {
+            /* Desktop specific styles for horizontal field */
             #soccer-field-container {
-                width: 60%; /* Adjust width for horizontal layout */
-                aspect-ratio: 16 / 9; /* Landscape aspect ratio */
+                width: 60%; /* Reduced by 20% from 75% (75 * 0.8 = 60) */
+                padding-top: 27.27%; /* Retain 1:2.2 height to width ratio (1/2.2 = 0.4545), but for horizontal field it's height/width, so width is 2.2 * height. If width is 60%, then height is 60/2.2 = 27.27% */
             }
 
             /* Adjust TT details width for desktop */
@@ -393,6 +389,7 @@
                 width: 40%; /* Take remaining space (100% - 60%) */
                 margin-top: 0; /* Align with the top of the field */
             }
+
 
             /* Rotate and reposition field elements for horizontal view */
             #soccer-field-container::before { /* Halfway line */
@@ -409,62 +406,80 @@
                 height: 8vw;
             }
 
-            /* Goals (now left/right) */
             .goal.top { /* Now left goal */
                 top: 35%;
-                left: -15px;
-                width: 15px;
-                height: 30%;
-                border-left: none;
-                border-right: 2px solid white;
-                border-top: 2px solid white;
-                border-bottom: 2px solid white;
+                left: -15px; /* Position outside the left border */
+                border-bottom: none;
+                border-right: 2px solid white; /* Crossbar */
+                border-top: none; /* Remove top border */
+                border-left: none; /* Remove left border */
+                width: 15px; /* Depth of the goal structure */
+                height: 30%; /* Width of the goal */
             }
             .goal.bottom { /* Now right goal */
                 top: 35%;
-                right: -15px;
-                left: auto;
-                width: 15px;
-                height: 30%;
-                border-left: 2px solid white;
-                border-right: none;
-                border-top: 2px solid white;
-                border-bottom: 2px solid white;
+                right: -15px; /* Position outside the right border */
+                left: auto; /* Reset left */
+                border-top: none;
+                border-left: 2px solid white; /* Crossbar */
+                border-bottom: none; /* Remove bottom border */
+                border-right: none; /* Remove right border */
+                width: 15px; /* Depth of the goal structure */
+                height: 30%; /* Width of the goal */
             }
 
-            /* Penalty Areas (horizontal) */
+            /* Penalty Areas (horizontal) - 2:1 ratio for lines */
             .penalty-area.top { /* Now left penalty area */
                 top: 20%;
                 left: 0;
-                height: 60%;
-                width: 20%;
-                border-width: 4px 2px 4px 0;
+                height: 60%; /* Width of the penalty area */
+                width: 20%; /* Depth from goal line */
+                border-width: 4px 2px 4px 0; /* Top:4px, Right:2px, Bottom:4px, Left:0 */
             }
             .penalty-area.bottom { /* Now right penalty area */
                 top: 20%;
                 right: 0;
-                left: auto;
-                height: 60%;
-                width: 20%;
-                border-width: 4px 0 4px 2px;
+                left: auto; /* Reset left */
+                height: 60%; /* Width of the penalty area */
+                width: 20%; /* Depth from goal line */
+                border-width: 4px 0 4px 2px; /* Top:4px, Right:0, Bottom:4px, Left:2px */
             }
 
-            /* Goal Areas (horizontal) */
+            /* Goal Areas (horizontal) - 2:1 ratio for lines */
             .goal-area.top { /* Now left goal area */
                 top: 35%;
                 left: 0;
-                height: 30%;
-                width: 10%;
-                border-width: 4px 2px 4px 0;
+                height: 30%; /* Width of the goal area */
+                width: 10%; /* Depth from goal line */
+                border-width: 4px 2px 4px 0; /* Top:4px, Right:2px, Bottom:4px, Left:0 */
             }
             .goal-area.bottom { /* Now right goal area */
                 top: 35%;
                 right: 0;
-                left: auto;
-                height: 30%;
-                width: 10%;
-                border-width: 4px 0 4px 2px;
+                left: auto; /* Reset left */
+                height: 30%; /* Width of the goal area */
+                width: 10%; /* Depth from goal line */
+                border-width: 4px 0 4px 2px; /* Top:4px, Right:0, Bottom:4px, Left:2px */
             }
+
+            /* Player positions for horizontal field */
+            /* Claros (Right Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
+            .player-marker.claros:nth-child(1) { top: 50%; left: 90%; } /* Goalkeeper */
+            .player-marker.claros:nth-child(2) { top: 30%; left: 75%; } /* Defender 1 */
+            .player-marker.claros:nth-child(3) { top: 70%; left: 75%; } /* Defender 2 */
+            .player-marker.claros:nth-child(4) { top: 40%; left: 64%; } /* Midfielder/Forward 1 (Moved to midpoint) */
+            .player-marker.claros:nth-child(5) { top: 60%; left: 64%; }   /* Midfielder/Forward 2 (Moved to midpoint) */
+
+            /* Oscuros (Left Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
+            .player-marker.oscuros:nth-child(1) { top: 50%; left: 10%; } /* Goalkeeper */
+            .player-marker.oscuros:nth-child(2) { top: 30%; left: 25%; } /* Defender 1 */
+            .player-marker.oscuros:nth-child(3) { top: 70%; left: 25%; } /* Defender 2 */
+            .player-marker.oscuros:nth-child(4) { top: 40%; left: 36%; } /* Midfielder/Forward 1 (Moved to midpoint) */
+            .player-marker.oscuros:nth-child(5) { top: 60%; left: 36%; }  /* Midfielder/Forward 2 (Moved to midpoint) */
+
+            /* Trophy positions for desktop */
+            .winner-trophy.claros { top: 95%; left: 90%; } /* Bottom-right */
+            .winner-trophy.oscuros { top: 95%; left: 10%; } /* Bottom-left */
         }
     </style>
 </head>
@@ -475,7 +490,7 @@
     </button>
 
     <!-- Side Navigation Menu -->
-    <nav id="side-menu" class="fixed top-0 left: 0; h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
         <div class="p-4 text-right">
             <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
         </div>
@@ -781,7 +796,7 @@
             <!-- Container for field and details side-by-side on desktop -->
             <div class="flex flex-col md:flex-row md:space-x-6">
                 <!-- Soccer Field Container -->
-                <div id="soccer-field-container"> <!-- Removed hidden md:block -->
+                <div id="soccer-field-container" class="hidden md:block"> <!-- Adjusted width for desktop is now in CSS -->
                     <!-- Goals -->
                     <div class="goal top"></div>
                     <div class="goal bottom"></div>
@@ -908,7 +923,6 @@
         const equiposContent = document.getElementById('equipos-content');
         const fixtureContent = document.getElementById('fixture-content');
         const individualStatsContent = document.getElementById('individual-stats-content'); // New content div
-        const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
 
         // Mapping of hash to tab content ID
         const hashToTabMap = {
@@ -947,11 +961,54 @@
                     try {
                         errorDetail = JSON.stringify(err);
                     } catch (e) {
-                        errorDetail = String(e); // Fallback a conversión simple a string
+                        errorDetail = String(err); // Fallback a conversión simple a string
                     }
                 }
                 const errorMessageText = `Error al inicializar la API de Google: ${errorDetail}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
 
+                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
+            }
+        }
+
+        async function handleDataLoadSuccess() {
+            // Este método se llama cuando la API de Google Sheets está lista para ser usada
+            try {
+                await loadAllData(); // Cargar todos los datos de la hoja
+                
+                // Mostrar el menú lateral y el contenido principal
+                sideMenu.classList.remove('hidden'); 
+                if (window.innerWidth >= 768) {
+                    sideMenu.classList.add('open'); // Forzar 'open' en desktop para que sea visible
+                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
+                } else {
+                    sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para el estado inicial móvil
+                    hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
+                }
+
+                // Configurar la navegación por pestañas y renderizar la activa por defecto
+                setupTabNavigation();
+
+            } catch (error) {
+                console.error("Error al cargar datos iniciales:", error);
+                let errorDetail;
+                if (error && error.message) {
+                    errorDetail = error.message;
+                } else {
+                    try {
+                        errorDetail = JSON.stringify(error);
+                    } catch (e) {
+                        errorDetail = String(error); // Fallback a conversión simple a string
+                    }
+                }
+                const errorMessageText = `Error al cargar datos: ${errorDetail}. Asegúrate de que la hoja sea accesible.`;
                 document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
@@ -996,50 +1053,6 @@
             }
         }
 
-        async function handleDataLoadSuccess() {
-            // Este método se llama cuando la API de Google Sheets está lista para ser usada
-            try {
-                await loadAllData(); // Cargar todos los datos de la hoja
-                
-                // Mostrar el menú lateral y el contenido principal
-                sideMenu.classList.remove('hidden'); 
-                if (window.innerWidth >= 768) {
-                    sideMenu.classList.add('open'); // Forzar 'open' en desktop para que sea visible
-                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
-                } else {
-                    sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para el estado inicial móvil
-                    hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
-                }
-
-                // Configurar la navegación por pestañas y renderizar la activa por defecto
-                setupTabNavigation();
-
-            } catch (error) {
-                console.error("Error al cargar datos iniciales:", error);
-                let errorDetail;
-                if (error && error.message) {
-                    errorDetail = error.message;
-                } else {
-                    try {
-                        errorDetail = JSON.stringify(error);
-                    } catch (e) {
-                        errorDetail = String(e); // Fallback a conversión simple a string
-                    }
-                }
-                const errorMessageText = `Error al cargar datos: ${errorDetail}. Asegúrate de que la hoja sea accesible.`;
-                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
-            }
-        }
-
-
         // --- Funciones de Pestañas ---
         function setupTabNavigation() {
             tabButtons.forEach(button => {
@@ -1082,11 +1095,6 @@
             tabButtons.forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
 
-            // Hide soccer field if not fixture tab
-            if (tabId !== 'fixture-content') {
-                soccerFieldContainer.classList.remove('field-active');
-            }
-
             // Add 'active' to the corresponding button and show its content
             const targetButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
             if (targetButton) {
@@ -1111,12 +1119,6 @@
                 renderEquiposStats();
             } else if (tabId === 'fixture-content') {
                 renderFixtureMatchCards();
-                // After rendering cards, select the latest one
-                const fixtureMatchesCardsContainer = document.getElementById('fixture-matches-cards-container');
-                const latestMatchCard = fixtureMatchesCardsContainer.querySelector('[data-match-id]'); // First one is the latest due to sorting
-                if (latestMatchCard) {
-                    latestMatchCard.click(); // Simulate click to render details
-                }
             } else if (tabId === 'individual-stats-content') {
                 renderIndividualStatsTable();
             }
@@ -1646,10 +1648,11 @@
             const fixtureMonthSelect = document.getElementById('fixture-month-select');
             const loadingMessage = document.getElementById('fixture-loading-message');
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
-            
-            // Hide soccer field and details when re-rendering cards
-            soccerFieldContainer.classList.remove('field-active'); // Use new class
-            fixtureDetailsDisplay.classList.add('hidden'); 
+            const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
+
+            fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
+            fixtureDetailsDisplay.classList.add('hidden'); // Hide details when re-rendering cards
+            soccerFieldContainer.classList.add('hidden'); // Hide soccer field
             soccerFieldContainer.innerHTML = `
                 <div class="goal top"></div>
                 <div class="goal bottom"></div>
@@ -1659,7 +1662,6 @@
                 <div class="goal-area bottom"></div>
             `; // Reset field elements
 
-            fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
 
@@ -1700,12 +1702,13 @@
         function renderFixtureDetails(matchId) {
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const loadingMessage = document.getElementById('fixture-loading-message');
+            const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
 
 
             loadingMessage.classList.remove('hidden');
             fixtureDetailsDisplay.classList.add('hidden');
-            soccerFieldContainer.classList.remove('field-active'); // Hide field while loading
+            soccerFieldContainer.classList.add('hidden'); // Hide field while loading
             
             // Clear only player markers and trophy from field
             soccerFieldContainer.querySelectorAll('.player-marker, .winner-trophy').forEach(el => el.remove());
@@ -1776,50 +1779,47 @@
                 `;
             }
 
-            // Determine field orientation based on its rendered dimensions
-            // This is more robust as it reflects how CSS media queries are applied
-            const fieldWidth = soccerFieldContainer.offsetWidth;
-            const fieldHeight = soccerFieldContainer.offsetHeight;
-            const isHorizontalField = fieldWidth > fieldHeight;
-            console.log(`[renderFixtureDetails] Field dimensions: ${fieldWidth}x${fieldHeight}, isHorizontalField: ${isHorizontalField}`); // Debug log
-
-
             // Normalized positions (0 to 1, relative to field width/height)
             // These are for a vertical field (height > width)
-            const clarosNormalizedPositionsPortrait = [
+            const clarosNormalizedPositionsVertical = [
                 { x: 0.5, y: 0.88 }, // Goalkeeper
-                { x: 0.25, y: 0.75 }, // Defender 1 (moved slightly left)
-                { x: 0.75, y: 0.75 }, // Defender 2 (moved slightly right)
-                { x: 0.35, y: 0.60 }, // Midfielder/Forward 1 (moved slightly left)
-                { x: 0.65, y: 0.60 }   // Midfielder/Forward 2 (moved slightly right)
+                { x: 0.3, y: 0.75 }, // Defender 1
+                { x: 0.7, y: 0.75 }, // Defender 2
+                { x: 0.4, y: 0.60 }, // Midfielder/Forward 1
+                { x: 0.6, y: 0.60 }   // Midfielder/Forward 2
             ];
-            const oscurosNormalizedPositionsPortrait = [
+            const oscurosNormalizedPositionsVertical = [
                 { x: 0.5, y: 0.12 }, // Goalkeeper
-                { x: 0.25, y: 0.25 }, // Defender 1 (moved slightly left)
-                { x: 0.75, y: 0.25 }, // Defender 2 (moved slightly right)
-                { x: 0.35, y: 0.40 }, // Midfielder/Forward 1 (moved slightly left)
-                { x: 0.65, y: 0.40 }  // Midfielder/Forward 2 (moved slightly right)
+                { x: 0.3, y: 0.25 }, // Defender 1
+                { x: 0.7, y: 0.25 }, // Defender 2
+                { x: 0.4, y: 0.40 }, // Midfielder/Forward 1
+                { x: 0.6, y: 0.40 }  // Midfielder/Forward 2
             ];
 
             // Normalized positions (0 to 1, relative to field width/height)
             // These are for a horizontal field (width > height)
-            const clarosNormalizedPositionsLandscape = [
-                { x: 0.90, y: 0.50 }, // Goalkeeper (far right, center)
-                { x: 0.75, y: 0.30 }, // Defender 1 (right, slightly above center)
-                { x: 0.75, y: 0.70 }, // Defender 2 (right, slightly below center)
-                { x: 0.60, y: 0.35 }, // Midfielder/Forward 1 (mid-right, slightly above center)
-                { x: 0.60, y: 0.65 }   // Midfielder/Forward 2 (mid-right, slightly below center)
+            const clarosNormalizedPositionsHorizontal = [
+                { x: 0.90, y: 0.50 }, // Goalkeeper
+                { x: 0.75, y: 0.30 }, // Defender 1
+                { x: 0.75, y: 0.70 }, // Defender 2
+                { x: 0.64, y: 0.40 }, // Midfielder/Forward 1 (Moved to midpoint)
+                { x: 0.64, y: 0.60 }  // Midfielder/Forward 2 (Moved to midpoint)
             ];
-            const oscurosNormalizedPositionsLandscape = [
-                { x: 0.10, y: 0.50 }, // Goalkeeper (far left, center)
-                { x: 0.25, y: 0.30 }, // Defender 1 (left, slightly above center)
-                { x: 0.25, y: 0.70 }, // Defender 2 (left, slightly below center)
-                { x: 0.40, y: 0.35 }, // Midfielder/Forward 1 (mid-left, slightly above center)
-                { x: 0.40, y: 0.65 }  // Midfielder/Forward 2 (mid-left, slightly below center)
+            const oscurosNormalizedPositionsHorizontal = [
+                { x: 0.10, y: 0.50 }, // Goalkeeper
+                { x: 0.25, y: 0.30 }, // Defender 1
+                { x: 0.25, y: 0.70 }, // Defender 2
+                { x: 0.36, y: 0.40 }, // Midfielder/Forward 1 (Moved to midpoint)
+                { x: 0.36, y: 0.60 }  // Midfielder/Forward 2 (Moved to midpoint)
             ];
 
-            const currentClarosNormalizedPositions = isHorizontalField ? clarosNormalizedPositionsLandscape : clarosNormalizedPositionsPortrait;
-            const currentOscurosNormalizedPositions = isHorizontalField ? oscurosNormalizedPositionsLandscape : oscurosNormalizedPositionsPortrait;
+            // Determine field orientation dynamically based on its current dimensions
+            const fieldWidth = soccerFieldContainer.offsetWidth;
+            const fieldHeight = soccerFieldContainer.offsetHeight;
+            const isHorizontalField = fieldWidth > fieldHeight;
+
+            const currentClarosNormalizedPositions = isHorizontalField ? clarosNormalizedPositionsHorizontal : clarosNormalizedPositionsVertical;
+            const currentOscurosNormalizedPositions = isHorizontalField ? oscurosNormalizedPositionsHorizontal : oscurosNormalizedPositionsVertical;
 
             // Add Claros players
             clarosPlayerIDs.slice(0, 5).forEach((playerId, index) => {
@@ -1856,18 +1856,18 @@
                 // Determine position based on field orientation and winning team
                 if (isHorizontalField) { // Desktop or mobile landscape
                     if (winnerTeam === 'Claros') {
-                        trophyDiv.style.top = '10%'; // Top-right corner (Claros' side)
+                        trophyDiv.style.top = '95%'; // Bottom-right
                         trophyDiv.style.left = '90%'; 
                     } else if (winnerTeam === 'Oscuros') {
-                        trophyDiv.style.top = '10%'; // Top-left corner (Oscuros' side)
+                        trophyDiv.style.top = '95%'; // Bottom-left
                         trophyDiv.style.left = '10%'; 
                     }
                 } else { // Mobile portrait
                     if (winnerTeam === 'Claros') {
-                        trophyDiv.style.top = '90%'; // Bottom-left
+                        trophyDiv.style.top = '95%'; // Bottom-left
                         trophyDiv.style.left = '10%'; 
                     } else if (winnerTeam === 'Oscuros') {
-                        trophyDiv.style.top = '10%'; // Top-right
+                        trophyDiv.style.top = '5%'; // Top-right
                         trophyDiv.style.left = '90%'; 
                     }
                 }
@@ -1875,7 +1875,7 @@
             }
 
             // Show soccer field
-            soccerFieldContainer.classList.add('field-active'); // Use new class
+            soccerFieldContainer.classList.remove('hidden');
 
             loadingMessage.classList.add('hidden');
             fixtureDetailsDisplay.classList.remove('hidden');
@@ -1886,19 +1886,6 @@
             const [day, month, year] = dateString.split('/').map(Number);
             return new Date(year, month - 1, day);
         }
-
-        function parseYYYYMMDDToLocalDate(dateString) {
-            const [year, month, day] = dateString.split('-').map(Number);
-            return new Date(year, month - 1, day);
-        }
-
-        function formatDateToDDMMYYYY(date) {
-            const dd = String(date.getDate()).padStart(2, '0');
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const yyyy = date.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
-        }
-
 
         function populateYearSelects(selectId, storageKeyPrefix) {
             const yearSelect = document.getElementById(selectId);
@@ -2496,17 +2483,6 @@
 
         // Evento para manejar el redimensionamiento de la ventana
         window.addEventListener('resize', () => {
-            // Re-render fixture details to adjust player positions based on new orientation
-            // Only re-render if the fixture tab is currently active
-            if (!fixtureContent.classList.contains('hidden')) {
-                const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100');
-                if (currentMatchCard) {
-                    const currentMatchId = currentMatchCard.dataset.matchId;
-                    renderFixtureDetails(currentMatchId);
-                }
-            }
-
-            // Handle side menu visibility on resize
             if (window.innerWidth >= 768) {
                 // Desktop view: sidebar always open, hamburger hidden
                 sideMenu.classList.remove('hidden'); // Ensure it's not display:none
@@ -2521,6 +2497,12 @@
                 hamburgerButton.classList.remove('hidden'); // Show hamburger
                 overlay.classList.remove('open'); // Hide overlay
                 document.body.classList.remove('overflow-hidden'); // Allow scrolling
+            }
+            // Re-render fixture details to adjust player positions based on new orientation
+            const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100');
+            if (currentMatchCard) {
+                const currentMatchId = currentMatchCard.dataset.matchId;
+                renderFixtureDetails(currentMatchId);
             }
         });
 
