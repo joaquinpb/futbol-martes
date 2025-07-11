@@ -938,78 +938,7 @@
             '#individual-stats': 'individual-stats-content'
         };
 
-        // --- Funciones de Inicialización de Google API y Carga de Datos ---
-        // Se definen aquí para asegurar que estén disponibles cuando el script de la API de Google las llame.
-        function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
-        }
-
-        <script>
-            // ¡IMPORTANTE! Reemplaza 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM' con tu Clave de API de Google Cloud Console.
-            // Esta clave es necesaria para acceder a Google Sheets API para hojas públicas sin autenticación de usuario.
-            const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; 
-        
-            // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
-            // Asegúrate de que esta hoja de cálculo esté compartida públicamente con "Cualquier persona con el enlace puede ver"
-            const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E';
-        
-            let gapiInited = false;
-            let allPlayersData = []; // Cache de todos los jugadores
-            let allMatchesData = []; // Cache de todos los partidos
-        
-            // Elementos del DOM para el menú lateral
-            const hamburgerButton = document.getElementById('hamburger-button');
-            const sideMenu = document.getElementById('side-menu');
-            const closeSideMenuButton = document.getElementById('close-side-menu-button');
-            const overlay = document.getElementById('overlay');
-            const tabButtons = document.querySelectorAll('.tab-button');
-        
-            // Referencias a los contenedores de contenido
-            const leaderboardContent = document.getElementById('leaderboard-content');
-            const chamigoContent = document.getElementById('chamigo-content');
-            const ttContent = document.getElementById('tt-content');
-            const presentismoContent = document.getElementById('presentismo-content');
-            const ausentismoContent = document.getElementById('ausentismo-content');
-            const estadisticasContent = document.getElementById('estadisticas-content');
-            const equiposContent = document.getElementById('equipos-content');
-            const fixtureContent = document.getElementById('fixture-content');
-            const individualStatsContent = document.getElementById('individual-stats-content'); // New content div
-            const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
-        
-            // Mapping of hash to tab content ID
-            const hashToTabMap = {
-                '#leaderboard': 'leaderboard-content',
-                '#chamigo': 'chamigo-content',
-                '#tt': 'tt-content',
-                '#presentismo': 'presentismo-content',
-                '#ausentismo': 'ausentismo-content',
-                '#estadisticas': 'estadisticas-content',
-                '#equipos': 'equipos-content',
-                '#fixture': 'fixture-content',
-                '#individual-stats': 'individual-stats-content'
-            };
-        
-            // --- Funciones de Carga de Datos (MOVIDAS AQUÍ) ---
-            async function loadAllData() {
-                // ... (el contenido de loadAllData que cortaste) ...
-            }
-        
-            function handleDataLoadSuccess() {
-                // ... (el contenido de handleDataLoadSuccess que cortaste) ...
-            }
-        
-            // --- Funciones de Inicialización de Google API y Carga de Datos ---
-            // Se definen aquí para asegurar que estén disponibles cuando el script de la API de Google las llame.
-            function gapiLoaded() {
-                gapi.load('client', initializeGapiClient);
-            }
-        
-            async function initializeGapiClient() {
-                // ... (el resto de initializeGapiClient) ...
-            }
-            // ... (el resto de tu script) ...
-        </script>
-
+        // --- Funciones de Carga de Datos (MOVIDAS AQUÍ) ---
         async function loadAllData() {
             try {
                 if (!gapi.client.sheets) {
@@ -1039,6 +968,87 @@
                     userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
                 }
                 throw new Error(userErrorMessage); // Propagar el error para que handleDataLoadSuccess lo maneje
+            }
+        }
+
+        function handleDataLoadSuccess() {
+            // Ocultar todos los mensajes de carga
+            document.getElementById('leaderboard-loading-message').classList.add('hidden');
+            document.getElementById('chamigo-loading-message').classList.add('hidden');
+            document.getElementById('tt-loading-message').classList.add('hidden');
+            document.getElementById('presentismo-loading-message').classList.add('hidden');
+            document.getElementById('ausentismo-loading-message').classList.add('hidden');
+            document.getElementById('estadisticas-loading-message').classList.add('hidden');
+            document.getElementById('equipos-loading-message').classList.add('hidden');
+            document.getElementById('fixture-loading-message').classList.add('hidden');
+            document.getElementById('individual-stats-loading-message').classList.add('hidden'); // New
+
+            // Mostrar todas las tablas (inicialmente ocultas por CSS)
+            document.getElementById('leaderboard-table').classList.remove('hidden');
+            document.getElementById('chamigo-table').classList.remove('hidden');
+            document.getElementById('tt-table').classList.remove('hidden');
+            document.getElementById('presentismo-table').classList.remove('hidden');
+            document.getElementById('ausentismo-table').classList.remove('hidden');
+            document.getElementById('estadisticas-table').classList.remove('hidden');
+            document.getElementById('equipos-stats-display').classList.remove('hidden');
+            document.getElementById('fixture-matches-cards-container').classList.remove('hidden');
+            document.getElementById('individual-stats-table').classList.remove('hidden'); // New
+
+            loadAllData().then(() => {
+                setupTabNavigation();
+            }).catch(error => {
+                console.error("Error al cargar datos después de la inicialización de GAPI:", error);
+                const errorMessageText = `Error al cargar datos: ${error.message}. Asegúrate de que el ID de la hoja de cálculo sea correcto y esté compartida públicamente.`;
+                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
+            });
+        }
+
+        // --- Funciones de Inicialización de Google API y Carga de Datos ---
+        // Se definen aquí para asegurar que estén disponibles cuando el script de la API de Google las llame.
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({
+                    apiKey: API_KEY, // Se usa la clave de API aquí
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                });
+                gapiInited = true;
+                handleDataLoadSuccess(); // Cargar datos y mostrar contenido
+            } catch (err) {
+                console.error("Error al inicializar gapi.client:", err);
+                // Actualizar todos los mensajes de carga con el error
+                let errorDetail;
+                if (err && err.message) {
+                    errorDetail = err.message;
+                } else {
+                    try {
+                        errorDetail = JSON.stringify(err);
+                    } catch (e) {
+                        errorDetail = String(err); // Fallback a conversión simple a string
+                    }
+                }
+                const errorMessageText = `Error al inicializar la API de Google: ${errorDetail}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
+
+                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
+                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
             }
         }
 
@@ -1110,10 +1120,13 @@
                 renderFixtureMatchCards();
                 // After rendering cards, select the latest one
                 const fixtureMatchesCardsContainer = document.getElementById('fixture-matches-cards-container');
-                const latestMatchCard = fixtureMatchesCardsContainer.querySelector('[data-match-id]'); // First one is the latest due to sorting
-                if (latestMatchCard) {
-                    latestMatchCard.click(); // Simulate click to render details
-                }
+                // Use setTimeout to ensure the DOM has updated and the cards are rendered
+                setTimeout(() => {
+                    const latestMatchCard = fixtureMatchesCardsContainer.querySelector('[data-match-id]'); // First one is the latest due to sorting
+                    if (latestMatchCard) {
+                        latestMatchCard.click(); // Simulate click to render details
+                    }
+                }, 100); // Small delay to allow DOM to render
             } else if (tabId === 'individual-stats-content') {
                 renderIndividualStatsTable();
             }
