@@ -939,54 +939,11 @@
                     try {
                         errorDetail = JSON.stringify(err);
                     } catch (e) {
-                        errorDetail = String(err); // Fallback a conversión simple a string
+                        errorDetail = String(e); // Fallback a conversión simple a string
                     }
                 }
                 const errorMessageText = `Error al inicializar la API de Google: ${errorDetail}. Asegúrate de que la API Key sea correcta y esté habilitada para Google Sheets API.`;
 
-                document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('presentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('ausentismo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('estadisticas-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
-                document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
-            }
-        }
-
-        async function handleDataLoadSuccess() {
-            // Este método se llama cuando la API de Google Sheets está lista para ser usada
-            try {
-                await loadAllData(); // Cargar todos los datos de la hoja
-                
-                // Mostrar el menú lateral y el contenido principal
-                sideMenu.classList.remove('hidden'); 
-                if (window.innerWidth >= 768) {
-                    sideMenu.classList.add('open'); // Forzar 'open' en desktop para que sea visible
-                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
-                } else {
-                    sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para el estado inicial móvil
-                    hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
-                }
-
-                // Configurar la navegación por pestañas y renderizar la activa por defecto
-                setupTabNavigation();
-
-            } catch (error) {
-                console.error("Error al cargar datos iniciales:", error);
-                let errorDetail;
-                if (error && error.message) {
-                    errorDetail = error.message;
-                } else {
-                    try {
-                        errorDetail = JSON.stringify(error);
-                    } catch (e) {
-                        errorDetail = String(e); // Fallback a conversión simple a string
-                    }
-                }
-                const errorMessageText = `Error al cargar datos: ${errorDetail}. Asegúrate de que la hoja sea accesible.`;
                 document.getElementById('leaderboard-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('chamigo-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('tt-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
@@ -1801,11 +1758,13 @@
                 { x: 0.36, y: 0.60 }  // Midfielder/Forward 2 (Moved to midpoint)
             ];
 
-            // Determine field orientation based on viewport orientation
-            const isLandscapeViewport = window.innerWidth > window.innerHeight;
+            // Determine field orientation based on its rendered dimensions
+            const fieldWidth = soccerFieldContainer.offsetWidth;
+            const fieldHeight = soccerFieldContainer.offsetHeight;
+            const isHorizontalField = fieldWidth > fieldHeight;
 
-            const currentClarosNormalizedPositions = isLandscapeViewport ? clarosNormalizedPositionsLandscape : clarosNormalizedPositionsPortrait;
-            const currentOscurosNormalizedPositions = isLandscapeViewport ? oscurosNormalizedPositionsLandscape : oscurosNormalizedPositionsPortrait;
+            const currentClarosNormalizedPositions = isHorizontalField ? clarosNormalizedPositionsLandscape : clarosNormalizedPositionsPortrait;
+            const currentOscurosNormalizedPositions = isHorizontalField ? oscurosNormalizedPositionsLandscape : oscurosNormalizedPositionsPortrait;
 
             // Add Claros players
             clarosPlayerIDs.slice(0, 5).forEach((playerId, index) => {
@@ -1839,8 +1798,8 @@
                 trophyDiv.classList.add('winner-trophy');
                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
                 
-                // Determine position based on viewport orientation and winning team
-                if (isLandscapeViewport) { // Desktop or mobile landscape
+                // Determine position based on field orientation and winning team
+                if (isHorizontalField) { // Desktop or mobile landscape
                     if (winnerTeam === 'Claros') {
                         trophyDiv.style.top = '95%'; // Bottom-right
                         trophyDiv.style.left = '90%'; 
@@ -2469,6 +2428,17 @@
 
         // Evento para manejar el redimensionamiento de la ventana
         window.addEventListener('resize', () => {
+            // Re-render fixture details to adjust player positions based on new orientation
+            // Only re-render if the fixture tab is currently active
+            if (!fixtureContent.classList.contains('hidden')) {
+                const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100');
+                if (currentMatchCard) {
+                    const currentMatchId = currentMatchCard.dataset.matchId;
+                    renderFixtureDetails(currentMatchId);
+                }
+            }
+
+            // Handle side menu visibility on resize
             if (window.innerWidth >= 768) {
                 // Desktop view: sidebar always open, hamburger hidden
                 sideMenu.classList.remove('hidden'); // Ensure it's not display:none
@@ -2483,15 +2453,6 @@
                 hamburgerButton.classList.remove('hidden'); // Show hamburger
                 overlay.classList.remove('open'); // Hide overlay
                 document.body.classList.remove('overflow-hidden'); // Allow scrolling
-            }
-            // Re-render fixture details to adjust player positions based on new orientation
-            // Only re-render if the fixture tab is currently active
-            if (!fixtureContent.classList.contains('hidden')) {
-                const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100');
-                if (currentMatchCard) {
-                    const currentMatchId = currentMatchCard.dataset.matchId;
-                    renderFixtureDetails(currentMatchId);
-                }
             }
         });
 
