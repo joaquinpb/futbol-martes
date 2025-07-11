@@ -208,11 +208,11 @@
             background-color: #e0e7ff; /* indigo-100 */
         }
 
-        /* Styles for the soccer field (mobile default - vertical) */
+        /* Styles for the soccer field (default: mobile portrait) */
         #soccer-field-container {
             position: relative;
-            width: 100%; /* Mobile width: match TT table width */
-            padding-top: 168.75%; /* Height reduced by 10% (187.5% * 0.9) */
+            width: 100%;
+            padding-top: 168.75%; /* Aspect ratio for portrait (e.g., 9:16) */
             background-color: #0f8d48; /* Green field color */
             border: 2px solid white; /* Outer perimeter */
             border-radius: 0.5rem; /* rounded-lg */
@@ -220,9 +220,13 @@
             margin-bottom: 1.5rem; /* mb-6 */
             margin-left: auto; /* Center the field */
             margin-right: auto; /* Center the field */
+            display: none; /* Hidden by default, controlled by JS */
+        }
+        #soccer-field-container.field-active {
+            display: block; /* Show when active */
         }
 
-        /* Halfway line (vertical for mobile) */
+        /* Halfway line (vertical for mobile portrait) */
         #soccer-field-container::before {
             content: '';
             position: absolute;
@@ -234,7 +238,7 @@
             transform: translateY(-50%);
         }
 
-        /* Center circle (vertical for mobile) */
+        /* Center circle (vertical for mobile portrait) */
         #soccer-field-container::after {
             content: '';
             position: absolute;
@@ -368,20 +372,12 @@
                 font-size: 0.7em;
             }
         }
-        @media (min-width: 768px) { /* md breakpoint */
-            .player-marker {
-                width: 60px;
-                height: 60px;
-                font-size: 1rem; /* text-base */
-            }
-            .player-marker .fa-star {
-                font-size: 0.8em;
-            }
 
-            /* Desktop specific styles for horizontal field */
+        /* Media query for landscape orientation (mobile landscape and desktop) */
+        @media (orientation: landscape) and (max-width: 767px), (min-width: 768px) {
             #soccer-field-container {
-                width: 60%; /* Reduced by 20% from 75% (75 * 0.8 = 60) */
-                padding-top: 27.27%; /* Retain 1:2.2 height to width ratio (1/2.2 = 0.4545), but for horizontal field it's height/width, so width is 2.2 * height. If width is 60%, then height is 60/2.2 = 27.27% */
+                width: 60%; /* Adjust width for horizontal layout */
+                padding-top: 27.27%; /* Aspect ratio for horizontal (e.g., 2.2:1) */
             }
 
             /* Adjust TT details width for desktop */
@@ -389,7 +385,6 @@
                 width: 40%; /* Take remaining space (100% - 60%) */
                 margin-top: 0; /* Align with the top of the field */
             }
-
 
             /* Rotate and reposition field elements for horizontal view */
             #soccer-field-container::before { /* Halfway line */
@@ -406,6 +401,7 @@
                 height: 8vw;
             }
 
+            /* Goals (now left/right) */
             .goal.top { /* Now left goal */
                 top: 35%;
                 left: -15px; /* Position outside the left border */
@@ -441,7 +437,7 @@
                 right: 0;
                 left: auto; /* Reset left */
                 height: 60%; /* Width of the penalty area */
-                width: 20%; /* Depth from goal line */
+                width: 20%;
                 border-width: 4px 0 4px 2px; /* Top:4px, Right:0, Bottom:4px, Left:2px */
             }
 
@@ -456,30 +452,11 @@
             .goal-area.bottom { /* Now right goal area */
                 top: 35%;
                 right: 0;
-                left: auto; /* Reset left */
+                left: auto;
                 height: 30%; /* Width of the goal area */
                 width: 10%; /* Depth from goal line */
                 border-width: 4px 0 4px 2px; /* Top:4px, Right:0, Bottom:4px, Left:2px */
             }
-
-            /* Player positions for horizontal field */
-            /* Claros (Right Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
-            .player-marker.claros:nth-child(1) { top: 50%; left: 90%; } /* Goalkeeper */
-            .player-marker.claros:nth-child(2) { top: 30%; left: 75%; } /* Defender 1 */
-            .player-marker.claros:nth-child(3) { top: 70%; left: 75%; } /* Defender 2 */
-            .player-marker.claros:nth-child(4) { top: 40%; left: 64%; } /* Midfielder/Forward 1 (Moved to midpoint) */
-            .player-marker.claros:nth-child(5) { top: 60%; left: 64%; }   /* Midfielder/Forward 2 (Moved to midpoint) */
-
-            /* Oscuros (Left Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
-            .player-marker.oscuros:nth-child(1) { top: 50%; left: 10%; } /* Goalkeeper */
-            .player-marker.oscuros:nth-child(2) { top: 30%; left: 25%; } /* Defender 1 */
-            .player-marker.oscuros:nth-child(3) { top: 70%; left: 25%; } /* Defender 2 */
-            .player-marker.oscuros:nth-child(4) { top: 40%; left: 36%; } /* Midfielder/Forward 1 (Moved to midpoint) */
-            .player-marker.oscuros:nth-child(5) { top: 60%; left: 36%; }  /* Midfielder/Forward 2 (Moved to midpoint) */
-
-            /* Trophy positions for desktop */
-            .winner-trophy.claros { top: 95%; left: 90%; } /* Bottom-right */
-            .winner-trophy.oscuros { top: 95%; left: 10%; } /* Bottom-left */
         }
     </style>
 </head>
@@ -796,7 +773,7 @@
             <!-- Container for field and details side-by-side on desktop -->
             <div class="flex flex-col md:flex-row md:space-x-6">
                 <!-- Soccer Field Container -->
-                <div id="soccer-field-container" class="hidden md:block"> <!-- Adjusted width for desktop is now in CSS -->
+                <div id="soccer-field-container"> <!-- Removed hidden md:block -->
                     <!-- Goals -->
                     <div class="goal top"></div>
                     <div class="goal bottom"></div>
@@ -923,6 +900,7 @@
         const equiposContent = document.getElementById('equipos-content');
         const fixtureContent = document.getElementById('fixture-content');
         const individualStatsContent = document.getElementById('individual-stats-content'); // New content div
+        const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
 
         // Mapping of hash to tab content ID
         const hashToTabMap = {
@@ -1094,6 +1072,11 @@
             // Remove 'active' from all buttons and hide all contents
             tabButtons.forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            // Hide soccer field if not fixture tab
+            if (tabId !== 'fixture-content') {
+                soccerFieldContainer.classList.remove('field-active');
+            }
 
             // Add 'active' to the corresponding button and show its content
             const targetButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
@@ -1648,11 +1631,10 @@
             const fixtureMonthSelect = document.getElementById('fixture-month-select');
             const loadingMessage = document.getElementById('fixture-loading-message');
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
-            const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
-
-            fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
-            fixtureDetailsDisplay.classList.add('hidden'); // Hide details when re-rendering cards
-            soccerFieldContainer.classList.add('hidden'); // Hide soccer field
+            
+            // Hide soccer field and details when re-rendering cards
+            soccerFieldContainer.classList.remove('field-active'); // Use new class
+            fixtureDetailsDisplay.classList.add('hidden'); 
             soccerFieldContainer.innerHTML = `
                 <div class="goal top"></div>
                 <div class="goal bottom"></div>
@@ -1662,6 +1644,7 @@
                 <div class="goal-area bottom"></div>
             `; // Reset field elements
 
+            fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
 
@@ -1702,13 +1685,12 @@
         function renderFixtureDetails(matchId) {
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const loadingMessage = document.getElementById('fixture-loading-message');
-            const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
 
 
             loadingMessage.classList.remove('hidden');
             fixtureDetailsDisplay.classList.add('hidden');
-            soccerFieldContainer.classList.add('hidden'); // Hide field while loading
+            soccerFieldContainer.classList.remove('field-active'); // Hide field while loading
             
             // Clear only player markers and trophy from field
             soccerFieldContainer.querySelectorAll('.player-marker, .winner-trophy').forEach(el => el.remove());
@@ -1875,7 +1857,7 @@
             }
 
             // Show soccer field
-            soccerFieldContainer.classList.remove('hidden');
+            soccerFieldContainer.classList.add('field-active'); // Use new class
 
             loadingMessage.classList.add('hidden');
             fixtureDetailsDisplay.classList.remove('hidden');
@@ -2499,10 +2481,13 @@
                 document.body.classList.remove('overflow-hidden'); // Allow scrolling
             }
             // Re-render fixture details to adjust player positions based on new orientation
-            const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100');
-            if (currentMatchCard) {
-                const currentMatchId = currentMatchCard.dataset.matchId;
-                renderFixtureDetails(currentMatchId);
+            // Only re-render if the fixture tab is currently active
+            if (!fixtureContent.classList.contains('hidden')) {
+                const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100');
+                if (currentMatchCard) {
+                    const currentMatchId = currentMatchCard.dataset.matchId;
+                    renderFixtureDetails(currentMatchId);
+                }
             }
         });
 
