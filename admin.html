@@ -110,7 +110,7 @@
             transform: translateX(-100%); /* Hidden by default for both mobile and desktop */
             transition: transform 0.3s ease-in-out;
             z-index: 40;
-            display: flex; /* Use flex for vertical layout of tabs */
+            display: none; /* CAMBIADO: Inicialmente oculto por defecto en CSS */
             flex-direction: column;
             padding-top: 1rem; /* Add some padding at the top */
         }
@@ -118,6 +118,7 @@
         /* This class will be applied by JS to make it visible */
         #side-menu.open {
             transform: translateX(0);
+            display: flex; /* CAMBIADO: Mostrar como flex cuando está abierto */
         }
 
         #overlay {
@@ -133,6 +134,7 @@
         }
 
         #hamburger-button {
+            display: none; /* CAMBIADO: Inicialmente oculto por defecto en CSS */
             position: fixed;
             top: 1rem;
             left: 1rem;
@@ -231,12 +233,12 @@
 </head>
 <body class="bg-gray-100 min-h-screen p-4 md:p-0">
     <!-- Hamburger Button (visible on all screens) -->
-    <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
+    <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
     <!-- Side Navigation Menu (fixed, slides in/out on all screens) -->
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40">
         <div class="p-4 text-right">
             <!-- Botón de cruz (oculto en desktop) -->
             <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
@@ -730,12 +732,13 @@
                     authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
                     authStatus.classList.remove('hidden');
                     // Asegurarse de que el menú y el botón estén ocultos si no hay token
-                    sideMenu.classList.add('hidden'); // Ensure it's hidden
-                    sideMenu.classList.remove('open'); // Ensure it's closed
-                    hamburgerButton.classList.add('hidden'); // Ensure hamburger is hidden
+                    sideMenu.classList.add('hidden'); // Asegurarse de que esté oculto
+                    sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado
+                    hamburgerButton.classList.add('hidden'); // Asegurarse de que esté oculto
                     signoutButtonMobileSidebar.classList.add('hidden');
                     signoutButtonSidebar.classList.add('hidden');
                     adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
+                    overlay.classList.add('hidden'); // Asegurarse que el overlay esté oculto
                 }
             }
         }
@@ -768,7 +771,7 @@
             adminContent.classList.remove('hidden'); // Mostrar el contenido de administración
             
             // Mostrar el menú lateral
-            sideMenu.classList.remove('hidden'); 
+            sideMenu.classList.remove('hidden'); // Remover hidden (display: none)
             // En desktop, la barra lateral siempre debe estar 'abierta'
             if (window.innerWidth >= 768) {
                 sideMenu.classList.add('open'); // Force 'open' on desktop
@@ -805,9 +808,9 @@
                 signoutButtonMobileSidebar.classList.add('hidden');
                 adminContent.classList.add('hidden'); // Ocultar el contenido de administración
                 
-                sideMenu.classList.add('hidden'); // Ensure sidebar is hidden
-                sideMenu.classList.remove('open'); // Ensure it's closed (for mobile state)
-                hamburgerButton.classList.add('hidden');
+                sideMenu.classList.add('hidden'); // Asegurarse de que esté oculto
+                sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado (para estado móvil)
+                hamburgerButton.classList.add('hidden'); // Asegurarse de que esté oculto
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
 
@@ -2059,12 +2062,15 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Panel de Administración de Fútbol 5 cargado!');
             // Asegurarse de que el botón de hamburguesa y el menú lateral estén ocultos al inicio
+            // Estas líneas ahora son redundantes con el CSS, pero las mantenemos por seguridad.
             hamburgerButton.classList.add('hidden');
-            sideMenu.classList.add('hidden'); // Explicitly hide sidebar on load
-            sideMenu.classList.remove('open'); // Ensure it's not open
+            sideMenu.classList.add('hidden'); 
+            sideMenu.classList.remove('open'); 
             signoutButtonMobileSidebar.classList.add('hidden');
             signoutButtonSidebar.classList.add('hidden');
-            adminContent.classList.add('hidden'); // Asegurarse que el contenido admin esté oculto
+            adminContent.classList.add('hidden'); 
+            overlay.classList.add('hidden'); 
+            document.body.classList.remove('overflow-hidden'); 
 
             gapiLoaded();
             const script = document.createElement('script');
