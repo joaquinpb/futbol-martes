@@ -14,13 +14,9 @@
             min-height: 100vh; /* Asegura que el cuerpo ocupe toda la altura del viewport */
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
-            
-            /* Centrado de la caja principal en la pantalla de login por defecto */
-            display: flex;
-            justify-content: center; /* Centrar horizontalmente */
-            align-items: center; /* Centrar verticalmente */
+            display: flex; /* Hacemos el body un contenedor flex */
+            flex-direction: column; /* Por defecto, los elementos se apilan en columna (mobile-first) */
         }
-
         /* Estilos para el efecto de arrastre */
         .player-draggable {
             @apply bg-white p-2 rounded-md shadow-sm mb-2 flex justify-between items-center;
@@ -33,6 +29,24 @@
         .player-draggable.dragging-touch {
             opacity: 0.7;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        /* Estilo para el botón de cerrar sesión (Cruz) */
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #ef4444; /* Rojo 500 de Tailwind */
+            cursor: pointer;
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem;
+            border-radius: 9999px; /* Fully rounded */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .close-button:hover {
+            background-color: #fecaca; /* Rojo 100 de Tailwind */
+            color: #dc2626; /* Rojo 600 de Tailwind */
         }
         /* Estilo para los elementos de la lista de partidos seleccionables */
         .match-item {
@@ -84,12 +98,12 @@
             color: #4a5568; /* text-gray-600 */
         }
 
-        /* --- Estilos para el menú lateral responsivo (siempre fijo y 100vh) --- */
+        /* --- Estilos para el menú lateral responsivo --- */
         #side-menu {
-            position: fixed; /* Siempre fijo en el viewport */
+            position: fixed; /* Para superponer en móvil */
             top: 0;
             left: 0;
-            height: 100vh; /* Siempre 100% de la altura del viewport */
+            height: 100vh;
             width: 256px; /* w-64 */
             background-color: #312e81; /* indigo-800 */
             color: white;
@@ -98,8 +112,7 @@
             z-index: 40;
             display: flex; /* Usar flex para el diseño vertical de las pestañas */
             flex-direction: column;
-            padding-top: 0;
-            padding-bottom: 0;
+            padding-top: 1rem; /* Añadir algo de padding en la parte superior */
         }
 
         /* Esta clase será aplicada por JS para hacerlo visible */
@@ -136,11 +149,19 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
         }
 
-        /* Alineación a la izquierda para los elementos del menú */
+        #close-side-menu-button {
+            background: none;
+            border: none;
+            font-size: 2rem; /* text-2xl */
+            color: white;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
         #side-menu .tab-button, #side-menu .sidebar-link {
             padding-left: 1.5rem; /* px-6 */
             padding-right: 1.5rem; /* px-6 */
-            text-align: left; /* Asegura la alineación del texto */
+            text-align: left;
             width: 100%; /* Ancho completo dentro de la barra lateral */
             border-radius: 0; /* Sin esquinas redondeadas para pestañas verticales */
             margin-bottom: 0.25rem; /* mb-1 */
@@ -149,7 +170,6 @@
             display: flex; /* Para alinear el texto y el icono */
             align-items: center; /* Para alinear el texto y el icono */
             gap: 0.5rem; /* Espacio entre texto e icono */
-            justify-content: flex-start; /* Alinea el contenido a la izquierda */
         }
         #side-menu .tab-button.active {
             background-color: #4338ca; /* indigo-700 */
@@ -158,100 +178,82 @@
             background-color: #4f46e5; /* indigo-600 */
         }
 
-        /* Contenedor de las pestañas dentro del menú lateral, ahora con scroll si es necesario */
-        #side-menu > .flex.flex-col.flex-1 {
-            overflow-y: auto; /* Permite el scroll vertical si el contenido de las pestañas excede la altura disponible */
-            -webkit-overflow-scrolling: touch; /* Mejora el scroll en iOS */
-            padding-top: 1rem; /* Padding para el contenido scrollable */
-            padding-bottom: 1rem; /* Padding para el contenido scrollable */
+        #signout_button_sidebar,
+        #signout_button_mobile_sidebar {
+            margin-bottom: 2rem; /* Unificado: 2rem de separación del borde inferior */
         }
-
-        /* Main content container adjustments */
-        .main-admin-content-container {
-            background-color: #ffffff; /* bg-white */
-            padding: 1rem; /* p-4 */
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.05); /* shadow-lg */
-            width: 100%; /* w-full */
-            max-width: 1024px; /* max-w-5xl */
-            /* Margin auto para centrar horizontalmente dentro del flex body */
-            margin-left: auto; 
-            margin-right: auto; 
-            min-height: calc(100vh - 4rem); /* Adjust min-height to account for top/bottom margins if any */
-            box-sizing: border-box; /* Include padding in width/height calculations */
-            
-            /* Contenido interno de la caja principal, por defecto alineado al inicio */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start; /* Alinea contenido al inicio verticalmente */
-            align-items: flex-start; /* Alinea contenido al inicio horizontalmente */
-            text-align: left; /* Alinea texto a la izquierda */
-        }
-
-        /* Asegurar que el contenido de las pestañas ocupe todo el ancho disponible */
-        .tab-content {
-            width: 100%; /* Asegura que las pestañas ocupen el 100% del ancho de su contenedor */
-            display: flex; 
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: flex-start;
-            text-align: left;
-        }
-        /* Asegurar que los hijos directos de tab-content se alineen a la izquierda */
-        .tab-content > * {
-            width: 100%; /* Asegura que los elementos internos también ocupen el 100% del ancho disponible */
-            max-width: 100%; /* Evita que se desborden */
-        }
-
 
         @media (min-width: 768px) {
-            /* Cuando el sidebar está activo (solo desktop) */
-            body.sidebar-active {
-                padding-left: 256px; /* Pushes content to the right to make space for fixed sidebar */
-                display: block; /* Revert body to block to allow padding-left to work */
-                /* Resetear centrado del body para que el padding funcione */
-                justify-content: flex-start; 
-                align-items: flex-start; 
+            body {
+                flex-direction: row; /* Los elementos se colocan en fila en desktop */
+                align-items: flex-start; /* Alinea los ítems al inicio del contenedor flex */
             }
+            #side-menu {
+                position: relative; /* No fixed on desktop, part of the flow */
+                transform: translateX(0); /* Always visible when not 'hidden' */
+                flex-shrink: 0; /* Prevent it from shrinking */
+                height: 100vh; /* Maintain full height */
+                border-right: 1px solid #e2e8f0; /* border-gray-200 */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            }
+
+            #side-menu .tab-button, #side-menu .sidebar-link {
+                color: white; /* Asegura que el texto permanezca blanco sobre fondo oscuro */
+            }
+            #side-menu .tab-button.active {
+                background-color: #4338ca; /* indigo-700 */
+                color: white; /* Asegura que el texto permanezca blanco sobre fondo oscuro */
+                border-left: 4px solid #4f46e5; /* border-indigo-500 */
+            }
+            #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
+                background-color: #4f46e5; /* indigo-600 */
+            }
+
             .main-admin-content-container {
-                margin-left: auto; /* Revert to auto margins for centering within the new padded body space */
-                margin-right: auto;
-                padding: 2rem; /* md:p-8 */
-                justify-content: flex-start;
-                align-items: flex-start;
-                text-align: left;
+                flex-grow: 1; /* Permite que el contenido principal ocupe el espacio restante */
+                margin: 2rem auto; /* Centrado horizontal. Arriba/abajo 2rem. */
+                padding: 2rem; /* Padding para desktop */
+                width: auto; /* Dejar que flex-grow y max-width controlen el ancho */
             }
-        }
+            /* Esta clase se añade/quita por JS para el margen izquierdo cuando el sidebar está visible */
+            .main-admin-content-container.has-sidebar-margin {
+                margin-left: 2rem; /* Margen fijo para separar del sidebar */
+            }
 
-        /* Hamburger button visibility based on screen size */
-        @media (min-width: 768px) {
-            #hamburger-button {
-                display: none !important; /* Always hidden on desktop */
+            #signout_button_mobile_sidebar {
+                display: none !important;
+            }
+            #signout_button_sidebar {
+                display: block !important;
             }
             #overlay {
-                display: none !important; /* Hidden on desktop */
+                display: none !important;
+            }
+            #hamburger-button {
+                display: none !important; /* Siempre oculto en desktop */
             }
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row">
     <!-- Hamburger Button (visible on all screens) -->
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
     <!-- Side Navigation Menu (fixed, slides in/out on all screens) -->
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden flex flex-col">
-        <div class="p-4 flex justify-between items-center">
-            <h2 class="text-xl font-bold text-white">MENU</h2>
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
+        <div class="p-4 text-right">
+            <!-- Botón de cruz (oculto en desktop) -->
+            <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
         </div>
         <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
             <!-- Reordered tab buttons -->
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="team-formation">Armar Equipos</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="players-management">Gestionar Jugadores</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="match-results">Resultados</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-management">Chamigo</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-attendance">TT</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="players-management">Gestionar Jugadores</button>
             <!-- ENLACE A TABLA DE POSICIONES EXTERNA -->
             <a href="index.html" target="_blank" rel="noopener noreferrer" class="sidebar-link py-2 px-4 text-white font-medium hover:bg-indigo-700">
                 <span>Tabla de Posiciones</span>
@@ -261,11 +263,15 @@
                     <path fill-rule="evenodd" d="M15.75 3a.75.75 0 01.75.75V9a.75.75 0 01-1.5 0V5.06L10.22 10.53a.75.75 0 01-1.06-1.06l5.47-5.47H12a.75.75 0 010-1.5h3.75z" clip-rule="evenodd" />
                 </svg>
             </a>
-            <!-- Enlace de Cerrar Sesión -->
-            <a href="#" id="signout-menu-link" class="sidebar-link py-2 px-4 font-medium text-red-300 hover:bg-red-700 hover:text-white transition duration-300">
-                Cerrar Sesión
-            </a>
         </div>
+        <!-- Signout button for mobile sidebar -->
+        <button id="signout_button_mobile_sidebar" class="md:hidden mx-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 hidden">
+            Cerrar Sesión
+        </button>
+        <!-- Signout button inside sidebar for desktop -->
+        <button id="signout_button_sidebar" class="hidden mx-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300">
+            Cerrar Sesión
+        </button>
     </nav>
 
     <!-- Overlay for when side menu is open (visible on mobile only) -->
@@ -288,7 +294,7 @@
         <!-- Admin Content -->
         <div id="admin-content" class="hidden">
             <!-- Tab contents go here -->
-            <div id="team-formation" class="tab-content hidden w-full"> <!-- Default active tab -->
+            <div id="team-formation" class="tab-content hidden"> <!-- Default active tab -->
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Armar Equipos</h2>
                 <div class="mb-4">
                     <label for="team-match-date" class="block text-sm font-medium text-gray-700">Fecha del Partido:</label>
@@ -331,7 +337,7 @@
                 </div>
             </div>
 
-            <div id="players-management" class="tab-content hidden w-full">
+            <div id="players-management" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Gestionar Jugadores</h2>
                 <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
                     <h3 class="text-xl font-medium text-gray-800 mb-3">Añadir/Modificar Jugador</h3>
@@ -414,7 +420,7 @@
                 </div>
             </div>
 
-            <div id="match-results" class="tab-content hidden w-full">
+            <div id="match-results" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Resultados</h2>
                 <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
                     <!-- Sección de Detalles del Partido Seleccionado - MOVIDA ARRIBA -->
@@ -481,7 +487,7 @@
                 </div>
             </div>
 
-            <div id="chamigo-management" class="tab-content hidden w-full">
+            <div id="chamigo-management" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">Chamigo</h2>
                 <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
                     <h3 class="text-xl font-medium text-gray-800 mb-3">Registrar Votos de Chamigo</h3>
@@ -527,7 +533,7 @@
                 </div>
             </div>
 
-            <div id="tt-attendance" class="tab-content hidden w-full">
+            <div id="tt-attendance" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold text-gray-700 mb-4">TT</h2>
                 <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
                     <h3 class="text-xl font-medium text-gray-800 mb-3">Registrar Asistencia TT</h3>
@@ -618,6 +624,8 @@
 
         // Elementos del DOM
         const authorizeButton = document.getElementById('authorize_button');
+        const signoutButtonSidebar = document.getElementById('signout_button_sidebar'); // Nuevo botón de cerrar sesión en sidebar (desktop)
+        const signoutButtonMobileSidebar = document.getElementById('signout_button_mobile_sidebar'); // Nuevo botón de cerrar sesión en sidebar (mobile)
         const authStatus = document.getElementById('auth-status');
         const adminContent = document.getElementById('admin-content');
         const mainAdminContentContainer = document.querySelector('.main-admin-content-container'); // Referencia al contenedor principal
@@ -625,10 +633,10 @@
         // Nuevos elementos para el menú lateral
         const hamburgerButton = document.getElementById('hamburger-button');
         const sideMenu = document.getElementById('side-menu');
+        const closeSideMenuButton = document.getElementById('close-side-menu-button');
         const overlay = document.getElementById('overlay');
         const tabButtons = document.querySelectorAll('.tab-button'); // Obtener todos los botones de pestaña
         const tabContents = document.querySelectorAll('.tab-content'); // Obtener todos los contenidos de las pestañas
-        const signoutMenuLink = document.getElementById('signout-menu-link'); // Nuevo enlace de cerrar sesión en el menú
 
         // Custom Confirmation Modal elements
         const customConfirmModal = document.getElementById('custom-confirm-modal');
@@ -728,14 +736,14 @@
                     sideMenu.classList.add('hidden'); // Asegura que esté oculto
                     sideMenu.classList.remove('open'); // Asegura que el transform esté reseteado
                     hamburgerButton.classList.add('hidden');
-                    signoutMenuLink.classList.add('hidden'); // Ocultar el nuevo enlace de cerrar sesión
+                    signoutButtonMobileSidebar.classList.add('hidden');
+                    signoutButtonSidebar.classList.add('hidden');
                     adminContent.classList.add('hidden');
                     
-                    // Asegurar que el body esté en modo flex para centrar el login
-                    document.body.style.display = 'flex';
-                    document.body.style.justifyContent = 'center';
-                    document.body.style.alignItems = 'center';
-                    document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding
+                    // Centrar main content cuando sidebar está oculto
+                    mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Asegura que no tenga margen izquierdo
+                    mainAdminContentContainer.style.marginLeft = 'auto';
+                    mainAdminContentContainer.style.marginRight = 'auto';
                 }
             }
         }
@@ -762,7 +770,8 @@
 
         async function handleAuthSuccess() {
             authorizeButton.style.display = 'none';
-            signoutMenuLink.classList.remove('hidden'); // Mostrar el nuevo enlace de cerrar sesión
+            signoutButtonSidebar.classList.remove('hidden');
+            signoutButtonMobileSidebar.classList.remove('hidden');
             authStatus.classList.add('hidden');
             adminContent.classList.remove('hidden'); // Mostrar el contenido de administración
             
@@ -770,23 +779,19 @@
                 sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
                 sideMenu.classList.add('open'); // Asegurarse de que esté abierto (transform: translateX(0))
                 hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
-                overlay.classList.remove('open'); // Ocultar overlay en desktop
-                document.body.classList.remove('overflow-hidden'); // Permitir scrolling en desktop
-                document.body.classList.add('sidebar-active'); // Añadir padding al body en desktop
-                document.body.style.display = 'block'; // Cambiar body a block para permitir padding
-                document.body.style.justifyContent = ''; // Resetear
-                document.body.style.alignItems = ''; // Resetear
+                // Aplicar márgenes específicos para desktop cuando sidebar está visible
+                mainAdminContentContainer.classList.add('has-sidebar-margin'); // Aplica margin-left: 2rem
             } else {
                 sideMenu.classList.add('hidden'); // Empezar oculto en móvil
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para estado inicial móvil
                 hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
-                overlay.classList.remove('open'); // Asegurar que el overlay esté cerrado al inicio en móvil
-                document.body.classList.remove('overflow-hidden'); // Asegurar que no haya overflow
-                document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding en móvil
-                document.body.style.display = 'flex'; // Mantener body en flex para centrar en móvil
-                document.body.style.justifyContent = 'center';
-                document.body.style.alignItems = 'center';
+                // Resetear márgenes para móvil
+                mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margin-left fijo
             }
+            // Asegurarse de que el centrado horizontal funcione en ambos casos
+            mainAdminContentContainer.style.marginLeft = 'auto';
+            mainAdminContentContainer.style.marginRight = 'auto';
+
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
             setupTabNavigation();
@@ -809,25 +814,21 @@
             if (token !== null) {
                 google.accounts.oauth2.revoke(token.access_token);
                 gapi.client.setToken('');
-                
-                // Asegurarse de que el overlay y el overflow se remuevan primero
-                overlay.classList.remove('open');
-                document.body.classList.remove('overflow-hidden'); // This is key for the grey screen
-
                 authorizeButton.style.display = 'block';
-                signoutMenuLink.classList.add('hidden'); // Ocultar el nuevo enlace de cerrar sesión
+                signoutButtonSidebar.classList.add('hidden');
+                signoutButtonMobileSidebar.classList.add('hidden');
                 adminContent.classList.add('hidden'); // Ocultar el contenido de administración
                 
                 sideMenu.classList.add('hidden'); // Asegurarse de que sidebar esté oculto
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado (para estado móvil)
                 hamburgerButton.classList.add('hidden');
-                
-                // Quitar padding del body al cerrar sesión y centrarlo
-                document.body.classList.remove('sidebar-active');
-                document.body.style.display = 'flex';
-                document.body.style.justifyContent = 'center';
-                document.body.style.alignItems = 'center';
+                overlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
 
+                // Resetear márgenes de main content a auto para centrar después de cerrar sesión
+                mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margin-left fijo
+                mainAdminContentContainer.style.marginLeft = 'auto';
+                mainAdminContentContainer.style.marginRight = 'auto';
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
                 authStatus.classList.remove('hidden');
@@ -999,20 +1000,17 @@
         function toggleSideMenu() {
             const isMobile = window.innerWidth < 768;
             if (isMobile) {
-                // Si el menú está oculto (tiene la clase 'hidden'), la removemos primero para que la transición funcione
                 if (sideMenu.classList.contains('hidden')) {
-                    sideMenu.classList.remove('hidden');
+                    sideMenu.classList.remove('hidden'); // Remove hidden before toggling open
                 }
-                
                 sideMenu.classList.toggle('open');
                 overlay.classList.toggle('open');
                 document.body.classList.toggle('overflow-hidden');
-                
                 if (sideMenu.classList.contains('open')) {
-                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa cuando sidebar se abre en móvil
+                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
                 } else {
-                    hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa cuando sidebar se cierra en móvil
-                    sideMenu.classList.add('hidden'); // Volver a añadir 'hidden' cuando se cierra en móvil
+                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
+                    sideMenu.classList.add('hidden'); // Add hidden back when closing on mobile
                 }
             }
         }
@@ -1386,7 +1384,6 @@
                 return;
             }
 
-            // CORRECCIÓN: Cambiado 'draggedPlayer' a 'draggedElement'
             if (originalParentOfDraggedPlayer && originalParentOfDraggedPlayer.contains(draggedElement)) {
                 originalParentOfDraggedPlayer.removeChild(draggedElement);
             }
@@ -2021,10 +2018,12 @@
 
         // --- Inicialización ---
         authorizeButton.addEventListener('click', handleAuthClick);
-        signoutMenuLink.addEventListener('click', handleSignoutClick); // Usar el nuevo enlace de cerrar sesión
+        signoutButtonSidebar.addEventListener('click', handleSignoutClick);
+        signoutButtonMobileSidebar.addEventListener('click', handleSignoutClick);
         deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler);
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
+        closeSideMenuButton.addEventListener('click', toggleSideMenu);
         overlay.addEventListener('click', () => {
             if (window.innerWidth < 768) {
                 toggleSideMenu();
@@ -2036,14 +2035,11 @@
             if (gapi.client.getToken() !== null) { // Si está autenticado
                 if (window.innerWidth >= 768) {
                     sideMenu.classList.remove('hidden'); // Mostrar sidebar
-                    sideMenu.classList.add('open'); // Ensure transform is 0
-                    hamburgerButton.classList.add('hidden'); // Hide hamburger
-                    overlay.classList.remove('open'); // Hide overlay
-                    document.body.classList.remove('overflow-hidden'); // Allow scrolling
-                    document.body.classList.add('sidebar-active'); // Añadir padding al body en desktop
-                    document.body.style.display = 'block'; // Cambiar body a block para permitir padding
-                    document.body.style.justifyContent = ''; // Resetear
-                    document.body.style.alignItems = ''; // Resetear
+                    sideMenu.classList.add('open');
+                    hamburgerButton.classList.add('hidden');
+                    overlay.classList.remove('open');
+                    document.body.classList.remove('overflow-hidden');
+                    mainAdminContentContainer.classList.add('has-sidebar-margin'); // Aplicar margen en desktop
                 } else { // Móvil
                     // Al redimensionar a móvil, el menú debe estar oculto por defecto
                     sideMenu.classList.add('hidden');
@@ -2051,10 +2047,7 @@
                     hamburgerButton.classList.remove('hidden');
                     overlay.classList.remove('open');
                     document.body.classList.remove('overflow-hidden');
-                    document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding en móvil
-                    document.body.style.display = 'flex'; // Mantener body en flex para centrar en móvil
-                    document.body.style.justifyContent = 'center';
-                    document.body.style.alignItems = 'center';
+                    mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margen en móvil
                 }
             } else { // No autenticado (estado de login)
                 sideMenu.classList.add('hidden');
@@ -2062,11 +2055,11 @@
                 hamburgerButton.classList.add('hidden');
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
-                document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding
-                document.body.style.display = 'flex'; // Mantener body en flex para centrar en login
-                document.body.style.justifyContent = 'center';
-                document.body.style.alignItems = 'center';
+                mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margen en login
             }
+            // Asegurarse de que el centrado horizontal funcione en ambos casos
+            mainAdminContentContainer.style.marginLeft = 'auto';
+            mainAdminContentContainer.style.marginRight = 'auto';
         });
 
 
@@ -2076,14 +2069,13 @@
             hamburgerButton.classList.add('hidden');
             sideMenu.classList.add('hidden');
             sideMenu.classList.remove('open');
-            signoutMenuLink.classList.add('hidden'); // Ocultar el enlace de cerrar sesión al inicio
+            signoutButtonMobileSidebar.classList.add('hidden');
+            signoutButtonSidebar.classList.add('hidden');
             adminContent.classList.add('hidden');
-            
-            // Asegurar que no haya padding al cargar, y que esté centrado en la pantalla de login
-            document.body.classList.remove('sidebar-active');
-            document.body.style.display = 'flex';
-            document.body.style.justifyContent = 'center';
-            document.body.style.alignItems = 'center';
+            // Asegurar que no haya margen al cargar, y que esté centrado
+            mainAdminContentContainer.classList.remove('has-sidebar-margin');
+            mainAdminContentContainer.style.marginLeft = 'auto';
+            mainAdminContentContainer.style.marginRight = 'auto';
 
             gapiLoaded();
             const script = document.createElement('script');
