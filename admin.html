@@ -110,8 +110,8 @@
             z-index: 40;
             display: flex; /* Usar flex para el diseño vertical de las pestañas */
             flex-direction: column;
-            justify-content: space-between; /* Empuja el último elemento (botón de cerrar sesión) al final */
-            padding-top: 1rem; /* Añadir algo de padding en la parte superior */
+            /* Removido justify-content: space-between; para posicionar el botón de cerrar sesión absolutamente en móvil */
+            padding-top: 0; /* Removido padding del contenedor principal */
         }
 
         /* Esta clase será aplicada por JS para hacerlo visible */
@@ -181,7 +181,21 @@
         #side-menu > .flex.flex-col.flex-1 {
             overflow-y: auto; /* Permite el scroll vertical si el contenido de las pestañas excede la altura disponible */
             -webkit-overflow-scrolling: touch; /* Mejora el scroll en iOS */
+            padding-top: 1rem; /* Padding para el contenido scrollable */
+            padding-bottom: 1rem; /* Padding para el contenido scrollable */
         }
+
+        /* Posicionamiento absoluto para el botón de cerrar sesión en móvil */
+        #signout_button_mobile_sidebar {
+            position: absolute;
+            bottom: 1rem; /* 1rem desde el borde inferior del menú lateral */
+            left: 1rem;
+            right: 1rem;
+            width: calc(100% - 2rem); /* Ancho completo menos el padding lateral */
+            text-align: center;
+            margin: 0 auto; /* Centrar horizontalmente */
+        }
+
 
         /* Main content container adjustments for fixed sidebar */
         .main-admin-content-container {
@@ -198,7 +212,8 @@
         }
 
         @media (min-width: 768px) {
-            body {
+            /* Aplica padding al body solo cuando la sidebar está activa */
+            body.sidebar-active {
                 padding-left: 256px; /* Pushes content to the right to make space for fixed sidebar */
             }
             .main-admin-content-container {
@@ -218,6 +233,8 @@
             }
             #signout_button_sidebar {
                 display: block !important; /* Visible on desktop */
+                position: static; /* Asegurar que no tenga posición absoluta en desktop */
+                margin-bottom: 2rem; /* Unificado: 2rem de separación del borde inferior */
             }
             #overlay {
                 display: none !important; /* Hidden on desktop */
@@ -232,7 +249,7 @@
     </button>
 
     <!-- Side Navigation Menu (fixed, slides in/out on all screens) -->
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden flex flex-col">
         <div class="p-4 text-right md:hidden">
             <!-- Botón de cruz (oculto en desktop) -->
             <button id="close-side-menu-button" class="text-white text-2xl">&times;</button>
@@ -732,9 +749,8 @@
                     signoutButtonSidebar.classList.add('hidden');
                     adminContent.classList.add('hidden');
                     
-                    // Centrar main content cuando sidebar está oculto
-                    mainAdminContentContainer.style.marginLeft = 'auto';
-                    mainAdminContentContainer.style.marginRight = 'auto';
+                    // Asegurar que el body no tenga padding-left en la pantalla de login
+                    document.body.classList.remove('sidebar-active');
                 }
             }
         }
@@ -770,15 +786,13 @@
                 sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
                 sideMenu.classList.add('open'); // Asegurarse de que esté abierto (transform: translateX(0))
                 hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
+                document.body.classList.add('sidebar-active'); // Añadir padding al body en desktop
             } else {
                 sideMenu.classList.add('hidden'); // Empezar oculto en móvil
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para estado inicial móvil
                 hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
+                document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding en móvil
             }
-            // Margins are now handled purely by CSS media queries, no need for JS to toggle classes
-            mainAdminContentContainer.style.marginLeft = ''; // Reset to let CSS handle
-            mainAdminContentContainer.style.marginRight = ''; // Reset to let CSS handle
-
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
             setupTabNavigation();
@@ -815,10 +829,8 @@
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado (para estado móvil)
                 hamburgerButton.classList.add('hidden');
                 
-
-                // Resetear márgenes de main content a auto para centrar después de cerrar sesión
-                mainAdminContentContainer.style.marginLeft = 'auto';
-                mainAdminContentContainer.style.marginRight = 'auto';
+                // Quitar padding del body al cerrar sesión
+                document.body.classList.remove('sidebar-active');
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
                 authStatus.classList.remove('hidden');
@@ -2032,6 +2044,7 @@
                     hamburgerButton.classList.add('hidden'); // Hide hamburger
                     overlay.classList.remove('open'); // Hide overlay
                     document.body.classList.remove('overflow-hidden'); // Allow scrolling
+                    document.body.classList.add('sidebar-active'); // Añadir padding al body en desktop
                 } else { // Móvil
                     // Al redimensionar a móvil, el menú debe estar oculto por defecto
                     sideMenu.classList.add('hidden');
@@ -2039,6 +2052,7 @@
                     hamburgerButton.classList.remove('hidden');
                     overlay.classList.remove('open');
                     document.body.classList.remove('overflow-hidden');
+                    document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding en móvil
                 }
             } else { // No autenticado (estado de login)
                 sideMenu.classList.add('hidden');
@@ -2046,8 +2060,8 @@
                 hamburgerButton.classList.add('hidden');
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
+                document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding
             }
-            // Margins are handled by CSS media queries now
         });
 
 
@@ -2060,9 +2074,9 @@
             signoutButtonMobileSidebar.classList.add('hidden');
             signoutButtonSidebar.classList.add('hidden');
             adminContent.classList.add('hidden');
-            // Asegurar que no haya margen al cargar, y que esté centrado
-            mainAdminContentContainer.style.marginLeft = 'auto';
-            mainAdminContentContainer.style.marginRight = 'auto';
+            
+            // Asegurar que no haya padding al cargar, y que esté centrado en la pantalla de login
+            document.body.classList.remove('sidebar-active');
 
             gapiLoaded();
             const script = document.createElement('script');
