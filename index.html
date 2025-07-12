@@ -1753,20 +1753,6 @@
             const oscurosPlayerIDs = oscurosIDsStr.split(',').filter(Boolean);
             const winnerTeam = result || 'No definido';
 
-            let ttAttendees = getPlayerNames(ttAttendeesStr);
-            // Populate TT attendees table
-            if (ttAttendees.length > 0) {
-                ttAttendees.forEach(name => {
-                    const rowHTML = `
-                        <td class="py-3 px-3 text-left-player">${name}</td>
-                    `;
-                    ttAttendeesTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
-                });
-            } else {
-                ttAttendeesTableBody.innerHTML = `<tr><td class="py-3 px-3 text-center" colspan="1">No hay asistentes al TT registrados.</td></tr>`;
-            }
-
-
             let chamigosIds = [];
             if (chamigoVotosStr) {
                 try {
@@ -1780,6 +1766,20 @@
                     console.warn('Error al parsear votos de chamigo en el partido', id, ':', e);
                 }
             }
+            
+            let ttAttendees = getPlayerNames(ttAttendeesStr);
+            // Populate TT attendees table
+            if (ttAttendees.length > 0) {
+                ttAttendees.forEach(name => {
+                    const rowHTML = `
+                        <td class="py-3 px-3 text-left-player">${name}</td>
+                    `;
+                    ttAttendeesTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
+                });
+            } else {
+                ttAttendeesTableBody.innerHTML = `<tr><td class="py-3 px-3 text-center" colspan="1">No hay asistentes al TT registrados.</td></tr>`;
+            }
+
 
             // Re-add goals and areas to the field (if they were removed, ensuring they are present)
             if (soccerFieldContainer.children.length === 0 || soccerFieldContainer.querySelector('.goal') === null) {
@@ -1944,24 +1944,18 @@
                 });
             }
 
-            // Restore from localStorage
-            const storedYear = localStorage.getItem(`${storageKeyPrefix}-year`);
-            if (storedYear && Array.from(yearSelect.options).some(option => option.value === storedYear)) {
-                yearSelect.value = storedYear;
+            // Set current year as default
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const yearOption = Array.from(yearSelect.options).find(option => parseInt(option.value) === currentYear);
+            if (yearOption) {
+                yearSelect.value = currentYear;
             } else {
-                // Set current year as default if no stored value or invalid
-                const today = new Date();
-                const currentYear = today.getFullYear();
-                const yearOption = Array.from(yearSelect.options).find(option => parseInt(option.value) === currentYear);
-                if (yearOption) {
-                    yearSelect.value = currentYear;
-                } else {
-                    yearSelect.value = 'all';
-                }
+                yearSelect.value = 'all';
             }
 
-            // Save to localStorage on change
-            yearSelect.addEventListener('change', () => {
+            // NO GUARDAR EN LOCAL STORAGE
+            yearSelect.removeEventListener('change', () => {
                 localStorage.setItem(`${storageKeyPrefix}-year`, yearSelect.value);
             });
         }
@@ -1986,24 +1980,18 @@
                 monthSelect.appendChild(option);
             });
 
-            // Restore from localStorage
-            const storedMonth = localStorage.getItem(`${storageKeyPrefix}-month`);
-            if (storedMonth && Array.from(monthSelect.options).some(option => option.value === storedMonth)) {
-                monthSelect.value = storedMonth;
+            // Set current month as default
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1; // getMonth is 0-indexed
+            const monthOption = Array.from(monthSelect.options).find(option => parseInt(option.value) === currentMonth);
+            if (monthOption) {
+                monthSelect.value = currentMonth;
             } else {
-                // Set current month as default
-                const today = new Date();
-                const currentMonth = today.getMonth() + 1; // getMonth is 0-indexed
-                const monthOption = Array.from(monthSelect.options).find(option => parseInt(option.value) === currentMonth);
-                if (monthOption) {
-                    monthSelect.value = currentMonth;
-                } else {
-                    monthSelect.value = 'all';
-                }
+                monthSelect.value = 'all';
             }
 
-            // Save to localStorage on change
-            monthSelect.addEventListener('change', () => {
+            // NO GUARDAR EN LOCAL STORAGE
+            monthSelect.removeEventListener('change', () => {
                 localStorage.setItem(`${storageKeyPrefix}-month`, monthSelect.value);
             });
         }
@@ -2014,25 +2002,19 @@
 
             const periodSelect = document.getElementById(periodSelectId);
             
-            // Restore from localStorage
-            const storedPeriod = localStorage.getItem(`${storageKeyPrefix}-period`);
-            if (storedPeriod && Array.from(periodSelect.options).some(option => option.value === storedPeriod)) {
-                periodSelect.value = storedPeriod;
+            // Set current period based on current month
+            const today = new Date();
+            const currentMonth = today.getMonth(); // 0-indexed
+            if (currentMonth >= 0 && currentMonth <= 5) { // January to June (Apertura)
+                periodSelect.value = 'apertura';
+            } else if (currentMonth >= 6 && currentMonth <= 11) { // July to December (Clausura)
+                periodSelect.value = 'clausura';
             } else {
-                // Set current period based on current month if no stored value or invalid
-                const today = new Date();
-                const currentMonth = today.getMonth(); // 0-indexed
-                if (currentMonth >= 0 && currentMonth <= 5) { // January to June (Apertura)
-                    periodSelect.value = 'apertura';
-                } else if (currentMonth >= 6 && currentMonth <= 11) { // July to December (Clausura)
-                    periodSelect.value = 'clausura';
-                } else {
-                    periodSelect.value = 'total';
-                }
+                periodSelect.value = 'total';
             }
 
-            // Save to localStorage on change
-            periodSelect.addEventListener('change', () => {
+            // NO GUARDAR EN LOCAL STORAGE
+            periodSelect.removeEventListener('change', () => {
                 localStorage.setItem(`${storageKeyPrefix}-period`, periodSelect.value);
             });
         }
@@ -2329,13 +2311,13 @@
             });
 
             // Initial state: check if a player was previously selected and populate input
-            const lastSelectedPlayerId = localStorage.getItem('individual-player-selected');
+            // MODIFICADO: No cargar desde localStorage al inicio
+            const lastSelectedPlayerId = ''; // Forzar a que no haya jugador seleccionado al inicio
             if (lastSelectedPlayerId) {
                 const lastSelectedPlayer = allPlayersData.find(p => p[0] === lastSelectedPlayerId);
                 if (lastSelectedPlayer) {
                     playerSearchInput.value = lastSelectedPlayer[1];
                     selectedPlayerIdInput.value = lastSelectedPlayerId;
-                    // renderIndividualStatsTable will be called when the tab is activated
                 }
             } else {
                 document.getElementById('individual-stats-table').classList.add('hidden');
@@ -2361,8 +2343,8 @@
                 return;
             }
 
-            // Save selected player to localStorage
-            localStorage.setItem('individual-player-selected', selectedPlayerId);
+            // NO GUARDAR EN LOCAL STORAGE
+            // localStorage.setItem('individual-player-selected', selectedPlayerId);
 
             const playerStatsData = calculateIndividualPlayerStats(selectedPlayerId);
 
@@ -2374,9 +2356,9 @@
             // Render TOTAL row first, always visible
             const totalStats = playerStatsData.stats.overallTotal;
             individualStatsTableBody.innerHTML += `
-                <tr class="bg-indigo-100 font-bold text-indigo-800">
+                <tr class="bg-blue-200 font-bold text-indigo-800">
                     <td class="py-3 px-3 text-center">TOTAL</td>
-                    <td class="py-3 px-3 text-center">N/A</td>
+                    <td class="py-3 px-3 text-center"></td> <!-- Columna Torneo vacía para el total general -->
                     <td class="py-3 px-3 text-center">${totalStats.points}</td>
                     <td class="py-3 px-3 text-center">${totalStats.pg}</td>
                     <td class="py-3 px-3 text-center">${totalStats.pe}</td>
@@ -2395,87 +2377,68 @@
             sortedYears.forEach(year => {
                 const yearStats = playerStatsData.stats.years[year];
                 
-                // Only render year and its periods if player has PJ in that year
-                if (yearStats.total.pj > 0) { // Check total PJ for the year
-                    // Year header row - always visible, acts as toggle
-                    individualStatsTableBody.innerHTML += `
-                        <tr class="bg-gray-200 font-semibold text-gray-700 cursor-pointer toggle-year-button" data-year="${year}">
-                            <td class="py-3 px-3 text-center flex items-center justify-center gap-1">
-                                <i class="fas fa-plus-square toggle-icon" data-year="${year}"></i>
-                                <span>${year}</span>
-                            </td>
-                            <td class="py-3 px-3 text-center">PJ: ${yearStats.apertura.pj} / ${yearStats.clausura.pj} (Total: ${yearStats.total.pj})</td>
-                            <td class="py-3 px-3 text-center" colspan="8"></td>
-                        </tr>
-                    `;
+                // Always render year total row, even if PJ is 0 for the year
+                // This row is now a summary, not a toggle
+                individualStatsTableBody.innerHTML += `
+                    <tr class="bg-gray-300 font-semibold text-gray-700">
+                        <td class="py-3 px-3 text-center flex items-center justify-center gap-1">
+                            <i class="fas fa-plus-square toggle-icon" data-year="${year}"></i> <!-- Icono visual, no interactivo -->
+                            <span>${year}</span>
+                        </td>
+                        <td class="py-3 px-3 text-center">PJ: ${yearStats.apertura.pj} / ${yearStats.clausura.pj} (Total: ${yearStats.total.pj})</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.points}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.pg}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.pe}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.pp}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.pj}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.efectividad}%</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.chamigos}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.tt}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.ausentes}</td>
+                    </tr>
+                `;
 
-                    // Apertura row - initially hidden, but only if PJ > 0 for this period
-                    const aperturaStats = yearStats.apertura;
-                    if (aperturaStats.pj > 0) {
-                        individualStatsTableBody.innerHTML += `
-                            <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
-                                <td class="py-3 px-3 text-center"></td>
-                                <td class="py-3 px-3 text-center">Apertura</td>
-                                <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
-                                <td class="py-3 px-3 text-center">${aperturaStats.pg}</td>
-                                <td class="py-3 px-3 text-center">${aperturaStats.pe}</td>
-                                <td class="py-3 px-3 text-center">${aperturaStats.pp}</td>
-                                <td class="py-3 px-3 text-center">${aperturaStats.pj}</td>
-                                <td class="py-3 px-3 text-center">${aperturaStats.efectividad}%</td>
-                                <td class="py-3 px-3 text-center">${aperturaStats.chamigos}</td>
-                                <td class="py-3 px-3 text-center">${aperturaStats.tt}</td>
-                                <td class="py-3 px-3 text-center">${aperturaStats.ausentes}</td>
-                            </tr>
-                        `;
-                    }
+                // Clausura row - always render if data exists, even if PJ is 0
+                const clausuraStats = yearStats.clausura;
+                individualStatsTableBody.innerHTML += `
+                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-3 text-center"></td>
+                        <td class="py-3 px-3 text-center">Clausura</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pg}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pe}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pp}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pj}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.efectividad}%</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.chamigos}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.tt}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.ausentes}</td>
+                    </tr>
+                `;
 
-                    // Clausura row - initially hidden, but only if PJ > 0 for this period
-                    const clausuraStats = yearStats.clausura;
-                    if (clausuraStats.pj > 0) {
-                        individualStatsTableBody.innerHTML += `
-                            <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
-                                <td class="py-3 px-3 text-center"></td>
-                                <td class="py-3 px-3 text-center">Clausura</td>
-                                <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
-                                <td class="py-3 px-3 text-center">${clausuraStats.pg}</td>
-                                <td class="py-3 px-3 text-center">${clausuraStats.pe}</td>
-                                <td class="py-3 px-3 text-center">${clausuraStats.pp}</td>
-                                <td class="py-3 px-3 text-center">${clausuraStats.pj}</td>
-                                <td class="py-3 px-3 text-center">${clausuraStats.efectividad}%</td>
-                                <td class="py-3 px-3 text-center">${clausuraStats.chamigos}</td>
-                                <td class="py-3 px-3 text-center">${clausuraStats.tt}</td>
-                                <td class="py-3 px-3 text-center">${clausuraStats.ausentes}</td>
-                            </tr>
-                        `;
-                    }
-                }
+                // Apertura row - always render if data exists, even if PJ is 0
+                const aperturaStats = yearStats.apertura;
+                individualStatsTableBody.innerHTML += `
+                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-3 text-center"></td>
+                        <td class="py-3 px-3 text-center">Apertura</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pg}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pe}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pp}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pj}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.efectividad}%</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.chamigos}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.tt}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.ausentes}</td>
+                    </tr>
+                `;
             });
 
             loadingMessage.classList.add('hidden');
             individualStatsTable.classList.remove('hidden');
 
-            // Add event listeners for toggle buttons AFTER content is rendered
-            document.querySelectorAll('.toggle-year-button').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const year = event.currentTarget.dataset.year;
-                    // Select all detail rows for this year
-                    const yearDetailRows = document.querySelectorAll(`.year-detail-row.year-${year}`);
-                    const toggleIcon = event.currentTarget.querySelector('.toggle-icon');
-
-                    yearDetailRows.forEach(row => {
-                        row.classList.toggle('hidden');
-                    });
-
-                    // Toggle icon
-                    if (yearDetailRows[0] && yearDetailRows[0].classList.contains('hidden')) {
-                        toggleIcon.classList.remove('fa-minus-square');
-                        toggleIcon.classList.add('fa-plus-square');
-                    } else {
-                        toggleIcon.classList.remove('fa-plus-square');
-                        toggleIcon.classList.add('fa-minus-square');
-                    }
-                });
-            });
+            // Eliminado: Event listeners para toggle buttons ya no son necesarios
         }
 
 
