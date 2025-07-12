@@ -312,45 +312,68 @@
             border-width: 2px 4px 0 4px; /* Top:2px, Right:4px, Bottom:0, Left:4px */
         }
 
-        .player-marker {
+        /* Player Wrapper: positions the whole player unit (marker + name) */
+        .player-wrapper {
             position: absolute;
+            /* Centra el wrapper en su punto de origen */
+            transform: translate(-50%, -50%); 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem; /* Espacio entre el marcador y el nombre */
+        }
+
+        /* Player Marker: the circular part */
+        .player-marker {
             width: 40px; /* Tamaño del marcador de jugador */
             height: 40px;
             border-radius: 50%; /* Forma circular */
             display: flex;
-            flex-direction: column; /* Allow text and star to stack */
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem; /* text-xs */
+            font-size: 0.9rem; /* Tamaño de la inicial */
             font-weight: bold;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            transform: translate(-50%, -50%); /* Centrar el marcador en la posición */
             border: 2px solid; /* Border for team color */
-            padding: 2px; /* Inner padding for text */
-            white-space: nowrap; /* Prevent text wrapping */
-            overflow: hidden; /* Hide overflow text */
-            text-overflow: ellipsis; /* Add ellipsis for overflow text */
-        }
-        .player-marker .player-name {
-            line-height: 1; /* Adjust line height for better fit */
+            color: #1a202c; /* Default text color for initials */
         }
         .player-marker .fa-star {
             font-size: 0.6em; /* Smaller star */
             margin-top: 2px; /* Small margin for separation */
+            position: absolute; /* Posiciona la estrella dentro del círculo */
+            bottom: 2px;
+            right: 2px;
         }
 
         .player-marker.claros {
             background-color: #ffffff; /* White jersey */
-            color: #1a202c; /* Black text */
             border-color: #1a202c; /* Black border */
         }
 
         .player-marker.oscuros {
             background-color: #1a202c; /* Black jersey */
-            color: #ffffff; /* White text */
+            color: #ffffff; /* White text for initials */
             border-color: #ffffff; /* White border */
         }
+
+        /* Player Name Label: the text below the marker */
+        .player-name-label {
+            font-size: 0.65rem; /* Tamaño de fuente para el nombre */
+            font-weight: 500;
+            white-space: nowrap; /* Evita que el texto se envuelva */
+            overflow: hidden; /* Oculta el texto que se desborda */
+            text-overflow: ellipsis; /* Añade puntos suspensivos si el texto es muy largo */
+            max-width: 60px; /* Limita el ancho para evitar solapamiento */
+            text-align: center;
+            color: #1a202c; /* Color de texto por defecto */
+        }
+
+        .player-marker.oscuros + .player-name-label {
+            color: #1a202c; /* Asegura que el nombre debajo de los oscuros también sea legible */
+        }
+
 
         .winner-trophy {
             position: absolute;
@@ -365,20 +388,28 @@
             .player-marker {
                 width: 50px;
                 height: 50px;
-                font-size: 0.875rem; /* text-sm */
+                font-size: 1rem;
             }
             .player-marker .fa-star {
                 font-size: 0.7em;
+            }
+            .player-name-label {
+                font-size: 0.75rem;
+                max-width: 70px;
             }
         }
         @media (min-width: 768px) { /* md breakpoint */
             .player-marker {
                 width: 60px;
                 height: 60px;
-                font-size: 1rem; /* text-base */
+                font-size: 1.1rem;
             }
             .player-marker .fa-star {
                 font-size: 0.8em;
+            }
+            .player-name-label {
+                font-size: 0.85rem;
+                max-width: 80px;
             }
 
             /* Desktop specific styles for horizontal field */
@@ -468,18 +499,18 @@
 
             /* Player positions for horizontal field */
             /* Claros (Right Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
-            .player-marker.claros.horizontal-layout:nth-child(1) { top: 50%; left: 90%; } /* Goalkeeper */
-            .player-marker.claros.horizontal-layout:nth-child(2) { top: 30%; left: 75%; } /* Defender 1 */
-            .player-marker.claros.horizontal-layout:nth-child(3) { top: 70%; left: 75%; } /* Defender 2 */
-            .player-marker.claros.horizontal-layout:nth-child(4) { top: 40%; left: 64%; } /* Midfielder/Forward 1 (Moved to midpoint) */
-            .player-marker.claros.horizontal-layout:nth-child(5) { top: 60%; left: 64%; }    /* Midfielder/Forward 2 (Moved to midpoint) */
+            .player-wrapper.claros.horizontal-layout:nth-child(1) { top: 50%; left: 90%; } /* Goalkeeper */
+            .player-wrapper.claros.horizontal-layout:nth-child(2) { top: 30%; left: 75%; } /* Defender 1 */
+            .player-wrapper.claros.horizontal-layout:nth-child(3) { top: 70%; left: 75%; } /* Defender 2 */
+            .player-wrapper.claros.horizontal-layout:nth-child(4) { top: 40%; left: 64%; } /* Midfielder/Forward 1 (Moved to midpoint) */
+            .player-wrapper.claros.horizontal-layout:nth-child(5) { top: 60%; left: 64%; }    /* Midfielder/Forward 2 (Moved to midpoint) */
 
             /* Oscuros (Left Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
-            .player-marker.oscuros.horizontal-layout:nth-child(1) { top: 50%; left: 10%; } /* Goalkeeper */
-            .player-marker.oscuros.horizontal-layout:nth-child(2) { top: 30%; left: 25%; } /* Defender 1 */
-            .player-marker.oscuros.horizontal-layout:nth-child(3) { top: 70%; left: 25%; } /* Defender 2 */
-            .player-marker.oscuros.horizontal-layout:nth-child(4) { top: 40%; left: 36%; } /* Midfielder/Forward 1 (Moved to midpoint) */
-            .player-marker.oscuros.horizontal-layout:nth-child(5) { top: 60%; left: 36%; }  /* Midfielder/Forward 2 (Moved to midpoint) */
+            .player-wrapper.oscuros.horizontal-layout:nth-child(1) { top: 50%; left: 10%; } /* Goalkeeper */
+            .player-wrapper.oscuros.horizontal-layout:nth-child(2) { top: 30%; left: 25%; } /* Defender 1 */
+            .player-wrapper.oscuros.horizontal-layout:nth-child(3) { top: 70%; left: 25%; } /* Defender 2 */
+            .player-wrapper.oscuros.horizontal-layout:nth-child(4) { top: 40%; left: 36%; } /* Midfielder/Forward 1 (Moved to midpoint) */
+            .player-wrapper.oscuros.horizontal-layout:nth-child(5) { top: 60%; left: 36%; }  /* Midfielder/Forward 2 (Moved to midpoint) */
 
             /* Trophy positions for desktop */
             .winner-trophy.claros.horizontal-layout { top: 95%; left: 90%; } /* Bottom-right */
@@ -1056,7 +1087,7 @@
                 document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
-            }
+            });
         }
 
         // --- Funciones de Pestañas ---
@@ -1812,7 +1843,7 @@
             fixtureVisualDetailsContainer.classList.add('hidden'); // NEW: Hide container while loading
             
             // Clear only player markers and trophy from field
-            soccerFieldContainer.querySelectorAll('.player-marker, .winner-trophy').forEach(el => el.remove());
+            soccerFieldContainer.querySelectorAll('.player-wrapper, .winner-trophy').forEach(el => el.remove()); // MODIFIED: Target .player-wrapper
             ttAttendeesTableBody.innerHTML = ''; // Clear previous TT attendees
 
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando detalles del partido...`;
@@ -1936,30 +1967,56 @@
 
             // Add Claros players
             clarosPlayerIDs.slice(0, 5).forEach((playerId, index) => {
-                const playerDiv = document.createElement('div');
-                const playerName = allPlayersData.find(p => p[0] === playerId)?.[1]; // Get actual player name
-                if (!playerName) return; // Skip if player not found
+                const playerWrapper = document.createElement('div');
+                playerWrapper.classList.add('player-wrapper', 'claros');
+                if (isHorizontalField) playerWrapper.classList.add('horizontal-layout'); // Add class for desktop
 
-                playerDiv.classList.add('player-marker', 'claros');
-                if (isHorizontalField) playerDiv.classList.add('horizontal-layout'); // Add class for desktop
-                playerDiv.innerHTML = `<span class="player-name">${playerName.split(' ')[0]}</span> ${chamigosIds.includes(playerId) ? '<i class="fas fa-star text-yellow-400"></i>' : ''}`; // Add star if Chamigo
-                playerDiv.style.top = `${currentClarosNormalizedPositions[index].y * 100}%`;
-                playerDiv.style.left = `${currentClarosNormalizedPositions[index].x * 100}%`;
-                soccerFieldContainer.appendChild(playerDiv);
+                const playerMarker = document.createElement('div');
+                playerMarker.classList.add('player-marker', 'claros');
+                playerMarker.textContent = allPlayersData.find(p => p[0] === playerId)?.[1]?.charAt(0).toUpperCase() || ''; // First initial
+                if (chamigosIds.includes(playerId)) {
+                    const starIcon = document.createElement('i');
+                    starIcon.classList.add('fas', 'fa-star', 'text-yellow-400');
+                    playerMarker.appendChild(starIcon);
+                }
+
+                const playerNameLabel = document.createElement('div');
+                playerNameLabel.classList.add('player-name-label');
+                playerNameLabel.textContent = allPlayersData.find(p => p[0] === playerId)?.[1]?.split(' ')[0] || ''; // First name
+
+                playerWrapper.appendChild(playerMarker);
+                playerWrapper.appendChild(playerNameLabel);
+
+                playerWrapper.style.top = `${currentClarosNormalizedPositions[index].y * 100}%`;
+                playerWrapper.style.left = `${currentClarosNormalizedPositions[index].x * 100}%`;
+                soccerFieldContainer.appendChild(playerWrapper);
             });
 
             // Add Oscuros players
             oscurosPlayerIDs.slice(0, 5).forEach((playerId, index) => {
-                const playerDiv = document.createElement('div');
-                const playerName = allPlayersData.find(p => p[0] === playerId)?.[1]; // Get actual player name
-                if (!playerName) return; // Skip if player not found
+                const playerWrapper = document.createElement('div');
+                playerWrapper.classList.add('player-wrapper', 'oscuros');
+                if (isHorizontalField) playerWrapper.classList.add('horizontal-layout'); // Add class for desktop
 
-                playerDiv.classList.add('player-marker', 'oscuros');
-                if (isHorizontalField) playerDiv.classList.add('horizontal-layout'); // Add class for desktop
-                playerDiv.innerHTML = `<span class="player-name">${playerName.split(' ')[0]}</span> ${chamigosIds.includes(playerId) ? '<i class="fas fa-star text-yellow-400"></i>' : ''}`; // Add star if Chamigo
-                playerDiv.style.top = `${currentOscurosNormalizedPositions[index].y * 100}%`;
-                playerDiv.style.left = `${currentOscurosNormalizedPositions[index].x * 100}%`;
-                soccerFieldContainer.appendChild(playerDiv);
+                const playerMarker = document.createElement('div');
+                playerMarker.classList.add('player-marker', 'oscuros');
+                playerMarker.textContent = allPlayersData.find(p => p[0] === playerId)?.[1]?.charAt(0).toUpperCase() || ''; // First initial
+                if (chamigosIds.includes(playerId)) {
+                    const starIcon = document.createElement('i');
+                    starIcon.classList.add('fas', 'fa-star', 'text-yellow-400');
+                    playerMarker.appendChild(starIcon);
+                }
+
+                const playerNameLabel = document.createElement('div');
+                playerNameLabel.classList.add('player-name-label');
+                playerNameLabel.textContent = allPlayersData.find(p => p[0] === playerId)?.[1]?.split(' ')[0] || ''; // First name
+
+                playerWrapper.appendChild(playerMarker);
+                playerWrapper.appendChild(playerNameLabel);
+
+                playerWrapper.style.top = `${currentOscurosNormalizedPositions[index].y * 100}%`;
+                playerWrapper.style.left = `${currentOscurosNormalizedPositions[index].x * 100}%`;
+                soccerFieldContainer.appendChild(playerWrapper);
             });
 
             // Add Winner Trophy
@@ -2615,7 +2672,7 @@
                 overlay.classList.remove('open'); // Hide overlay
                 document.body.classList.remove('overflow-hidden'); // Allow scrolling
             }
-        }
+        });
 
         // Evento para manejar el redimensionamiento de la ventana
         window.addEventListener('resize', () => {
