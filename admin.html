@@ -149,13 +149,9 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
         }
 
+        /* El botón de cerrar menú lateral (la cruz) ahora estará oculto por defecto y siempre */
         #close-side-menu-button {
-            background: none;
-            border: none;
-            font-size: 2rem; /* text-2xl */
-            color: white;
-            cursor: pointer;
-            padding: 0.5rem;
+            display: none !important;
         }
 
         #side-menu .tab-button, #side-menu .sidebar-link {
@@ -170,6 +166,7 @@
             display: flex; /* Para alinear el texto y el icono */
             align-items: center; /* Para alinear el texto y el icono */
             gap: 0.5rem; /* Espacio entre texto e icono */
+            white-space: nowrap; /* Asegura que el texto y el icono no se envuelvan */
         }
         #side-menu .tab-button.active {
             background-color: #4338ca; /* indigo-700 */
@@ -209,17 +206,6 @@
                 background-color: #4f46e5; /* indigo-600 */
             }
 
-            .main-admin-content-container {
-                flex-grow: 1; /* Permite que el contenido principal ocupe el espacio restante */
-                margin: 2rem auto; /* Centrado horizontal. Arriba/abajo 2rem. */
-                padding: 2rem; /* Padding para desktop */
-                width: auto; /* Dejar que flex-grow y max-width controlen el ancho */
-            }
-            /* Esta clase se añade/quita por JS para el margen izquierdo cuando el sidebar está visible */
-            .main-admin-content-container.has-sidebar-margin {
-                margin-left: 2rem; /* Margen fijo para separar del sidebar */
-            }
-
             #signout_button_mobile_sidebar {
                 display: none !important;
             }
@@ -232,6 +218,17 @@
             #hamburger-button {
                 display: none !important; /* Siempre oculto en desktop */
             }
+
+            .main-admin-content-container {
+                flex-grow: 1; /* Permite que el contenido principal ocupe el espacio restante */
+                margin: 2rem auto; /* Centrado horizontal. Arriba/abajo 2rem. */
+                padding: 2rem; /* Padding para desktop */
+                width: auto; /* Dejar que flex-grow y max-width controlen el ancho */
+            }
+            /* Esta clase se añade/quita por JS para el margen izquierdo cuando el sidebar está visible */
+            .main-admin-content-container.has-sidebar-margin {
+                margin-left: 2rem; /* Margen fijo para separar del sidebar */
+            }
         }
     </style>
 </head>
@@ -243,20 +240,58 @@
 
     <!-- Side Navigation Menu (fixed, slides in/out on all screens) -->
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
-        <div class="p-4 text-right">
-            <!-- Botón de cruz (oculto en desktop) -->
-            <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
+        <!-- Título del menú lateral -->
+        <div class="p-4 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+                MENÚ
+            </h2>
+            <!-- El botón de cerrar (cruz) ha sido eliminado de aquí -->
         </div>
         <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
-            <!-- Reordered tab buttons -->
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="team-formation">Armar Equipos</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="players-management">Gestionar Jugadores</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="match-results">Resultados</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-management">Chamigo</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-attendance">TT</button>
-            <!-- ENLACE A TABLA DE POSICIONES EXTERNA -->
+            <!-- Botones de las pestañas con el nuevo orden e iconos -->
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="team-formation">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-4.5-7.5l-2.25 2.25m0 0l-2.25 2.25M18 15l-2.25 2.25m0 0l-2.25 2.25M15.75 12a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                </svg>
+                Armar Equipos
+            </button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="match-results">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25H2.25A2.25 2.25 0 0 1 0 19.5V12A2.25 2.25 0 0 1 2.25 9.75h19.5A2.25 2.25 0 0 1 24 12v7.5a2.25 2.25 0 0 1-2.25 2.25H16.5" />
+                </svg>
+                Resultados
+            </button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-management">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .472.334l5.64.423a.563.563 0 0 1 .314.976l-4.067 3.323a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.563.563 0 0 0-.582 0l-4.725 2.885a.562.562 0 0 1-.84-.61l1.285-5.385a.563.563 0 0 0-.182-.557L3.92 9.345a.563.563 0 0 1 .313-.976l5.64-.423a.563.563 0 0 0 .472-.334L11.48 3.5Z" />
+                </svg>
+                Chamigo
+            </button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-attendance">
+                <!-- Icono de chopp de cerveza -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-beer">
+                    <path d="M18 19V2h-1M6 19V2h1M2 19h20v3H2zM12 19V2a4 4 0 0 0-4 4v13" />
+                </svg>
+                TT
+            </button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="players-management">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                </svg>
+                ABM Jugadores
+            </button>
+            <!-- ENLACE A TABLA DE POSICIONES EXTERNA - Ahora "Estadísticas" con icono de gráfico de acciones -->
             <a href="index.html" target="_blank" rel="noopener noreferrer" class="sidebar-link py-2 px-4 text-white font-medium hover:bg-indigo-700">
-                <span>Tabla de Posiciones</span>
+                <!-- Icono de gráfico de acciones con flecha en subida -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-line-chart">
+                    <path d="M3 3v18h18" />
+                    <path d="m18 21-8-8-4 4-3-3" />
+                    <path d="m18 14 4-4H18V6" />
+                </svg>
+                Estadísticas
                 <!-- Icono de nueva pestaña (SVG) -->
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 ml-1">
                     <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 18h-8.5A2.25 2.25 0 012 15.25v-8.5C2 4.75 3.25 3.5 4.75 3.5h4a.75.75 0 010 1.5h-4z" clip-rule="evenodd" />
@@ -557,19 +592,19 @@
                     <div>
                         <label for="tt-match-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
                         <select id="tt-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <option value="all">Todos</option>
-                            <option value="0">Enero</option>
-                            <option value="1">Febrero</option>
-                            <option value="2">Marzo</option>
-                            <option value="3">Abril</option>
-                            <option value="4">Mayo</option>
-                            <option value="5">Junio</option>
-                            <option value="6">Julio</option>
-                            <option value="7">Agosto</option>
-                            <option value="8">Septiembre</option>
-                            <option value="9">Octubre</option>
-                            <option value="10">Noviembre</option>
-                            <option value="11">Diciembre</option>
+                                <option value="all">Todos</option>
+                                <option value="0">Enero</option>
+                                <option value="1">Febrero</option>
+                                <option value="2">Marzo</option>
+                                <option value="3">Abril</option>
+                                <option value="4">Mayo</option>
+                                <option value="5">Junio</option>
+                                <option value="6">Julio</option>
+                                <option value="7">Agosto</option>
+                                <option value="8">Septiembre</option>
+                                <option value="9">Octubre</option>
+                                <option value="10">Noviembre</option>
+                                <option value="11">Diciembre</option>
                         </select>
                     </div>
                 </div>
@@ -633,7 +668,7 @@
         // Nuevos elementos para el menú lateral
         const hamburgerButton = document.getElementById('hamburger-button');
         const sideMenu = document.getElementById('side-menu');
-        const closeSideMenuButton = document.getElementById('close-side-menu-button');
+        // const closeSideMenuButton = document.getElementById('close-side-menu-button'); // Eliminado: Ya no se usa la cruz
         const overlay = document.getElementById('overlay');
         const tabButtons = document.querySelectorAll('.tab-button'); // Obtener todos los botones de pestaña
         const tabContents = document.querySelectorAll('.tab-content'); // Obtener todos los contenidos de las pestañas
@@ -914,7 +949,7 @@
                 // MODIFICADO: Rango de Jugadores ahora es A:D (ID_Jugador, Nombre, Estado, Rol)
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:D', 
+                    range: 'Jugadores!A:D',  
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
 
@@ -964,7 +999,7 @@
             document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
 
             if (window.innerWidth < 768) {
-                toggleSideMenu();
+                toggleSideMenu(); // Cierra el menú lateral en móvil al seleccionar una pestaña
             }
 
             if (clickedButton.dataset.tab === 'players-management') {
@@ -2023,7 +2058,7 @@
         deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler);
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
-        closeSideMenuButton.addEventListener('click', toggleSideMenu);
+        // closeSideMenuButton.addEventListener('click', toggleSideMenu); // Eliminado: Ya no se usa la cruz
         overlay.addEventListener('click', () => {
             if (window.innerWidth < 768) {
                 toggleSideMenu();
