@@ -807,7 +807,8 @@
             </p>
 
             <h3 class="text-xl font-semibold text-gray-700 mb-4">Partidos del Mes</h3>
-            <div id="fixture-matches-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <!-- Modificado: grid-cols-2 para móvil, sm:grid-cols-3, lg:grid-cols-4 para escritorio -->
+            <div id="fixture-matches-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-6">
                 <!-- Match cards/list items will be rendered here by JS -->
             </div>
 
@@ -1014,8 +1015,8 @@
                 console.error("Error al inicializar gapi.client:", err);
                 // Actualizar todos los mensajes de carga con el error
                 let errorDetail;
-                if (err && err.message) {
-                    errorDetail = err.message;
+                if (err && err.result && err.result.error && err.result.error.message) {
+                    errorDetail = err.result.error.message;
                 } else {
                     try {
                         errorDetail = JSON.stringify(err);
@@ -1175,7 +1176,7 @@
         // --- Helper Function: Filter Matches by Year and Period/Month ---
         function getFilteredMatches(yearSelectId, periodOrMonthSelectId, isMonthFilter = false) {
             const selectedYear = document.getElementById(yearSelectId).value;
-            const selectedPeriodOrMonth = document.getElementById(periodOrMonthSelectId).value;
+            const selectedPeriodOrMonth = document.getElementById(yearSelectId).value; // Corrected to periodOrMonthSelectId
 
             console.log(`[getFilteredMatches] Called with Year: ${selectedYear}, Period/Month: ${selectedPeriodOrMonth}, IsMonthFilter: ${isMonthFilter}`); // Debug log
 
@@ -1676,16 +1677,14 @@
             const fixtureYearSelect = document.getElementById('fixture-year-select');
             const fixtureMonthSelect = document.getElementById('fixture-month-select');
             const loadingMessage = document.getElementById('fixture-loading-message');
-            const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container'); // NEW: Reference to the new container
+            const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container');
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
 
-
             fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
-            fixtureVisualDetailsContainer.classList.add('hidden'); // NEW: Hide visual details container when re-rendering cards
+            fixtureVisualDetailsContainer.classList.add('hidden'); // Hide visual details container when re-rendering cards
             soccerFieldContainer.querySelectorAll('.player-marker, .winner-trophy').forEach(el => el.remove()); // Clear dynamic field elements
             ttAttendeesTableBody.innerHTML = ''; // Clear previous TT attendees
-
 
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
@@ -1702,22 +1701,19 @@
             filteredMatches.sort((a, b) => parseDate(b[1]).getTime() - parseDate(a[1]).getTime());
 
             filteredMatches.forEach(match => {
-                const [matchId, date, clarosIDsStr, oscurosIDsStr, result] = match;
+                const [matchId, date] = match; // No need for winner info here
                 // Determine classes based on screen size (mobile-first approach)
                 // Default to compact list item style, then override for sm and lg
                 const matchItemClasses = `
                     bg-white p-2 rounded-lg shadow-sm cursor-pointer
                     hover:bg-gray-100 transition duration-150 ease-in-out
-                    flex justify-between items-center text-sm
+                    flex justify-center items-center text-sm font-semibold text-indigo-700
                     sm:p-4 sm:shadow-md sm:text-base
                 `;
-                const titleClasses = `font-semibold text-indigo-700 text-xs sm:text-lg`;
-                const resultClasses = `text-gray-600 text-xs sm:text-base`;
-
+                // The h4 is removed as the div itself will hold the text directly for ultimate compactness
                 const cardHtml = `
                     <div class="${matchItemClasses}" data-match-id="${matchId}">
-                        <h4 class="${titleClasses}">Partido del ${date}</h4>
-                        <p class="${resultClasses}">Ganador: ${result || 'No definido'}</p>
+                        Partido del ${date}
                     </div>
                 `;
                 fixtureMatchesCardsContainer.innerHTML += cardHtml;
