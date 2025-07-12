@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LA CLANDE</title> <!-- Título de la página actualizado a mayúsculas -->
-    <!-- Carga de Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Carga de Font Awesome para iconos -->
+    <title>LA CLANDE</title> <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Carga de Chart.js para gráficos (aunque no se use directamente para perfiles individuales, se mantiene por si se usa en el futuro) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* Asegura que html y body ocupen toda la altura para que los porcentajes funcionen */
+        html, body {
+            height: 100%;
+        }
+
         /* Fuente Inter para una mejor legibilidad */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5; /* Un gris claro para el fondo */
-            min-height: 100vh;
-            margin: 0;
-            padding: 0;
-            display: flex; /* Usar flexbox para el layout principal */
+            /* min-height: 100vh; -- Eliminado, ahora usamos height: 100% en html y body */
+            margin: 0; /* Elimina el margen predeterminado del body */
+            padding: 0; /* Elimina el padding predeterminado del body */
+            display: flex; /* Hacemos el body un contenedor flex */
+            flex-direction: column; /* Por defecto, los elementos se apilan en columna (mobile-first) */
         }
         /* Estilos base para tablas */
         table {
@@ -74,36 +76,42 @@
 
         /* --- Estilos para el menú lateral responsivo --- */
         #side-menu {
-            position: fixed; /* Fixed for mobile sliding effect */
+            position: fixed; /* Mantenido como fixed según tu última versión */
             top: 0;
             left: 0;
-            height: 100vh;
+            height: 100vh; /* Mantenido como 100vh según tu última versión */
             width: 256px; /* w-64 */
             background-color: #312e81; /* indigo-800 */
             color: white;
-            transform: translateX(-100%); /* Hidden by default for mobile */
+            transform: translateX(-100%); /* Oculto por defecto */
             transition: transform 0.3s ease-in-out;
             z-index: 40;
-            display: flex; /* Use flex for vertical layout of tabs */
+            display: flex; /* Usar flex para el diseño vertical de las pestañas */
             flex-direction: column;
-            padding-top: 1rem; /* Add some padding at the top */
+            padding-top: 1rem; /* Añadir algo de padding en la parte superior */
+            overflow-y: auto; /* Permite desplazamiento interno si el contenido del menú es muy largo */
         }
 
-        /* This class will be applied by JS to make it visible on mobile */
+        /* Esta clase será aplicada por JS para hacerlo visible */
         #side-menu.open {
             transform: translateX(0);
         }
 
+        /* Asegura que la clase 'hidden' siempre oculte el elemento */
+        #side-menu.hidden {
+            display: none !important;
+        }
+
         #overlay {
-            position: fixed;
+            position: fixed; /* El overlay debe seguir siendo fixed para cubrir la ventana */
             inset: 0; /* top:0, right:0, bottom:0, left:0 */
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 30;
-            display: none; /* Hidden by default */
+            display: none; /* Oculto por defecto */
         }
 
         #overlay.open {
-            display: block; /* Show when side menu is open (mobile only) */
+            display: block; /* Mostrar cuando el menú lateral esté abierto (solo móvil) */
         }
 
         #hamburger-button {
@@ -118,13 +126,9 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
         }
 
+        /* El botón de cerrar menú lateral (la cruz) ahora estará oculto por defecto y siempre */
         #close-side-menu-button {
-            background: none;
-            border: none;
-            font-size: 2rem; /* text-2xl */
-            color: white;
-            cursor: pointer;
-            padding: 0.5rem;
+            display: none !important;
         }
 
         #side-menu .tab-button, #side-menu .sidebar-link {
@@ -139,6 +143,7 @@
             display: flex; /* Para alinear el texto y el icono */
             align-items: center; /* Para alinear el texto y el icono */
             gap: 0.5rem; /* Espacio entre texto e icono */
+            white-space: nowrap; /* Asegura que el texto y el icono no se envuelvan */
         }
         #side-menu .tab-button.active {
             background-color: #4338ca; /* indigo-700 */
@@ -485,12 +490,10 @@
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col md:flex-row p-4 md:p-0">
-    <!-- Hamburger Button (visible on mobile) -->
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
-    <!-- Side Navigation Menu -->
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
         <div class="p-4 text-right">
             <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
@@ -508,15 +511,10 @@
         </div>
     </nav>
 
-    <!-- Overlay for when side menu is open (mobile only) -->
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
-    <!-- Main Content Area -->
     <div class="main-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8">
-        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">LA CLANDE</h1> <!-- Título principal actualizado a mayúsculas -->
-
-        <!-- Content for Tabla de Posiciones -->
-        <div id="leaderboard-content" class="tab-content">
+        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">LA CLANDE</h1> <div id="leaderboard-content" class="tab-content">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Posiciones</h2>
             <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
                 <div>
@@ -553,7 +551,6 @@
             </div>
         </div>
 
-        <!-- Content for Chamigo -->
         <div id="chamigo-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Chamigos</h2>
             <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
@@ -589,7 +586,6 @@
             </div>
         </div>
 
-        <!-- Content for TT -->
         <div id="tt-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Asistencia TT</h2>
             <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
@@ -625,7 +621,6 @@
             </div>
         </div>
 
-        <!-- Content for Presentismo -->
         <div id="presentismo-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Presentismo (PJ)</h2>
             <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
@@ -661,7 +656,6 @@
             </div>
         </div>
 
-        <!-- Content for Ausentismo -->
         <div id="ausentismo-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Ausentismo</h2>
             <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
@@ -697,7 +691,6 @@
             </div>
         </div>
 
-        <!-- Content for Estadísticas -->
         <div id="estadisticas-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas de Jugadores</h2>
             <div id="estadisticas-filters" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -737,8 +730,7 @@
                 </div>
             </div>
             
-            <div id="estadisticas-table-container" class="overflow-x-auto"> <!-- This one keeps overflow-x-auto -->
-                <p id="estadisticas-loading-message" class="loading-message">
+            <div id="estadisticas-table-container" class="overflow-x-auto"> <p id="estadisticas-loading-message" class="loading-message">
                     <span class="loading-spinner"></span>Cargando estadísticas...
                 </p>
                 <table id="estadisticas-table" class="bg-white rounded-lg shadow hidden">
@@ -763,7 +755,6 @@
             </div>
         </div>
 
-        <!-- Content for Equipos -->
         <div id="equipos-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas de Equipos</h2>
             <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
@@ -781,38 +772,26 @@
                     </select>
                 </div>
             </div>
-            <!-- Loading message for Equipos, always present in DOM -->
             <p id="equipos-loading-message" class="loading-message col-span-full">
                 <span class="loading-spinner"></span>Cargando estadísticas de equipos...
             </p>
             <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
-                <!-- Estadísticas de equipos se cargarán aquí -->
-            </div>
+                </div>
         </div>
 
-        <!-- Content for Fixture -->
         <div id="fixture-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Detalles del Partido</h2>
             
-            <!-- Container for field and details side-by-side on desktop -->
             <div class="flex flex-col md:flex-row md:space-x-6">
-                <!-- Soccer Field Container -->
-                <div id="soccer-field-container" class="hidden md:block"> <!-- Adjusted width for desktop is now in CSS -->
-                    <!-- Goals -->
-                    <div class="goal top"></div>
+                <div id="soccer-field-container" class="hidden md:block"> <div class="goal top"></div>
                     <div class="goal bottom"></div>
-                    <!-- Penalty Areas -->
                     <div class="penalty-area top"></div>
                     <div class="penalty-area bottom"></div>
-                    <!-- Goal Areas -->
                     <div class="goal-area top"></div>
                     <div class="goal-area bottom"></div>
-                    <!-- Trophy will be dynamically added here -->
-                </div>
+                    </div>
 
-                <!-- Match details will be loaded here -->
-                <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6 hidden"> <!-- Adjusted width for desktop, removed mt-6 -->
-                    <div class="bg-white p-4 rounded-lg shadow-md">
+                <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6 hidden"> <div class="bg-white p-4 rounded-lg shadow-md">
                         <h3 class="font-semibold text-gray-700 mb-2">Asistentes al TT</h3>
                         <table id="tt-attendees-table" class="bg-white rounded-lg shadow">
                             <thead>
@@ -821,8 +800,7 @@
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 text-sm font-light">
-                                <!-- TT attendees will be loaded here -->
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                 </div>
@@ -834,8 +812,7 @@
 
             <h3 class="text-xl font-semibold text-gray-700 mb-4">Partidos del Mes</h3>
             <div id="fixture-matches-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <!-- Match cards will be loaded here -->
-            </div>
+                </div>
 
             <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8">
                 <div>
@@ -851,7 +828,6 @@
             </div>
         </div>
 
-        <!-- Content for Estadísticas Individuales -->
         <div id="individual-stats-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas Individuales por Jugador</h2>
             <div class="mb-6">
@@ -859,11 +835,9 @@
                 <div class="relative">
                     <input type="text" id="individual-player-search" placeholder="Escribe al menos 3 caracteres..." class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
                     <div id="individual-player-results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
-                        <!-- Autocomplete results will go here -->
-                    </div>
+                        </div>
                 </div>
-                <input type="hidden" id="selected-player-id"> <!-- To store the actual selected player ID -->
-            </div>
+                <input type="hidden" id="selected-player-id"> </div>
             <div class="overflow-x-auto">
                 <p id="individual-stats-loading-message" class="loading-message">
                     <span class="loading-spinner"></span>Cargando estadísticas individuales...
@@ -892,8 +866,6 @@
 
     </div>
 
-    <!-- Script que contiene las funciones de inicialización de GAPI y carga de datos.
-         Se coloca aquí para asegurar que las funciones estén definidas antes de que el script de la API de Google las llame. -->
     <script>
         // ¡IMPORTANTE! Reemplaza 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM' con tu Clave de API de Google Cloud Console.
         // Esta clave es necesaria para acceder a Google Sheets API para hojas públicas sin autenticación de usuario.
@@ -1092,8 +1064,9 @@
 
         function activateTab(tabId) {
             // Remove 'active' from all buttons and hide all contents
-            tabButtons.forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+
 
             // Add 'active' to the corresponding button and show its content
             const targetButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
@@ -1363,7 +1336,10 @@
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de posiciones...`;
 
-            const { players: rankedPlayers } = calculateStatsForPeriod('leaderboard-year-select', 'leaderboard-period-select');
+            const { players: rawRankedPlayers } = calculateStatsForPeriod('leaderboard-year-select', 'leaderboard-period-select');
+
+            // FILTRADO: Solo jugadores con PJ > 0
+            const rankedPlayers = rawRankedPlayers.filter(player => player.pj > 0);
 
             // Ordenar por puntos (descendente)
             rankedPlayers.sort((a, b) => b.points - a.points);
@@ -1401,7 +1377,10 @@
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Chamigos...`;
 
-            const { players: rankedChamigoPlayers } = calculateStatsForPeriod('chamigo-year-select', 'chamigo-period-select');
+            const { players: rawRankedChamigoPlayers } = calculateStatsForPeriod('chamigo-year-select', 'chamigo-period-select');
+
+            // FILTRADO: Solo jugadores con Chamigos > 0
+            const rankedChamigoPlayers = rawRankedChamigoPlayers.filter(player => player.chamigos > 0);
 
             // Ordenar por cantidad de chamigos (descendente)
             rankedChamigoPlayers.sort((a, b) => b.chamigos - a.chamigos);
@@ -1438,7 +1417,10 @@
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Asistencia TT...`;
 
-            const { players: rankedTTPlayers } = calculateStatsForPeriod('tt-year-select', 'tt-period-select');
+            const { players: rawRankedTTPlayers } = calculateStatsForPeriod('tt-year-select', 'tt-period-select');
+
+            // FILTRADO: Solo jugadores con TT > 0
+            const rankedTTPlayers = rawRankedTTPlayers.filter(player => player.tt > 0);
 
             // Ordenar por cantidad de TT (descendente)
             rankedTTPlayers.sort((a, b) => b.tt - a.tt);
@@ -1475,7 +1457,10 @@
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Presentismo...`;
 
-            const { players: rankedPJPlayers } = calculateStatsForPeriod('presentismo-year-select', 'presentismo-period-select');
+            const { players: rawRankedPJPlayers } = calculateStatsForPeriod('presentismo-year-select', 'presentismo-period-select');
+
+            // FILTRADO: Solo jugadores con PJ > 0
+            const rankedPJPlayers = rawRankedPJPlayers.filter(player => player.pj > 0);
 
             // Ordenar por PJ (descendente)
             rankedPJPlayers.sort((a, b) => b.pj - a.pj);
@@ -1512,7 +1497,10 @@
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Ausentismo...`;
 
-            const { players: rankedAusentePlayers } = calculateStatsForPeriod('ausentismo-year-select', 'ausentismo-period-select');
+            const { players: rawRankedAusentePlayers } = calculateStatsForPeriod('ausentismo-year-select', 'ausentismo-period-select');
+
+            // FILTRADO: Solo jugadores con ausentes > 0
+            const rankedAusentePlayers = rawRankedAusentePlayers.filter(player => player.ausentes > 0);
 
             // Ordenar por Ausentes (descendente)
             rankedAusentePlayers.sort((a, b) => b.ausentes - a.ausentes);
@@ -1551,7 +1539,10 @@
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando estadísticas...`;
 
-            const { players: rankedEstadisticasPlayers } = calculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
+            const { players: rawRankedEstadisticasPlayers } = calculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
+
+            // FILTRADO: Solo jugadores con PJ > 0
+            const rankedEstadisticasPlayers = rawRankedEstadisticasPlayers.filter(player => player.pj > 0);
 
             // Get selected sort criterion and order
             const sortCriterion = sortCriterionSelect.value;
@@ -1621,6 +1612,14 @@
 
             // 2. Ocultar mensaje de carga
             loadingMessage.classList.add('hidden');
+
+            // FILTRADO: Solo mostrar si hay al menos un partido jugado por los equipos
+            if (teamStats.totalPJMatches === 0 && teamStats.suspendidos === 0) {
+                loadingMessage.innerHTML = `No hay datos de Equipos disponibles para los filtros seleccionados.`;
+                loadingMessage.classList.remove('hidden');
+                equiposStatsDisplay.classList.add('hidden');
+                return;
+            }
 
             // 3. Siempre construir y mostrar las tarjetas de estadísticas, incluso if los valores son 0
             const statsHtml = `
@@ -1794,20 +1793,14 @@
             // Apply/remove horizontal-layout class based on isHorizontalField
             if (isHorizontalField) {
                 soccerFieldContainer.classList.add('horizontal-layout');
-                soccerFieldContainer.querySelector('.goal.top').classList.add('horizontal-layout');
-                soccerFieldContainer.querySelector('.goal.bottom').classList.add('horizontal-layout');
-                soccerFieldContainer.querySelector('.penalty-area.top').classList.add('horizontal-layout');
-                soccerFieldContainer.querySelector('.penalty-area.bottom').classList.add('horizontal-layout');
-                soccerFieldContainer.querySelector('.goal-area.top').classList.add('horizontal-layout');
-                soccerFieldContainer.querySelector('.goal-area.bottom').classList.add('horizontal-layout');
+                soccerFieldContainer.querySelectorAll('.goal').forEach(el => el.classList.add('horizontal-layout'));
+                soccerFieldContainer.querySelectorAll('.penalty-area').forEach(el => el.classList.add('horizontal-layout'));
+                soccerFieldContainer.querySelectorAll('.goal-area').forEach(el => el.classList.add('horizontal-layout'));
             } else {
                 soccerFieldContainer.classList.remove('horizontal-layout');
-                soccerFieldContainer.querySelector('.goal.top').classList.remove('horizontal-layout');
-                soccerFieldContainer.querySelector('.goal.bottom').classList.remove('horizontal-layout');
-                soccerFieldContainer.querySelector('.penalty-area.top').classList.remove('horizontal-layout');
-                soccerFieldContainer.querySelector('.penalty-area.bottom').classList.remove('horizontal-layout');
-                soccerFieldContainer.querySelector('.goal-area.top').classList.remove('horizontal-layout');
-                soccerFieldContainer.querySelector('.goal-area.bottom').classList.remove('horizontal-layout');
+                soccerFieldContainer.querySelectorAll('.goal').forEach(el => el.classList.remove('horizontal-layout'));
+                soccerFieldContainer.querySelectorAll('.penalty-area').forEach(el => el.classList.remove('horizontal-layout'));
+                soccerFieldContainer.querySelectorAll('.goal-area').forEach(el => el.classList.remove('horizontal-layout'));
             }
 
             // Normalized positions (0 to 1, relative to field width/height)
@@ -2394,54 +2387,55 @@
             sortedYears.forEach(year => {
                 const yearStats = playerStatsData.stats.years[year];
                 
-                // Check if the player has any PJ in Apertura or Clausura for this specific year
-                const hasAnyPJInYear = yearStats.apertura.pj > 0 || yearStats.clausura.pj > 0;
-
-                if (hasAnyPJInYear) {
+                // Only render year and its periods if player has PJ in that year
+                if (yearStats.total.pj > 0) { // Check total PJ for the year
                     // Year header row - always visible, acts as toggle
                     individualStatsTableBody.innerHTML += `
                         <tr class="bg-gray-200 font-semibold text-gray-700 cursor-pointer toggle-year-button" data-year="${year}">
                             <td class="py-3 px-3 text-center">${year}</td>
-                            <td class="py-3 px-3 text-center" colspan="9"></td> <!-- Spanning columns for year -->
-                            <td class="py-3 px-3 text-center"><i class="fas fa-plus-square toggle-icon" data-year="${year}"></i></td>
+                            <td class="py-3 px-3 text-center" colspan="9"></td> <td class="py-3 px-3 text-center"><i class="fas fa-plus-square toggle-icon" data-year="${year}"></i></td>
                         </tr>
                     `;
 
-                    // Apertura row - initially hidden
+                    // Apertura row - initially hidden, but only if PJ > 0 for this period
                     const aperturaStats = yearStats.apertura;
-                    individualStatsTableBody.innerHTML += `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
-                            <td class="py-3 px-3 text-center"></td>
-                            <td class="py-3 px-3 text-center">Apertura</td>
-                            <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
-                            <td class="py-3 px-3 text-center">${aperturaStats.pg}</td>
-                            <td class="py-3 px-3 text-center">${aperturaStats.pe}</td>
-                            <td class="py-3 px-3 text-center">${aperturaStats.pp}</td>
-                            <td class="py-3 px-3 text-center">${aperturaStats.pj}</td>
-                            <td class="py-3 px-3 text-center">${aperturaStats.efectividad}%</td>
-                            <td class="py-3 px-3 text-center">${aperturaStats.chamigos}</td>
-                            <td class="py-3 px-3 text-center">${aperturaStats.tt}</td>
-                            <td class="py-3 px-3 text-center">${aperturaStats.ausentes}</td>
-                        </tr>
-                    `;
+                    if (aperturaStats.pj > 0) {
+                        individualStatsTableBody.innerHTML += `
+                            <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
+                                <td class="py-3 px-3 text-center"></td>
+                                <td class="py-3 px-3 text-center">Apertura</td>
+                                <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
+                                <td class="py-3 px-3 text-center">${aperturaStats.pg}</td>
+                                <td class="py-3 px-3 text-center">${aperturaStats.pe}</td>
+                                <td class="py-3 px-3 text-center">${aperturaStats.pp}</td>
+                                <td class="py-3 px-3 text-center">${aperturaStats.pj}</td>
+                                <td class="py-3 px-3 text-center">${aperturaStats.efectividad}%</td>
+                                <td class="py-3 px-3 text-center">${aperturaStats.chamigos}</td>
+                                <td class="py-3 px-3 text-center">${aperturaStats.tt}</td>
+                                <td class="py-3 px-3 text-center">${aperturaStats.ausentes}</td>
+                            </tr>
+                        `;
+                    }
 
-                    // Clausura row - initially hidden
+                    // Clausura row - initially hidden, but only if PJ > 0 for this period
                     const clausuraStats = yearStats.clausura;
-                    individualStatsTableBody.innerHTML += `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
-                            <td class="py-3 px-3 text-center"></td>
-                            <td class="py-3 px-3 text-center">Clausura</td>
-                            <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
-                            <td class="py-3 px-3 text-center">${clausuraStats.pg}</td>
-                            <td class="py-3 px-3 text-center">${clausuraStats.pe}</td>
-                            <td class="py-3 px-3 text-center">${clausuraStats.pp}</td>
-                            <td class="py-3 px-3 text-center">${clausuraStats.pj}</td>
-                            <td class="py-3 px-3 text-center">${clausuraStats.efectividad}%</td>
-                            <td class="py-3 px-3 text-center">${clausuraStats.chamigos}</td>
-                            <td class="py-3 px-3 text-center">${clausuraStats.tt}</td>
-                            <td class="py-3 px-3 text-center">${clausuraStats.ausentes}</td>
-                        </tr>
-                    `;
+                    if (clausuraStats.pj > 0) {
+                        individualStatsTableBody.innerHTML += `
+                            <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
+                                <td class="py-3 px-3 text-center"></td>
+                                <td class="py-3 px-3 text-center">Clausura</td>
+                                <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
+                                <td class="py-3 px-3 text-center">${clausuraStats.pg}</td>
+                                <td class="py-3 px-3 text-center">${clausuraStats.pe}</td>
+                                <td class="py-3 px-3 text-center">${clausuraStats.pp}</td>
+                                <td class="py-3 px-3 text-center">${clausuraStats.pj}</td>
+                                <td class="py-3 px-3 text-center">${clausuraStats.efectividad}%</td>
+                                <td class="py-3 px-3 text-center">${clausuraStats.chamigos}</td>
+                                <td class="py-3 px-3 text-center">${clausuraStats.tt}</td>
+                                <td class="py-3 px-3 text-center">${clausuraStats.ausentes}</td>
+                            </tr>
+                        `;
+                    }
                 }
             });
 
@@ -2548,9 +2542,12 @@
             sideMenu.classList.remove('open'); // Ensure it's not open
             overlay.classList.add('hidden'); // Ensure overlay is hidden
             document.body.classList.remove('overflow-hidden'); // Ensure no overflow from previous state
+            
+            // Cargar las bibliotecas de Google API. gapiLoaded() se llama cuando apis.google.com/js/api.js termina de cargar.
+            // Para asegurar el orden y evitar conflictos, es buena práctica que apis.google.com/js/api.js sea el primero.
+            // La inicialización de la carga de datos comenzará desde gapiLoaded -> initializeGapiClient -> handleDataLoadSuccess.
         });
     </script>
-    <!-- Script de la API de Google. Se carga asíncronamente y llama a gapiLoaded() cuando está listo. -->
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 </body>
 </html>
