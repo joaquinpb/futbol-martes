@@ -490,6 +490,22 @@
         .current-match-card-text {
             color: #ffffff !important;
         }
+
+        /* Estilo para el estado seleccionado de cualquier tarjeta de partido */
+        .fixture-match-item.selected {
+            box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.5); /* Anillo de enfoque azul índigo */
+            border: 1px solid #4338ca; /* Borde más pronunciado */
+        }
+
+        /* Estilo para el estado seleccionado de una tarjeta de partido normal (no "PARTIDO ACTUAL") */
+        .fixture-match-item:not(.current-match-card).selected {
+            background-color: #e2e8f0 !important; /* bg-gray-300 */
+        }
+
+        /* Estilo para el estado seleccionado de una tarjeta "PARTIDO ACTUAL" */
+        .current-match-card.selected {
+            background: linear-gradient(to right, #1e3a8a, #3730a3) !important; /* Degradado más oscuro para el seleccionado */
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col md:flex-row">
@@ -1040,7 +1056,7 @@
                 document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
-            }
+            });
         }
 
         // --- Funciones de Pestañas ---
@@ -1750,7 +1766,7 @@
                 const finalMatchItemClasses = `${matchItemBaseClasses} ${bgColorClasses} ${textColorClasses} ${identifierClass}`;
                 
                 const cardHtml = `
-                    <div class="${finalMatchItemClasses}" data-match-id="${matchId}">
+                    <div class="fixture-match-item ${finalMatchItemClasses}" data-match-id="${matchId}">
                         ${displayDateText}
                     </div>
                 `;
@@ -1762,7 +1778,7 @@
                 card.addEventListener('click', (event) => {
                     // Remove 'selected' class and its associated styles from previously selected card
                     fixtureMatchesCardsContainer.querySelectorAll('.selected').forEach(selectedCard => {
-                        selectedCard.classList.remove('selected', 'bg-gray-100', 'bg-gradient-to-r', 'from-blue-800', 'to-indigo-900');
+                        selectedCard.classList.remove('selected');
                         // Restore original background for previously selected current match
                         if (selectedCard.classList.contains('current-match-card')) {
                             selectedCard.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-700');
@@ -1773,11 +1789,7 @@
 
                     // Add 'selected' class to the clicked card
                     event.currentTarget.classList.add('selected');
-                    if (event.currentTarget.classList.contains('current-match-card')) {
-                        event.currentTarget.classList.add('bg-gradient-to-r', 'from-blue-800', 'to-indigo-900'); // Darker gradient for selected current match
-                    } else {
-                        event.currentTarget.classList.add('bg-gray-100'); // Gray for selected regular match
-                    }
+                    // The CSS rules for .fixture-match-item.selected and .current-match-card.selected will handle the styling
                 });
             });
 
@@ -2599,7 +2611,7 @@
                 overlay.classList.remove('open'); // Hide overlay
                 document.body.classList.remove('overflow-hidden'); // Allow scrolling
             }
-        }
+        });
 
         // Evento para manejar el redimensionamiento de la ventana
         window.addEventListener('resize', () => {
