@@ -484,11 +484,11 @@
             /* Trophy positions for desktop */
             .winner-trophy.claros.horizontal-layout { top: 95%; left: 90%; } /* Bottom-right */
             .winner-trophy.oscuros.horizontal-layout { top: 95%; left: 10%; } /* Bottom-left */
+        }
 
-            /* Clase para asegurar texto blanco en el botón de partido actual */
-            .text-white-important {
+        /* Estilo específico para el texto del botón "PARTIDO ACTUAL" para asegurar el color blanco */
+        .current-match-card-text {
             color: #ffffff !important;
-            }    
         }
     </style>
 </head>
@@ -1040,7 +1040,7 @@
                 document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
-            }
+            });
         }
 
         // --- Funciones de Pestañas ---
@@ -1725,26 +1725,32 @@
                 matchDateObj.setHours(0, 0, 0, 0); // Set to midnight for accurate date comparison
 
                 let displayDateText = `Partido del ${date}`;
-                let extraClasses = '';
+                let bgColorClasses = 'bg-white'; // Default background
+                let textColorClasses = 'text-indigo-700'; // Default text color
+                let identifierClass = ''; // To mark current match
 
                 // Check if it's a current or future match
                 if (matchDateObj.getTime() >= today.getTime() && !currentOrFutureMatchFound) {
                     displayDateText = 'PARTIDO ACTUAL';
-                    // Degradado de azul a morado con texto blanco forzado usando clase personalizada
-                    extraClasses = 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white-important current-match-card'; 
-                    currentOrFutureMatchFound = true; // Mark that we found the first current/future match
+                    bgColorClasses = 'bg-gradient-to-r from-blue-600 to-indigo-700'; // Gradient background
+                    textColorClasses = 'current-match-card-text'; // Use specific class for white text
+                    identifierClass = 'current-match-card';
+                    currentOrFutureMatchFound = true;
                 }
 
-                const matchItemClasses = `
-                    bg-white p-2 rounded-lg shadow-sm cursor-pointer
-                    hover:bg-gray-100 transition duration-150 ease-in-out
-                    flex justify-center items-center text-sm font-semibold text-indigo-700
+                // Base classes for all match items
+                const matchItemBaseClasses = `
+                    p-2 rounded-lg shadow-sm cursor-pointer
+                    transition duration-150 ease-in-out
+                    flex justify-center items-center text-sm font-semibold
                     sm:p-4 sm:shadow-md sm:text-base
-                    ${extraClasses}
                 `;
+
+                // Combine all classes
+                const finalMatchItemClasses = `${matchItemBaseClasses} ${bgColorClasses} ${textColorClasses} ${identifierClass}`;
                 
                 const cardHtml = `
-                    <div class="${matchItemClasses}" data-match-id="${matchId}">
+                    <div class="${finalMatchItemClasses}" data-match-id="${matchId}">
                         ${displayDateText}
                     </div>
                 `;
@@ -1754,23 +1760,24 @@
             // Add event listeners to each newly created card
             fixtureMatchesCardsContainer.querySelectorAll('[data-match-id]').forEach(card => {
                 card.addEventListener('click', (event) => {
-                    // Remove 'selected' class from previously selected card
+                    // Remove 'selected' class and its associated styles from previously selected card
                     fixtureMatchesCardsContainer.querySelectorAll('.selected').forEach(selectedCard => {
-                        selectedCard.classList.remove('selected', 'bg-gray-100', 'bg-teal-700'); // Also remove teal if it was a current match
+                        selectedCard.classList.remove('selected', 'bg-gray-100', 'bg-gradient-to-r', 'from-blue-800', 'to-indigo-900');
+                        // Restore original background for previously selected current match
+                        if (selectedCard.classList.contains('current-match-card')) {
+                            selectedCard.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-700');
+                        } else {
+                            selectedCard.classList.add('bg-white'); // Restore default white for regular cards
+                        }
                     });
+
                     // Add 'selected' class to the clicked card
                     event.currentTarget.classList.add('selected');
-                    // If it's a current match, keep its specific color, otherwise use gray-100 for selected state
-                    if (!event.currentTarget.classList.contains('current-match-card')) {
-                         event.currentTarget.classList.add('bg-gray-100');
+                    if (event.currentTarget.classList.contains('current-match-card')) {
+                        event.currentTarget.classList.add('bg-gradient-to-r', 'from-blue-800', 'to-indigo-900'); // Darker gradient for selected current match
                     } else {
-                         // Degradado más oscuro para el estado seleccionado del "PARTIDO ACTUAL"
-                         event.currentTarget.classList.add('bg-gradient-to-r', 'from-blue-800', 'to-indigo-900'); 
+                        event.currentTarget.classList.add('bg-gray-100'); // Gray for selected regular match
                     }
-
-
-                    const matchId = event.currentTarget.dataset.matchId;
-                    renderFixtureDetails(matchId);
                 });
             });
 
