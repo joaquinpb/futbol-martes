@@ -1955,9 +1955,9 @@
             }
 
             // NO GUARDAR EN LOCAL STORAGE
-            yearSelect.removeEventListener('change', () => {
-                localStorage.setItem(`${storageKeyPrefix}-year`, yearSelect.value);
-            });
+            // Eliminar listeners antiguos si existen para evitar duplicados
+            yearSelect.removeEventListener('change', saveYearToLocalStorage);
+            // No añadir nuevos listeners para guardar en localStorage
         }
 
         function populateMonthSelects(selectId, storageKeyPrefix) {
@@ -1991,9 +1991,9 @@
             }
 
             // NO GUARDAR EN LOCAL STORAGE
-            monthSelect.removeEventListener('change', () => {
-                localStorage.setItem(`${storageKeyPrefix}-month`, monthSelect.value);
-            });
+            // Eliminar listeners antiguos si existen para evitar duplicados
+            monthSelect.removeEventListener('change', saveMonthToLocalStorage);
+            // No añadir nuevos listeners para guardar en localStorage
         }
 
 
@@ -2014,9 +2014,9 @@
             }
 
             // NO GUARDAR EN LOCAL STORAGE
-            periodSelect.removeEventListener('change', () => {
-                localStorage.setItem(`${storageKeyPrefix}-period`, periodSelect.value);
-            });
+            // Eliminar listeners antiguos si existen para evitar duplicados
+            periodSelect.removeEventListener('change', savePeriodToLocalStorage);
+            // No añadir nuevos listeners para guardar en localStorage
         }
 
         // New function to calculate individual player stats
@@ -2385,7 +2385,7 @@
                             <i class="fas fa-plus-square toggle-icon" data-year="${year}"></i> <!-- Icono visual, no interactivo -->
                             <span>${year}</span>
                         </td>
-                        <td class="py-3 px-3 text-center">PJ: ${yearStats.apertura.pj} / ${yearStats.clausura.pj} (Total: ${yearStats.total.pj})</td>
+                        <td class="py-3 px-3 text-center"></td> <!-- Columna Torneo vacía para la fila del año -->
                         <td class="py-3 px-3 text-center">${yearStats.total.points}</td>
                         <td class="py-3 px-3 text-center">${yearStats.total.pg}</td>
                         <td class="py-3 px-3 text-center">${yearStats.total.pe}</td>
@@ -2438,7 +2438,29 @@
             loadingMessage.classList.add('hidden');
             individualStatsTable.classList.remove('hidden');
 
-            // Eliminado: Event listeners para toggle buttons ya no son necesarios
+            // Add event listeners for toggle buttons AFTER content is rendered
+            // Re-habilitado la interactividad del botón de expansión
+            document.querySelectorAll('.toggle-year-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const year = event.currentTarget.dataset.year;
+                    // Select all detail rows for this year
+                    const yearDetailRows = document.querySelectorAll(`.year-detail-row.year-${year}`);
+                    const toggleIcon = event.currentTarget.querySelector('.toggle-icon');
+
+                    yearDetailRows.forEach(row => {
+                        row.classList.toggle('hidden');
+                    });
+
+                    // Toggle icon
+                    if (yearDetailRows[0] && yearDetailRows[0].classList.contains('hidden')) {
+                        toggleIcon.classList.remove('fa-minus-square');
+                        toggleIcon.classList.add('fa-plus-square');
+                    } else {
+                        toggleIcon.classList.remove('fa-plus-square');
+                        toggleIcon.classList.add('fa-minus-square');
+                    }
+                });
+            });
         }
 
 
