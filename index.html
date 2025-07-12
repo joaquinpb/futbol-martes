@@ -485,6 +485,27 @@
             .winner-trophy.claros.horizontal-layout { top: 95%; left: 90%; } /* Bottom-right */
             .winner-trophy.oscuros.horizontal-layout { top: 95%; left: 10%; } /* Bottom-left */
         }
+
+        /* Estilo específico para el texto del botón "PARTIDO ACTUAL" para asegurar el color blanco */
+        .current-match-card-text {
+            color: #ffffff !important;
+        }
+
+        /* Estilo para el estado seleccionado de cualquier tarjeta de partido */
+        .fixture-match-item.selected {
+            box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.5); /* Anillo de enfoque azul índigo */
+            border: 1px solid #4338ca; /* Borde más pronunciado */
+        }
+
+        /* Estilo para el estado seleccionado de una tarjeta de partido normal (no "PARTIDO ACTUAL") */
+        .fixture-match-item:not(.current-match-card).selected {
+            background-color: #e2e8f0 !important; /* bg-gray-300 */
+        }
+
+        /* Estilo para el estado seleccionado de una tarjeta "PARTIDO ACTUAL" */
+        .current-match-card.selected {
+            background: linear-gradient(to right, #1e3a8a, #3730a3) !important; /* Degradado más oscuro para el seleccionado */
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col md:flex-row">
@@ -1115,9 +1136,16 @@
                 const fixtureMatchesCardsContainer = document.getElementById('fixture-matches-cards-container');
                 // Use setTimeout to ensure the DOM has updated and the cards are rendered
                 setTimeout(() => {
-                    const latestMatchCard = fixtureMatchesCardsContainer.querySelector('[data-match-id]'); // First one is the latest due to sorting
-                    if (latestMatchCard) {
-                        latestMatchCard.click(); // Simulate click to render details
+                    // Find the 'PARTIDO ACTUAL' card first
+                    const currentMatchCard = fixtureMatchesCardsContainer.querySelector('.current-match-card');
+                    if (currentMatchCard) {
+                        currentMatchCard.click(); // Simulate click to render details
+                    } else {
+                        // If no 'PARTIDO ACTUAL', select the most recent one (first in sorted list)
+                        const latestMatchCard = fixtureMatchesCardsContainer.querySelector('[data-match-id]');
+                        if (latestMatchCard) {
+                            latestMatchCard.click(); // Simulate click to render details
+                        }
                     }
                 }, 100); // Small delay to allow DOM to render
             } else if (tabId === 'individual-stats-content') {
@@ -1701,37 +1729,71 @@
             // Sort matches by date descending (most recent first)
             filteredMatches.sort((a, b) => parseDate(b[1]).getTime() - parseDate(a[1]).getTime());
 
+            // Get today's date at midnight for comparison
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let currentOrFutureMatchFound = false;
+
             filteredMatches.forEach(match => {
-                const [matchId, date] = match; // No need for winner info here
-                // Determine classes based on screen size (mobile-first approach)
-                // Default to compact list item style, then override for sm and lg
-                const matchItemClasses = `
-                    bg-white p-2 rounded-lg shadow-sm cursor-pointer
-                    hover:bg-gray-100 transition duration-150 ease-in-out
-                    flex justify-center items-center text-sm font-semibold text-indigo-700
+                const [matchId, date] = match;
+                const matchDateObj = parseDate(date);
+                matchDateObj.setHours(0, 0, 0, 0); // Set to midnight for accurate date comparison
+
+                let displayDateText = `Partido del ${date}`;
+                let bgColorClasses = 'bg-white'; // Default background for non-current matches
+                let textColorClasses = 'text-indigo-700'; // Default text color for non-current matches
+                let identifierClass = ''; // To mark current match
+
+                // Check if it's a current or future match
+                if (matchDateObj.getTime() >= today.getTime() && !currentOrFutureMatchFound) {
+                    displayDateText = 'PARTIDO ACTUAL';
+                    bgColorClasses = 'bg-gradient-to-r from-blue-600 to-indigo-700'; // Gradient background
+                    textColorClasses = 'current-match-card-text'; // Use specific class for white text
+                    identifierClass = 'current-match-card';
+                    currentOrFutureMatchFound = true;
+                }
+
+                // Base classes for all match items
+                const matchItemBaseClasses = `
+                    p-2 rounded-lg shadow-sm cursor-pointer
+                    transition duration-150 ease-in-out
+                    flex justify-center items-center text-sm font-semibold
                     sm:p-4 sm:shadow-md sm:text-base
                 `;
-                // The h4 is removed as the div itself will hold the text directly for ultimate compactness
+
+                // Combine all classes
+                const finalMatchItemClasses = `${matchItemBaseClasses} ${bgColorClasses} ${textColorClasses} ${identifierClass}`;
+                
                 const cardHtml = `
-                    <div class="${matchItemClasses}" data-match-id="${matchId}">
-                        Partido del ${date}
+                    <div class="fixture-match-item ${finalMatchItemClasses}" data-match-id="${matchId}">
+                        ${displayDateText}
                     </div>
                 `;
                 fixtureMatchesCardsContainer.innerHTML += cardHtml;
             });
 
             // Add event listeners to each newly created card
-            fixtureMatchesCardsContainer.querySelectorAll('[data-match-id]').forEach(card => {
+            fixtureMatchesCardsContainer.querySelectorAll('.fixture-match-item').forEach(card => { // Target the specific class
                 card.addEventListener('click', (event) => {
-                    // Remove 'selected' class from previously selected card
-                    fixtureMatchesCardsContainer.querySelectorAll('.selected').forEach(selectedCard => {
-                        selectedCard.classList.remove('selected', 'bg-gray-100');
+                    // Remove 'selected' class from ALL cards
+                    fixtureMatchesCardsContainer.querySelectorAll('.fixture-match-item').forEach(selectedCard => {
+                        selectedCard.classList.remove('selected');
+                        // Restore original background for previously selected cards
+                        if (selectedCard.classList.contains('current-match-card')) {
+                            selectedCard.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-700');
+                        } else {
+                            selectedCard.classList.add('bg-white');
+                        }
                     });
+
                     // Add 'selected' class to the clicked card
-                    event.currentTarget.classList.add('selected', 'bg-gray-100');
+                    event.currentTarget.classList.add('selected');
+                    // The CSS rules for .fixture-match-item.selected and .current-match-card.selected will handle the styling
+                    // No need to add specific background colors here, CSS takes care of it.
 
                     const matchId = event.currentTarget.dataset.matchId;
-                    renderFixtureDetails(matchId);
+                    renderFixtureDetails(matchId); // Call the function to render details
                 });
             });
 
