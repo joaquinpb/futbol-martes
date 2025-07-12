@@ -100,11 +100,6 @@
             display: flex; /* Asegura que se muestre como flex cuando está abierto */
         }
 
-        /* Asegura que la clase 'hidden' siempre oculte el elemento */
-        /* #side-menu.hidden {
-            display: none !important;
-        } */ /* Eliminado: ya no se usa esta clase para ocultar */
-
         #overlay {
             position: fixed; /* El overlay debe seguir siendo fixed para cubrir la ventana */
             inset: 0; /* top:0, right:0, bottom:0, left:0 */
@@ -130,9 +125,8 @@
             display: block; /* Visible por defecto en móvil */
         }
 
-        /* El botón de cerrar menú lateral (la cruz) ahora estará oculto por defecto y siempre */
         #close-side-menu-button {
-            display: none !important;
+            display: none !important; /* El botón de cerrar menú lateral (la cruz) ahora estará oculto por defecto y siempre */
         }
 
         #side-menu .tab-button, #side-menu .sidebar-link {
@@ -499,6 +493,7 @@
     </button>
 
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40">
+        <!-- Título del menú lateral -->
         <div class="p-4 pt-16 flex items-center justify-between">
             <h2 class="text-xl font-bold text-white flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
@@ -793,6 +788,7 @@
         <div id="fixture-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Detalles del Partido</h2>
             
+            <!-- Contenedor para los filtros de año y mes de Fixture -->
             <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
                 <div>
                     <label for="fixture-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
@@ -812,8 +808,10 @@
 
             <h3 class="text-xl font-semibold text-gray-700 mb-4">Partidos del Mes</h3>
             <div id="fixture-matches-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                </div>
+                <!-- Match cards/list items will be rendered here by JS -->
+            </div>
 
+            <!-- Contenedor para el campo de juego y la tabla de asistentes, que se mostrará al seleccionar un partido -->
             <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
                 <div id="soccer-field-container" class="flex-1 min-w-0">
                     <div class="goal top"></div>
@@ -895,7 +893,6 @@
         // Elementos del DOM para el menú lateral
         const hamburgerButton = document.getElementById('hamburger-button');
         const sideMenu = document.getElementById('side-menu');
-        // const closeSideMenuButton = document.getElementById('close-side-menu-button'); // Eliminado: Ya no se usa la cruz
         const overlay = document.getElementById('overlay');
         const tabButtons = document.querySelectorAll('.tab-button');
 
@@ -908,8 +905,8 @@
         const estadisticasContent = document.getElementById('estadisticas-content');
         const equiposContent = document.getElementById('equipos-content');
         const fixtureContent = document.getElementById('fixture-content');
-        const individualStatsContent = document.getElementById('individual-stats-content'); // New content div
-        const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
+        const individualStatsContent = document.getElementById('individual-stats-content');
+        const soccerFieldContainer = document.getElementById('soccer-field-container');
         const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container'); // NEW: Reference to the new container
 
 
@@ -1706,10 +1703,21 @@
 
             filteredMatches.forEach(match => {
                 const [matchId, date, clarosIDsStr, oscurosIDsStr, result] = match;
+                // Determine classes based on screen size (mobile-first approach)
+                // Default to compact list item style, then override for sm and lg
+                const matchItemClasses = `
+                    bg-white p-2 rounded-lg shadow-sm cursor-pointer
+                    hover:bg-gray-100 transition duration-150 ease-in-out
+                    flex justify-between items-center text-sm
+                    sm:p-4 sm:shadow-md sm:text-base
+                `;
+                const titleClasses = `font-semibold text-indigo-700 text-xs sm:text-lg`;
+                const resultClasses = `text-gray-600 text-xs sm:text-base`;
+
                 const cardHtml = `
-                    <div class="bg-white p-4 rounded-lg shadow-md cursor-pointer hover:bg-gray-100 transition duration-150 ease-in-out" data-match-id="${matchId}">
-                        <h4 class="font-semibold text-lg text-indigo-700 mb-2">Partido del ${date}</h4>
-                        <p class="text-gray-600">Ganador: ${result || 'No definido'}</p>
+                    <div class="${matchItemClasses}" data-match-id="${matchId}">
+                        <h4 class="${titleClasses}">Partido del ${date}</h4>
+                        <p class="${resultClasses}">Ganador: ${result || 'No definido'}</p>
                     </div>
                 `;
                 fixtureMatchesCardsContainer.innerHTML += cardHtml;
@@ -2390,7 +2398,8 @@
             individualStatsTableBody.innerHTML += `
                 <tr class="bg-blue-200 font-bold text-indigo-800">
                     <td class="py-3 px-3 text-center">TOTAL</td>
-                    <td class="py-3 px-3 text-center"></td> <td class="py-3 px-3 text-center">${totalStats.points}</td>
+                    <td class="py-3 px-3 text-center"></td> <!-- Columna Torneo vacía para el total general -->
+                    <td class="py-3 px-3 text-center">${totalStats.points}</td>
                     <td class="py-3 px-3 text-center">${totalStats.pg}</td>
                     <td class="py-3 px-3 text-center">${totalStats.pe}</td>
                     <td class="py-3 px-3 text-center">${totalStats.pp}</td>
@@ -2416,7 +2425,8 @@
                             <i class="fas fa-plus-square toggle-icon" data-year="${year}"></i>
                             <span>${year}</span>
                         </td>
-                        <td class="py-3 px-3 text-center"></td> <td class="py-3 px-3 text-center">${yearStats.total.points}</td>
+                        <td class="py-3 px-3 text-center"></td> <!-- Columna Torneo vacía para la fila del año -->
+                        <td class="py-3 px-3 text-center">${yearStats.total.points}</td>
                         <td class="py-3 px-3 text-center">${yearStats.total.pg}</td>
                         <td class="py-3 px-3 text-center">${yearStats.total.pe}</td>
                         <td class="py-3 px-3 text-center">${yearStats.total.pp}</td>
@@ -2523,7 +2533,6 @@
         document.getElementById('fixture-month-select').addEventListener('change', renderFixtureMatchCards);
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
-        // closeSideMenuButton no existe en el HTML, por lo tanto, no se le adjunta evento.
         overlay.addEventListener('click', () => {
             if (window.innerWidth < 768) {
                 toggleSideMenu();
@@ -2554,7 +2563,8 @@
             // Re-render fixture details only if fixture tab is active
             const currentActiveTab = document.querySelector('.tab-button.active');
             if (currentActiveTab && currentActiveTab.dataset.tab === 'fixture-content') {
-                const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.selected'); // Get the currently selected match card
+                // Get the currently selected match card, if any
+                const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.selected'); 
                 if (currentMatchCard) {
                     const currentMatchId = currentMatchCard.dataset.matchId;
                     renderFixtureDetails(currentMatchId); // Re-render with new orientation
