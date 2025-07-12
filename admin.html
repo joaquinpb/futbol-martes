@@ -7,11 +7,16 @@
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Asegura que html y body ocupen toda la altura para que los porcentajes funcionen */
+        html, body {
+            height: 100%;
+        }
+
         /* Fuente Inter para una mejor legibilidad */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5; /* Un gris claro para el fondo */
-            min-height: 100vh; /* Asegura que el cuerpo ocupe toda la altura del viewport */
+            /* min-height: 100vh; -- Eliminado, ahora usamos height: 100% en html y body */
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
             display: flex; /* Hacemos el body un contenedor flex */
@@ -100,10 +105,10 @@
 
         /* --- Estilos para el menú lateral responsivo --- */
         #side-menu {
-            position: fixed; /* Para superponer en móvil */
+            position: fixed; /* Mantenido como fixed según tu última versión */
             top: 0;
             left: 0;
-            height: 100vh;
+            height: 100vh; /* Mantenido como 100vh según tu última versión */
             width: 256px; /* w-64 */
             background-color: #312e81; /* indigo-800 */
             color: white;
@@ -113,6 +118,7 @@
             display: flex; /* Usar flex para el diseño vertical de las pestañas */
             flex-direction: column;
             padding-top: 1rem; /* Añadir algo de padding en la parte superior */
+            overflow-y: auto; /* Permite desplazamiento interno si el contenido del menú es muy largo */
         }
 
         /* Esta clase será aplicada por JS para hacerlo visible */
@@ -126,7 +132,7 @@
         }
 
         #overlay {
-            position: fixed;
+            position: fixed; /* El overlay debe seguir siendo fixed para cubrir la ventana */
             inset: 0; /* top:0, right:0, bottom:0, left:0 */
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 30;
@@ -186,10 +192,10 @@
                 align-items: flex-start; /* Alinea los ítems al inicio del contenedor flex */
             }
             #side-menu {
-                position: relative; /* No fixed on desktop, part of the flow */
-                transform: translateX(0); /* Always visible when not 'hidden' */
-                flex-shrink: 0; /* Prevent it from shrinking */
-                height: 100vh; /* Maintain full height */
+                position: relative; /* En desktop, vuelve a ser relativo y parte del flujo */
+                transform: translateX(0); /* Siempre visible cuando no está 'hidden' */
+                flex-shrink: 0; /* Evita que se encoja */
+                height: 100vh; /* Mantiene la altura completa del body */
                 border-right: 1px solid #e2e8f0; /* border-gray-200 */
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
             }
@@ -631,9 +637,7 @@
     </div>
 
     <!-- Script de la API de Google -->
-    <script async defer src="https://apis.google.com/js/api.js"></script>
-    <script async defer src="https://accounts.google.com/gsi/client"></script>
-
+    <!-- Se eliminan los script tags async defer del head y se cargan dinámicamente en el DOMContentLoaded -->
     <script>
         // ¡IMPORTANTE! Reemplaza 'TU_CLIENT_ID' con tu ID de Cliente de OAuth 2.0
         const CLIENT_ID = '490772160476-4cmd0dse3b74o65g1n9s1q5itlbjavbb.apps.googleusercontent.com';
@@ -731,8 +735,27 @@
 
         // --- Funciones de Autenticación ---
 
-        function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
+        // Función para cargar la biblioteca GAPI
+        function loadGapiScript() {
+            const script = document.createElement('script');
+            script.src = 'https://apis.google.com/js/api.js';
+            script.async = true;
+            script.defer = true;
+            script.onload = () => {
+                // Una vez que gapi.js está cargado, podemos usar gapi.load
+                gapi.load('client', initializeGapiClient);
+            };
+            document.head.appendChild(script);
+        }
+
+        // Función para cargar la biblioteca GIS
+        function loadGisScript() {
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.defer = true;
+            script.onload = gisLoaded; // gisLoaded se encargará de inicializar tokenClient
+            document.head.appendChild(script);
         }
 
         async function initializeGapiClient() {
@@ -750,13 +773,20 @@
         }
 
         function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: '', // Se define en handleAuthClick
-            });
-            gisInited = true;
-            maybeEnableAuthButtons();
+            // Asegurarse de que google.accounts.oauth2 esté disponible
+            if (typeof google !== 'undefined' && typeof google.accounts !== 'undefined' && typeof google.accounts.oauth2 !== 'undefined') {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: '', // Se define en handleAuthClick
+                });
+                gisInited = true;
+                maybeEnableAuthButtons();
+            } else {
+                console.error("google.accounts.oauth2 no está disponible después de cargar gsi/client.js");
+                authStatus.textContent = 'Error al cargar la biblioteca de autenticación de Google. Intenta recargar la página.';
+                authStatus.classList.remove('hidden');
+            }
         }
 
         function maybeEnableAuthButtons() {
@@ -784,6 +814,13 @@
         }
 
         function handleAuthClick() {
+            // Asegurarse de que tokenClient esté definido antes de usarlo
+            if (!tokenClient) {
+                console.error("tokenClient no está inicializado. Intenta recargar la página o autorizar de nuevo.");
+                alert("Error: La autenticación no está lista. Por favor, recarga la página e intenta de nuevo.");
+                return;
+            }
+
             tokenClient.callback = async (resp) => {
                 if (resp.error) {
                     console.error('Error de autenticación:', resp);
@@ -925,6 +962,7 @@
 
         async function loadAllData() {
             try {
+                // Asegurarse de que gapi.client.sheets esté disponible
                 if (!gapi.client.sheets) {
                     console.error("gapi.client.sheets no está disponible. ¿Se inicializó correctamente el cliente de la API de Google?");
                     throw new Error("API de Google Sheets no cargada correctamente.");
@@ -2058,7 +2096,6 @@
         deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler);
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
-        // closeSideMenuButton.addEventListener('click', toggleSideMenu); // Eliminado: Ya no se usa la cruz
         overlay.addEventListener('click', () => {
             if (window.innerWidth < 768) {
                 toggleSideMenu();
@@ -2112,13 +2149,9 @@
             mainAdminContentContainer.style.marginLeft = 'auto';
             mainAdminContentContainer.style.marginRight = 'auto';
 
-            gapiLoaded();
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.defer = true;
-            script.onload = gisLoaded;
-            document.head.appendChild(script);
+            // Cargar las bibliotecas de Google API de forma segura
+            loadGapiScript();
+            loadGisScript();
         });
     </script>
 </body>
