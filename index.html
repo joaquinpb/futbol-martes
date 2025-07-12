@@ -11,6 +11,7 @@
         /* Asegura que html y body ocupen toda la altura para que los porcentajes funcionen */
         html, body {
             height: 100%;
+            overflow-x: hidden; /* Added to prevent horizontal overflow on mobile */
         }
 
         /* Fuente Inter para una mejor legibilidad */
@@ -2094,4 +2095,486 @@
                         currentYearTotalStats.points += 3;
                         currentYearTotalStats.pg += 1;
                         playerStats.overallTotal.points += 3;
-                        playerStats.overallTo
+                        playerStats.overallTotal.pg += 1;
+                    } else if (result === 'Empate' && isPlayerInMatch) {
+                        currentPeriodStats.points += 1;
+                        currentPeriodStats.pe += 1;
+                        currentYearTotalStats.points += 1;
+                        currentYearTotalStats.pe += 1;
+                        playerStats.overallTotal.points += 1;
+                        playerStats.overallTotal.pe += 1;
+                    } else if (result === 'Claros' && oscurosPlayers.includes(playerId)) { // Player was in losing team
+                        currentPeriodStats.pp += 1;
+                        currentYearTotalStats.pp += 1;
+                        playerStats.overallTotal.pp += 1;
+                    } else if (result === 'Oscuros' && clarosPlayers.includes(playerId)) { // Player was in losing team
+                        currentPeriodStats.pp += 1;
+                        currentYearTotalStats.pp += 1;
+                        playerStats.overallTotal.pp += 1;
+                    }
+
+                    // Chamigo counts
+                    if (chamigoVotosStr) {
+                        try {
+                            const chamigoVotos = JSON.parse(chamigoVotosStr);
+                            if (chamigoVotos.some(v => v.id === playerId && v.votos === Math.max(...chamigoVotos.map(c => c.votos)))) {
+                                currentPeriodStats.chamigos += 1;
+                                currentYearTotalStats.chamigos += 1;
+                                playerStats.overallTotal.chamigos += 1;
+                            }
+                        } catch (e) {
+                            console.warn('Error parsing chamigo votes for match', matchId, ':', e);
+                        }
+                    }
+
+                    // TT counts
+                    if (ttAttendeesStr) {
+                        const ttAttendees = ttAttendeesStr.split(',').filter(Boolean);
+                        if (ttAttendees.includes(playerId)) {
+                            currentPeriodStats.tt += 1;
+                            currentYearTotalStats.tt += 1;
+                            playerStats.overallTotal.tt += 1;
+                        }
+                    }
+                }
+            });
+
+            // Calculate Efectividad and Ausentes for each period, year total, and overall total
+            Array.from(allYearsInMatches).sort().forEach(year => {
+                const yearStats = playerStats.years[year];
+                ['apertura', 'clausura'].forEach(periodType => { // Only iterate through apertura/clausura for individual periods
+                    const stats = yearStats[periodType];
+                    const maxPossiblePoints = stats.pj * 3;
+                    if (maxPossiblePoints > 0) {
+                        stats.efectividad = ((stats.points / maxPossiblePoints) * 100).toFixed(2);
+                    } else {
+                        stats.efectividad = 0;
+                    }
+                    
+                    const totalMatchesInPeriod = allMatchesData.filter(m => {
+                        const [d, mo, y] = m[1].split('/').map(Number);
+                        const matchDate = new Date(y, mo - 1, d);
+                        const mYear = matchDate.getFullYear();
+                        const mMonth = matchDate.getMonth();
+                        const mPeriod = (mMonth >= 0 && mMonth <= 5) ? 'apertura' : 'clausura';
+                        
+                        return mYear === year && mPeriod === periodType && m[4] !== 'Suspendido';
+                    }).length;
+
+                    stats.ausentes = totalMatchesInPeriod - stats.pj;
+                    if (stats.ausentes < 0) stats.ausentes = 0;
+                });
+
+                // Calculate for year total
+                const yearTotalStats = yearStats.total;
+                const yearTotalMaxPossiblePoints = yearTotalStats.pj * 3;
+                if (yearTotalMaxPossiblePoints > 0) {
+                    yearTotalStats.efectividad = ((yearTotalStats.points / yearTotalMaxPossiblePoints) * 100).toFixed(2);
+                } else {
+                    yearTotalStats.efectividad = 0;
+                }
+                const totalMatchesInYear = allMatchesData.filter(m => {
+                    const [d, mo, y] = m[1].split('/').map(Number);
+                    return y === year && m[4] !== 'Suspendido';
+                }).length;
+                yearTotalStats.ausentes = totalMatchesInYear - yearTotalStats.pj;
+                if (yearTotalStats.ausentes < 0) yearTotalStats.ausentes = 0;
+            });
+
+            // Overall total efectividad and ausentes
+            const overallMaxPossiblePoints = playerStats.overallTotal.pj * 3;
+            if (overallMaxPossiblePoints > 0) {
+                playerStats.overallTotal.efectividad = ((playerStats.overallTotal.points / overallMaxPossiblePoints) * 100).toFixed(2);
+            } else {
+                playerStats.overallTotal.efectividad = 0;
+            }
+            const totalNonSuspendedMatches = allMatchesData.filter(m => m[4] !== 'Suspendido').length;
+            playerStats.overallTotal.ausentes = totalNonSuspendedMatches - playerStats.overallTotal.pj;
+            if (playerStats.overallTotal.ausentes < 0) playerStats.overallTotal.ausentes = 0;
+
+
+            return { playerName, stats: playerStats };
+        }
+
+        // New function to set up player search with autocomplete
+        function setupPlayerSearch() {
+            const playerSearchInput = document.getElementById('individual-player-search');
+            const playerResultsDiv = document.getElementById('individual-player-results');
+            const selectedPlayerIdInput = document.getElementById('selected-player-id');
+            let timeoutId; // To debounce input
+            let highlightedIndex = -1; // To keep track of the highlighted item for keyboard navigation
+
+            // Helper to remove highlight from all results
+            const removeHighlight = () => {
+                playerResultsDiv.querySelectorAll('.highlighted').forEach(item => {
+                    item.classList.remove('highlighted');
+                });
+            };
+
+            // Helper to apply highlight to a specific index
+            const highlightResult = (index) => {
+                removeHighlight();
+                const results = playerResultsDiv.children;
+                if (results.length > 0 && index >= 0 && index < results.length) {
+                    results[index].classList.add('highlighted');
+                    playerSearchInput.value = results[index].textContent; // Update input value
+                    highlightedIndex = index;
+                }
+            };
+
+            // Function to filter and display players (reusable)
+            const filterAndDisplayPlayers = () => {
+                playerResultsDiv.innerHTML = '';
+                const searchTerm = playerSearchInput.value.toLowerCase();
+
+                // Filter players (including inactive ones, as per previous change)
+                const filteredPlayers = allPlayersData.filter(p => 
+                    p[1].toLowerCase().includes(searchTerm)
+                ).sort((a, b) => a[1].localeCompare(b[1]));
+
+                if (filteredPlayers.length > 0) {
+                    filteredPlayers.forEach(player => {
+                        const resultItem = document.createElement('div');
+                        resultItem.classList.add('p-2', 'cursor-pointer', 'hover:bg-gray-100');
+                        resultItem.textContent = player[1];
+                        resultItem.dataset.playerId = player[0]; // Store player ID
+                        resultItem.addEventListener('click', () => {
+                            playerSearchInput.value = player[1];
+                            selectedPlayerIdInput.value = resultItem.dataset.playerId; 
+                            playerResultsDiv.classList.add('hidden');
+                            highlightedIndex = -1; // Reset highlight after selection
+                            renderIndividualStatsTable();
+                        });
+                        playerResultsDiv.appendChild(resultItem);
+                    });
+                    playerResultsDiv.classList.remove('hidden');
+                } else {
+                    playerResultsDiv.classList.add('hidden');
+                }
+            };
+
+            // Clear input on focus - MODIFIED
+            playerSearchInput.addEventListener('focus', () => {
+                playerSearchInput.value = ''; // Clear input value
+                selectedPlayerIdInput.value = ''; // Clear selected ID to ensure a fresh search
+                document.getElementById('individual-stats-table').classList.add('hidden');
+                document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                document.getElementById('individual-stats-loading-message').textContent = 'Escribe al menos 3 caracteres para buscar un jugador.';
+                highlightedIndex = -1; // Reset highlight
+                filterAndDisplayPlayers(); // Show all players on focus
+            });
+
+            playerSearchInput.addEventListener('input', () => {
+                clearTimeout(timeoutId);
+                const searchTerm = playerSearchInput.value.toLowerCase();
+                
+                removeHighlight(); // Clear highlight on new input
+                highlightedIndex = -1; // Reset highlight index
+
+                if (searchTerm.length < 3) {
+                    playerResultsDiv.innerHTML = '';
+                    playerResultsDiv.classList.add('hidden');
+                    selectedPlayerIdInput.value = ''; // Clear selected player if search term is too short
+                    document.getElementById('individual-stats-table').classList.add('hidden');
+                    document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                    document.getElementById('individual-stats-loading-message').textContent = 'Escribe al menos 3 caracteres para buscar un jugador.';
+                    return;
+                }
+
+                timeoutId = setTimeout(() => {
+                    filterAndDisplayPlayers(); // Call the reusable function
+                }, 300); // Debounce for 300ms
+            });
+
+            // Keyboard navigation
+            playerSearchInput.addEventListener('keydown', (event) => {
+                const results = playerResultsDiv.children;
+                if (results.length === 0) return;
+
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault(); // Prevent cursor movement in input
+                    highlightedIndex = (highlightedIndex + 1) % results.length;
+                    highlightResult(highlightedIndex);
+                } else if (event.key === 'ArrowUp') {
+                    event.preventDefault(); // Prevent cursor movement in input
+                    highlightedIndex = (highlightedIndex - 1 + results.length) % results.length;
+                    highlightResult(highlightedIndex);
+                } else if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent form submission
+                    if (highlightedIndex !== -1) {
+                        results[highlightedIndex].click(); // Simulate click on highlighted item
+                    } else if (results.length > 0) {
+                        // If no item is explicitly highlighted, but results are visible, select the first one
+                        results[0].click();
+                    }
+                }
+            });
+
+            // Hide results when input loses focus (with a slight delay to allow click on results)
+            playerSearchInput.addEventListener('focusout', () => {
+                setTimeout(() => {
+                    playerResultsDiv.classList.add('hidden');
+                }, 200);
+            });
+
+            // Initial state: check if a player was previously selected and populate input
+            const lastSelectedPlayerId = localStorage.getItem('lastSelectedIndividualPlayerId'); // MODIFICADO: Leer desde localStorage
+            if (lastSelectedPlayerId) {
+                const lastSelectedPlayer = allPlayersData.find(p => p[0] === lastSelectedPlayerId);
+                if (lastSelectedPlayer) {
+                    playerSearchInput.value = lastSelectedPlayer[1];
+                    selectedPlayerIdInput.value = lastSelectedPlayerId;
+                    // Render stats if a player is pre-selected
+                    renderIndividualStatsTable();
+                } else {
+                    // If stored player not found (e.g., deleted), default to J001
+                    const defaultPlayer = allPlayersData.find(p => p[0] === 'J001');
+                    if (defaultPlayer) {
+                        playerSearchInput.value = defaultPlayer[1];
+                        selectedPlayerIdInput.value = defaultPlayer[0];
+                        localStorage.setItem('lastSelectedIndividualPlayerId', defaultPlayer[0]); // Save default
+                        renderIndividualStatsTable();
+                    } else {
+                        document.getElementById('individual-stats-table').classList.add('hidden');
+                        document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                        document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                    }
+                }
+            } else {
+                // If no player stored, default to J001
+                const defaultPlayer = allPlayersData.find(p => p[0] === 'J001');
+                if (defaultPlayer) {
+                    playerSearchInput.value = defaultPlayer[1];
+                    selectedPlayerIdInput.value = defaultPlayer[0];
+                    localStorage.setItem('lastSelectedIndividualPlayerId', defaultPlayer[0]); // Save default
+                    renderIndividualStatsTable();
+                } else {
+                    document.getElementById('individual-stats-table').classList.add('hidden');
+                    document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                    document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                }
+            }
+        }
+
+        // Function to render the individual stats table
+        function renderIndividualStatsTable() {
+            const selectedPlayerId = document.getElementById('selected-player-id').value;
+            const individualStatsTable = document.getElementById('individual-stats-table');
+            const individualStatsTableBody = individualStatsTable.querySelector('tbody');
+            const loadingMessage = document.getElementById('individual-stats-loading-message');
+
+            individualStatsTableBody.innerHTML = ''; // Clear previous content
+            individualStatsTable.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando estadísticas individuales...`;
+
+            if (!selectedPlayerId) {
+                loadingMessage.textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                return;
+            }
+
+            // Save selected player to localStorage
+            localStorage.setItem('lastSelectedIndividualPlayerId', selectedPlayerId); // MODIFICADO: Guardar en localStorage
+
+            const playerStatsData = calculateIndividualPlayerStats(selectedPlayerId);
+
+            if (!playerStatsData || (!Object.keys(playerStatsData.stats.years).length && playerStatsData.stats.overallTotal.pj === 0)) {
+                loadingMessage.textContent = 'No hay datos disponibles para el jugador seleccionado.';
+                return;
+            }
+
+            // Render TOTAL row first, always visible
+            const totalStats = playerStatsData.stats.overallTotal;
+            individualStatsTableBody.innerHTML += `
+                <tr class="bg-blue-200 font-bold text-indigo-800">
+                    <td class="py-3 px-3 text-center">TOTAL</td>
+                    <td class="py-3 px-3 text-center"></td> <!-- Columna Torneo vacía para el total general -->
+                    <td class="py-3 px-3 text-center">${totalStats.points}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.pg}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.pe}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.pp}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.pj}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.efectividad}%</td>
+                    <td class="py-3 px-3 text-center">${totalStats.chamigos}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.tt}</td>
+                    <td class="py-3 px-3 text-center">${totalStats.ausentes}</td>
+                </tr>
+            `;
+
+            // Render stats grouped by year and period
+            const sortedYears = Object.keys(playerStatsData.stats.years).sort((a, b) => b - a); // Descending year
+
+            sortedYears.forEach(year => {
+                const yearStats = playerStatsData.stats.years[year];
+                
+                // Always render year total row, even if PJ is 0 for the year
+                // This row is now a summary, not a toggle
+                individualStatsTableBody.innerHTML += `
+                    <tr class="bg-gray-300 font-semibold text-gray-700 cursor-pointer toggle-year-button" data-year="${year}">
+                        <td class="py-3 px-3 text-center flex items-center justify-center gap-1">
+                            <i class="fas fa-plus-square toggle-icon" data-year="${year}"></i>
+                            <span>${year}</span>
+                        </td>
+                        <td class="py-3 px-3 text-center"></td> <!-- Columna Torneo vacía para la fila del año -->
+                        <td class="py-3 px-3 text-center">${yearStats.total.points}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.pg}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.pe}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.pp}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.pj}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.efectividad}%</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.chamigos}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.tt}</td>
+                        <td class="py-3 px-3 text-center">${yearStats.total.ausentes}</td>
+                    </tr>
+                `;
+
+                // Clausura row - always render if data exists, even if PJ is 0
+                const clausuraStats = yearStats.clausura;
+                individualStatsTableBody.innerHTML += `
+                    <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
+                        <td class="py-3 px-3 text-center"></td>
+                        <td class="py-3 px-3 text-center">Clausura</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pg}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pe}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pp}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.pj}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.efectividad}%</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.chamigos}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.tt}</td>
+                        <td class="py-3 px-3 text-center">${clausuraStats.ausentes}</td>
+                    </tr>
+                `;
+
+                // Apertura row - always render if data exists, even if PJ is 0
+                const aperturaStats = yearStats.apertura;
+                individualStatsTableBody.innerHTML += `
+                    <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
+                        <td class="py-3 px-3 text-center"></td>
+                        <td class="py-3 px-3 text-center">Apertura</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pg}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pe}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pp}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.pj}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.efectividad}%</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.chamigos}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.tt}</td>
+                        <td class="py-3 px-3 text-center">${aperturaStats.ausentes}</td>
+                    </tr>
+                `;
+            });
+
+            loadingMessage.classList.add('hidden');
+            individualStatsTable.classList.remove('hidden');
+
+            // Add event listeners for toggle buttons AFTER content is rendered
+            document.querySelectorAll('.toggle-year-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const year = event.currentTarget.dataset.year;
+                    // Select all detail rows for this year
+                    const yearDetailRows = document.querySelectorAll(`.year-detail-row.year-${year}`);
+                    const toggleIcon = event.currentTarget.querySelector('.toggle-icon');
+
+                    yearDetailRows.forEach(row => {
+                        row.classList.toggle('hidden');
+                    });
+
+                    // Toggle icon
+                    if (yearDetailRows[0] && yearDetailRows[0].classList.contains('hidden')) {
+                        toggleIcon.classList.remove('fa-minus-square');
+                        toggleIcon.classList.add('fa-plus-square');
+                    } else {
+                        toggleIcon.classList.remove('fa-plus-square');
+                        toggleIcon.classList.add('fa-minus-square');
+                    }
+                });
+            });
+        }
+
+
+        // --- Event Listeners e Inicialización ---
+        document.getElementById('leaderboard-year-select').addEventListener('change', renderLeaderboard);
+        document.getElementById('leaderboard-period-select').addEventListener('change', renderLeaderboard);
+
+        document.getElementById('chamigo-year-select').addEventListener('change', renderChamigoTable);
+        document.getElementById('chamigo-period-select').addEventListener('change', renderChamigoTable);
+
+        document.getElementById('tt-year-select').addEventListener('change', renderTTTable);
+        document.getElementById('tt-period-select').addEventListener('change', renderTTTable);
+
+        document.getElementById('presentismo-year-select').addEventListener('change', renderPresentismoTable);
+        document.getElementById('presentismo-period-select').addEventListener('change', renderPresentismoTable);
+
+        document.getElementById('ausentismo-year-select').addEventListener('change', renderAusentismoTable);
+        document.getElementById('ausentismo-period-select').addEventListener('change', renderAusentismoTable);
+        
+        // Event listeners for Estadísticas sorting
+        document.getElementById('estadisticas-year-select').addEventListener('change', renderEstadisticasTable);
+        document.getElementById('estadisticas-period-select').addEventListener('change', renderEstadisticasTable);
+        document.getElementById('estadisticas-sort-criterion').addEventListener('change', renderEstadisticasTable);
+        document.getElementById('estadisticas-sort-order').addEventListener('change', renderEstadisticasTable);
+
+        document.getElementById('equipos-year-select').addEventListener('change', renderEquiposStats);
+        document.getElementById('equipos-period-select').addEventListener('change', renderEquiposStats);
+
+        // Event listeners for Fixture
+        document.getElementById('fixture-year-select').addEventListener('change', renderFixtureMatchCards);
+        document.getElementById('fixture-month-select').addEventListener('change', renderFixtureMatchCards);
+
+        hamburgerButton.addEventListener('click', toggleSideMenu);
+        // closeSideMenuButton no existe en el HTML, por lo tanto, no se le adjunta evento.
+        overlay.addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                toggleSideMenu();
+            }
+        });
+
+        // Function to apply initial responsive styles
+        function applyInitialResponsiveStyles() {
+            if (window.innerWidth >= 768) {
+                // Desktop view: sidebar always open, hamburger hidden
+                sideMenu.classList.remove('hidden'); // Ensure it's not display:none
+                sideMenu.classList.add('open'); // Ensure it's translated in
+                hamburgerButton.classList.add('hidden'); // Hide hamburger
+                overlay.classList.remove('open'); // Hide overlay
+                document.body.classList.remove('overflow-hidden'); // Allow scrolling
+            } else {
+                // Mobile view: sidebar initially closed, hamburger visible
+                sideMenu.classList.remove('open'); // Ensure it's translated out
+                sideMenu.classList.add('hidden'); // Hide sidebar (display:none)
+                hamburgerButton.classList.remove('hidden'); // Show hamburger
+                overlay.classList.remove('open'); // Hide overlay
+                document.body.classList.remove('overflow-hidden'); // Allow scrolling
+            }
+        }
+
+        // Evento para manejar el redimensionamiento de la ventana
+        window.addEventListener('resize', () => {
+            // Re-render fixture details only if fixture tab is active
+            const currentActiveTab = document.querySelector('.tab-button.active');
+            if (currentActiveTab && currentActiveTab.dataset.tab === 'fixture-content') {
+                const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100.selected'); // Get the currently selected match card
+                if (currentMatchCard) {
+                    const currentMatchId = currentMatchCard.dataset.matchId;
+                    renderFixtureDetails(currentMatchId); // Re-render with new orientation
+                }
+            } else {
+                // For other tabs, apply general responsive behavior
+                applyInitialResponsiveStyles(); // Apply responsive styles based on new window size
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Aplicación LA CLANDE cargada!');
+            // Aplicar estilos responsivos iniciales al cargar el DOM
+            applyInitialResponsiveStyles();
+            
+            // Cargar las bibliotecas de Google API. gapiLoaded() se llama cuando apis.google.com/js/api.js termina de cargar.
+            // Para asegurar el orden y evitar conflictos, es buena práctica que apis.google.com/js/api.js sea el primero.
+            // La inicialización de la carga de datos comenzará desde gapiLoaded -> initializeGapiClient -> handleDataLoadSuccess.
+        });
+    </script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+</body>
+</html>
