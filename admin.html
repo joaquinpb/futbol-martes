@@ -14,8 +14,7 @@
             min-height: 100vh; /* Asegura que el cuerpo ocupe toda la altura del viewport */
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
-            display: flex; /* Hacemos el body un contenedor flex */
-            flex-direction: column; /* Por defecto, los elementos se apilan en columna (mobile-first) */
+            /* REMOVED: display: flex; flex-direction: column; md:flex-row - Not needed with fixed sidebar */
         }
         /* Estilos para el efecto de arrastre */
         .player-draggable {
@@ -98,12 +97,12 @@
             color: #4a5568; /* text-gray-600 */
         }
 
-        /* --- Estilos para el menú lateral responsivo --- */
+        /* --- Estilos para el menú lateral responsivo (siempre fijo y 100vh) --- */
         #side-menu {
-            position: fixed; /* Para superponer en móvil */
+            position: fixed; /* Siempre fijo en el viewport */
             top: 0;
             left: 0;
-            height: 100vh; /* Usar 100vh para la altura completa del viewport en móvil */
+            height: 100vh; /* Siempre 100% de la altura del viewport */
             width: 256px; /* w-64 */
             background-color: #312e81; /* indigo-800 */
             color: white;
@@ -190,59 +189,46 @@
             margin-bottom: 2rem; /* Unificado: 2rem de separación del borde inferior */
         }
 
+        /* Main content container adjustments for fixed sidebar */
+        .main-admin-content-container {
+            background-color: #ffffff; /* bg-white */
+            padding: 1rem; /* p-4 */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            width: 100%; /* w-full */
+            max-width: 1024px; /* max-w-5xl */
+            margin-left: auto; /* Default for centering when sidebar is hidden (login) */
+            margin-right: auto;
+            min-height: calc(100vh - 4rem); /* Adjust min-height to account for top/bottom margins if any */
+            box-sizing: border-box; /* Include padding in width/height calculations */
+        }
+
         @media (min-width: 768px) {
-            body {
-                flex-direction: row; /* Los elementos se colocan en fila en desktop */
-                align-items: flex-start; /* Alinea los ítems al inicio del contenedor flex */
-            }
-            #side-menu {
-                position: relative; /* No fixed on desktop, part of the flow */
-                transform: translateX(0); /* Always visible when not 'hidden' */
-                flex-shrink: 0; /* Prevent it from shrinking */
-                height: 100%; /* CAMBIO CLAVE: Altura al 100% del padre (body) para que se estire con el contenido */
-                border-right: 1px solid #e2e8f0; /* border-gray-200 */
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
-            }
-
-            #side-menu .tab-button, #side-menu .sidebar-link {
-                color: white; /* Asegura que el texto permanezca blanco sobre fondo oscuro */
-            }
-            #side-menu .tab-button.active {
-                background-color: #4338ca; /* indigo-700 */
-                color: white; /* Asegura que el texto permanezca blanco sobre fondo oscuro */
-                border-left: 4px solid #4f46e5; /* border-indigo-500 */
-            }
-            #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
-                background-color: #4f46e5; /* indigo-600 */
-            }
-
             .main-admin-content-container {
-                flex-grow: 1; /* Permite que el contenido principal ocupe el espacio restante */
-                margin: 2rem auto; /* Centrado horizontal. Arriba/abajo 2rem. */
-                padding: 2rem; /* Padding para desktop */
-                width: auto; /* Dejar que flex-grow y max-width controlen el ancho */
+                margin-left: 256px; /* Shift content to the right by sidebar width on desktop */
+                margin-right: auto; /* Keep auto margin right for centering within remaining space */
+                padding: 2rem; /* md:p-8 */
             }
-            /* Esta clase se añade/quita por JS para el margen izquierdo cuando el sidebar está visible */
-            .main-admin-content-container.has-sidebar-margin {
-                margin-left: 2rem; /* Margen fijo para separar del sidebar */
-            }
+        }
 
+        /* Hamburger button visibility based on screen size */
+        @media (min-width: 768px) {
+            #hamburger-button {
+                display: none !important; /* Always hidden on desktop */
+            }
             #signout_button_mobile_sidebar {
-                display: none !important;
+                display: none !important; /* Hidden on desktop */
             }
             #signout_button_sidebar {
-                display: block !important;
+                display: block !important; /* Visible on desktop */
             }
             #overlay {
-                display: none !important;
-            }
-            #hamburger-button {
-                display: none !important; /* Siempre oculto en desktop */
+                display: none !important; /* Hidden on desktop */
             }
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row">
+<body class="bg-gray-100 min-h-screen">
     <!-- Hamburger Button (visible on all screens) -->
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -748,7 +734,6 @@
                     adminContent.classList.add('hidden');
                     
                     // Centrar main content cuando sidebar está oculto
-                    mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Asegura que no tenga margen izquierdo
                     mainAdminContentContainer.style.marginLeft = 'auto';
                     mainAdminContentContainer.style.marginRight = 'auto';
                 }
@@ -786,18 +771,14 @@
                 sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
                 sideMenu.classList.add('open'); // Asegurarse de que esté abierto (transform: translateX(0))
                 hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
-                // Aplicar márgenes específicos para desktop cuando sidebar está visible
-                mainAdminContentContainer.classList.add('has-sidebar-margin'); // Aplica margin-left: 2rem
             } else {
                 sideMenu.classList.add('hidden'); // Empezar oculto en móvil
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para estado inicial móvil
                 hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
-                // Resetear márgenes para móvil
-                mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margin-left fijo
             }
-            // Asegurarse de que el centrado horizontal funcione en ambos casos
-            mainAdminContentContainer.style.marginLeft = 'auto';
-            mainAdminContentContainer.style.marginRight = 'auto';
+            // Margins are now handled purely by CSS media queries, no need for JS to toggle classes
+            mainAdminContentContainer.style.marginLeft = ''; // Reset to let CSS handle
+            mainAdminContentContainer.style.marginRight = ''; // Reset to let CSS handle
 
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
@@ -837,7 +818,6 @@
                 
 
                 // Resetear márgenes de main content a auto para centrar después de cerrar sesión
-                mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margin-left fijo
                 mainAdminContentContainer.style.marginLeft = 'auto';
                 mainAdminContentContainer.style.marginRight = 'auto';
 
@@ -2049,11 +2029,10 @@
             if (gapi.client.getToken() !== null) { // Si está autenticado
                 if (window.innerWidth >= 768) {
                     sideMenu.classList.remove('hidden'); // Mostrar sidebar
-                    sideMenu.classList.add('open');
-                    hamburgerButton.classList.add('hidden');
-                    overlay.classList.remove('open');
-                    document.body.classList.remove('overflow-hidden');
-                    mainAdminContentContainer.classList.add('has-sidebar-margin'); // Aplicar margen en desktop
+                    sideMenu.classList.add('open'); // Ensure transform is 0
+                    hamburgerButton.classList.add('hidden'); // Hide hamburger
+                    overlay.classList.remove('open'); // Hide overlay
+                    document.body.classList.remove('overflow-hidden'); // Allow scrolling
                 } else { // Móvil
                     // Al redimensionar a móvil, el menú debe estar oculto por defecto
                     sideMenu.classList.add('hidden');
@@ -2061,7 +2040,6 @@
                     hamburgerButton.classList.remove('hidden');
                     overlay.classList.remove('open');
                     document.body.classList.remove('overflow-hidden');
-                    mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margen en móvil
                 }
             } else { // No autenticado (estado de login)
                 sideMenu.classList.add('hidden');
@@ -2069,11 +2047,8 @@
                 hamburgerButton.classList.add('hidden');
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
-                mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margen en login
             }
-            // Asegurarse de que el centrado horizontal funcione en ambos casos
-            mainAdminContentContainer.style.marginLeft = 'auto';
-            mainAdminContentContainer.style.marginRight = 'auto';
+            // Margins are handled by CSS media queries now
         });
 
 
@@ -2087,7 +2062,6 @@
             signoutButtonSidebar.classList.add('hidden');
             adminContent.classList.add('hidden');
             // Asegurar que no haya margen al cargar, y que esté centrado
-            mainAdminContentContainer.classList.remove('has-sidebar-margin');
             mainAdminContentContainer.style.marginLeft = 'auto';
             mainAdminContentContainer.style.marginRight = 'auto';
 
