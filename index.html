@@ -11,6 +11,7 @@
         /* Asegura que html y body ocupen toda la altura para que los porcentajes funcionen */
         html, body {
             height: 100%;
+            overflow-x: hidden; /* Added to prevent horizontal overflow on mobile */
         }
 
         /* Fuente Inter para una mejor legibilidad */
@@ -99,11 +100,6 @@
             display: flex; /* Asegura que se muestre como flex cuando está abierto */
         }
 
-        /* Asegura que la clase 'hidden' siempre oculte el elemento */
-        /* #side-menu.hidden {
-            display: none !important;
-        } */ /* Eliminado: ya no se usa esta clase para ocultar */
-
         #overlay {
             position: fixed; /* El overlay debe seguir siendo fixed para cubrir la ventana */
             inset: 0; /* top:0, right:0, bottom:0, left:0 */
@@ -129,9 +125,8 @@
             display: block; /* Visible por defecto en móvil */
         }
 
-        /* El botón de cerrar menú lateral (la cruz) ahora estará oculto por defecto y siempre */
         #close-side-menu-button {
-            display: none !important;
+            display: none !important; /* El botón de cerrar menú lateral (la cruz) ahora estará oculto por defecto y siempre */
         }
 
         #side-menu .tab-button, #side-menu .sidebar-link {
@@ -389,13 +384,13 @@
             /* Desktop specific styles for horizontal field */
             /* NOTE: These styles are now conditionally applied in JS for the Fixture tab */
             #soccer-field-container.horizontal-layout {
-                width: 60%; /* Reduced by 20% from 75% (75 * 0.8 = 60) */
-                padding-top: 27.27%; /* Retain 1:2.2 height to width ratio (1/2.2 = 0.4545), but for horizontal field it's height/width, so width is 2.2 * height. If width is 60%, then height is 60/2.2 = 27.27% */
+                width: 65%; /* Adjusted for better balance with TT table */
+                padding-top: 29.54%; /* Retain aspect ratio (original 1:2.2, so 65% / 2.2 = 29.54%) */
             }
 
             /* Adjust TT details width for desktop */
             #fixture-details-display {
-                width: 40%; /* Take remaining space (100% - 60%) */
+                width: 35%; /* Take remaining space (100% - 65%) */
                 margin-top: 0; /* Align with the top of the field */
             }
 
@@ -477,11 +472,11 @@
             .player-marker.claros.horizontal-layout:nth-child(2) { top: 30%; left: 75%; } /* Defender 1 */
             .player-marker.claros.horizontal-layout:nth-child(3) { top: 70%; left: 75%; } /* Defender 2 */
             .player-marker.claros.horizontal-layout:nth-child(4) { top: 40%; left: 64%; } /* Midfielder/Forward 1 (Moved to midpoint) */
-            .player-marker.claros.horizontal-layout:nth-child(5) { top: 60%; left: 64%; }   /* Midfielder/Forward 2 (Moved to midpoint) */
+            .player-marker.claros.horizontal-layout:nth-child(5) { top: 60%; left: 64%; }    /* Midfielder/Forward 2 (Moved to midpoint) */
 
             /* Oscuros (Left Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
             .player-marker.oscuros.horizontal-layout:nth-child(1) { top: 50%; left: 10%; } /* Goalkeeper */
-            .player-marker.oscuros.horizontal-child(2) { top: 30%; left: 25%; } /* Defender 1 */
+            .player-marker.oscuros.horizontal-layout:nth-child(2) { top: 30%; left: 25%; } /* Defender 1 */
             .player-marker.oscuros.horizontal-layout:nth-child(3) { top: 70%; left: 25%; } /* Defender 2 */
             .player-marker.oscuros.horizontal-layout:nth-child(4) { top: 40%; left: 36%; } /* Midfielder/Forward 1 (Moved to midpoint) */
             .player-marker.oscuros.horizontal-layout:nth-child(5) { top: 60%; left: 36%; }  /* Midfielder/Forward 2 (Moved to midpoint) */
@@ -492,14 +487,20 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row p-4 md:p-0">
+<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row">
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40">
-        <div class="p-4 text-right">
-            <button id="close-side-menu-button" class="text-white text-2xl md:hidden">&times;</button>
+        <!-- Título del menú lateral -->
+        <div class="p-4 pt-16 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+                MENÚ
+            </h2>
         </div>
         <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-content"><i class="fas fa-trophy mr-2"></i>Tabla de Posiciones</button>
@@ -510,7 +511,7 @@
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="estadisticas-content"><i class="fas fa-chart-bar mr-2"></i>Estadísticas</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="equipos-content"><i class="fas fa-futbol mr-2"></i>Equipos</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="fixture-content"><i class="fas fa-calendar-alt mr-2"></i>Fixture</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="individual-stats-content"><i class="fas fa-user mr-2"></i>Estadísticas Individuales</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="individual-stats-content"><i class="fas fa-history mr-2"></i>Histórico</button>
         </div>
     </nav>
 
@@ -787,41 +788,8 @@
         <div id="fixture-content" class="tab-content hidden">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Detalles del Partido</h2>
             
-            <div class="flex flex-col md:flex-row md:space-x-6">
-                <div id="soccer-field-container" class="hidden md:block">
-                    <div class="goal top"></div>
-                    <div class="goal bottom"></div>
-                    <div class="penalty-area top"></div>
-                    <div class="penalty-area bottom"></div>
-                    <div class="goal-area top"></div>
-                    <div class="goal-area bottom"></div>
-                    </div>
-
-                <div id="fixture-details-display" class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6 hidden">
-                    <div class="bg-white p-4 rounded-lg shadow-md">
-                        <h3 class="font-semibold text-gray-700 mb-2">Asistentes al TT</h3>
-                        <table id="tt-attendees-table" class="bg-white rounded-lg shadow">
-                            <thead>
-                                <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                                    <th class="py-3 px-3 text-left-player">Jugador</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-gray-600 text-sm font-light">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <p id="fixture-loading-message" class="loading-message col-span-full">
-                <span class="loading-spinner"></span>Cargando partidos...
-            </p>
-
-            <h3 class="text-xl font-semibold text-gray-700 mb-4">Partidos del Mes</h3>
-            <div id="fixture-matches-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8">
+            <!-- Contenedor para los filtros de año y mes de Fixture -->
+            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
                 <div>
                     <label for="fixture-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
                     <select id="fixture-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
@@ -833,10 +801,47 @@
                         </select>
                 </div>
             </div>
+
+            <p id="fixture-loading-message" class="loading-message col-span-full">
+                <span class="loading-spinner"></span>Cargando partidos...
+            </p>
+
+            <h3 class="text-xl font-semibold text-gray-700 mb-4">Partidos del Mes</h3>
+            <!-- Modificado: grid-cols-2 para móvil, sm:grid-cols-3, lg:grid-cols-4 para escritorio -->
+            <div id="fixture-matches-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-6">
+                <!-- Match cards/list items will be rendered here by JS -->
+            </div>
+
+            <!-- Contenedor para el campo de juego y la tabla de asistentes, que se mostrará al seleccionar un partido -->
+            <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
+                <div id="soccer-field-container" class="flex-1 min-w-0">
+                    <div class="goal top"></div>
+                    <div class="goal bottom"></div>
+                    <div class="penalty-area top"></div>
+                    <div class="penalty-area bottom"></div>
+                    <div class="goal-area top"></div>
+                    <div class="goal-area bottom"></div>
+                </div>
+
+                <div id="fixture-details-display" class="flex-1 min-w-0 bg-white p-4 rounded-lg shadow-md mt-6 md:mt-0">
+                    <h3 class="font-semibold text-gray-700 mb-2">Asistentes al TT</h3>
+                    <div class="overflow-x-auto">
+                        <table id="tt-attendees-table" class="bg-white rounded-lg shadow">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-3 text-left-player">Jugador</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 text-sm font-light">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="individual-stats-content" class="tab-content hidden">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Estadísticas Individuales por Jugador</h2>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Histórico por Jugador</h2>
             <div class="mb-6">
                 <label for="individual-player-search" class="block text-sm font-medium text-gray-700">Buscar Jugador:</label>
                 <div class="relative">
@@ -876,7 +881,7 @@
     <script>
         // ¡IMPORTANTE! Reemplaza 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM' con tu Clave de API de Google Cloud Console.
         // Esta clave es necesaria para acceder a Google Sheets API para hojas públicas sin autenticación de usuario.
-        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM'; 
+        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM';
         
         // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
         // Asegúrate de que esta hoja de cálculo esté compartida públicamente con "Cualquier persona con el enlace puede ver"
@@ -889,7 +894,6 @@
         // Elementos del DOM para el menú lateral
         const hamburgerButton = document.getElementById('hamburger-button');
         const sideMenu = document.getElementById('side-menu');
-        const closeSideMenuButton = document.getElementById('close-side-menu-button');
         const overlay = document.getElementById('overlay');
         const tabButtons = document.querySelectorAll('.tab-button');
 
@@ -902,20 +906,22 @@
         const estadisticasContent = document.getElementById('estadisticas-content');
         const equiposContent = document.getElementById('equipos-content');
         const fixtureContent = document.getElementById('fixture-content');
-        const individualStatsContent = document.getElementById('individual-stats-content'); // New content div
-        const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
+        const individualStatsContent = document.getElementById('individual-stats-content');
+        const soccerFieldContainer = document.getElementById('soccer-field-container');
+        const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container'); // NEW: Reference to the new container
+
 
         // Mapping of hash to tab content ID
         const hashToTabMap = {
-            '#leaderboard': 'leaderboard-content',
-            '#chamigo': 'chamigo-content',
-            '#tt': 'tt-content',
-            '#presentismo': 'presentismo-content',
-            '#ausentismo': 'ausentismo-content',
-            '#estadisticas': 'estadisticas-content',
-            '#equipos': 'equipos-content',
-            '#fixture': 'fixture-content',
-            '#individual-stats': 'individual-stats-content'
+            "#leaderboard": "leaderboard-content",
+            "#chamigo": "chamigo-content",
+            "#tt": "tt-content",
+            "#presentismo": "presentismo-content",
+            "#ausentismo": "ausentismo-content",
+            "#estadisticas": "estadisticas-content",
+            "#equipos": "equipos-content",
+            "#fixture": "fixture-content",
+            "#individual-stats": "individual-stats-content"
         };
 
         // --- Funciones de Carga de Datos (MOVIDAS AQUÍ) ---
@@ -1009,8 +1015,8 @@
                 console.error("Error al inicializar gapi.client:", err);
                 // Actualizar todos los mensajes de carga con el error
                 let errorDetail;
-                if (err && err.message) {
-                    errorDetail = err.message;
+                if (err && err.result && err.result.error && err.result.error.message) {
+                    errorDetail = err.result.error.message;
                 } else {
                     try {
                         errorDetail = JSON.stringify(err);
@@ -1170,7 +1176,8 @@
         // --- Helper Function: Filter Matches by Year and Period/Month ---
         function getFilteredMatches(yearSelectId, periodOrMonthSelectId, isMonthFilter = false) {
             const selectedYear = document.getElementById(yearSelectId).value;
-            const selectedPeriodOrMonth = document.getElementById(periodOrMonthSelectId).value;
+            // CORREGIDO: Obtener el valor del selector de período/mes correcto
+            const selectedPeriodOrMonth = document.getElementById(periodOrMonthSelectId).value; 
 
             console.log(`[getFilteredMatches] Called with Year: ${selectedYear}, Period/Month: ${selectedPeriodOrMonth}, IsMonthFilter: ${isMonthFilter}`); // Debug log
 
@@ -1523,7 +1530,7 @@
 
             if (rankedAusentePlayers.length === 0) {
                 loadingMessage.innerHTML = `No hay datos de Ausentismo disponibles para los filtros seleccionados.`;
-                loadingMessage.classList.add('hidden');
+                loadingMessage.classList.remove('hidden');
                 ausentismoTable.classList.add('hidden');
                 return;
             }
@@ -1671,20 +1678,14 @@
             const fixtureYearSelect = document.getElementById('fixture-year-select');
             const fixtureMonthSelect = document.getElementById('fixture-month-select');
             const loadingMessage = document.getElementById('fixture-loading-message');
-            const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
-            const soccerFieldContainer = document.getElementById('soccer-field-container'); // Get soccer field container
+            const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container');
+            const soccerFieldContainer = document.getElementById('soccer-field-container');
+            const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
 
             fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
-            fixtureDetailsDisplay.classList.add('hidden'); // Hide details when re-rendering cards
-            soccerFieldContainer.classList.add('hidden'); // Hide soccer field
-            soccerFieldContainer.innerHTML = `
-                <div class="goal top"></div>
-                <div class="goal bottom"></div>
-                <div class="penalty-area top"></div>
-                <div class="penalty-area bottom"></div>
-                <div class="goal-area top"></div>
-                <div class="goal-area bottom"></div>
-            `; // Reset field elements
+            fixtureVisualDetailsContainer.classList.add('hidden'); // Hide visual details container when re-rendering cards
+            soccerFieldContainer.querySelectorAll('.player-marker, .winner-trophy').forEach(el => el.remove()); // Clear dynamic field elements
+            ttAttendeesTableBody.innerHTML = ''; // Clear previous TT attendees
 
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
@@ -1701,11 +1702,19 @@
             filteredMatches.sort((a, b) => parseDate(b[1]).getTime() - parseDate(a[1]).getTime());
 
             filteredMatches.forEach(match => {
-                const [matchId, date, clarosIDsStr, oscurosIDsStr, result] = match;
+                const [matchId, date] = match; // No need for winner info here
+                // Determine classes based on screen size (mobile-first approach)
+                // Default to compact list item style, then override for sm and lg
+                const matchItemClasses = `
+                    bg-white p-2 rounded-lg shadow-sm cursor-pointer
+                    hover:bg-gray-100 transition duration-150 ease-in-out
+                    flex justify-center items-center text-sm font-semibold text-indigo-700
+                    sm:p-4 sm:shadow-md sm:text-base
+                `;
+                // The h4 is removed as the div itself will hold the text directly for ultimate compactness
                 const cardHtml = `
-                    <div class="bg-white p-4 rounded-lg shadow-md cursor-pointer hover:bg-gray-100 transition duration-150 ease-in-out" data-match-id="${matchId}">
-                        <h4 class="font-semibold text-lg text-indigo-700 mb-2">Partido del ${date}</h4>
-                        <p class="text-gray-600">Ganador: ${result || 'No definido'}</p>
+                    <div class="${matchItemClasses}" data-match-id="${matchId}">
+                        Partido del ${date}
                     </div>
                 `;
                 fixtureMatchesCardsContainer.innerHTML += cardHtml;
@@ -1714,6 +1723,13 @@
             // Add event listeners to each newly created card
             fixtureMatchesCardsContainer.querySelectorAll('[data-match-id]').forEach(card => {
                 card.addEventListener('click', (event) => {
+                    // Remove 'selected' class from previously selected card
+                    fixtureMatchesCardsContainer.querySelectorAll('.selected').forEach(selectedCard => {
+                        selectedCard.classList.remove('selected', 'bg-gray-100');
+                    });
+                    // Add 'selected' class to the clicked card
+                    event.currentTarget.classList.add('selected', 'bg-gray-100');
+
                     const matchId = event.currentTarget.dataset.matchId;
                     renderFixtureDetails(matchId);
                 });
@@ -1724,14 +1740,14 @@
         }
 
         function renderFixtureDetails(matchId) {
-            const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const loadingMessage = document.getElementById('fixture-loading-message');
+            const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container'); // NEW
             const soccerFieldContainer = document.getElementById('soccer-field-container');
+            const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
 
             loadingMessage.classList.remove('hidden');
-            fixtureDetailsDisplay.classList.add('hidden');
-            soccerFieldContainer.classList.add('hidden'); // Hide field while loading
+            fixtureVisualDetailsContainer.classList.add('hidden'); // NEW: Hide container while loading
             
             // Clear only player markers and trophy from field
             soccerFieldContainer.querySelectorAll('.player-marker, .winner-trophy').forEach(el => el.remove());
@@ -1826,7 +1842,7 @@
                 { x: 0.3, y: 0.75 }, // Defender 1
                 { x: 0.7, y: 0.75 }, // Defender 2
                 { x: 0.4, y: 0.60 }, // Midfielder/Forward 1
-                { x: 0.6, y: 0.60 }   // Midfielder/Forward 2
+                { x: 0.6, y: 0.60 }    // Midfielder/Forward 2
             ];
             const oscurosNormalizedPositionsVertical = [
                 { x: 0.5, y: 0.12 }, // Goalkeeper
@@ -1895,28 +1911,26 @@
                 if (isHorizontalField) { // Desktop or mobile landscape
                     if (winnerTeam === 'Claros') {
                         trophyDiv.style.top = '95%'; // Bottom-right
-                        trophyDiv.style.left = '90%'; 
+                        trophyDiv.style.left = '90%';
                     } else if (winnerTeam === 'Oscuros') {
                         trophyDiv.style.top = '95%'; // Bottom-left
-                        trophyDiv.style.left = '10%'; 
+                        trophyDiv.style.left = '10%';
                     }
                 } else { // Mobile portrait
                     if (winnerTeam === 'Claros') {
                         trophyDiv.style.top = '95%'; // Bottom-left
-                        trophyDiv.style.left = '10%'; 
+                        trophyDiv.style.left = '10%';
                     } else if (winnerTeam === 'Oscuros') {
                         trophyDiv.style.top = '5%'; // Top-right
-                        trophyDiv.style.left = '90%'; 
+                        trophyDiv.style.left = '90%';
                     }
                 }
                 soccerFieldContainer.appendChild(trophyDiv);
             }
 
-            // Show soccer field
-            soccerFieldContainer.classList.remove('hidden');
-
+            // Show both soccer field and details container
+            fixtureVisualDetailsContainer.classList.remove('hidden'); // NEW: Show the overall container
             loadingMessage.classList.add('hidden');
-            fixtureDetailsDisplay.classList.remove('hidden');
         }
 
         // --- Utilidades ---
@@ -2215,16 +2229,46 @@
                 }
             };
 
-            // Clear input on focus
+            // Function to filter and display players (reusable)
+            const filterAndDisplayPlayers = () => {
+                playerResultsDiv.innerHTML = '';
+                const searchTerm = playerSearchInput.value.toLowerCase();
+
+                // Filter players (including inactive ones, as per previous change)
+                const filteredPlayers = allPlayersData.filter(p => 
+                    p[1].toLowerCase().includes(searchTerm)
+                ).sort((a, b) => a[1].localeCompare(b[1]));
+
+                if (filteredPlayers.length > 0) {
+                    filteredPlayers.forEach(player => {
+                        const resultItem = document.createElement('div');
+                        resultItem.classList.add('p-2', 'cursor-pointer', 'hover:bg-gray-100');
+                        resultItem.textContent = player[1];
+                        resultItem.dataset.playerId = player[0]; // Store player ID
+                        resultItem.addEventListener('click', () => {
+                            playerSearchInput.value = player[1];
+                            selectedPlayerIdInput.value = resultItem.dataset.playerId;
+                            playerResultsDiv.classList.add('hidden');
+                            highlightedIndex = -1; // Reset highlight after selection
+                            renderIndividualStatsTable();
+                        });
+                        playerResultsDiv.appendChild(resultItem);
+                    });
+                    playerResultsDiv.classList.remove('hidden');
+                } else {
+                    playerResultsDiv.classList.add('hidden');
+                }
+            };
+
+            // Clear input on focus - MODIFIED
             playerSearchInput.addEventListener('focus', () => {
-                playerSearchInput.value = '';
-                selectedPlayerIdInput.value = '';
-                playerResultsDiv.innerHTML = ''; // Clear results when focusing
-                playerResultsDiv.classList.add('hidden');
+                playerSearchInput.value = ''; // Clear input value
+                selectedPlayerIdInput.value = ''; // Clear selected ID to ensure a fresh search
                 document.getElementById('individual-stats-table').classList.add('hidden');
                 document.getElementById('individual-stats-loading-message').classList.remove('hidden');
                 document.getElementById('individual-stats-loading-message').textContent = 'Escribe al menos 3 caracteres para buscar un jugador.';
                 highlightedIndex = -1; // Reset highlight
+                filterAndDisplayPlayers(); // Show all players on focus
             });
 
             playerSearchInput.addEventListener('input', () => {
@@ -2245,31 +2289,7 @@
                 }
 
                 timeoutId = setTimeout(() => {
-                    playerResultsDiv.innerHTML = '';
-                    // MODIFICADO: No filtrar por estado "Activo" aquí
-                    const filteredPlayers = allPlayersData.filter(p => 
-                        p[1].toLowerCase().includes(searchTerm)
-                    ).sort((a, b) => a[1].localeCompare(b[1]));
-
-                    if (filteredPlayers.length > 0) {
-                        filteredPlayers.forEach(player => {
-                            const resultItem = document.createElement('div');
-                            resultItem.classList.add('p-2', 'cursor-pointer', 'hover:bg-gray-100');
-                            resultItem.textContent = player[1];
-                            resultItem.dataset.playerId = player[0]; // Store player ID
-                            resultItem.addEventListener('click', () => {
-                                playerSearchInput.value = player[1];
-                                selectedPlayerIdInput.value = resultItem.dataset.playerId; 
-                                playerResultsDiv.classList.add('hidden');
-                                highlightedIndex = -1; // Reset highlight after selection
-                                renderIndividualStatsTable();
-                            });
-                            playerResultsDiv.appendChild(resultItem);
-                        });
-                        playerResultsDiv.classList.remove('hidden');
-                    } else {
-                        playerResultsDiv.classList.add('hidden');
-                    }
+                    filterAndDisplayPlayers(); // Call the reusable function
                 }, 300); // Debounce for 300ms
             });
 
@@ -2305,18 +2325,41 @@
             });
 
             // Initial state: check if a player was previously selected and populate input
-            // MODIFICADO: No cargar desde localStorage al inicio
-            const lastSelectedPlayerId = ''; // Forzar a que no haya jugador seleccionado al inicio
+            const lastSelectedPlayerId = localStorage.getItem('lastSelectedIndividualPlayerId'); // MODIFICADO: Leer desde localStorage
             if (lastSelectedPlayerId) {
                 const lastSelectedPlayer = allPlayersData.find(p => p[0] === lastSelectedPlayerId);
                 if (lastSelectedPlayer) {
                     playerSearchInput.value = lastSelectedPlayer[1];
                     selectedPlayerIdInput.value = lastSelectedPlayerId;
+                    // Render stats if a player is pre-selected
+                    renderIndividualStatsTable();
+                } else {
+                    // If stored player not found (e.g., deleted), default to J001
+                    const defaultPlayer = allPlayersData.find(p => p[0] === 'J001');
+                    if (defaultPlayer) {
+                        playerSearchInput.value = defaultPlayer[1];
+                        selectedPlayerIdInput.value = defaultPlayer[0];
+                        localStorage.setItem('lastSelectedIndividualPlayerId', defaultPlayer[0]); // Save default
+                        renderIndividualStatsTable();
+                    } else {
+                        document.getElementById('individual-stats-table').classList.add('hidden');
+                        document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                        document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                    }
                 }
             } else {
-                document.getElementById('individual-stats-table').classList.add('hidden');
-                document.getElementById('individual-stats-loading-message').classList.remove('hidden');
-                document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                // If no player stored, default to J001
+                const defaultPlayer = allPlayersData.find(p => p[0] === 'J001');
+                if (defaultPlayer) {
+                    playerSearchInput.value = defaultPlayer[1];
+                    selectedPlayerIdInput.value = defaultPlayer[0];
+                    localStorage.setItem('lastSelectedIndividualPlayerId', defaultPlayer[0]); // Save default
+                    renderIndividualStatsTable();
+                } else {
+                    document.getElementById('individual-stats-table').classList.add('hidden');
+                    document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                    document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                }
             }
         }
 
@@ -2337,8 +2380,8 @@
                 return;
             }
 
-            // NO GUARDAR EN LOCAL STORAGE
-            // localStorage.setItem('individual-player-selected', selectedPlayerId);
+            // Save selected player to localStorage
+            localStorage.setItem('lastSelectedIndividualPlayerId', selectedPlayerId); // MODIFICADO: Guardar en localStorage
 
             const playerStatsData = calculateIndividualPlayerStats(selectedPlayerId);
 
@@ -2487,7 +2530,6 @@
         document.getElementById('fixture-month-select').addEventListener('change', renderFixtureMatchCards);
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
-        closeSideMenuButton.addEventListener('click', toggleSideMenu);
         overlay.addEventListener('click', () => {
             if (window.innerWidth < 768) {
                 toggleSideMenu();
@@ -2518,7 +2560,8 @@
             // Re-render fixture details only if fixture tab is active
             const currentActiveTab = document.querySelector('.tab-button.active');
             if (currentActiveTab && currentActiveTab.dataset.tab === 'fixture-content') {
-                const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.bg-gray-100.selected'); // Get the currently selected match card
+                // Get the currently selected match card, if any
+                const currentMatchCard = document.querySelector('#fixture-matches-cards-container > div.selected'); 
                 if (currentMatchCard) {
                     const currentMatchId = currentMatchCard.dataset.matchId;
                     renderFixtureDetails(currentMatchId); // Re-render with new orientation
