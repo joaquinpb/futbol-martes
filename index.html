@@ -1035,7 +1035,7 @@
                 document.getElementById('equipos-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('fixture-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`;
                 document.getElementById('individual-stats-loading-message').innerHTML = `<span class="loading-spinner"></span>${errorMessageText}`; // New
-            }
+            });
         }
 
         // --- Funciones de Pestañas ---
@@ -1115,9 +1115,16 @@
                 const fixtureMatchesCardsContainer = document.getElementById('fixture-matches-cards-container');
                 // Use setTimeout to ensure the DOM has updated and the cards are rendered
                 setTimeout(() => {
-                    const latestMatchCard = fixtureMatchesCardsContainer.querySelector('[data-match-id]'); // First one is the latest due to sorting
-                    if (latestMatchCard) {
-                        latestMatchCard.click(); // Simulate click to render details
+                    // Find the 'PARTIDO ACTUAL' card first
+                    const currentMatchCard = fixtureMatchesCardsContainer.querySelector('.current-match-card');
+                    if (currentMatchCard) {
+                        currentMatchCard.click(); // Simulate click to render details
+                    } else {
+                        // If no 'PARTIDO ACTUAL', select the most recent one (first in sorted list)
+                        const latestMatchCard = fixtureMatchesCardsContainer.querySelector('[data-match-id]');
+                        if (latestMatchCard) {
+                            latestMatchCard.click(); // Simulate click to render details
+                        }
                     }
                 }, 100); // Small delay to allow DOM to render
             } else if (tabId === 'individual-stats-content') {
@@ -1701,20 +1708,38 @@
             // Sort matches by date descending (most recent first)
             filteredMatches.sort((a, b) => parseDate(b[1]).getTime() - parseDate(a[1]).getTime());
 
+            // Get today's date at midnight for comparison
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let currentOrFutureMatchFound = false;
+
             filteredMatches.forEach(match => {
-                const [matchId, date] = match; // No need for winner info here
-                // Determine classes based on screen size (mobile-first approach)
-                // Default to compact list item style, then override for sm and lg
+                const [matchId, date] = match;
+                const matchDateObj = parseDate(date);
+                matchDateObj.setHours(0, 0, 0, 0); // Set to midnight for accurate date comparison
+
+                let displayDateText = `Partido del ${date}`;
+                let extraClasses = '';
+
+                // Check if it's a current or future match
+                if (matchDateObj.getTime() >= today.getTime() && !currentOrFutureMatchFound) {
+                    displayDateText = 'PARTIDO ACTUAL';
+                    extraClasses = 'bg-teal-500 text-white current-match-card'; // Distinct color and identifier class
+                    currentOrFutureMatchFound = true; // Mark that we found the first current/future match
+                }
+
                 const matchItemClasses = `
                     bg-white p-2 rounded-lg shadow-sm cursor-pointer
                     hover:bg-gray-100 transition duration-150 ease-in-out
                     flex justify-center items-center text-sm font-semibold text-indigo-700
                     sm:p-4 sm:shadow-md sm:text-base
+                    ${extraClasses}
                 `;
-                // The h4 is removed as the div itself will hold the text directly for ultimate compactness
+                
                 const cardHtml = `
                     <div class="${matchItemClasses}" data-match-id="${matchId}">
-                        Partido del ${date}
+                        ${displayDateText}
                     </div>
                 `;
                 fixtureMatchesCardsContainer.innerHTML += cardHtml;
@@ -1725,10 +1750,17 @@
                 card.addEventListener('click', (event) => {
                     // Remove 'selected' class from previously selected card
                     fixtureMatchesCardsContainer.querySelectorAll('.selected').forEach(selectedCard => {
-                        selectedCard.classList.remove('selected', 'bg-gray-100');
+                        selectedCard.classList.remove('selected', 'bg-gray-100', 'bg-teal-700'); // Also remove teal if it was a current match
                     });
                     // Add 'selected' class to the clicked card
-                    event.currentTarget.classList.add('selected', 'bg-gray-100');
+                    event.currentTarget.classList.add('selected');
+                    // If it's a current match, keep its specific color, otherwise use gray-100 for selected state
+                    if (!event.currentTarget.classList.contains('current-match-card')) {
+                         event.currentTarget.classList.add('bg-gray-100');
+                    } else {
+                         event.currentTarget.classList.add('bg-teal-700'); // A darker teal for selected current match
+                    }
+
 
                     const matchId = event.currentTarget.dataset.matchId;
                     renderFixtureDetails(matchId);
