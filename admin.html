@@ -103,7 +103,7 @@
             position: fixed; /* Para superponer en móvil */
             top: 0;
             left: 0;
-            height: 100vh;
+            height: 100vh; /* Usar 100vh para la altura completa del viewport */
             width: 256px; /* w-64 */
             background-color: #312e81; /* indigo-800 */
             color: white;
@@ -112,6 +112,7 @@
             z-index: 40;
             display: flex; /* Usar flex para el diseño vertical de las pestañas */
             flex-direction: column;
+            justify-content: space-between; /* Empuja el último elemento (botón de cerrar sesión) al final */
             padding-top: 1rem; /* Añadir algo de padding en la parte superior */
         }
 
@@ -814,6 +815,11 @@
             if (token !== null) {
                 google.accounts.oauth2.revoke(token.access_token);
                 gapi.client.setToken('');
+                
+                // Asegurarse de que el overlay y el overflow se remuevan primero
+                overlay.classList.remove('open');
+                document.body.classList.remove('overflow-hidden');
+
                 authorizeButton.style.display = 'block';
                 signoutButtonSidebar.classList.add('hidden');
                 signoutButtonMobileSidebar.classList.add('hidden');
@@ -822,8 +828,7 @@
                 sideMenu.classList.add('hidden'); // Asegurarse de que sidebar esté oculto
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado (para estado móvil)
                 hamburgerButton.classList.add('hidden');
-                overlay.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
+                
 
                 // Resetear márgenes de main content a auto para centrar después de cerrar sesión
                 mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margin-left fijo
@@ -1000,17 +1005,20 @@
         function toggleSideMenu() {
             const isMobile = window.innerWidth < 768;
             if (isMobile) {
+                // Si el menú está oculto (tiene la clase 'hidden'), la removemos primero para que la transición funcione
                 if (sideMenu.classList.contains('hidden')) {
-                    sideMenu.classList.remove('hidden'); // Remove hidden before toggling open
+                    sideMenu.classList.remove('hidden');
                 }
+                
                 sideMenu.classList.toggle('open');
                 overlay.classList.toggle('open');
                 document.body.classList.toggle('overflow-hidden');
+                
                 if (sideMenu.classList.contains('open')) {
-                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
+                    hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa cuando sidebar se abre en móvil
                 } else {
-                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
-                    sideMenu.classList.add('hidden'); // Add hidden back when closing on mobile
+                    hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa cuando sidebar se cierra en móvil
+                    sideMenu.classList.add('hidden'); // Volver a añadir 'hidden' cuando se cierra en móvil
                 }
             }
         }
