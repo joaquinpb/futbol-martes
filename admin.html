@@ -15,7 +15,7 @@
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
             
-            /* Centrado de la caja principal en la pantalla de login */
+            /* Centrado de la caja principal en la pantalla de login por defecto */
             display: flex;
             justify-content: center; /* Centrar horizontalmente */
             align-items: center; /* Centrar verticalmente */
@@ -174,24 +174,24 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.05); /* shadow-lg */
             width: 100%; /* w-full */
             max-width: 1024px; /* max-w-5xl */
-            margin-left: auto; /* Centrar horizontalmente cuando body no es flex */
-            margin-right: auto; /* Centrar horizontalmente cuando body no es flex */
+            /* Margin auto para centrar horizontalmente dentro del flex body */
+            margin-left: auto; 
+            margin-right: auto; 
             min-height: calc(100vh - 4rem); /* Adjust min-height to account for top/bottom margins if any */
             box-sizing: border-box; /* Include padding in width/height calculations */
             
-            /* Por defecto, centrar el contenido interno también (para la pantalla de login) */
+            /* Contenido interno de la caja principal, por defecto alineado al inicio */
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Centrar verticalmente el contenido interno */
-            align-items: center; /* Centrar horizontalmente el contenido interno */
-            text-align: center; /* Centrar texto dentro de los elementos */
+            justify-content: flex-start; /* Alinea contenido al inicio verticalmente */
+            align-items: flex-start; /* Alinea contenido al inicio horizontalmente */
+            text-align: left; /* Alinea texto a la izquierda */
         }
 
         /* Asegurar que el contenido de las pestañas ocupe todo el ancho disponible */
         .tab-content {
             width: 100%; /* Asegura que las pestañas ocupen el 100% del ancho de su contenedor */
-            /* Desactivar centrado flexbox para el contenido interno de las pestañas */
-            display: flex; /* Mantener flex para layout interno */
+            display: flex; 
             flex-direction: column;
             justify-content: flex-start;
             align-items: flex-start;
@@ -209,14 +209,14 @@
             body.sidebar-active {
                 padding-left: 256px; /* Pushes content to the right to make space for fixed sidebar */
                 display: block; /* Revert body to block to allow padding-left to work */
-                justify-content: flex-start; /* Reset for body */
-                align-items: flex-start; /* Reset for body */
+                /* Resetear centrado del body para que el padding funcione */
+                justify-content: flex-start; 
+                align-items: flex-start; 
             }
             .main-admin-content-container {
                 margin-left: auto; /* Revert to auto margins for centering within the new padded body space */
                 margin-right: auto;
                 padding: 2rem; /* md:p-8 */
-                /* Desactivar centrado flexbox para el contenido interno cuando sidebar está activa */
                 justify-content: flex-start;
                 align-items: flex-start;
                 text-align: left;
@@ -731,7 +731,11 @@
                     signoutMenuLink.classList.add('hidden'); // Ocultar el nuevo enlace de cerrar sesión
                     adminContent.classList.add('hidden');
                     
-                    // No es necesario modificar mainAdminContentContainer.style aquí, ya lo maneja el CSS por defecto del body.
+                    // Asegurar que el body esté en modo flex para centrar el login
+                    document.body.style.display = 'flex';
+                    document.body.style.justifyContent = 'center';
+                    document.body.style.alignItems = 'center';
+                    document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding
                 }
             }
         }
@@ -767,13 +771,17 @@
                 sideMenu.classList.add('open'); // Asegurarse de que esté abierto (transform: translateX(0))
                 hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
                 document.body.classList.add('sidebar-active'); // Añadir padding al body en desktop
-                // No es necesario modificar mainAdminContentContainer.style aquí, ya lo maneja el CSS.
+                document.body.style.display = 'block'; // Cambiar body a block para permitir padding
+                document.body.style.justifyContent = ''; // Resetear
+                document.body.style.alignItems = ''; // Resetear
             } else {
                 sideMenu.classList.add('hidden'); // Empezar oculto en móvil
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para estado inicial móvil
                 hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
                 document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding en móvil
-                // No es necesario modificar mainAdminContentContainer.style aquí, ya lo maneja el CSS.
+                document.body.style.display = 'flex'; // Mantener body en flex para centrar en móvil
+                document.body.style.justifyContent = 'center';
+                document.body.style.alignItems = 'center';
             }
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
@@ -810,9 +818,11 @@
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado (para estado móvil)
                 hamburgerButton.classList.add('hidden');
                 
-                // Quitar padding del body al cerrar sesión
+                // Quitar padding del body al cerrar sesión y centrarlo
                 document.body.classList.remove('sidebar-active');
-                // No es necesario modificar mainAdminContentContainer.style aquí, ya lo maneja el CSS por defecto del body.
+                document.body.style.display = 'flex';
+                document.body.style.justifyContent = 'center';
+                document.body.style.alignItems = 'center';
 
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
@@ -2026,7 +2036,9 @@
                     overlay.classList.remove('open'); // Hide overlay
                     document.body.classList.remove('overflow-hidden'); // Allow scrolling
                     document.body.classList.add('sidebar-active'); // Añadir padding al body en desktop
-                    // No es necesario modificar mainAdminContentContainer.style aquí, ya lo maneja el CSS.
+                    document.body.style.display = 'block'; // Cambiar body a block para permitir padding
+                    document.body.style.justifyContent = ''; // Resetear
+                    document.body.style.alignItems = ''; // Resetear
                 } else { // Móvil
                     // Al redimensionar a móvil, el menú debe estar oculto por defecto
                     sideMenu.classList.add('hidden');
@@ -2035,7 +2047,9 @@
                     overlay.classList.remove('open');
                     document.body.classList.remove('overflow-hidden');
                     document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding en móvil
-                    // No es necesario modificar mainAdminContentContainer.style aquí, ya lo maneja el CSS.
+                    document.body.style.display = 'flex'; // Mantener body en flex para centrar en móvil
+                    document.body.style.justifyContent = 'center';
+                    document.body.style.alignItems = 'center';
                 }
             } else { // No autenticado (estado de login)
                 sideMenu.classList.add('hidden');
@@ -2044,7 +2058,9 @@
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
                 document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding
-                // No es necesario modificar mainAdminContentContainer.style aquí, ya lo maneja el CSS.
+                document.body.style.display = 'flex'; // Mantener body en flex para centrar en login
+                document.body.style.justifyContent = 'center';
+                document.body.style.alignItems = 'center';
             }
         });
 
@@ -2060,7 +2076,9 @@
             
             // Asegurar que no haya padding al cargar, y que esté centrado en la pantalla de login
             document.body.classList.remove('sidebar-active');
-            // No es necesario modificar mainAdminContentContainer.style aquí, ya lo maneja el CSS.
+            document.body.style.display = 'flex';
+            document.body.style.justifyContent = 'center';
+            document.body.style.alignItems = 'center';
 
             gapiLoaded();
             const script = document.createElement('script');
