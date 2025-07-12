@@ -28,24 +28,6 @@
             opacity: 0.7;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        /* Estilo para el botón de cerrar sesión (Cruz) */
-        .close-button {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #ef4444; /* Rojo 500 de Tailwind */
-            cursor: pointer;
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.5rem;
-            border-radius: 9999px; /* Fully rounded */
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        .close-button:hover {
-            background-color: #fecaca; /* Rojo 100 de Tailwind */
-            color: #dc2626; /* Rojo 600 de Tailwind */
-        }
         /* Estilo para los elementos de la lista de partidos seleccionables */
         .match-item {
             @apply bg-white p-3 rounded-md shadow-sm mb-2 cursor-pointer hover:bg-gray-100 transition duration-150 ease-in-out;
@@ -110,8 +92,8 @@
             z-index: 40;
             display: flex; /* Usar flex para el diseño vertical de las pestañas */
             flex-direction: column;
-            /* Removido justify-content: space-between; para posicionar el botón de cerrar sesión absolutamente en móvil */
-            padding-top: 0; /* Removido padding del contenedor principal */
+            padding-top: 0;
+            padding-bottom: 0;
         }
 
         /* Esta clase será aplicada por JS para hacerlo visible */
@@ -148,35 +130,6 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
         }
 
-        #close-side-menu-button {
-            background: none;
-            border: none;
-            font-size: 2rem; /* text-2xl */
-            color: white;
-            cursor: pointer;
-            padding: 0.5rem;
-        }
-
-        #side-menu .tab-button, #side-menu .sidebar-link {
-            padding-left: 1.5rem; /* px-6 */
-            padding-right: 1.5rem; /* px-6 */
-            text-align: left;
-            width: 100%; /* Ancho completo dentro de la barra lateral */
-            border-radius: 0; /* Sin esquinas redondeadas para pestañas verticales */
-            margin-bottom: 0.25rem; /* mb-1 */
-            color: white; /* Texto blanco para barra lateral oscura */
-            transition: background-color 0.15s ease-in-out;
-            display: flex; /* Para alinear el texto y el icono */
-            align-items: center; /* Para alinear el texto y el icono */
-            gap: 0.5rem; /* Espacio entre texto e icono */
-        }
-        #side-menu .tab-button.active {
-            background-color: #4338ca; /* indigo-700 */
-        }
-        #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
-            background-color: #4f46e5; /* indigo-600 */
-        }
-
         /* Contenedor de las pestañas dentro del menú lateral, ahora con scroll si es necesario */
         #side-menu > .flex.flex-col.flex-1 {
             overflow-y: auto; /* Permite el scroll vertical si el contenido de las pestañas excede la altura disponible */
@@ -184,18 +137,6 @@
             padding-top: 1rem; /* Padding para el contenido scrollable */
             padding-bottom: 1rem; /* Padding para el contenido scrollable */
         }
-
-        /* Posicionamiento absoluto para el botón de cerrar sesión en móvil */
-        #signout_button_mobile_sidebar {
-            position: absolute;
-            bottom: 1rem; /* 1rem desde el borde inferior del menú lateral */
-            left: 1rem;
-            right: 1rem;
-            width: calc(100% - 2rem); /* Ancho completo menos el padding lateral */
-            text-align: center;
-            margin: 0 auto; /* Centrar horizontalmente */
-        }
-
 
         /* Main content container adjustments for fixed sidebar */
         .main-admin-content-container {
@@ -209,6 +150,11 @@
             margin-right: auto;
             min-height: calc(100vh - 4rem); /* Adjust min-height to account for top/bottom margins if any */
             box-sizing: border-box; /* Include padding in width/height calculations */
+            display: flex; /* Usar flexbox para centrar el contenido */
+            flex-direction: column;
+            justify-content: center; /* Centrar verticalmente */
+            align-items: center; /* Centrar horizontalmente */
+            text-align: center; /* Centrar texto */
         }
 
         @media (min-width: 768px) {
@@ -220,6 +166,10 @@
                 margin-left: auto; /* Revert to auto margins for centering within the new padded body space */
                 margin-right: auto;
                 padding: 2rem; /* md:p-8 */
+                /* Desactivar centrado flexbox cuando sidebar está activa */
+                justify-content: flex-start;
+                align-items: flex-start;
+                text-align: left;
             }
         }
 
@@ -228,13 +178,12 @@
             #hamburger-button {
                 display: none !important; /* Always hidden on desktop */
             }
-            #signout_button_mobile_sidebar {
-                display: none !important; /* Hidden on desktop */
-            }
-            #signout_button_sidebar {
-                display: block !important; /* Visible on desktop */
-                position: static; /* Asegurar que no tenga posición absoluta en desktop */
-                margin-bottom: 2rem; /* Unificado: 2rem de separación del borde inferior */
+            /* Asegurar que el enlace de cerrar sesión en el menú lateral se muestre como un elemento de bloque normal en desktop */
+            #signout-menu-link {
+                display: block !important;
+                position: static !important; /* Anular position: absolute; de móvil */
+                width: auto !important; /* Anular width: calc(100% - 2rem); de móvil */
+                margin: 0 !important; /* Anular margin: 0 auto; de móvil */
             }
             #overlay {
                 display: none !important; /* Hidden on desktop */
@@ -250,17 +199,17 @@
 
     <!-- Side Navigation Menu (fixed, slides in/out on all screens) -->
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden flex flex-col">
-        <div class="p-4 text-right md:hidden">
-            <!-- Botón de cruz (oculto en desktop) -->
-            <button id="close-side-menu-button" class="text-white text-2xl">&times;</button>
+        <div class="p-4 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-white">MENU</h2>
+            <!-- El botón de la cruz ha sido eliminado, el menú se cierra con el overlay o el botón de hamburguesa -->
         </div>
         <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
             <!-- Reordered tab buttons -->
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="team-formation">Armar Equipos</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="players-management">Gestionar Jugadores</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="match-results">Resultados</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-management">Chamigo</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-attendance">TT</button>
+            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="players-management">Gestionar Jugadores</button>
             <!-- ENLACE A TABLA DE POSICIONES EXTERNA -->
             <a href="index.html" target="_blank" rel="noopener noreferrer" class="sidebar-link py-2 px-4 text-white font-medium hover:bg-indigo-700">
                 <span>Tabla de Posiciones</span>
@@ -270,16 +219,10 @@
                     <path fill-rule="evenodd" d="M15.75 3a.75.75 0 01.75.75V9a.75.75 0 01-1.5 0V5.06L10.22 10.53a.75.75 0 01-1.06-1.06l5.47-5.47H12a.75.75 0 010-1.5h3.75z" clip-rule="evenodd" />
                 </svg>
             </a>
-        </div>
-        <div class="p-4">
-            <!-- Signout button for mobile sidebar -->
-            <button id="signout_button_mobile_sidebar" class="md:hidden mx-auto px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 hidden w-full">
+            <!-- Nuevo enlace de Cerrar Sesión -->
+            <a href="#" id="signout-menu-link" class="sidebar-link py-2 px-4 font-medium text-red-300 hover:bg-red-700 hover:text-white transition duration-300">
                 Cerrar Sesión
-            </button>
-            <!-- Signout button inside sidebar for desktop -->
-            <button id="signout_button_sidebar" class="hidden mx-auto px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 w-full">
-                Cerrar Sesión
-            </button>
+            </a>
         </div>
     </nav>
 
@@ -633,8 +576,6 @@
 
         // Elementos del DOM
         const authorizeButton = document.getElementById('authorize_button');
-        const signoutButtonSidebar = document.getElementById('signout_button_sidebar'); // Nuevo botón de cerrar sesión en sidebar (desktop)
-        const signoutButtonMobileSidebar = document.getElementById('signout_button_mobile_sidebar'); // Nuevo botón de cerrar sesión en sidebar (mobile)
         const authStatus = document.getElementById('auth-status');
         const adminContent = document.getElementById('admin-content');
         const mainAdminContentContainer = document.querySelector('.main-admin-content-container'); // Referencia al contenedor principal
@@ -642,10 +583,10 @@
         // Nuevos elementos para el menú lateral
         const hamburgerButton = document.getElementById('hamburger-button');
         const sideMenu = document.getElementById('side-menu');
-        const closeSideMenuButton = document.getElementById('close-side-menu-button');
         const overlay = document.getElementById('overlay');
         const tabButtons = document.querySelectorAll('.tab-button'); // Obtener todos los botones de pestaña
         const tabContents = document.querySelectorAll('.tab-content'); // Obtener todos los contenidos de las pestañas
+        const signoutMenuLink = document.getElementById('signout-menu-link'); // Nuevo enlace de cerrar sesión en el menú
 
         // Custom Confirmation Modal elements
         const customConfirmModal = document.getElementById('custom-confirm-modal');
@@ -745,12 +686,15 @@
                     sideMenu.classList.add('hidden'); // Asegura que esté oculto
                     sideMenu.classList.remove('open'); // Asegura que el transform esté reseteado
                     hamburgerButton.classList.add('hidden');
-                    signoutButtonMobileSidebar.classList.add('hidden');
-                    signoutButtonSidebar.classList.add('hidden');
+                    signoutMenuLink.classList.add('hidden'); // Ocultar el nuevo enlace de cerrar sesión
                     adminContent.classList.add('hidden');
                     
                     // Asegurar que el body no tenga padding-left en la pantalla de login
                     document.body.classList.remove('sidebar-active');
+                    // Centrar el main content en la pantalla de login
+                    mainAdminContentContainer.style.justifyContent = 'center';
+                    mainAdminContentContainer.style.alignItems = 'center';
+                    mainAdminContentContainer.style.textAlign = 'center';
                 }
             }
         }
@@ -777,8 +721,7 @@
 
         async function handleAuthSuccess() {
             authorizeButton.style.display = 'none';
-            signoutButtonSidebar.classList.remove('hidden');
-            signoutButtonMobileSidebar.classList.remove('hidden');
+            signoutMenuLink.classList.remove('hidden'); // Mostrar el nuevo enlace de cerrar sesión
             authStatus.classList.add('hidden');
             adminContent.classList.remove('hidden'); // Mostrar el contenido de administración
             
@@ -787,11 +730,19 @@
                 sideMenu.classList.add('open'); // Asegurarse de que esté abierto (transform: translateX(0))
                 hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
                 document.body.classList.add('sidebar-active'); // Añadir padding al body en desktop
+                // Resetear estilos de centrado para el contenido principal en desktop
+                mainAdminContentContainer.style.justifyContent = 'flex-start';
+                mainAdminContentContainer.style.alignItems = 'flex-start';
+                mainAdminContentContainer.style.textAlign = 'left';
             } else {
                 sideMenu.classList.add('hidden'); // Empezar oculto en móvil
                 sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para estado inicial móvil
                 hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
                 document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding en móvil
+                // Resetear estilos de centrado para el contenido principal en móvil (aunque no es tan crítico aquí)
+                mainAdminContentContainer.style.justifyContent = 'flex-start';
+                mainAdminContentContainer.style.alignItems = 'flex-start';
+                mainAdminContentContainer.style.textAlign = 'left';
             }
 
             await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
@@ -821,8 +772,7 @@
                 document.body.classList.remove('overflow-hidden'); // This is key for the grey screen
 
                 authorizeButton.style.display = 'block';
-                signoutButtonSidebar.classList.add('hidden');
-                signoutButtonMobileSidebar.classList.add('hidden');
+                signoutMenuLink.classList.add('hidden'); // Ocultar el nuevo enlace de cerrar sesión
                 adminContent.classList.add('hidden'); // Ocultar el contenido de administración
                 
                 sideMenu.classList.add('hidden'); // Asegurarse de que sidebar esté oculto
@@ -831,6 +781,11 @@
                 
                 // Quitar padding del body al cerrar sesión
                 document.body.classList.remove('sidebar-active');
+                // Centrar el main content en la pantalla de login
+                mainAdminContentContainer.style.justifyContent = 'center';
+                mainAdminContentContainer.style.alignItems = 'center';
+                mainAdminContentContainer.style.textAlign = 'center';
+
 
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
                 authStatus.classList.remove('hidden');
@@ -2023,12 +1978,10 @@
 
         // --- Inicialización ---
         authorizeButton.addEventListener('click', handleAuthClick);
-        signoutButtonSidebar.addEventListener('click', handleSignoutClick);
-        signoutButtonMobileSidebar.addEventListener('click', handleSignoutClick);
+        signoutMenuLink.addEventListener('click', handleSignoutClick); // Usar el nuevo enlace de cerrar sesión
         deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler);
 
         hamburgerButton.addEventListener('click', toggleSideMenu);
-        closeSideMenuButton.addEventListener('click', toggleSideMenu);
         overlay.addEventListener('click', () => {
             if (window.innerWidth < 768) {
                 toggleSideMenu();
@@ -2045,6 +1998,10 @@
                     overlay.classList.remove('open'); // Hide overlay
                     document.body.classList.remove('overflow-hidden'); // Allow scrolling
                     document.body.classList.add('sidebar-active'); // Añadir padding al body en desktop
+                    // Resetear estilos de centrado para el contenido principal en desktop
+                    mainAdminContentContainer.style.justifyContent = 'flex-start';
+                    mainAdminContentContainer.style.alignItems = 'flex-start';
+                    mainAdminContentContainer.style.textAlign = 'left';
                 } else { // Móvil
                     // Al redimensionar a móvil, el menú debe estar oculto por defecto
                     sideMenu.classList.add('hidden');
@@ -2053,6 +2010,10 @@
                     overlay.classList.remove('open');
                     document.body.classList.remove('overflow-hidden');
                     document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding en móvil
+                    // Resetear estilos de centrado para el contenido principal en móvil (aunque no es tan crítico aquí)
+                    mainAdminContentContainer.style.justifyContent = 'flex-start';
+                    mainAdminContentContainer.style.alignItems = 'flex-start';
+                    mainAdminContentContainer.style.textAlign = 'left';
                 }
             } else { // No autenticado (estado de login)
                 sideMenu.classList.add('hidden');
@@ -2061,6 +2022,10 @@
                 overlay.classList.add('hidden');
                 document.body.classList.remove('overflow-hidden');
                 document.body.classList.remove('sidebar-active'); // Asegurar que no tenga padding
+                // Centrar el main content en la pantalla de login
+                mainAdminContentContainer.style.justifyContent = 'center';
+                mainAdminContentContainer.style.alignItems = 'center';
+                mainAdminContentContainer.style.textAlign = 'center';
             }
         });
 
@@ -2071,12 +2036,14 @@
             hamburgerButton.classList.add('hidden');
             sideMenu.classList.add('hidden');
             sideMenu.classList.remove('open');
-            signoutButtonMobileSidebar.classList.add('hidden');
-            signoutButtonSidebar.classList.add('hidden');
+            signoutMenuLink.classList.add('hidden'); // Ocultar el enlace de cerrar sesión al inicio
             adminContent.classList.add('hidden');
             
             // Asegurar que no haya padding al cargar, y que esté centrado en la pantalla de login
             document.body.classList.remove('sidebar-active');
+            mainAdminContentContainer.style.justifyContent = 'center';
+            mainAdminContentContainer.style.alignItems = 'center';
+            mainAdminContentContainer.style.textAlign = 'center';
 
             gapiLoaded();
             const script = document.createElement('script');
