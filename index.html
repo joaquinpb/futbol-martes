@@ -1741,8 +1741,8 @@
                 matchDateObj.setHours(0, 0, 0, 0); // Set to midnight for accurate date comparison
 
                 let displayDateText = `Partido del ${date}`;
-                let bgColorClasses = 'bg-white'; // Default background
-                let textColorClasses = 'text-indigo-700'; // Default text color
+                let bgColorClasses = 'bg-white'; // Default background for non-current matches
+                let textColorClasses = 'text-indigo-700'; // Default text color for non-current matches
                 let identifierClass = ''; // To mark current match
 
                 // Check if it's a current or future match
@@ -1774,22 +1774,26 @@
             });
 
             // Add event listeners to each newly created card
-            fixtureMatchesCardsContainer.querySelectorAll('[data-match-id]').forEach(card => {
+            fixtureMatchesCardsContainer.querySelectorAll('.fixture-match-item').forEach(card => { // Target the specific class
                 card.addEventListener('click', (event) => {
-                    // Remove 'selected' class and its associated styles from previously selected card
-                    fixtureMatchesCardsContainer.querySelectorAll('.selected').forEach(selectedCard => {
+                    // Remove 'selected' class from ALL cards
+                    fixtureMatchesCardsContainer.querySelectorAll('.fixture-match-item').forEach(selectedCard => {
                         selectedCard.classList.remove('selected');
-                        // Restore original background for previously selected current match
+                        // Restore original background for previously selected cards
                         if (selectedCard.classList.contains('current-match-card')) {
                             selectedCard.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-700');
                         } else {
-                            selectedCard.classList.add('bg-white'); // Restore default white for regular cards
+                            selectedCard.classList.add('bg-white');
                         }
                     });
 
                     // Add 'selected' class to the clicked card
                     event.currentTarget.classList.add('selected');
                     // The CSS rules for .fixture-match-item.selected and .current-match-card.selected will handle the styling
+                    // No need to add specific background colors here, CSS takes care of it.
+
+                    const matchId = event.currentTarget.dataset.matchId;
+                    renderFixtureDetails(matchId); // Call the function to render details
                 });
             });
 
