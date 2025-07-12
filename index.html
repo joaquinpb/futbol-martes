@@ -1060,6 +1060,12 @@
             const hash = window.location.hash;
             if (hash && hashToTabMap[hash]) {
                 initialTabId = hashToTabMap[hash];
+            } else {
+                // Si no hay hash o es inválido, intentar cargar desde localStorage
+                const storedTabId = localStorage.getItem('lastActiveTab');
+                if (storedTabId && document.getElementById(storedTabId)) {
+                    initialTabId = storedTabId;
+                }
             }
 
             // Activate the initial tab
@@ -1116,6 +1122,9 @@
         function handleTabButtonClick(event) {
             const clickedButton = event.currentTarget;
             const targetTabId = clickedButton.dataset.tab;
+
+            // Save active tab to localStorage
+            localStorage.setItem('lastActiveTab', targetTabId);
 
             // Update URL hash
             const hash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === targetTabId);
@@ -1954,10 +1963,8 @@
                 yearSelect.value = 'all';
             }
 
-            // NO GUARDAR EN LOCAL STORAGE
-            // Eliminar listeners antiguos si existen para evitar duplicados
-            yearSelect.removeEventListener('change', saveYearToLocalStorage);
-            // No añadir nuevos listeners para guardar en localStorage
+            // NO GUARDAR EN LOCAL STORAGE: Eliminar listeners que intentan guardar en localStorage
+            yearSelect.removeEventListener('change', (e) => localStorage.setItem(`${storageKeyPrefix}-year`, e.target.value));
         }
 
         function populateMonthSelects(selectId, storageKeyPrefix) {
@@ -1990,10 +1997,8 @@
                 monthSelect.value = 'all';
             }
 
-            // NO GUARDAR EN LOCAL STORAGE
-            // Eliminar listeners antiguos si existen para evitar duplicados
-            monthSelect.removeEventListener('change', saveMonthToLocalStorage);
-            // No añadir nuevos listeners para guardar en localStorage
+            // NO GUARDAR EN LOCAL STORAGE: Eliminar listeners que intentan guardar en localStorage
+            monthSelect.removeEventListener('change', (e) => localStorage.setItem(`${storageKeyPrefix}-month`, e.target.value));
         }
 
 
@@ -2013,10 +2018,8 @@
                 periodSelect.value = 'total';
             }
 
-            // NO GUARDAR EN LOCAL STORAGE
-            // Eliminar listeners antiguos si existen para evitar duplicados
-            periodSelect.removeEventListener('change', savePeriodToLocalStorage);
-            // No añadir nuevos listeners para guardar en localStorage
+            // NO GUARDAR EN LOCAL STORAGE: Eliminar listeners que intentan guardar en localStorage
+            periodSelect.removeEventListener('change', (e) => localStorage.setItem(`${storageKeyPrefix}-period`, e.target.value));
         }
 
         // New function to calculate individual player stats
@@ -2401,7 +2404,7 @@
                 // Clausura row - always render if data exists, even if PJ is 0
                 const clausuraStats = yearStats.clausura;
                 individualStatsTableBody.innerHTML += `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                    <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year}">
                         <td class="py-3 px-3 text-center"></td>
                         <td class="py-3 px-3 text-center">Clausura</td>
                         <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
@@ -2419,7 +2422,7 @@
                 // Apertura row - always render if data exists, even if PJ is 0
                 const aperturaStats = yearStats.apertura;
                 individualStatsTableBody.innerHTML += `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                    <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year}">
                         <td class="py-3 px-3 text-center"></td>
                         <td class="py-3 px-3 text-center">Apertura</td>
                         <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
