@@ -1962,9 +1962,6 @@
             } else {
                 yearSelect.value = 'all';
             }
-
-            // NO GUARDAR EN LOCAL STORAGE: Eliminar listeners que intentan guardar en localStorage
-            yearSelect.removeEventListener('change', (e) => localStorage.setItem(`${storageKeyPrefix}-year`, e.target.value));
         }
 
         function populateMonthSelects(selectId, storageKeyPrefix) {
@@ -1996,9 +1993,6 @@
             } else {
                 monthSelect.value = 'all';
             }
-
-            // NO GUARDAR EN LOCAL STORAGE: Eliminar listeners que intentan guardar en localStorage
-            monthSelect.removeEventListener('change', (e) => localStorage.setItem(`${storageKeyPrefix}-month`, e.target.value));
         }
 
 
@@ -2017,9 +2011,6 @@
             } else {
                 periodSelect.value = 'total';
             }
-
-            // NO GUARDAR EN LOCAL STORAGE: Eliminar listeners que intentan guardar en localStorage
-            periodSelect.removeEventListener('change', (e) => localStorage.setItem(`${storageKeyPrefix}-period`, e.target.value));
         }
 
         // New function to calculate individual player stats
@@ -2383,9 +2374,9 @@
                 // Always render year total row, even if PJ is 0 for the year
                 // This row is now a summary, not a toggle
                 individualStatsTableBody.innerHTML += `
-                    <tr class="bg-gray-300 font-semibold text-gray-700">
+                    <tr class="bg-gray-300 font-semibold text-gray-700 cursor-pointer toggle-year-button" data-year="${year}">
                         <td class="py-3 px-3 text-center flex items-center justify-center gap-1">
-                            <i class="fas fa-plus-square toggle-icon" data-year="${year}"></i> <!-- Icono visual, no interactivo -->
+                            <i class="fas fa-plus-square toggle-icon" data-year="${year}"></i>
                             <span>${year}</span>
                         </td>
                         <td class="py-3 px-3 text-center"></td> <!-- Columna Torneo vacía para la fila del año -->
@@ -2404,7 +2395,7 @@
                 // Clausura row - always render if data exists, even if PJ is 0
                 const clausuraStats = yearStats.clausura;
                 individualStatsTableBody.innerHTML += `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year}">
+                    <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
                         <td class="py-3 px-3 text-center"></td>
                         <td class="py-3 px-3 text-center">Clausura</td>
                         <td class="py-3 px-3 text-center">${clausuraStats.points}</td>
@@ -2422,7 +2413,7 @@
                 // Apertura row - always render if data exists, even if PJ is 0
                 const aperturaStats = yearStats.apertura;
                 individualStatsTableBody.innerHTML += `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year}">
+                    <tr class="border-b border-gray-200 hover:bg-gray-100 year-detail-row year-${year} hidden">
                         <td class="py-3 px-3 text-center"></td>
                         <td class="py-3 px-3 text-center">Apertura</td>
                         <td class="py-3 px-3 text-center">${aperturaStats.points}</td>
@@ -2442,7 +2433,6 @@
             individualStatsTable.classList.remove('hidden');
 
             // Add event listeners for toggle buttons AFTER content is rendered
-            // Re-habilitado la interactividad del botón de expansión
             document.querySelectorAll('.toggle-year-button').forEach(button => {
                 button.addEventListener('click', (event) => {
                     const year = event.currentTarget.dataset.year;
