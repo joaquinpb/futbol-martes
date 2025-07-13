@@ -344,11 +344,11 @@
             color: #1a202c; /* Default text color for initials */
         }
         .player-marker .fa-star {
-            font-size: 1.0em; /* MODIFIED: Doubled the size */
+            font-size: 1.2em; /* MODIFIED: Doubled the size */
             margin-top: 2px;
             position: absolute;
-            bottom: 68px; /* MODIFIED: Adjusted position */
-            right: 0px; /* MODIFIED: Adjusted position */
+            bottom: 4px; /* MODIFIED: Adjusted position */
+            right: 4px; /* MODIFIED: Adjusted position */
         }
 
         .player-marker.claros {
@@ -1048,6 +1048,7 @@
         let gapiInited = false;
         let allPlayersData = []; // Cache de todos los jugadores
         let allMatchesData = []; // Cache de todos los partidos
+        let lastSelectedFixtureMatchId = null; // NEW: To store the ID of the last selected fixture match
 
         // Elementos del DOM para el menú lateral
         const hamburgerButton = document.getElementById('hamburger-button');
@@ -1805,7 +1806,7 @@
             // 2. Ocultar mensaje de carga
             loadingMessage.classList.add('hidden');
 
-            // FILTRADO: Solo mostrar si hay al menos un partido jugado por los equipos
+            // NEW: Check if there are any matches at all for the selected filters
             if (teamStats.totalPJMatches === 0 && teamStats.suspendidos === 0) {
                 loadingMessage.innerHTML = `No hay datos de Equipos disponibles para los filtros seleccionados.`;
                 loadingMessage.classList.remove('hidden');
@@ -1817,23 +1818,23 @@
             // MODIFICADO: Aseguramos que los cuadros tengan el mismo tamaño y se distribuyan
             equiposStatsDisplay.innerHTML = `
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold" id="oscuros-wins"></span>
+                    <span class="text-3xl font-bold">${teamStats.oscurosWins}</span>
                     <span class="text-sm uppercase">Oscuros Ganados</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold" id="claros-wins"></span>
+                    <span class="text-3xl font-bold" id="claros-wins">${teamStats.clarosWins}</span>
                     <span class="text-sm uppercase">Claros Ganados</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold" id="empates"></span>
+                    <span class="text-3xl font-bold" id="empates">${teamStats.empates}</span>
                     <span class="text-sm uppercase">Empates</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold" id="suspendidos"></span>
+                    <span class="text-3xl font-bold" id="suspendidos">${teamStats.suspendidos}</span>
                     <span class="text-sm uppercase">Suspendidos</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold" id="total-pj-matches"></span>
+                    <span class="text-3xl font-bold" id="total-pj-matches">${teamStats.totalPJMatches}</span>
                     <span class="text-sm uppercase">Partidos Jugados</span>
                 </div>
             `;
@@ -1878,6 +1879,7 @@
                 fixtureToggleIcon.classList.remove('fa-chevron-down');
                 fixtureToggleIcon.classList.add('fa-chevron-up');
                 fixtureCollapsibleContent.classList.remove('hidden'); // Ensure cards container is visible
+                lastSelectedFixtureMatchId = null; // NEW: No match selected if no data
                 return;
             }
 
@@ -1982,8 +1984,12 @@
 
             if (!selectedMatch) {
                 loadingMessage.innerHTML = `Detalles del partido no encontrados.`;
+                lastSelectedFixtureMatchId = null; // NEW: Clear selected match if not found
                 return;
             }
+
+            // NEW: Store the selected match ID
+            lastSelectedFixtureMatchId = matchId;
 
             const [id, date, clarosIDsStr, oscurosIDsStr, result, chamigoVotosStr, ttAttendeesStr] = selectedMatch;
 
@@ -2091,7 +2097,7 @@
                 { x: 0.36, y: 0.30 }, // Midfielder/Forward 1 (Ajustado verticalmente)
                 { x: 0.36, y: 0.70 }  // Midfielder/Forward 2 (Ajustado verticalmente)
             ];
-            
+
             const currentClarosNormalizedPositions = isHorizontalField ? clarosNormalizedPositionsHorizontal : clarosNormalizedPositionsVertical;
             const currentOscurosNormalizedPositions = isHorizontalField ? oscurosNormalizedPositionsHorizontal : oscurosNormalizedPositionsVertical;
 
@@ -2476,7 +2482,6 @@
             const clearSearchButton = document.getElementById('clear-player-search'); // Get the clear button
             let timeoutId; // To debounce input
             let highlightedIndex = -1; // To keep track of the highlighted item for keyboard navigation
-            let isClearing = false; // Flag to indicate if the clear button was just pressed
 
             // Helper to remove highlight from all results
             const removeHighlight = () => {
@@ -2492,6 +2497,8 @@
                 if (results.length > 0 && index >= 0 && index < results.length) {
                     results[index].classList.add('highlighted');
                     playerSearchInput.value = results[index].textContent; // Update input value
+                    // NEW: Scroll the highlighted element into view
+                    results[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     highlightedIndex = index;
                 }
             };
@@ -2906,21 +2913,51 @@
             }
 
             toggleButton.addEventListener('click', () => {
-                collapsibleContent.classList.toggle('hidden');
-                if (collapsibleContent.classList.contains('hidden')) {
-                    toggleButton.classList.add('hidden-content');
-                    toggleButton.classList.remove('visible-content');
-                    toggleIcon.classList.remove('fa-chevron-up');
-                    toggleIcon.classList.add('fa-chevron-down');
-                    // No text change here for fixture, it's handled by renderFixtureDetails/renderFixtureMatchCards
-                } else {
-                    toggleButton.classList.add('visible-content');
-                    toggleButton.classList.remove('hidden-content');
-                    toggleIcon.classList.remove('fa-chevron-down');
-                    toggleIcon.classList.add('fa-chevron-up');
-                    // When opening fixture content, set text to "Elegir otro partido"
-                    if (toggleId === 'fixture-filter-toggle') {
-                        toggleSpan.textContent = 'Elegir otro partido';
+                // NEW: Handle fixture toggle logic specifically
+                if (toggleId === 'fixture-filter-toggle') {
+                    // Check if the match cards container is currently visible (meaning details are hidden)
+                    if (!collapsibleContent.classList.contains('hidden')) {
+                        // User clicked to hide match cards and show details (if a match is selected)
+                        collapsibleContent.classList.add('hidden'); // Hide match cards
+                        if (lastSelectedFixtureMatchId) {
+                            renderFixtureDetails(lastSelectedFixtureMatchId); // Re-render the last selected match
+                            fixtureVisualDetailsContainer.classList.remove('hidden'); // Show details
+                            // Button text and icon are set by renderFixtureDetails
+                        } else {
+                            // If no match was selected, just keep details hidden and show a message
+                            fixtureVisualDetailsContainer.classList.add('hidden'); // Ensure details are hidden
+                            // Update button text to indicate no match is selected, but content is "hidden"
+                            toggleSpan.textContent = 'Elegir otro partido';
+                            toggleButton.classList.add('hidden-content');
+                            toggleButton.classList.remove('visible-content');
+                            toggleIcon.classList.remove('fa-chevron-up');
+                            toggleIcon.classList.add('fa-chevron-down');
+                        }
+                    } else {
+                        // User clicked to hide details and show match cards
+                        fixtureVisualDetailsContainer.classList.add('hidden'); // Hide details
+                        collapsibleContent.classList.remove('hidden'); // Show match cards
+                        
+                        toggleSpan.textContent = 'Elegir otro partido'; // Reset text for match list view
+                        toggleButton.classList.add('visible-content'); // Button indicates content is expanded (match cards)
+                        toggleButton.classList.remove('hidden-content');
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-up');
+                    }
+                } else { // Original logic for other collapsible sections
+                    collapsibleContent.classList.toggle('hidden');
+                    if (collapsibleContent.classList.contains('hidden')) {
+                        toggleButton.classList.add('hidden-content');
+                        toggleButton.classList.remove('visible-content');
+                        toggleIcon.classList.remove('fa-chevron-up');
+                        toggleIcon.classList.add('fa-chevron-down');
+                        toggleSpan.textContent = defaultText;
+                    } else {
+                        toggleButton.classList.add('visible-content');
+                        toggleButton.classList.remove('hidden-content');
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-up');
+                        toggleSpan.textContent = visibleTextOverride || `Ocultar ${defaultText}`;
                     }
                 }
             });
