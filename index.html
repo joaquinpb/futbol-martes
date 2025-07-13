@@ -579,7 +579,7 @@
             <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">TABLA DE POSICIONES</h2>
             
             <!-- Botón/Encabezado para colapsar/expandir los filtros -->
-            <div id="leaderboard-filter-toggle" class="bg-gray-900 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4">
+            <div id="leaderboard-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4">
                 <span class="font-semibold">Seleccionar Torneo</span>
                 <i class="fas fa-chevron-down toggle-icon"></i>
             </div>
@@ -1247,10 +1247,9 @@
         // --- Helper Function: Filter Matches by Year and Period/Month ---
         function getFilteredMatches(yearSelectId, periodOrMonthSelectId, isMonthFilter = false) {
             const selectedYear = document.getElementById(yearSelectId).value;
-            // CORREGIDO: Obtener el valor del selector de período/mes correcto
             const selectedPeriodOrMonth = document.getElementById(periodOrMonthSelectId).value; 
 
-            console.log(`[getFilteredMatches] Called with Year: ${selectedYear}, Period/Month: ${selectedPeriodOrMonth}, IsMonthFilter: ${isMonthFilter}`); // Debug log
+            console.log(`[getFilteredMatches] Called with Year: ${selectedYear}, Period/Month: ${selectedPeriodOrMonth}, IsMonthFilter: ${isMonthFilter}`);
 
             return allMatchesData.filter(match => {
                 const dateString = match[1]; // Fecha en formato DD/MM/YYYY
@@ -1284,12 +1283,12 @@
 
         // --- Centralized Stats Calculation ---
         function calculateStatsForPeriod(yearSelectId, periodSelectId) {
-            const filteredMatches = getFilteredMatches(yearSelectId, periodSelectId, false); // Always use period filter here
-            console.log(`[calculateStatsForPeriod] Filtered matches count: ${filteredMatches.length}`); // Debug log
+            const filteredMatches = getFilteredMatches(yearSelectId, periodSelectId, false);
+            console.log(`[calculateStatsForPeriod] Filtered matches count: ${filteredMatches.length}`);
             
             const playerStats = {};
             // Initialize all players (active and inactive)
-            allPlayersData.forEach(player => { // MODIFICADO: Eliminado el filtro "p => p[2] === 'Activo'"
+            allPlayersData.forEach(player => {
                 const [id, name] = player;
                 playerStats[id] = {
                     name: name,
@@ -1302,7 +1301,7 @@
                     chamigos: 0,
                     tt: 0,
                     ausentes: 0,
-                    id: id // Keep player ID for chamigo/TT lookup
+                    id: id
                 };
             });
 
@@ -1363,11 +1362,20 @@
                 // Chamigo counts
                 if (chamigoVotosStr) {
                     try {
+                        console.log(`[Chamigo Debug] Processing match ${matchId}. chamigoVotosStr: ${chamigoVotosStr}`);
                         const chamigoVotos = JSON.parse(chamigoVotosStr);
+                        console.log(`[Chamigo Debug] Parsed chamigoVotos:`, chamigoVotos);
                         if (chamigoVotos.length > 0) {
                             const maxVotes = Math.max(...chamigoVotos.map(v => v.votos));
+                            console.log(`[Chamigo Debug] maxVotes: ${maxVotes}`);
                             const chamigosDelPartido = chamigoVotos.filter(v => v.votos === maxVotes);
-                            chamigosIds = chamigosDelPartido.map(chamigo => chamigo.id);
+                            console.log(`[Chamigo Debug] chamigosDelPartido:`, chamigosDelPartido);
+                            chamigosDelPartido.forEach(chamigo => {
+                                if (playerStats[chamigo.id]) {
+                                    playerStats[chamigo.id].chamigos += 1;
+                                    console.log(`[Chamigo Debug] Player ${playerStats[chamigo.id].name} chamigos count: ${playerStats[chamigo.id].chamigos}`);
+                                }
+                            });
                         }
                     } catch (e) {
                         console.warn('Error al parsear votos de chamigo en el partido', matchId, ':', e);
@@ -1410,7 +1418,7 @@
                     totalPJMatches
                 }
             };
-            console.log('[calculateStatsForPeriod] Calculated Result:', result); // Debug log
+            console.log('[calculateStatsForPeriod] Calculated Result:', result);
             return result;
         }
 
@@ -1757,7 +1765,7 @@
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
 
-            const filteredMatches = getFilteredMatches(fixtureYearSelect.id, fixtureMonthSelect.id, true); // Use month filter
+            const filteredMatches = getFilteredMatches(fixtureYearSelect.id, fixtureMonthSelect.id, true);
             console.log(`[renderFixtureMatchCards] Found ${filteredMatches.length} matches for selection.`);
 
             if (filteredMatches.length === 0) {
@@ -2077,7 +2085,7 @@
                     const date = parseDate(dateString);
                     years.add(date.getFullYear());
                 }
-            });
+            }
 
             const sortedYears = Array.from(years).sort((a, b) => b - a);
 
@@ -2271,7 +2279,7 @@
                             currentYearTotalStats.tt += 1;
                             playerStats.overallTotal.tt += 1;
                         }
-                    }
+                    });
                 }
             });
 
