@@ -326,8 +326,8 @@
 
         /* Player Marker: the circular part */
         .player-marker {
-            width: 57px; /* Tamaño del marcador de jugador */
-            height: 57px;
+            width: 40px; /* Tamaño del marcador de jugador */
+            height: 40px;
             border-radius: 50%; /* Forma circular */
             display: flex;
             align-items: center;
@@ -360,7 +360,7 @@
 
         /* Player Name Label: the text below the marker */
         .player-name-label {
-            font-size: 0.90rem; /* Tamaño de fuente para el nombre */
+            font-size: 0.65rem; /* Tamaño de fuente para el nombre */
             font-weight: bold; /* Ahora en negrita */
             white-space: nowrap; /* Evita que el texto se envuelva */
             overflow: hidden; /* Oculta el texto que se desborda */
@@ -502,15 +502,15 @@
             .player-wrapper.claros.horizontal-layout:nth-child(1) { top: 50%; left: 90%; } /* Goalkeeper */
             .player-wrapper.claros.horizontal-layout:nth-child(2) { top: 30%; left: 75%; } /* Defender 1 */
             .player-wrapper.claros.horizontal-layout:nth-child(3) { top: 70%; left: 75%; } /* Defender 2 */
-            .player-wrapper.claros.horizontal-layout:nth-child(4) { top: 45%; left: 60%; } /* Midfielder/Forward 1 (Ajustado) */
-            .player-wrapper.claros.horizontal-layout:nth-child(5) { top: 55%; left: 60%; }    /* Midfielder/Forward 2 (Ajustado) */
+            .player-wrapper.claros.horizontal-layout:nth-child(4) { top: 40%; left: 60%; } /* Midfielder/Forward 1 (Ajustado verticalmente) */
+            .player-wrapper.claros.horizontal-layout:nth-child(5) { top: 60%; left: 60%; }    /* Midfielder/Forward 2 (Ajustado verticalmente) */
 
             /* Oscuros (Left Half) - 1 Goalkeeper, 2 Defenders, 2 Midfielders/Forwards */
             .player-wrapper.oscuros.horizontal-layout:nth-child(1) { top: 50%; left: 10%; } /* Goalkeeper */
             .player-wrapper.oscuros.horizontal-layout:nth-child(2) { top: 30%; left: 25%; } /* Defender 1 */
             .player-wrapper.oscuros.horizontal-layout:nth-child(3) { top: 70%; left: 25%; } /* Defender 2 */
-            .player-wrapper.oscuros.horizontal-layout:nth-child(4) { top: 45%; left: 40%; } /* Midfielder/Forward 1 (Ajustado) */
-            .player-wrapper.oscuros.horizontal-layout:nth-child(5) { top: 55%; left: 40%; }  /* Midfielder/Forward 2 (Ajustado) */
+            .player-wrapper.oscuros.horizontal-layout:nth-child(4) { top: 40%; left: 40%; } /* Midfielder/Forward 1 (Ajustado verticalmente) */
+            .player-wrapper.oscuros.horizontal-layout:nth-child(5) { top: 60%; left: 40%; }  /* Midfielder/Forward 2 (Ajustado verticalmente) */
 
             /* Trophy positions for desktop */
             .winner-trophy.claros.horizontal-layout { top: 95%; left: 90%; } /* Bottom-right */
@@ -573,7 +573,15 @@
         <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">LA CLANDE</h1>
         <div id="leaderboard-content" class="tab-content">
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Tabla de Posiciones</h2>
-            <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
+            
+            <!-- Botón/Encabezado para colapsar/expandir los filtros -->
+            <div id="leaderboard-filter-toggle" class="bg-gray-900 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4">
+                <span class="font-semibold">Seleccionar Torneo</span>
+                <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+
+            <!-- Contenedor de filtros colapsable -->
+            <div id="leaderboard-filters-collapsible" class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6 hidden">
                 <div>
                     <label for="leaderboard-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
                     <select id="leaderboard-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
@@ -960,7 +968,7 @@
         const fixtureContent = document.getElementById('fixture-content');
         const individualStatsContent = document.getElementById('individual-stats-content');
         const soccerFieldContainer = document.getElementById('soccer-field-container');
-        const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container'); // NEW: Reference to the new container
+        const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container');
 
 
         // Mapping of hash to tab content ID
@@ -1931,35 +1939,35 @@
             // Normalized positions (0 to 1, relative to field width/height)
             // These are for a vertical field (height > width)
             const clarosNormalizedPositionsVertical = [
-                { x: 0.5, y: 0.90 }, // Goalkeeper
-                { x: 0.35, y: 0.765 }, // Defender 1
-                { x: 0.65, y: 0.765 }, // Defender 2
-                { x: 0.25, y: 0.60 }, // Midfielder/Forward 1
-                { x: 0.75, y: 0.60 }    // Midfielder/Forward 2
+                { x: 0.5, y: 0.88 }, // Goalkeeper
+                { x: 0.3, y: 0.75 }, // Defender 1
+                { x: 0.7, y: 0.75 }, // Defender 2
+                { x: 0.4, y: 0.60 }, // Midfielder/Forward 1
+                { x: 0.6, y: 0.60 }    // Midfielder/Forward 2
             ];
             const oscurosNormalizedPositionsVertical = [
-                { x: 0.5, y: 0.10 }, // Goalkeeper
-                { x: 0.35, y: 0.235 }, // Defender 1
-                { x: 0.65, y: 0.235 }, // Defender 2
-                { x: 0.25, y: 0.40 }, // Midfielder/Forward 1
-                { x: 0.75, y: 0.40 }  // Midfielder/Forward 2
+                { x: 0.5, y: 0.12 }, // Goalkeeper
+                { x: 0.3, y: 0.25 }, // Defender 1
+                { x: 0.7, y: 0.25 }, // Defender 2
+                { x: 0.4, y: 0.40 }, // Midfielder/Forward 1
+                { x: 0.6, y: 0.40 }  // Midfielder/Forward 2
             ];
 
             // Normalized positions (0 to 1, relative to field width/height)
             // These are for a horizontal field (width > height)
             const clarosNormalizedPositionsHorizontal = [
-                { x: 0.94, y: 0.50 }, // Goalkeeper
-                { x: 0.80, y: 0.35 }, // Defender 1
-                { x: 0.80, y: 0.65 }, // Defender 2
-                { x: 0.65, y: 0.25 }, // Midfielder/Forward 1 (Ajustado verticalmente)
-                { x: 0.65, y: 0.75 }  // Midfielder/Forward 2 (Ajustado verticalmente)
+                { x: 0.90, y: 0.50 }, // Goalkeeper
+                { x: 0.75, y: 0.30 }, // Defender 1
+                { x: 0.75, y: 0.70 }, // Defender 2
+                { x: 0.60, y: 0.40 }, // Midfielder/Forward 1 (Ajustado verticalmente)
+                { x: 0.60, y: 0.60 }  // Midfielder/Forward 2 (Ajustado verticalmente)
             ];
             const oscurosNormalizedPositionsHorizontal = [
-                { x: 0.06, y: 0.50 }, // Goalkeeper
-                { x: 0.20, y: 0.35 }, // Defender 1
-                { x: 0.20, y: 0.65 }, // Defender 2
-                { x: 0.35, y: 0.25 }, // Midfielder/Forward 1 (Ajustado verticalmente)
-                { x: 0.35, y: 0.75 }  // Midfielder/Forward 2 (Ajustado verticalmente)
+                { x: 0.10, y: 0.50 }, // Goalkeeper
+                { x: 0.25, y: 0.30 }, // Defender 1
+                { x: 0.25, y: 0.70 }, // Defender 2
+                { x: 0.40, y: 0.40 }, // Midfielder/Forward 1 (Ajustado verticalmente)
+                { x: 0.40, y: 0.60 }  // Midfielder/Forward 2 (Ajustado verticalmente)
             ];
 
             const currentClarosNormalizedPositions = isHorizontalField ? clarosNormalizedPositionsHorizontal : clarosNormalizedPositionsVertical;
@@ -2701,6 +2709,22 @@
             // Cargar las bibliotecas de Google API. gapiLoaded() se llama cuando apis.google.com/js/api.js termina de cargar.
             // Para asegurar el orden y evitar conflictos, es buena práctica que apis.google.com/js/api.js sea el primero.
             // La inicialización de la carga de datos comenzará desde gapiLoaded -> initializeGapiClient -> handleDataLoadSuccess.
+        });
+
+        // --- Lógica de Colapsado/Expandido para "Seleccionar Torneo" ---
+        const leaderboardFilterToggle = document.getElementById('leaderboard-filter-toggle');
+        const leaderboardFiltersCollapsible = document.getElementById('leaderboard-filters-collapsible');
+        const leaderboardToggleIcon = leaderboardFilterToggle.querySelector('.toggle-icon');
+
+        leaderboardFilterToggle.addEventListener('click', () => {
+            leaderboardFiltersCollapsible.classList.toggle('hidden');
+            if (leaderboardFiltersCollapsible.classList.contains('hidden')) {
+                leaderboardToggleIcon.classList.remove('fa-chevron-up');
+                leaderboardToggleIcon.classList.add('fa-chevron-down');
+            } else {
+                leaderboardToggleIcon.classList.remove('fa-chevron-down');
+                leaderboardToggleIcon.classList.add('fa-chevron-up');
+            }
         });
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
