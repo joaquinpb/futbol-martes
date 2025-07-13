@@ -26,6 +26,9 @@
         }
         /* Estilos base para tablas */
         table {
+            /* @apply es una directiva de Tailwind CSS, no CSS puro. Requiere PostCSS para compilar. */
+            /* Si no usas un proceso de construcción de Tailwind, estas líneas podrían no funcionar. */
+            /* Sin embargo, dado que Tailwind está incluido vía CDN, funcionarán. */
             @apply bg-white rounded-lg shadow-md;
             width: 100%; /* Ensure tables take full width */
             border-collapse: collapse; /* For clean borders */
@@ -545,11 +548,9 @@
     </button>
 
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40">
-        <!-- Título principal de la aplicación en el menú lateral -->
         <div class="p-4 pt-16 flex items-center justify-center mb-4">
             <h1 class="text-3xl font-extrabold text-white">LA CLANDE</h1>
         </div>
-        <!-- Título del menú lateral -->
         <div class="p-4 flex items-center justify-between">
             <h2 class="text-xl font-bold text-white flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
@@ -574,17 +575,14 @@
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
     <div class="main-content-container bg-white p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8">
-        <!-- Título principal de la aplicación eliminado de aquí -->
         <div id="leaderboard-content" class="tab-content">
             <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">TABLA DE POSICIONES</h2>
             
-            <!-- Botón/Encabezado para colapsar/expandir los filtros -->
             <div id="leaderboard-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4">
                 <span class="font-semibold">Seleccionar Torneo</span>
                 <i class="fas fa-chevron-down toggle-icon"></i>
             </div>
 
-            <!-- Contenedor de filtros colapsable -->
             <div id="leaderboard-filters-collapsible" class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6 hidden">
                 <div>
                     <label for="leaderboard-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
@@ -852,7 +850,6 @@
         <div id="fixture-content" class="tab-content hidden">
             <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">FIXTURE</h2>
             
-            <!-- Contenedor para los filtros de año y mes de Fixture -->
             <div class="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-8 mb-6">
                 <div>
                     <label for="fixture-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
@@ -871,12 +868,9 @@
             </p>
 
             <h3 class="text-xl font-semibold text-gray-700 mb-4">Partidos del Mes</h3>
-            <!-- Modificado: grid-cols-2 para móvil, sm:grid-cols-3, lg:grid-cols-4 para escritorio -->
             <div id="fixture-matches-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-6">
-                <!-- Match cards/list items will be rendered here by JS -->
-            </div>
+                </div>
 
-            <!-- Contenedor para el campo de juego y la tabla de asistentes, que se mostrará al seleccionar un partido -->
             <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
                 <div id="soccer-field-container" class="flex-1 min-w-0">
                     <div class="goal top"></div>
@@ -2085,7 +2079,7 @@
                     const date = parseDate(dateString);
                     years.add(date.getFullYear());
                 }
-            }
+            });
 
             const sortedYears = Array.from(years).sort((a, b) => b - a);
 
@@ -2279,7 +2273,7 @@
                             currentYearTotalStats.tt += 1;
                             playerStats.overallTotal.tt += 1;
                         }
-                    });
+                    }
                 }
             });
 
@@ -2397,15 +2391,18 @@
                 }
             };
 
-            // Clear input on focus - MODIFIED
+            // Clear input on focus - MODIFIED to be more user-friendly
             playerSearchInput.addEventListener('focus', () => {
-                playerSearchInput.value = ''; // Clear input value
-                selectedPlayerIdInput.value = ''; // Clear selected ID to ensure a fresh search
-                document.getElementById('individual-stats-table').classList.add('hidden');
-                document.getElementById('individual-stats-loading-message').classList.remove('hidden');
-                document.getElementById('individual-stats-loading-message').textContent = 'Escribe al menos 3 caracteres para buscar un jugador.';
+                // If there's already a selected player, don't clear the input on focus,
+                // only if the search input is empty or has been manually cleared.
+                if (playerSearchInput.value === '') {
+                    selectedPlayerIdInput.value = ''; // Clear selected ID to ensure a fresh search
+                    document.getElementById('individual-stats-table').classList.add('hidden');
+                    document.getElementById('individual-stats-loading-message').classList.remove('hidden');
+                    document.getElementById('individual-stats-loading-message').textContent = 'Escribe al menos 3 caracteres para buscar un jugador.';
+                }
                 highlightedIndex = -1; // Reset highlight
-                filterAndDisplayPlayers(); // Show all players on focus
+                filterAndDisplayPlayers(); // Show all players or filtered list on focus
             });
 
             playerSearchInput.addEventListener('input', () => {
@@ -2471,8 +2468,9 @@
                     // Render stats if a player is pre-selected
                     renderIndividualStatsTable();
                 } else {
-                    // If stored player not found (e.g., deleted), default to J001
-                    const defaultPlayer = allPlayersData.find(p => p[0] === 'J001');
+                    // If stored player not found (e.g., deleted), default to J001 or no selection
+                    // Attempt to find J001 or default to first player if available
+                    const defaultPlayer = allPlayersData.find(p => p[0] === 'J001') || allPlayersData[0];
                     if (defaultPlayer) {
                         playerSearchInput.value = defaultPlayer[1];
                         selectedPlayerIdInput.value = defaultPlayer[0];
@@ -2485,8 +2483,8 @@
                     }
                 }
             } else {
-                // If no player stored, default to J001
-                const defaultPlayer = allPlayersData.find(p => p[0] === 'J001');
+                // If no player stored, default to J001 or the first available player
+                const defaultPlayer = allPlayersData.find(p => p[0] === 'J001') || allPlayersData[0];
                 if (defaultPlayer) {
                     playerSearchInput.value = defaultPlayer[1];
                     selectedPlayerIdInput.value = defaultPlayer[0];
@@ -2532,8 +2530,7 @@
             individualStatsTableBody.innerHTML += `
                 <tr class="bg-blue-200 font-bold text-indigo-800">
                     <td class="py-3 px-3 text-center">TOTAL</td>
-                    <td class="py-3 px-3 text-center"></td> <!-- Columna Torneo vacía para el total general -->
-                    <td class="py-3 px-3 text-center">${totalStats.points}</td>
+                    <td class="py-3 px-3 text-center"></td> <td class="py-3 px-3 text-center">${totalStats.points}</td>
                     <td class="py-3 px-3 text-center">${totalStats.pg}</td>
                     <td class="py-3 px-3 text-center">${totalStats.pe}</td>
                     <td class="py-3 px-3 text-center">${totalStats.pp}</td>
@@ -2559,8 +2556,7 @@
                             <i class="fas fa-plus-square toggle-icon" data-year="${year}"></i>
                             <span>${year}</span>
                         </td>
-                        <td class="py-3 px-3 text-center"></td> <!-- Columna Torneo vacía para la fila del año -->
-                        <td class="py-3 px-3 text-center">${yearStats.total.points}</td>
+                        <td class="py-3 px-3 text-center"></td> <td class="py-3 px-3 text-center">${yearStats.total.points}</td>
                         <td class="py-3 px-3 text-center">${yearStats.total.pg}</td>
                         <td class="py-3 px-3 text-center">${yearStats.total.pe}</td>
                         <td class="py-3 px-3 text-center">${yearStats.total.pp}</td>
