@@ -1822,19 +1822,19 @@
                     <span class="text-sm uppercase">Oscuros Ganados</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.clarosWins}</span>
+                    <span class="text-3xl font-bold" id="claros-wins">${teamStats.clarosWins}</span>
                     <span class="text-sm uppercase">Claros Ganados</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.empates}</span>
+                    <span class="text-3xl font-bold" id="empates">${teamStats.empates}</span>
                     <span class="text-sm uppercase">Empates</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.suspendidos}</span>
+                    <span class="text-3xl font-bold" id="suspendidos">${teamStats.suspendidos}</span>
                     <span class="text-sm uppercase">Suspendidos</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.totalPJMatches}</span>
+                    <span class="text-3xl font-bold" id="total-pj-matches">${teamStats.totalPJMatches}</span>
                     <span class="text-sm uppercase">Partidos Jugados</span>
                 </div>
             `;
@@ -2916,30 +2916,34 @@
             toggleButton.addEventListener('click', () => {
                 // NEW: Handle fixture toggle logic specifically
                 if (toggleId === 'fixture-filter-toggle') {
-                    if (collapsibleContent.classList.contains('hidden')) {
-                        // If content is hidden, and we have a last selected match, re-render it
+                    // Check if the match cards container is currently visible (meaning details are hidden)
+                    if (!fixtureCollapsibleContent.classList.contains('hidden')) {
+                        // User clicked to hide match cards and show details (if a match is selected)
+                        fixtureCollapsibleContent.classList.add('hidden'); // Hide match cards
                         if (lastSelectedFixtureMatchId) {
-                            renderFixtureDetails(lastSelectedFixtureMatchId);
+                            renderFixtureDetails(lastSelectedFixtureMatchId); // Re-render the last selected match
+                            fixtureVisualDetailsContainer.classList.remove('hidden'); // Show details
+                            // Button text and icon are set by renderFixtureDetails
+                        } else {
+                            // If no match was selected, just keep details hidden and show a message
+                            fixtureVisualDetailsContainer.classList.add('hidden'); // Ensure details are hidden
+                            // Update button text to indicate no match is selected, but content is "hidden"
+                            fixtureToggleSpan.textContent = 'Elegir otro partido';
+                            toggleButton.classList.add('hidden-content');
+                            toggleButton.classList.remove('visible-content');
+                            toggleIcon.classList.remove('fa-chevron-up');
+                            toggleIcon.classList.add('fa-chevron-down');
                         }
-                        // Show the visual details container if a match is selected
-                        fixtureVisualDetailsContainer.classList.remove('hidden');
-                        collapsibleContent.classList.add('hidden'); // Keep match cards hidden
-                        
-                        toggleButton.classList.add('hidden-content');
-                        toggleButton.classList.remove('visible-content');
-                        toggleIcon.classList.remove('fa-chevron-up');
-                        toggleIcon.classList.add('fa-chevron-down');
-                        // Text is already set by renderFixtureDetails
                     } else {
-                        // If content is visible (match cards), hide it and show visual details (if any was selected)
-                        fixtureVisualDetailsContainer.classList.add('hidden'); // Hide visual details
-                        collapsibleContent.classList.remove('hidden'); // Show match cards
+                        // User clicked to hide details and show match cards
+                        fixtureVisualDetailsContainer.classList.add('hidden'); // Hide details
+                        fixtureCollapsibleContent.classList.remove('hidden'); // Show match cards
                         
-                        toggleButton.classList.add('visible-content');
+                        fixtureToggleSpan.textContent = 'Elegir otro partido'; // Reset text for match list view
+                        toggleButton.classList.add('visible-content'); // Button indicates content is expanded (match cards)
                         toggleButton.classList.remove('hidden-content');
                         toggleIcon.classList.remove('fa-chevron-down');
                         toggleIcon.classList.add('fa-chevron-up');
-                        toggleSpan.textContent = 'Elegir otro partido'; // Reset text to default for match list view
                     }
                 } else { // Original logic for other collapsible sections
                     collapsibleContent.classList.toggle('hidden');
