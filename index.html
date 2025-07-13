@@ -344,11 +344,11 @@
             color: #1a202c; /* Default text color for initials */
         }
         .player-marker .fa-star {
-            font-size: 1.0em; /* MODIFIED: Doubled the size */
+            font-size: 1.2em; /* MODIFIED: Doubled the size */
             margin-top: 2px;
             position: absolute;
-            bottom: 68px; /* MODIFIED: Adjusted position */
-            right: 0px; /* MODIFIED: Adjusted position */
+            bottom: 4px; /* MODIFIED: Adjusted position */
+            right: 4px; /* MODIFIED: Adjusted position */
         }
 
         .player-marker.claros {
@@ -1851,6 +1851,13 @@
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
 
+            // Get references to the fixture toggle button elements
+            const fixtureFilterToggle = document.getElementById('fixture-filter-toggle');
+            const fixtureCollapsibleContent = document.getElementById('fixture-collapsible-content');
+            const fixtureToggleIcon = fixtureFilterToggle.querySelector('.toggle-icon');
+            const fixtureToggleSpan = fixtureFilterToggle.querySelector('span');
+
+
             fixtureMatchesCardsContainer.innerHTML = ''; // Clear previous cards
             fixtureVisualDetailsContainer.classList.add('hidden'); // Hide visual details container when re-rendering cards
             soccerFieldContainer.querySelectorAll('.player-wrapper, .winner-trophy').forEach(el => el.remove()); // Clear dynamic field elements
@@ -1864,6 +1871,13 @@
 
             if (filteredMatches.length === 0) {
                 loadingMessage.innerHTML = `No hay partidos disponibles para los filtros seleccionados.`;
+                // Ensure the button text is default when no matches are found
+                fixtureToggleSpan.textContent = 'Elegir otro partido';
+                fixtureFilterToggle.classList.add('visible-content');
+                fixtureFilterToggle.classList.remove('hidden-content');
+                fixtureToggleIcon.classList.remove('fa-chevron-down');
+                fixtureToggleIcon.classList.add('fa-chevron-up');
+                fixtureCollapsibleContent.classList.remove('hidden'); // Ensure cards container is visible
                 return;
             }
 
@@ -1948,6 +1962,12 @@
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
+
+            // Get references to the fixture toggle button elements
+            const fixtureFilterToggle = document.getElementById('fixture-filter-toggle');
+            const fixtureCollapsibleContent = document.getElementById('fixture-collapsible-content');
+            const fixtureToggleIcon = fixtureFilterToggle.querySelector('.toggle-icon');
+            const fixtureToggleSpan = fixtureFilterToggle.querySelector('span');
 
             loadingMessage.classList.remove('hidden');
             fixtureVisualDetailsContainer.classList.add('hidden'); // NEW: Hide container while loading
@@ -2161,6 +2181,20 @@
 
             // Show both soccer field and details container
             fixtureVisualDetailsContainer.classList.remove('hidden'); // NEW: Show the overall container
+            fixtureCollapsibleContent.classList.add('hidden'); // Hide match cards
+            fixtureFilterToggle.classList.add('hidden-content'); // Set button style for "hidden content" state
+            fixtureFilterToggle.classList.remove('visible-content');
+            fixtureToggleIcon.classList.remove('fa-chevron-up');
+            fixtureToggleIcon.classList.add('fa-chevron-down');
+
+            // Update the text of the fixture toggle button
+            const selectedMatchCard = document.querySelector(`.fixture-match-item[data-match-id="${matchId}"]`);
+            let buttonText = `Partido del ${date}`;
+            if (selectedMatchCard && selectedMatchCard.classList.contains('current-match-card')) {
+                buttonText = 'PARTIDO ACTUAL';
+            }
+            fixtureToggleSpan.textContent = buttonText; // Update the button text
+
             loadingMessage.classList.add('hidden');
         }
 
@@ -2872,13 +2906,21 @@
                     toggleButton.classList.remove('visible-content');
                     toggleIcon.classList.remove('fa-chevron-up');
                     toggleIcon.classList.add('fa-chevron-down');
-                    toggleSpan.textContent = defaultText;
+                    // For fixture, text is set by renderFixtureDetails
+                    if (toggleId !== 'fixture-filter-toggle') {
+                        toggleSpan.textContent = defaultText;
+                    }
                 } else {
                     toggleButton.classList.add('visible-content');
                     toggleButton.classList.remove('hidden-content');
                     toggleIcon.classList.remove('fa-chevron-down');
                     toggleIcon.classList.add('fa-chevron-up');
-                    toggleSpan.textContent = visibleTextOverride || `Ocultar ${defaultText}`; // Use override or default
+                    // For fixture, text is set to "Elegir otro partido"
+                    if (toggleId === 'fixture-filter-toggle') {
+                        toggleSpan.textContent = 'Elegir otro partido';
+                    } else {
+                        toggleSpan.textContent = visibleTextOverride || `Ocultar ${defaultText}`;
+                    }
                 }
             });
 
@@ -2894,9 +2936,9 @@
         setupCollapsibleToggle('ausentismo-filter-toggle', 'ausentismo-filters-collapsible', 'Seleccionar Torneo');
         // MODIFICADO: Texto de botón para Estadísticas
         setupCollapsibleToggle('estadisticas-filter-toggle', 'estadisticas-filters-collapsible', 'Cambiar orden y/o filtros', 'Seleccionar torneo / Cambiar orden'); 
+        // MODIFICADO: Ahora el botón de fixture se maneja de forma más personalizada
         setupCollapsibleToggle('equipos-filter-toggle', 'equipos-filters-collapsible', 'Seleccionar Torneo');
-        // MODIFICADO: Texto de botón para Fixture
-        setupCollapsibleToggle('fixture-filter-toggle', 'fixture-collapsible-content', 'Elegir otro partido', 'Elegir otro partido'); 
+        // REMOVED: setupCollapsibleToggle('fixture-filter-toggle', 'fixture-collapsible-content', 'Elegir otro partido', 'Elegir otro partido'); 
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 </body>
