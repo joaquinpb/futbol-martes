@@ -203,10 +203,10 @@
 
         /* Estilos para el título MENÚ en el sidebar */
         #side-menu .menu-title-container {
-            padding: 0.5rem 1.5rem; /* py-2 px-6 para igualar los botones */
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            padding: 0.5rem 1.5rem; /* py-2 px-6 */
+            display: flex; /* Make it a flex container */
+            align-items: center; /* Align items vertically */
+            justify-content: space-between; /* Space between title and toggle */
             margin-bottom: 0.25rem; /* mb-1 para separar de los botones de abajo */
         }
         #side-menu .menu-title {
@@ -654,24 +654,29 @@
             color: var(--text-table-header); /* Usar variable */
         }
 
-        /* Estilos para el botón de modo oscuro */
+        /* NEW: Styles for the new circular dark mode toggle button */
         #dark-mode-toggle {
-            padding: 0.5rem 1.5rem;
-            text-align: left;
-            width: 100%;
-            border-radius: 0;
-            margin-bottom: 0.25rem;
-            color: var(--text-table-header);
-            transition: background-color 0.15s ease-in-out;
+            background-color: var(--bg-indigo-700); /* Use variable for background */
+            color: var(--text-table-header); /* Use variable for icon color */
+            border: none; /* Remove default button border */
+            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            white-space: nowrap;
-            background-color: var(--bg-indigo-800); /* Fondo del sidebar */
+            justify-content: center;
+            width: 40px; /* Fixed size for circular button */
+            height: 40px; /* Fixed size for circular button */
+            border-radius: 50%; /* Make it circular */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Small shadow */
+            transition: background-color 0.15s ease-in-out; /* Smooth transition */
         }
 
         #dark-mode-toggle:hover {
-            background-color: var(--bg-indigo-700);
+            background-color: var(--bg-indigo-600); /* Darker on hover */
+        }
+
+        /* Ensure icon color changes with theme */
+        body.dark-mode #dark-mode-toggle i {
+            color: var(--text-table-header); /* Should always be white/light in dark mode sidebar */
         }
 
         /* Estilos para los select e input de texto en modo oscuro */
@@ -726,11 +731,15 @@
             color: var(--text-default); /* Color de texto para los elementos de la lista */
         }
 
-        body.dark-mode #individual-player-results > div:hover {
-            background-color: var(--bg-table-row-hover); /* Color de fondo al pasar el ratón en modo oscuro */
-        }
+        body.dark-mode #individual-player-results > div:hover,
         body.dark-mode #individual-player-results > div.highlighted {
-            background-color: var(--bg-table-row-hover); /* Color de fondo para el elemento resaltado en modo oscuro */
+            background-color: var(--bg-table-row-hover); /* Color de fondo al pasar el ratón y para el elemento resaltado en modo oscuro */
+        }
+
+        /* Ensure the flex-1 div within side-menu scrolls if content overflows */
+        #side-menu .flex-col.p-4.md\:p-0.md\:space-y-2.flex-1 {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* For smoother scrolling on iOS */
         }
 
     </style>
@@ -745,14 +754,18 @@
         <div class="p-4 pt-16 flex items-center justify-center mb-4">
             <h1 class="text-3xl font-extrabold text-white">LA CLANDE</h1>
         </div>
-        <!-- Título del menú lateral -->
-        <div class="menu-title-container">
+        <!-- Título del menú lateral y botón de modo oscuro -->
+        <div class="menu-title-container flex items-center justify-between px-6 py-2 mb-1">
             <h2 class="menu-title">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
                 MENÚ
             </h2>
+            <!-- NEW: Botón de modo oscuro/claro movido aquí -->
+            <button id="dark-mode-toggle" class="p-2 rounded-full bg-indigo-700 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-white transition-colors duration-150 ease-in-out">
+                <i class="fas fa-moon text-white" id="dark-mode-icon"></i>
+            </button>
         </div>
         <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-content"><i class="fas fa-trophy mr-2"></i>Tabla de Posiciones</button>
@@ -765,16 +778,9 @@
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="fixture-content"><i class="fas fa-calendar-alt mr-2"></i>Fixture</button>
             <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="individual-stats-content"><i class="fas fa-history mr-2"></i>Histórico</button>
         </div>
-        <!-- Botón de modo oscuro/claro movido a la misma jerarquía que MENÚ -->
-        <div class="menu-title-container"> <!-- Reutilizando la misma clase de contenedor para un padding consistente -->
-            <button id="dark-mode-toggle" class="sidebar-link w-full">
-                <i class="fas fa-moon mr-2" id="dark-mode-icon"></i>
-                <span>Modo Oscuro</span>
-            </button>
-        </div>
     </nav>
 
-    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity50 z-30 hidden"></div>
 
     <div class="main-content-container p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8 flex-grow overflow-y-auto min-h-0">
         <!-- Título principal de la aplicación eliminado de aquí -->
@@ -3170,19 +3176,19 @@
         // Lógica de Toggle de Modo Oscuro
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         const darkModeIcon = document.getElementById('dark-mode-icon');
-        const darkModeText = darkModeToggle.querySelector('span');
+        // REMOVED: const darkModeText = darkModeToggle.querySelector('span'); // No longer needed as text is removed
 
         function applyTheme(theme) {
             if (theme === 'dark') {
                 document.body.classList.add('dark-mode');
                 darkModeIcon.classList.remove('fa-moon');
                 darkModeIcon.classList.add('fa-sun');
-                darkModeText.textContent = 'Modo Claro';
+                // REMOVED: darkModeText.textContent = 'Modo Claro';
             } else {
                 document.body.classList.remove('dark-mode');
                 darkModeIcon.classList.remove('fa-sun');
                 darkModeIcon.classList.add('fa-moon');
-                darkModeText.textContent = 'Modo Oscuro';
+                // REMOVED: darkModeText.textContent = 'Modo Oscuro';
             }
             localStorage.setItem('theme', theme);
         }
