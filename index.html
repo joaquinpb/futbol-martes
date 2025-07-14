@@ -315,6 +315,7 @@
             height: 2px;
             background-color: white;
             transform: translateY(-50%);
+            z-index: 2; /* NEW: Field lines z-index */
         }
 
         /* Center circle (vertical for mobile) */
@@ -328,6 +329,7 @@
             border: 2px solid white;
             border-radius: 50%;
             transform: translate(-50%, -50%);
+            z-index: 2; /* NEW: Field lines z-index */
         }
 
         /* Goals (outside the green area - vertical for mobile) */
@@ -338,6 +340,7 @@
             box-sizing: border-box;
             border-left: 2px solid white;
             border-right: 2px solid white;
+            z-index: 2; /* NEW: Field lines z-index */
         }
         .goal.top {
             top: -15px; /* Position outside the top border */
@@ -359,6 +362,7 @@
             border-color: white;
             border-style: solid;
             border-width: 0; /* Reset default */
+            z-index: 2; /* NEW: Field lines z-index */
         }
         .penalty-area.top {
             top: 0;
@@ -380,6 +384,7 @@
             border-color: white;
             border-style: solid;
             border-width: 0; /* Reset default */
+            z-index: 2; /* NEW: Field lines z-index */
         }
         .goal-area.top {
             top: 0;
@@ -402,6 +407,7 @@
             align-items: center;
             justify-content: center;
             gap: 0.25rem; /* Espacio entre el marcador y el nombre */
+            z-index: 3; /* NEW: Players z-index */
         }
 
         /* Player Marker: the circular part */
@@ -425,6 +431,7 @@
             position: absolute;
             bottom: 68px; /* MODIFIED: Adjusted position */
             right: 0px; /* MODIFIED: Adjusted position */
+            z-index: 4; /* NEW: Star z-index */
         }
 
         .player-marker.claros {
@@ -669,6 +676,9 @@
             background-color: var(--bg-main-content);
             border-radius: 0.5rem; /* rounded-lg */
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        #fixture-details-display h3 { /* NEW: Color para el título "Asistentes al TT" */
+            color: var(--text-default);
         }
         #tt-attendees-table {
             background-color: var(--bg-main-content); /* Fondo de la tabla */
@@ -1253,6 +1263,7 @@
                     userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Revisa la consola para más detalles.`;
                 } else if (err && err.message) {
                     userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
+                    console.log("Error object:", err); // Log the full error object for debugging
                 }
                 throw new Error(userErrorMessage); // Propagar el error para que handleDataLoadSuccess lo maneje
             }
@@ -1316,8 +1327,8 @@
                 console.error("Error al inicializar gapi.client:", err);
                 // Actualizar todos los mensajes de carga con el error
                 let errorDetail;
-                if (err && err.result && err.result.error && err.result.error.message) {
-                    errorDetail = err.result.error.message;
+                if (err && err.message) {
+                    errorDetail = err.message;
                 } else {
                     try {
                         errorDetail = JSON.stringify(err);
@@ -2727,7 +2738,7 @@
                 highlightedIndex = -1; // Reset highlight
                 playerSearchInput.focus(); // Put focus back on the input
                 filterAndDisplayPlayers(); // Show all players in autocomplete
-                setTimeout(() => { isClearing = false; }, 200); // Reset flag after a short delay
+                setTimeout(() => { isCleasing = false; }, 200); // Reset flag after a short delay
             });
 
 
