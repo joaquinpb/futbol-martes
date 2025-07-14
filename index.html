@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -69,29 +68,28 @@
             --text-yellow-400: #facc15; /* Amarillo sigue igual */
             --bg-blue-200: #1e3a8a; /* Azul oscuro para total en tabla */
 
-            /* Variables para colores de jugadores (se mantienen iguales en modo oscuro) */
-            --player-claros-bg: #1a202c;
-            --player-claros-text: #ffffff;
-            --player-oscuros-bg: #ffffff;
-            --player-oscuros-text: #1a202c;
+            /* Variables para colores de jugadores estáticos */
+            --player-claros-bg: #1a202c; /* Claros (negro) */
+            --player-claros-text: #ffffff; /* Texto blanco para Claros */
+            --player-oscuros-bg: #ffffff; /* Oscuros (blanco) */
+            --player-oscuros-text: #1a202c; /* Texto negro para Oscuros */
         }
 
-        /* Asegura que html y body ocupen toda la altura para que los porcentajes funcionen */
-        html, body {
-            height: 100%;
-            overflow-x: hidden; /* Evita el desbordamiento horizontal en móvil */
+        /* Eliminar height: 100% de html y body. Permitir que el body se desplace. */
+        html {
+            overflow-x: hidden; /* Mantener para evitar scroll horizontal */
         }
-
-        /* Fuente Inter para una mejor legibilidad */
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body); /* Usar variable */
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
-            display: flex; /* Hacemos el body un contenedor flex */
-            flex-direction: column; /* Por defecto, los elementos se apilan en columna (mobile-first) */
             color: var(--text-default); /* Usar variable para el color de texto por defecto */
             transition: background-color 0.3s ease, color 0.3s ease; /* Transición suave para el modo oscuro */
+            overflow-x: hidden; /* Evita el desbordamiento horizontal en móvil */
+            overflow-y: auto; /* Permite desplazamiento vertical en todo el body */
+            -webkit-overflow-scrolling: touch; /* Para un desplazamiento más suave en iOS */
+            /* padding-top: 5rem; REMOVED: Ahora se maneja con margin-top en main-content-container */
         }
         /* Estilos base para tablas */
         table {
@@ -244,6 +242,11 @@
 
         /* Estilos de escritorio (min-width: 768px) */
         @media (min-width: 768px) {
+            body {
+                display: flex; /* Hacemos el body un contenedor flex en escritorio */
+                flex-direction: row; /* Elementos en fila en escritorio */
+                padding-top: 0; /* Sin padding superior en escritorio */
+            }
             #side-menu {
                 position: relative; /* Parte del flujo normal */
                 transform: translateX(0); /* Siempre visible en escritorio, sin !important */
@@ -265,10 +268,1351 @@
             }
             .main-content-container {
                 flex-grow: 1; /* Ocupa el espacio restante */
-                margin-left: 0 !important; /* Restablece el margin-left del móvil */
-                margin-right: 0 !important; /* Restablece el margin-right del móvil */
+                margin-left: 2rem; /* Restablece el margin-left del móvil */
+                margin-right: 2rem; /* Restablece el margin-right del móvil */
                 max-width: none !important; /* Permite que se expanda completamente */
                 width: auto !important; /* Deja que flexbox controle el ancho */
+                margin-top: 2rem; /* md:mt-8 */
+            }
+        }
+
+        /* La tabla de estadísticas mantiene el diseño automático y el desbordamiento horizontal automático */
+        #estadisticas-table {
+            table-layout: auto;
+        }
+
+        /* Estilo para los mensajes de carga */
+        .loading-message {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-gray-500); /* Usar variable */
+            font-style: italic;
+        }
+        .loading-spinner {
+            border: 4px solid var(--border-default); /* Usar variable */
+            border-top: 4px solid var(--bg-indigo-600); /* Usar variable */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Clase resaltada para los resultados de autocompletado */
+        .highlighted {
+            background-color: var(--bg-table-row-hover); /* Usar variable */
+        }
+
+        /* Estilos para el campo de fútbol (móvil por defecto - vertical) */
+        #soccer-field-container {
+            position: relative;
+            width: 100%; /* Ancho móvil: coincide con el ancho de la tabla TT */
+            padding-top: 168.75%; /* Altura reducida en 10% (187.5% * 0.9) */
+            background-color: #0f8d48; /* Color del campo verde */
+            border: 2px solid white; /* Perímetro exterior */
+            border-radius: 0.5rem; /* rounded-lg */
+            overflow: hidden; /* Asegura que los jugadores permanezcan dentro de los límites */
+            margin-bottom: 1.5rem; /* mb-6 */
+            margin-left: auto; /* Centra el campo */
+            margin-right: auto; /* Centra el campo */
+        }
+
+        /* Línea de medio campo (vertical para móvil) */
+        #soccer-field-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: white;
+            transform: translateY(-50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Círculo central (vertical para móvil) */
+        #soccer-field-container::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 15vw; /* Usar vw para un tamaño de círculo consistente en móvil */
+            height: 15vw; /* Debe ser igual al ancho para un círculo */
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Goles (fuera del área verde - vertical para móvil) */
+        .goal {
+            position: absolute;
+            width: 30%; /* Ancho del gol */
+            height: 15px; /* Profundidad de la estructura del gol */
+            box-sizing: border-box;
+            border-left: 2px solid white;
+            border-right: 2px solid white;
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal.top {
+            top: -15px; /* Posición fuera del borde superior */
+            left: 35%;
+            border-bottom: 2px solid white; /* Travesaño */
+        }
+        .goal.bottom {
+            bottom: -15px; /* Posición fuera del borde inferior */
+            left: 35%;
+            border-top: 2px solid white; /* Travesaño */
+        }
+
+        /* Áreas de penalti (vertical para móvil) - relación 2:1 para las líneas */
+        .penalty-area {
+            position: absolute;
+            width: 60%; /* Ancho del área de penalti */
+            height: 20%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .penalty-area.top {
+            top: 0;
+            left: 20%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .penalty-area.bottom {
+            bottom: 0;
+            left: 20%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Áreas de gol (caja más pequeña dentro del área de penalti - vertical para móvil) - relación 2:1 para las líneas */
+        .goal-area {
+            position: absolute;
+            width: 30%; /* Ancho del área de gol */
+            height: 10%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal-area.top {
+            top: 0;
+            left: 35%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .goal-area.bottom {
+            bottom: 0;
+            left: 35%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Contenedor del jugador: posiciona toda la unidad del jugador (marcador + nombre) */
+        .player-wrapper {
+            position: absolute;
+            /* Centra el contenedor en su punto de origen */
+            transform: translate(-50%, -50%); 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem; /* Espacio entre el marcador y el nombre */
+            z-index: 3; /* z-index de los jugadores */
+        }
+
+        /* Marcador del jugador: la parte circular */
+        .player-marker {
+            width: 55px; /* Tamaño del marcador de jugador */
+            height: 55px;
+            border-radius: 50%; /* Forma circular */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem; /* Tamaño de la inicial */
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: 2px solid; /* Borde para el color del equipo */
+            color: var(--text-default); /* Usar variable */
+        }
+        .player-marker .fa-star {
+            font-size: 1.2em; /* Duplicado el tamaño */
+            margin-top: 2px;
+            position: absolute;
+            bottom: 68px; /* Posición ajustada */
+            right: 0px; /* Posición ajustada */
+            z-index: 4; /* z-index de la estrella */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.claros {
+            background-color: var(--player-claros-bg);
+            border-color: var(--player-claros-text);
+            color: var(--player-claros-text); /* Color del número en el círculo */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.oscuros {
+            background-color: var(--player-oscuros-bg);
+            color: var(--player-oscuros-text); /* Color del número en el círculo */
+            border-color: var(--player-oscuros-text);
+        }
+
+        /* Etiqueta del nombre del jugador: el texto debajo del marcador */
+        .player-name-label {
+            font-size: 0.90rem; /* Tamaño de fuente para el nombre */
+            font-weight: bold; /* Ahora en negrita */
+            white-space: nowrap; /* Evita que el texto se envuelva */
+            text-align: center;
+            padding: 0.3rem 0.6rem; /* Aumentado el padding para un área de sombreado más grande */
+            border-radius: 0.25rem; /* Esquinas ligeramente redondeadas para el fondo */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "claros" */
+        .player-marker.claros + .player-name-label {
+            background-color: var(--player-claros-bg); /* Fondo blanco para jugadores del equipo claro */
+            color: var(--player-claros-text); /* Texto negro para jugadores del equipo claro */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "oscuros" */
+        .player-marker.oscuros + .player-name-label {
+            background-color: var(--player-oscuros-bg); /* Fondo negro para jugadores del equipo oscuro */
+            color: var(--player-oscuros-text); /* Texto blanco para jugadores del equipo oscuro */
+        }
+
+        .winner-trophy {
+            position: absolute;
+            font-size: 2rem; /* Icono de trofeo grande */
+            color: var(--text-yellow-400); /* Usar variable */
+            z-index: 10; /* Asegura que esté por encima de otros elementos */
+            transform: translate(-50%, -50%); /* Centrar el icono */
+        }
+
+        /* Ajustes responsivos para el tamaño del marcador del jugador */
+        @media (min-width: 640px) { /* breakpoint sm */
+            .player-marker {
+                width: 50px;
+                height: 50px;
+                font-size: 1rem;
+            }
+            .player-marker .fa-star {
+                font-size: 1.2em; /* Aplica el tamaño duplicado también al breakpoint responsivo */
+            }
+            .player-name-label {
+                font-size: 0.75rem;
+                max-width: none; /* Asegura el nombre completo también en pantallas más pequeñas */
+            }
+        }
+        @media (min-width: 768px) { /* breakpoint md */
+            body {
+                display: flex; /* Hacemos el body un contenedor flex en escritorio */
+                flex-direction: row; /* Elementos en fila en escritorio */
+                padding-top: 0; /* Sin padding superior en escritorio */
+            }
+            #side-menu {
+                position: relative; /* Parte del flujo normal */
+                transform: translateX(0); /* Siempre visible en escritorio, sin !important */
+                flex-shrink: 0; /* Evita que se encoja */
+                height: auto; /* Deja que el contenido defina la altura */
+                min-height: 100vh; /* Asegura que ocupe toda la altura del viewport */
+                border-right: 1px solid var(--border-default); /* Usar variable */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+                visibility: visible !important; /* Siempre visible en escritorio */
+            }
+            #hamburger-button {
+                display: none !important; /* Siempre oculta la hamburguesa en escritorio */
+            }
+            #close-side-menu-button {
+                display: none !important;
+            }
+            #overlay {
+                display: none !important;
+            }
+            .main-content-container {
+                flex-grow: 1; /* Ocupa el espacio restante */
+                margin-left: 2rem; /* Restablece el margin-left del móvil */
+                margin-right: 2rem; /* Restablece el margin-right del móvil */
+                max-width: none !important; /* Permite que se expanda completamente */
+                width: auto !important; /* Deja que flexbox controle el ancho */
+                margin-top: 2rem; /* md:mt-8 */
+            }
+        }
+
+        /* La tabla de estadísticas mantiene el diseño automático y el desbordamiento horizontal automático */
+        #estadisticas-table {
+            table-layout: auto;
+        }
+
+        /* Estilo para los mensajes de carga */
+        .loading-message {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-gray-500); /* Usar variable */
+            font-style: italic;
+        }
+        .loading-spinner {
+            border: 4px solid var(--border-default); /* Usar variable */
+            border-top: 4px solid var(--bg-indigo-600); /* Usar variable */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Clase resaltada para los resultados de autocompletado */
+        .highlighted {
+            background-color: var(--bg-table-row-hover); /* Usar variable */
+        }
+
+        /* Estilos para el campo de fútbol (móvil por defecto - vertical) */
+        #soccer-field-container {
+            position: relative;
+            width: 100%; /* Ancho móvil: coincide con el ancho de la tabla TT */
+            padding-top: 168.75%; /* Altura reducida en 10% (187.5% * 0.9) */
+            background-color: #0f8d48; /* Color del campo verde */
+            border: 2px solid white; /* Perímetro exterior */
+            border-radius: 0.5rem; /* rounded-lg */
+            overflow: hidden; /* Asegura que los jugadores permanezcan dentro de los límites */
+            margin-bottom: 1.5rem; /* mb-6 */
+            margin-left: auto; /* Centra el campo */
+            margin-right: auto; /* Centra el campo */
+        }
+
+        /* Línea de medio campo (vertical para móvil) */
+        #soccer-field-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: white;
+            transform: translateY(-50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Círculo central (vertical para móvil) */
+        #soccer-field-container::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 15vw; /* Usar vw para un tamaño de círculo consistente en móvil */
+            height: 15vw; /* Debe ser igual al ancho para un círculo */
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Goles (fuera del área verde - vertical para móvil) */
+        .goal {
+            position: absolute;
+            width: 30%; /* Ancho del gol */
+            height: 15px; /* Profundidad de la estructura del gol */
+            box-sizing: border-box;
+            border-left: 2px solid white;
+            border-right: 2px solid white;
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal.top {
+            top: -15px; /* Posición fuera del borde superior */
+            left: 35%;
+            border-bottom: 2px solid white; /* Travesaño */
+        }
+        .goal.bottom {
+            bottom: -15px; /* Posición fuera del borde inferior */
+            left: 35%;
+            border-top: 2px solid white; /* Travesaño */
+        }
+
+        /* Áreas de penalti (vertical para móvil) - relación 2:1 para las líneas */
+        .penalty-area {
+            position: absolute;
+            width: 60%; /* Ancho del área de penalti */
+            height: 20%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .penalty-area.top {
+            top: 0;
+            left: 20%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .penalty-area.bottom {
+            bottom: 0;
+            left: 20%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Áreas de gol (caja más pequeña dentro del área de penalti - vertical para móvil) - relación 2:1 para las líneas */
+        .goal-area {
+            position: absolute;
+            width: 30%; /* Ancho del área de gol */
+            height: 10%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal-area.top {
+            top: 0;
+            left: 35%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .goal-area.bottom {
+            bottom: 0;
+            left: 35%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Contenedor del jugador: posiciona toda la unidad del jugador (marcador + nombre) */
+        .player-wrapper {
+            position: absolute;
+            /* Centra el contenedor en su punto de origen */
+            transform: translate(-50%, -50%); 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem; /* Espacio entre el marcador y el nombre */
+            z-index: 3; /* z-index de los jugadores */
+        }
+
+        /* Marcador del jugador: la parte circular */
+        .player-marker {
+            width: 55px; /* Tamaño del marcador de jugador */
+            height: 55px;
+            border-radius: 50%; /* Forma circular */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem; /* Tamaño de la inicial */
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: 2px solid; /* Borde para el color del equipo */
+            color: var(--text-default); /* Usar variable */
+        }
+        .player-marker .fa-star {
+            font-size: 1.2em; /* Duplicado el tamaño */
+            margin-top: 2px;
+            position: absolute;
+            bottom: 68px; /* Posición ajustada */
+            right: 0px; /* Posición ajustada */
+            z-index: 4; /* z-index de la estrella */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.claros {
+            background-color: var(--player-claros-bg);
+            border-color: var(--player-claros-text);
+            color: var(--player-claros-text); /* Color del número en el círculo */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.oscuros {
+            background-color: var(--player-oscuros-bg);
+            color: var(--player-oscuros-text); /* Color del número en el círculo */
+            border-color: var(--player-oscuros-text);
+        }
+
+        /* Etiqueta del nombre del jugador: el texto debajo del marcador */
+        .player-name-label {
+            font-size: 0.90rem; /* Tamaño de fuente para el nombre */
+            font-weight: bold; /* Ahora en negrita */
+            white-space: nowrap; /* Evita que el texto se envuelva */
+            text-align: center;
+            padding: 0.3rem 0.6rem; /* Aumentado el padding para un área de sombreado más grande */
+            border-radius: 0.25rem; /* Esquinas ligeramente redondeadas para el fondo */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "claros" */
+        .player-marker.claros + .player-name-label {
+            background-color: var(--player-claros-bg); /* Fondo blanco para jugadores del equipo claro */
+            color: var(--player-claros-text); /* Texto negro para jugadores del equipo claro */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "oscuros" */
+        .player-marker.oscuros + .player-name-label {
+            background-color: var(--player-oscuros-bg); /* Fondo negro para jugadores del equipo oscuro */
+            color: var(--player-oscuros-text); /* Texto blanco para jugadores del equipo oscuro */
+        }
+
+        .winner-trophy {
+            position: absolute;
+            font-size: 2rem; /* Icono de trofeo grande */
+            color: var(--text-yellow-400); /* Usar variable */
+            z-index: 10; /* Asegura que esté por encima de otros elementos */
+            transform: translate(-50%, -50%); /* Centrar el icono */
+        }
+
+        /* Ajustes responsivos para el tamaño del marcador del jugador */
+        @media (min-width: 640px) { /* breakpoint sm */
+            .player-marker {
+                width: 50px;
+                height: 50px;
+                font-size: 1rem;
+            }
+            .player-marker .fa-star {
+                font-size: 1.2em; /* Aplica el tamaño duplicado también al breakpoint responsivo */
+            }
+            .player-name-label {
+                font-size: 0.75rem;
+                max-width: none; /* Asegura el nombre completo también en pantallas más pequeñas */
+            }
+        }
+        @media (min-width: 768px) { /* breakpoint md */
+            body {
+                display: flex; /* Hacemos el body un contenedor flex en escritorio */
+                flex-direction: row; /* Elementos en fila en escritorio */
+                padding-top: 0; /* Sin padding superior en escritorio */
+            }
+            #side-menu {
+                position: relative; /* Parte del flujo normal */
+                transform: translateX(0); /* Siempre visible en escritorio, sin !important */
+                flex-shrink: 0; /* Evita que se encoja */
+                height: auto; /* Deja que el contenido defina la altura */
+                min-height: 100vh; /* Asegura que ocupe toda la altura del viewport */
+                border-right: 1px solid var(--border-default); /* Usar variable */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+                visibility: visible !important; /* Siempre visible en escritorio */
+            }
+            #hamburger-button {
+                display: none !important; /* Siempre oculta la hamburguesa en escritorio */
+            }
+            #close-side-menu-button {
+                display: none !important;
+            }
+            #overlay {
+                display: none !important;
+            }
+            .main-content-container {
+                flex-grow: 1; /* Ocupa el espacio restante */
+                margin-left: 2rem; /* Restablece el margin-left del móvil */
+                margin-right: 2rem; /* Restablece el margin-right del móvil */
+                max-width: none !important; /* Permite que se expanda completamente */
+                width: auto !important; /* Deja que flexbox controle el ancho */
+                margin-top: 2rem; /* md:mt-8 */
+            }
+        }
+
+        /* La tabla de estadísticas mantiene el diseño automático y el desbordamiento horizontal automático */
+        #estadisticas-table {
+            table-layout: auto;
+        }
+
+        /* Estilo para los mensajes de carga */
+        .loading-message {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-gray-500); /* Usar variable */
+            font-style: italic;
+        }
+        .loading-spinner {
+            border: 4px solid var(--border-default); /* Usar variable */
+            border-top: 4px solid var(--bg-indigo-600); /* Usar variable */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Clase resaltada para los resultados de autocompletado */
+        .highlighted {
+            background-color: var(--bg-table-row-hover); /* Usar variable */
+        }
+
+        /* Estilos para el campo de fútbol (móvil por defecto - vertical) */
+        #soccer-field-container {
+            position: relative;
+            width: 100%; /* Ancho móvil: coincide con el ancho de la tabla TT */
+            padding-top: 168.75%; /* Altura reducida en 10% (187.5% * 0.9) */
+            background-color: #0f8d48; /* Color del campo verde */
+            border: 2px solid white; /* Perímetro exterior */
+            border-radius: 0.5rem; /* rounded-lg */
+            overflow: hidden; /* Asegura que los jugadores permanezcan dentro de los límites */
+            margin-bottom: 1.5rem; /* mb-6 */
+            margin-left: auto; /* Centra el campo */
+            margin-right: auto; /* Centra el campo */
+        }
+
+        /* Línea de medio campo (vertical para móvil) */
+        #soccer-field-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: white;
+            transform: translateY(-50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Círculo central (vertical para móvil) */
+        #soccer-field-container::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 15vw; /* Usar vw para un tamaño de círculo consistente en móvil */
+            height: 15vw; /* Debe ser igual al ancho para un círculo */
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Goles (fuera del área verde - vertical para móvil) */
+        .goal {
+            position: absolute;
+            width: 30%; /* Ancho del gol */
+            height: 15px; /* Profundidad de la estructura del gol */
+            box-sizing: border-box;
+            border-left: 2px solid white;
+            border-right: 2px solid white;
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal.top {
+            top: -15px; /* Posición fuera del borde superior */
+            left: 35%;
+            border-bottom: 2px solid white; /* Travesaño */
+        }
+        .goal.bottom {
+            bottom: -15px; /* Posición fuera del borde inferior */
+            left: 35%;
+            border-top: 2px solid white; /* Travesaño */
+        }
+
+        /* Áreas de penalti (vertical para móvil) - relación 2:1 para las líneas */
+        .penalty-area {
+            position: absolute;
+            width: 60%; /* Ancho del área de penalti */
+            height: 20%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .penalty-area.top {
+            top: 0;
+            left: 20%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .penalty-area.bottom {
+            bottom: 0;
+            left: 20%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Áreas de gol (caja más pequeña dentro del área de penalti - vertical para móvil) - relación 2:1 para las líneas */
+        .goal-area {
+            position: absolute;
+            width: 30%; /* Ancho del área de gol */
+            height: 10%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal-area.top {
+            top: 0;
+            left: 35%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .goal-area.bottom {
+            bottom: 0;
+            left: 35%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Contenedor del jugador: posiciona toda la unidad del jugador (marcador + nombre) */
+        .player-wrapper {
+            position: absolute;
+            /* Centra el contenedor en su punto de origen */
+            transform: translate(-50%, -50%); 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem; /* Espacio entre el marcador y el nombre */
+            z-index: 3; /* z-index de los jugadores */
+        }
+
+        /* Marcador del jugador: la parte circular */
+        .player-marker {
+            width: 55px; /* Tamaño del marcador de jugador */
+            height: 55px;
+            border-radius: 50%; /* Forma circular */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem; /* Tamaño de la inicial */
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: 2px solid; /* Borde para el color del equipo */
+            color: var(--text-default); /* Usar variable */
+        }
+        .player-marker .fa-star {
+            font-size: 1.2em; /* Duplicado el tamaño */
+            margin-top: 2px;
+            position: absolute;
+            bottom: 68px; /* Posición ajustada */
+            right: 0px; /* Posición ajustada */
+            z-index: 4; /* z-index de la estrella */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.claros {
+            background-color: var(--player-claros-bg);
+            border-color: var(--player-claros-text);
+            color: var(--player-claros-text); /* Color del número en el círculo */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.oscuros {
+            background-color: var(--player-oscuros-bg);
+            color: var(--player-oscuros-text); /* Color del número en el círculo */
+            border-color: var(--player-oscuros-text);
+        }
+
+        /* Etiqueta del nombre del jugador: el texto debajo del marcador */
+        .player-name-label {
+            font-size: 0.90rem; /* Tamaño de fuente para el nombre */
+            font-weight: bold; /* Ahora en negrita */
+            white-space: nowrap; /* Evita que el texto se envuelva */
+            text-align: center;
+            padding: 0.3rem 0.6rem; /* Aumentado el padding para un área de sombreado más grande */
+            border-radius: 0.25rem; /* Esquinas ligeramente redondeadas para el fondo */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "claros" */
+        .player-marker.claros + .player-name-label {
+            background-color: var(--player-claros-bg); /* Fondo blanco para jugadores del equipo claro */
+            color: var(--player-claros-text); /* Texto negro para jugadores del equipo claro */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "oscuros" */
+        .player-marker.oscuros + .player-name-label {
+            background-color: var(--player-oscuros-bg); /* Fondo negro para jugadores del equipo oscuro */
+            color: var(--player-oscuros-text); /* Texto blanco para jugadores del equipo oscuro */
+        }
+
+        .winner-trophy {
+            position: absolute;
+            font-size: 2rem; /* Icono de trofeo grande */
+            color: var(--text-yellow-400); /* Usar variable */
+            z-index: 10; /* Asegura que esté por encima de otros elementos */
+            transform: translate(-50%, -50%); /* Centrar el icono */
+        }
+
+        /* Ajustes responsivos para el tamaño del marcador del jugador */
+        @media (min-width: 640px) { /* breakpoint sm */
+            .player-marker {
+                width: 50px;
+                height: 50px;
+                font-size: 1rem;
+            }
+            .player-marker .fa-star {
+                font-size: 1.2em; /* Aplica el tamaño duplicado también al breakpoint responsivo */
+            }
+            .player-name-label {
+                font-size: 0.75rem;
+                max-width: none; /* Asegura el nombre completo también en pantallas más pequeñas */
+            }
+        }
+        @media (min-width: 768px) { /* breakpoint md */
+            body {
+                display: flex; /* Hacemos el body un contenedor flex en escritorio */
+                flex-direction: row; /* Elementos en fila en escritorio */
+                padding-top: 0; /* Sin padding superior en escritorio */
+            }
+            #side-menu {
+                position: relative; /* Parte del flujo normal */
+                transform: translateX(0); /* Siempre visible en escritorio, sin !important */
+                flex-shrink: 0; /* Evita que se encoja */
+                height: auto; /* Deja que el contenido defina la altura */
+                min-height: 100vh; /* Asegura que ocupe toda la altura del viewport */
+                border-right: 1px solid var(--border-default); /* Usar variable */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+                visibility: visible !important; /* Siempre visible en escritorio */
+            }
+            #hamburger-button {
+                display: none !important; /* Siempre oculta la hamburguesa en escritorio */
+            }
+            #close-side-menu-button {
+                display: none !important;
+            }
+            #overlay {
+                display: none !important;
+            }
+            .main-content-container {
+                flex-grow: 1; /* Ocupa el espacio restante */
+                margin-left: 2rem; /* Restablece el margin-left del móvil */
+                margin-right: 2rem; /* Restablece el margin-right del móvil */
+                max-width: none !important; /* Permite que se expanda completamente */
+                width: auto !important; /* Deja que flexbox controle el ancho */
+                margin-top: 2rem; /* md:mt-8 */
+            }
+        }
+
+        /* La tabla de estadísticas mantiene el diseño automático y el desbordamiento horizontal automático */
+        #estadisticas-table {
+            table-layout: auto;
+        }
+
+        /* Estilo para los mensajes de carga */
+        .loading-message {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-gray-500); /* Usar variable */
+            font-style: italic;
+        }
+        .loading-spinner {
+            border: 4px solid var(--border-default); /* Usar variable */
+            border-top: 4px solid var(--bg-indigo-600); /* Usar variable */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Clase resaltada para los resultados de autocompletado */
+        .highlighted {
+            background-color: var(--bg-table-row-hover); /* Usar variable */
+        }
+
+        /* Estilos para el campo de fútbol (móvil por defecto - vertical) */
+        #soccer-field-container {
+            position: relative;
+            width: 100%; /* Ancho móvil: coincide con el ancho de la tabla TT */
+            padding-top: 168.75%; /* Altura reducida en 10% (187.5% * 0.9) */
+            background-color: #0f8d48; /* Color del campo verde */
+            border: 2px solid white; /* Perímetro exterior */
+            border-radius: 0.5rem; /* rounded-lg */
+            overflow: hidden; /* Asegura que los jugadores permanezcan dentro de los límites */
+            margin-bottom: 1.5rem; /* mb-6 */
+            margin-left: auto; /* Centra el campo */
+            margin-right: auto; /* Centra el campo */
+        }
+
+        /* Línea de medio campo (vertical para móvil) */
+        #soccer-field-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: white;
+            transform: translateY(-50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Círculo central (vertical para móvil) */
+        #soccer-field-container::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 15vw; /* Usar vw para un tamaño de círculo consistente en móvil */
+            height: 15vw; /* Debe ser igual al ancho para un círculo */
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Goles (fuera del área verde - vertical para móvil) */
+        .goal {
+            position: absolute;
+            width: 30%; /* Ancho del gol */
+            height: 15px; /* Profundidad de la estructura del gol */
+            box-sizing: border-box;
+            border-left: 2px solid white;
+            border-right: 2px solid white;
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal.top {
+            top: -15px; /* Posición fuera del borde superior */
+            left: 35%;
+            border-bottom: 2px solid white; /* Travesaño */
+        }
+        .goal.bottom {
+            bottom: -15px; /* Posición fuera del borde inferior */
+            left: 35%;
+            border-top: 2px solid white; /* Travesaño */
+        }
+
+        /* Áreas de penalti (vertical para móvil) - relación 2:1 para las líneas */
+        .penalty-area {
+            position: absolute;
+            width: 60%; /* Ancho del área de penalti */
+            height: 20%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .penalty-area.top {
+            top: 0;
+            left: 20%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .penalty-area.bottom {
+            bottom: 0;
+            left: 20%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Áreas de gol (caja más pequeña dentro del área de penalti - vertical para móvil) - relación 2:1 para las líneas */
+        .goal-area {
+            position: absolute;
+            width: 30%; /* Ancho del área de gol */
+            height: 10%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal-area.top {
+            top: 0;
+            left: 35%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .goal-area.bottom {
+            bottom: 0;
+            left: 35%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Contenedor del jugador: posiciona toda la unidad del jugador (marcador + nombre) */
+        .player-wrapper {
+            position: absolute;
+            /* Centra el contenedor en su punto de origen */
+            transform: translate(-50%, -50%); 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem; /* Espacio entre el marcador y el nombre */
+            z-index: 3; /* z-index de los jugadores */
+        }
+
+        /* Marcador del jugador: la parte circular */
+        .player-marker {
+            width: 55px; /* Tamaño del marcador de jugador */
+            height: 55px;
+            border-radius: 50%; /* Forma circular */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem; /* Tamaño de la inicial */
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: 2px solid; /* Borde para el color del equipo */
+            color: var(--text-default); /* Usar variable */
+        }
+        .player-marker .fa-star {
+            font-size: 1.2em; /* Duplicado el tamaño */
+            margin-top: 2px;
+            position: absolute;
+            bottom: 68px; /* Posición ajustada */
+            right: 0px; /* Posición ajustada */
+            z-index: 4; /* z-index de la estrella */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.claros {
+            background-color: var(--player-claros-bg);
+            border-color: var(--player-claros-text);
+            color: var(--player-claros-text); /* Color del número en el círculo */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.oscuros {
+            background-color: var(--player-oscuros-bg);
+            color: var(--player-oscuros-text); /* Color del número en el círculo */
+            border-color: var(--player-oscuros-text);
+        }
+
+        /* Etiqueta del nombre del jugador: el texto debajo del marcador */
+        .player-name-label {
+            font-size: 0.90rem; /* Tamaño de fuente para el nombre */
+            font-weight: bold; /* Ahora en negrita */
+            white-space: nowrap; /* Evita que el texto se envuelva */
+            text-align: center;
+            padding: 0.3rem 0.6rem; /* Aumentado el padding para un área de sombreado más grande */
+            border-radius: 0.25rem; /* Esquinas ligeramente redondeadas para el fondo */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "claros" */
+        .player-marker.claros + .player-name-label {
+            background-color: var(--player-claros-bg); /* Fondo blanco para jugadores del equipo claro */
+            color: var(--player-claros-text); /* Texto negro para jugadores del equipo claro */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "oscuros" */
+        .player-marker.oscuros + .player-name-label {
+            background-color: var(--player-oscuros-bg); /* Fondo negro para jugadores del equipo oscuro */
+            color: var(--player-oscuros-text); /* Texto blanco para jugadores del equipo oscuro */
+        }
+
+        .winner-trophy {
+            position: absolute;
+            font-size: 2rem; /* Icono de trofeo grande */
+            color: var(--text-yellow-400); /* Usar variable */
+            z-index: 10; /* Asegura que esté por encima de otros elementos */
+            transform: translate(-50%, -50%); /* Centrar el icono */
+        }
+
+        /* Ajustes responsivos para el tamaño del marcador del jugador */
+        @media (min-width: 640px) { /* breakpoint sm */
+            .player-marker {
+                width: 50px;
+                height: 50px;
+                font-size: 1rem;
+            }
+            .player-marker .fa-star {
+                font-size: 1.2em; /* Aplica el tamaño duplicado también al breakpoint responsivo */
+            }
+            .player-name-label {
+                font-size: 0.75rem;
+                max-width: none; /* Asegura el nombre completo también en pantallas más pequeñas */
+            }
+        }
+        @media (min-width: 768px) { /* breakpoint md */
+            body {
+                display: flex; /* Hacemos el body un contenedor flex en escritorio */
+                flex-direction: row; /* Elementos en fila en escritorio */
+                padding-top: 0; /* Sin padding superior en escritorio */
+            }
+            #side-menu {
+                position: relative; /* Parte del flujo normal */
+                transform: translateX(0); /* Siempre visible en escritorio, sin !important */
+                flex-shrink: 0; /* Evita que se encoja */
+                height: auto; /* Deja que el contenido defina la altura */
+                min-height: 100vh; /* Asegura que ocupe toda la altura del viewport */
+                border-right: 1px solid var(--border-default); /* Usar variable */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+                visibility: visible !important; /* Siempre visible en escritorio */
+            }
+            #hamburger-button {
+                display: none !important; /* Siempre oculta la hamburguesa en escritorio */
+            }
+            #close-side-menu-button {
+                display: none !important;
+            }
+            #overlay {
+                display: none !important;
+            }
+            .main-content-container {
+                flex-grow: 1; /* Ocupa el espacio restante */
+                margin-left: 2rem; /* Restablece el margin-left del móvil */
+                margin-right: 2rem; /* Restablece el margin-right del móvil */
+                max-width: none !important; /* Permite que se expanda completamente */
+                width: auto !important; /* Deja que flexbox controle el ancho */
+                margin-top: 2rem; /* md:mt-8 */
+            }
+        }
+
+        /* La tabla de estadísticas mantiene el diseño automático y el desbordamiento horizontal automático */
+        #estadisticas-table {
+            table-layout: auto;
+        }
+
+        /* Estilo para los mensajes de carga */
+        .loading-message {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-gray-500); /* Usar variable */
+            font-style: italic;
+        }
+        .loading-spinner {
+            border: 4px solid var(--border-default); /* Usar variable */
+            border-top: 4px solid var(--bg-indigo-600); /* Usar variable */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Clase resaltada para los resultados de autocompletado */
+        .highlighted {
+            background-color: var(--bg-table-row-hover); /* Usar variable */
+        }
+
+        /* Estilos para el campo de fútbol (móvil por defecto - vertical) */
+        #soccer-field-container {
+            position: relative;
+            width: 100%; /* Ancho móvil: coincide con el ancho de la tabla TT */
+            padding-top: 168.75%; /* Altura reducida en 10% (187.5% * 0.9) */
+            background-color: #0f8d48; /* Color del campo verde */
+            border: 2px solid white; /* Perímetro exterior */
+            border-radius: 0.5rem; /* rounded-lg */
+            overflow: hidden; /* Asegura que los jugadores permanezcan dentro de los límites */
+            margin-bottom: 1.5rem; /* mb-6 */
+            margin-left: auto; /* Centra el campo */
+            margin-right: auto; /* Centra el campo */
+        }
+
+        /* Línea de medio campo (vertical para móvil) */
+        #soccer-field-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: white;
+            transform: translateY(-50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Círculo central (vertical para móvil) */
+        #soccer-field-container::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 15vw; /* Usar vw para un tamaño de círculo consistente en móvil */
+            height: 15vw; /* Debe ser igual al ancho para un círculo */
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+
+        /* Goles (fuera del área verde - vertical para móvil) */
+        .goal {
+            position: absolute;
+            width: 30%; /* Ancho del gol */
+            height: 15px; /* Profundidad de la estructura del gol */
+            box-sizing: border-box;
+            border-left: 2px solid white;
+            border-right: 2px solid white;
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal.top {
+            top: -15px; /* Posición fuera del borde superior */
+            left: 35%;
+            border-bottom: 2px solid white; /* Travesaño */
+        }
+        .goal.bottom {
+            bottom: -15px; /* Posición fuera del borde inferior */
+            left: 35%;
+            border-top: 2px solid white; /* Travesaño */
+        }
+
+        /* Áreas de penalti (vertical para móvil) - relación 2:1 para las líneas */
+        .penalty-area {
+            position: absolute;
+            width: 60%; /* Ancho del área de penalti */
+            height: 20%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .penalty-area.top {
+            top: 0;
+            left: 20%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .penalty-area.bottom {
+            bottom: 0;
+            left: 20%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Áreas de gol (caja más pequeña dentro del área de penalti - vertical para móvil) - relación 2:1 para las líneas */
+        .goal-area {
+            position: absolute;
+            width: 30%; /* Ancho del área de gol */
+            height: 10%; /* Profundidad desde la línea de gol */
+            box-sizing: border-box;
+            border-color: white;
+            border-style: solid;
+            border-width: 0; /* Reiniciar por defecto */
+            z-index: 2; /* z-index de las líneas del campo */
+        }
+        .goal-area.top {
+            top: 0;
+            left: 35%;
+            border-width: 0 4px 2px 4px; /* Arriba:0, Derecha:4px, Abajo:2px, Izquierda:4px */
+        }
+        .goal-area.bottom {
+            bottom: 0;
+            left: 35%;
+            border-width: 2px 4px 0 4px; /* Arriba:2px, Derecha:4px, Abajo:0, Izquierda:4px */
+        }
+
+        /* Contenedor del jugador: posiciona toda la unidad del jugador (marcador + nombre) */
+        .player-wrapper {
+            position: absolute;
+            /* Centra el contenedor en su punto de origen */
+            transform: translate(-50%, -50%); 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem; /* Espacio entre el marcador y el nombre */
+            z-index: 3; /* z-index de los jugadores */
+        }
+
+        /* Marcador del jugador: la parte circular */
+        .player-marker {
+            width: 55px; /* Tamaño del marcador de jugador */
+            height: 55px;
+            border-radius: 50%; /* Forma circular */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem; /* Tamaño de la inicial */
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: 2px solid; /* Borde para el color del equipo */
+            color: var(--text-default); /* Usar variable */
+        }
+        .player-marker .fa-star {
+            font-size: 1.2em; /* Duplicado el tamaño */
+            margin-top: 2px;
+            position: absolute;
+            bottom: 68px; /* Posición ajustada */
+            right: 0px; /* Posición ajustada */
+            z-index: 4; /* z-index de la estrella */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.claros {
+            background-color: var(--player-claros-bg);
+            border-color: var(--player-claros-text);
+            color: var(--player-claros-text); /* Color del número en el círculo */
+        }
+
+        /* Usar variables estáticas para los colores de los jugadores */
+        .player-marker.oscuros {
+            background-color: var(--player-oscuros-bg);
+            color: var(--player-oscuros-text); /* Color del número en el círculo */
+            border-color: var(--player-oscuros-text);
+        }
+
+        /* Etiqueta del nombre del jugador: el texto debajo del marcador */
+        .player-name-label {
+            font-size: 0.90rem; /* Tamaño de fuente para el nombre */
+            font-weight: bold; /* Ahora en negrita */
+            white-space: nowrap; /* Evita que el texto se envuelva */
+            text-align: center;
+            padding: 0.3rem 0.6rem; /* Aumentado el padding para un área de sombreado más grande */
+            border-radius: 0.25rem; /* Esquinas ligeramente redondeadas para el fondo */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "claros" */
+        .player-marker.claros + .player-name-label {
+            background-color: var(--player-claros-bg); /* Fondo blanco para jugadores del equipo claro */
+            color: var(--player-claros-text); /* Texto negro para jugadores del equipo claro */
+        }
+
+        /* Establecer el color de fondo y texto para los nombres de los jugadores "oscuros" */
+        .player-marker.oscuros + .player-name-label {
+            background-color: var(--player-oscuros-bg); /* Fondo negro para jugadores del equipo oscuro */
+            color: var(--player-oscuros-text); /* Texto blanco para jugadores del equipo oscuro */
+        }
+
+        .winner-trophy {
+            position: absolute;
+            font-size: 2rem; /* Icono de trofeo grande */
+            color: var(--text-yellow-400); /* Usar variable */
+            z-index: 10; /* Asegura que esté por encima de otros elementos */
+            transform: translate(-50%, -50%); /* Centrar el icono */
+        }
+
+        /* Ajustes responsivos para el tamaño del marcador del jugador */
+        @media (min-width: 640px) { /* breakpoint sm */
+            .player-marker {
+                width: 50px;
+                height: 50px;
+                font-size: 1rem;
+            }
+            .player-marker .fa-star {
+                font-size: 1.2em; /* Aplica el tamaño duplicado también al breakpoint responsivo */
+            }
+            .player-name-label {
+                font-size: 0.75rem;
+                max-width: none; /* Asegura el nombre completo también en pantallas más pequeñas */
+            }
+        }
+        @media (min-width: 768px) { /* breakpoint md */
+            body {
+                display: flex; /* Hacemos el body un contenedor flex en escritorio */
+                flex-direction: row; /* Elementos en fila en escritorio */
+                padding-top: 0; /* Sin padding superior en escritorio */
+            }
+            #side-menu {
+                position: relative; /* Parte del flujo normal */
+                transform: translateX(0); /* Siempre visible en escritorio, sin !important */
+                flex-shrink: 0; /* Evita que se encoja */
+                height: auto; /* Deja que el contenido defina la altura */
+                min-height: 100vh; /* Asegura que ocupe toda la altura del viewport */
+                border-right: 1px solid var(--border-default); /* Usar variable */
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+                visibility: visible !important; /* Siempre visible en escritorio */
+            }
+            #hamburger-button {
+                display: none !important; /* Siempre oculta la hamburguesa en escritorio */
+            }
+            #close-side-menu-button {
+                display: none !important;
+            }
+            #overlay {
+                display: none !important;
+            }
+            .main-content-container {
+                flex-grow: 1; /* Ocupa el espacio restante */
+                margin-left: 2rem; /* Restablece el margin-left del móvil */
+                margin-right: 2rem; /* Restablece el margin-right del móvil */
+                max-width: none !important; /* Permite que se expanda completamente */
+                width: auto !important; /* Deja que flexbox controle el ancho */
+                margin-top: 2rem; /* md:mt-8 */
             }
         }
 
@@ -743,9 +2087,34 @@
             -webkit-overflow-scrolling: touch; /* For smoother scrolling on iOS */
         }
 
+        /* Main content container styling, removed flex-grow, overflow-y-auto, min-h-0 */
+        .main-content-container {
+            padding: 2rem; /* p-8 */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
+            width: 100%;
+            max-width: 80rem; /* Adjusted from max-w-5xl for better desktop use */
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 2rem; /* Add some bottom margin */
+            background-color: var(--bg-main-content); /* Apply background color here */
+        }
+
+        /* NEW: Mobile-specific margin-top for main content to clear fixed hamburger button */
+        @media (max-width: 767px) {
+            .main-content-container {
+                margin-top: 5rem; /* Adjust this value if the hamburger button height changes */
+            }
+        }
+
+        /* NEW: Dark mode specific styles for h2 titles and their borders */
+        body.dark-mode h2.text-indigo-800 {
+            color: var(--text-table-header) !important; /* Force white text for titles in dark mode */
+            border-color: var(--text-table-header) !important; /* Force white border for titles in dark mode */
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col md:flex-row">
+<body class="min-h-screen">
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
@@ -783,7 +2152,7 @@
 
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity50 z-30 hidden"></div>
 
-    <div class="main-content-container p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8 flex-grow overflow-y-auto min-h-0">
+    <div class="main-content-container p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8">
         <!-- Título principal de la aplicación eliminado de aquí -->
         <div id="leaderboard-content" class="tab-content">
             <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">TABLA DE POSICIONES</h2>
@@ -976,22 +2345,20 @@
                     </select>
                 </div>
             </div>
-            <div class="overflow-x-auto-off">
-                <p id="ausentismo-loading-message" class="loading-message">
-                    <span class="loading-spinner"></span>Cargando tabla de Ausentismo...
-                </p>
-                <table id="ausentismo-table" class="bg-white rounded-lg shadow hidden">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-center">#</th>
-                            <th class="py-3 px-3 text-left-player">Jugador</th>
-                            <th class="py-3 px-3 text-center">Ausentes</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light">
-                        </tbody>
-                </table>
-            </div>
+            <p id="ausentismo-loading-message" class="loading-message">
+                <span class="loading-spinner"></span>Cargando tabla de Ausentismo...
+            </p>
+            <table id="ausentismo-table" class="bg-white rounded-lg shadow hidden">
+                <thead>
+                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                        <th class="py-3 px-3 text-center">#</th>
+                        <th class="py-3 px-3 text-left-player">Jugador</th>
+                        <th class="py-3 px-3 text-center">Ausentes</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-600 text-sm font-light">
+                    </tbody>
+            </table>
         </div>
 
         <div id="estadisticas-content" class="tab-content hidden">
@@ -1170,7 +2537,7 @@
                         <table id="tt-attendees-table" class="bg-white rounded-lg shadow">
                             <thead>
                                 <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                                    <!-- REMOVED: <th class="py-3 px-3 text-left-player">Jugador</th> -->
+                                    <th class="py-3 px-3 text-center">Jugador</th> <!-- Changed to text-center -->
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 text-sm font-light">
@@ -2146,7 +3513,7 @@
 
         function renderFixtureDetails(matchId) {
             const loadingMessage = document.getElementById('fixture-loading-message');
-            const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container'); 
+            const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container');    
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
@@ -2161,7 +3528,7 @@
             fixtureVisualDetailsContainer.classList.add('hidden'); // Ocultar el contenedor mientras se carga
             
             // Limpiar solo los marcadores de jugador y el trofeo del campo
-            soccerFieldContainer.querySelectorAll('.player-wrapper, .winner-trophy').forEach(el => el.remove()); 
+            soccerFieldContainer.querySelectorAll('.player-wrapper, .winner-trophy').forEach(el => el.remove());    
             ttAttendeesTableBody.innerHTML = ''; // Limpiar asistentes TT anteriores
 
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando detalles del partido...`;
@@ -2212,7 +3579,7 @@
             if (ttAttendees.length > 0) {
                 ttAttendees.forEach(name => {
                     const rowHTML = `
-                        <td class="py-3 px-3 text-left-player">${name}</td>
+                        <td class="py-3 px-3 text-center">${name}</td> <!-- REMOVED text-left-player -->
                     `;
                     ttAttendeesTableBody.innerHTML += `<tr class="border-b border-gray-200 hover:bg-gray-100">${rowHTML}</tr>`;
                 });
