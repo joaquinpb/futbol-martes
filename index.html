@@ -2647,7 +2647,7 @@
                 // Cargar datos de Jugadores
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:H',
+                    range: 'Jugadores!A:D',
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
 
@@ -3040,15 +3040,34 @@
                 }
             });
 
-            // Calcular Efectividad y Ausentes
+           // Calcular Efectividad y Ausentes
             Object.values(playerStats).forEach(player => {
                 // Efectividad
                 const maxPossiblePoints = player.pj * 3;
+                let currentEfectividad = 0; // Efectividad base sin ajustar por participación
+
                 if (maxPossiblePoints > 0) {
-                    player.efectividad = ((player.points / maxPossiblePoints) * 100).toFixed(2);
-                } else {
-                    player.efectividad = 0;
+                    currentEfectividad = (player.points / maxPossiblePoints) * 100;
                 }
+
+                // **********************************************
+                // CAMBIO CLAVE PARA EL CÁLCULO DE EFECTIVIDAD
+                // **********************************************
+                if (totalPJMatches > 0) { // Asegurarse de que haya partidos en el período
+                    const participationRatio = player.pj / totalPJMatches;
+                    const MIN_PARTICIPATION_RATIO = 0.20; // 20%
+
+                    if (participationRatio < MIN_PARTICIPATION_RATIO) {
+                        player.efectividad = (currentEfectividad * participationRatio).toFixed(2);
+                    } else {
+                        player.efectividad = currentEfectividad.toFixed(2);
+                    }
+                } else {
+                    player.efectividad = 0; // Si no hay partidos, la efectividad es 0
+                }
+                // **********************************************
+                // FIN DEL CAMBIO
+                // **********************************************
                 
                 // Ausentes
                 player.ausentes = totalPJMatches - player.pj;
