@@ -75,22 +75,21 @@
             --player-oscuros-text: #1a202c; /* Texto negro para Oscuros */
         }
 
-        /* Asegura que html y body ocupen toda la altura para que los porcentajes funcionen */
-        html, body {
-            height: 100%;
-            overflow-x: hidden; /* Evita el desbordamiento horizontal en móvil */
+        /* Eliminar height: 100% de html y body. Permitir que el body se desplace. */
+        html {
+            overflow-x: hidden; /* Mantener para evitar scroll horizontal */
         }
-
-        /* Fuente Inter para una mejor legibilidad */
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body); /* Usar variable */
             margin: 0; /* Elimina el margen predeterminado del body */
             padding: 0; /* Elimina el padding predeterminado del body */
-            display: flex; /* Hacemos el body un contenedor flex */
-            flex-direction: column; /* Por defecto, los elementos se apilan en columna (mobile-first) */
             color: var(--text-default); /* Usar variable para el color de texto por defecto */
             transition: background-color 0.3s ease, color 0.3s ease; /* Transición suave para el modo oscuro */
+            overflow-x: hidden; /* Evita el desbordamiento horizontal en móvil */
+            overflow-y: auto; /* Permite desplazamiento vertical en todo el body */
+            -webkit-overflow-scrolling: touch; /* Para un desplazamiento más suave en iOS */
+            padding-top: 5rem; /* Espacio para el botón de hamburguesa fijo en la parte superior en móvil */
         }
         /* Estilos base para tablas */
         table {
@@ -243,6 +242,11 @@
 
         /* Estilos de escritorio (min-width: 768px) */
         @media (min-width: 768px) {
+            body {
+                display: flex; /* Hacemos el body un contenedor flex en escritorio */
+                flex-direction: row; /* Elementos en fila en escritorio */
+                padding-top: 0; /* Sin padding superior en escritorio */
+            }
             #side-menu {
                 position: relative; /* Parte del flujo normal */
                 transform: translateX(0); /* Siempre visible en escritorio, sin !important */
@@ -264,10 +268,11 @@
             }
             .main-content-container {
                 flex-grow: 1; /* Ocupa el espacio restante */
-                margin-left: 0 !important; /* Restablece el margin-left del móvil */
-                margin-right: 0 !important; /* Restablece el margin-right del móvil */
+                margin-left: 2rem; /* Restablece el margin-left del móvil */
+                margin-right: 2rem; /* Restablece el margin-right del móvil */
                 max-width: none !important; /* Permite que se expanda completamente */
                 width: auto !important; /* Deja que flexbox controle el ancho */
+                margin-top: 2rem; /* md:mt-8 */
             }
         }
 
@@ -742,14 +747,27 @@
             -webkit-overflow-scrolling: touch; /* For smoother scrolling on iOS */
         }
 
-        /* Add -webkit-overflow-scrolling for the main content container */
-        .main-content-container {
-            -webkit-overflow-scrolling: touch; /* Enable momentum scrolling on iOS */
-        }
+        /* Removed from .main-content-container, now handled by body */
+        /* .main-content-container {
+            -webkit-overflow-scrolling: touch;
+        } */
 
+        /* Main content container styling, removed flex-grow, overflow-y-auto, min-h-0 */
+        .main-content-container {
+            padding: 2rem; /* p-8 */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
+            width: 100%;
+            max-width: 80rem; /* Adjusted from max-w-5xl for better desktop use */
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 1rem; /* Small top margin for spacing below the body padding */
+            margin-bottom: 2rem; /* Add some bottom margin */
+            background-color: var(--bg-main-content); /* Apply background color here */
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col md:flex-row">
+<body class="min-h-screen">
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
@@ -787,7 +805,7 @@
 
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity50 z-30 hidden"></div>
 
-    <div class="main-content-container p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8 flex-grow overflow-y-auto min-h-0">
+    <div class="main-content-container p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8">
         <!-- Título principal de la aplicación eliminado de aquí -->
         <div id="leaderboard-content" class="tab-content">
             <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">TABLA DE POSICIONES</h2>
@@ -2150,7 +2168,7 @@
 
         function renderFixtureDetails(matchId) {
             const loadingMessage = document.getElementById('fixture-loading-message');
-            const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container'); 
+            const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container');    
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const fixtureDetailsDisplay = document.getElementById('fixture-details-display');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
@@ -2165,7 +2183,7 @@
             fixtureVisualDetailsContainer.classList.add('hidden'); // Ocultar el contenedor mientras se carga
             
             // Limpiar solo los marcadores de jugador y el trofeo del campo
-            soccerFieldContainer.querySelectorAll('.player-wrapper, .winner-trophy').forEach(el => el.remove()); 
+            soccerFieldContainer.querySelectorAll('.player-wrapper, .winner-trophy').forEach(el => el.remove());    
             ttAttendeesTableBody.innerHTML = ''; // Limpiar asistentes TT anteriores
 
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando detalles del partido...`;
