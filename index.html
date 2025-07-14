@@ -36,10 +36,10 @@
             --bg-blue-200: #bfdbfe;
 
             /* NEW: Variables para colores de jugadores estáticos */
-            --player-claros-bg: #ffffff;
-            --player-claros-text: #1a202c;
-            --player-oscuros-bg: #1a202c;
-            --player-oscuros-text: #ffffff;
+            --player-claros-bg: #1a202c; /* Claros (negro) */
+            --player-claros-text: #ffffff; /* Texto blanco para Claros */
+            --player-oscuros-bg: #ffffff; /* Oscuros (blanco) */
+            --player-oscuros-text: #1a202c; /* Texto negro para Oscuros */
         }
 
         /* Modo oscuro */
@@ -68,11 +68,11 @@
             --text-yellow-400: #facc15; /* Amarillo sigue igual */
             --bg-blue-200: #1e3a8a; /* Azul oscuro para total en tabla */
 
-            /* NEW: Variables para colores de jugadores estáticos (se mantienen iguales en modo oscuro) */
-            --player-claros-bg: #ffffff;
-            --player-claros-text: #1a202c;
-            --player-oscuros-bg: #1a202c;
-            --player-oscuros-text: #ffffff;
+            /* NEW: Variables para colores de jugadores (se mantienen iguales en modo oscuro) */
+            --player-claros-bg: #1a202c;
+            --player-claros-text: #ffffff;
+            --player-oscuros-bg: #ffffff;
+            --player-oscuros-text: #1a202c;
         }
 
         /* Asegura que html y body ocupen toda la altura para que los porcentajes funcionen */
@@ -134,9 +134,6 @@
             border-bottom: 1px solid var(--border-default); /* Usar variable */
             transition: background-color 150ms ease-in-out; /* transition duration-150 ease-in-out */
         }
-        tbody tr:hover {
-            background-color: var(--bg-table-row-hover) !important; /* Usar variable */
-        }
         tbody tr:last-child {
             border-bottom: 0; /* Eliminar borde inferior de la última fila */
         }
@@ -159,18 +156,19 @@
             background-color: var(--bg-indigo-800); /* Usar variable */
             color: var(--text-table-header); /* Usar variable */
             transform: translateX(-100%); /* Oculto por defecto */
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.3s ease-in-out, visibility 0.3s ease; /* Added visibility for smoother toggle */
             z-index: 40;
             display: flex; /* Cambiado a flex para control interno */
             flex-direction: column;
             padding-top: 1rem; /* Añadir algo de padding en la parte superior */
             overflow-y: auto; /* Permite desplazamiento interno si el contenido del menú es muy largo */
+            visibility: hidden; /* NEW: Oculto por defecto en mobile */
         }
 
         /* Esta clase será aplicada por JS para hacerlo visible */
         #side-menu.open {
             transform: translateX(0);
-            display: flex; /* Asegura que se muestre como flex cuando está abierto */
+            visibility: visible; /* NEW: Hace el menú visible */
         }
 
         #overlay {
@@ -217,7 +215,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem; /* gap-2 */
-            margin-left: -0.5rem; /* Ajuste para alinear con el icono de los botones */
+            margin-left: 0; /* REMOVED: negative margin to align with parent padding */
         }
 
 
@@ -253,6 +251,7 @@
                 border-right: 1px solid var(--border-default); /* Usar variable */
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
                 display: flex !important; /* Override hidden class if present */
+                visibility: visible !important; /* NEW: Always visible on desktop */
             }
             #hamburger-button {
                 display: none !important; /* Always hide hamburger on desktop */
@@ -435,7 +434,7 @@
             text-align: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             border: 2px solid; /* Border for team color */
-            /* REMOVED: color: var(--text-default); */
+            color: var(--text-default); /* Usar variable */
         }
         .player-marker .fa-star {
             font-size: 1.2em; /* MODIFIED: Doubled the size */
@@ -443,7 +442,7 @@
             position: absolute;
             bottom: 68px; /* MODIFIED: Adjusted position */
             right: 0px; /* MODIFIED: Adjusted position */
-            z-index: 4; /* Star z-index */
+            z-index: 4; /* NEW: Star z-index */
         }
 
         /* MODIFIED: Usar variables estáticas para los colores de los jugadores */
@@ -1590,36 +1589,27 @@
                 // Update player stats
                 allPlayersInMatch.forEach(pId => {
                     if (playerStats[pId]) {
-                        if (result !== 'Suspendido') {
-                            playerStats[pId].pj += 1;
+                        if (result === 'Claros' && clarosPlayers.includes(pId)) {
+                            playerStats[pId].points += 3;
+                            playerStats[pId].pg += 1;
+                        } else if (result === 'Oscuros' && oscurosPlayers.includes(pId)) {
+                            playerStats[pId].points += 3;
+                            playerStats[pId].pg += 1;
+                        } else if (result === 'Empate' && allPlayersInMatch.includes(pId)) {
+                            playerStats[pId].points += 1;
+                            playerStats[pId].pe += 1;
+                        } else if (result !== 'Suspendido' && allPlayersInMatch.includes(pId)) { // If player was in losing team
+                            playerStats[pId].pp += 1;
                         }
                     }
                 });
 
                 if (result === 'Claros') {
                     clarosWins++;
-                    clarosPlayers.forEach(pId => {
-                        if (playerStats[pId]) playerStats[pId].points += 3;
-                        if (playerStats[pId]) playerStats[pId].pg += 1;
-                    });
-                    oscurosPlayers.forEach(pId => {
-                        if (playerStats[pId]) playerStats[pId].pp += 1;
-                    });
                 } else if (result === 'Oscuros') {
                     oscurosWins++;
-                    oscurosPlayers.forEach(pId => {
-                        if (playerStats[pId]) playerStats[pId].points += 3;
-                        if (playerStats[pId]) playerStats[pId].pg += 1;
-                    });
-                    clarosPlayers.forEach(pId => {
-                        if (playerStats[pId]) playerStats[pId].pp += 1;
-                    });
                 } else if (result === 'Empate') {
                     empates++;
-                    allPlayersInMatch.forEach(pId => {
-                        if (playerStats[pId]) playerStats[pId].points += 1;
-                        if (playerStats[pId]) playerStats[pId].pe += 1;
-                    });
                 }
 
                 // Chamigo counts
@@ -1990,11 +1980,11 @@
                     <span class="text-sm uppercase">Oscuros Ganados</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold" id="claros-wins"></span>
+                    <span class="text-3xl font-bold" id="claros-wins">${teamStats.clarosWins}</span>
                     <span class="text-sm uppercase">Claros Ganados</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold" id="empates"></span>
+                    <span class="text-3xl font-bold" id="empates">${teamStats.empates}</span>
                     <span class="text-sm uppercase">Empates</span>
                 </div>
                 <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
@@ -2528,59 +2518,29 @@
                     }
 
                     // Update points based on match result
-                    if (result === 'Claros' && clarosPlayers.includes(playerId)) {
+                    if (result === 'Claros' && clarosPlayers.includes(pId)) {
                         currentPeriodStats.points += 3;
                         currentPeriodStats.pg += 1;
                         currentYearTotalStats.points += 3;
                         currentYearTotalStats.pg += 1;
                         playerStats.overallTotal.points += 3;
                         playerStats.overallTotal.pg += 1;
-                    } else if (result === 'Oscuros' && oscurosPlayers.includes(playerId)) {
+                    } else if (result === 'Oscuros' && oscurosPlayers.includes(pId)) {
                         currentPeriodStats.points += 3;
                         currentPeriodStats.pg += 1;
                         currentYearTotalStats.points += 3;
                         currentYearTotalStats.pg += 1;
                         playerStats.overallTotal.points += 3;
                         playerStats.overallTotal.pg += 1;
-                    } else if (result === 'Empate' && isPlayerInMatch) {
+                    } else if (result === 'Empate' && allPlayersInMatch.includes(pId)) {
                         currentPeriodStats.points += 1;
                         currentPeriodStats.pe += 1;
                         currentYearTotalStats.points += 1;
                         currentYearTotalStats.pe += 1;
                         playerStats.overallTotal.points += 1;
                         playerStats.overallTotal.pe += 1;
-                    } else if (result === 'Claros' && oscurosPlayers.includes(playerId)) { // Player was in losing team
-                        currentPeriodStats.pp += 1;
-                        currentYearTotalStats.pp += 1;
-                        playerStats.overallTotal.pp += 1;
-                    } else if (result === 'Oscuros' && clarosPlayers.includes(playerId)) { // Player was in losing team
-                        currentPeriodStats.pp += 1;
-                        currentYearTotalStats.pp += 1;
-                        playerStats.overallTotal.pp += 1;
-                    }
-
-                    // Chamigo counts
-                    if (chamigoVotosStr) {
-                        try {
-                            const chamigoVotos = JSON.parse(chamigoVotosStr);
-                            if (chamigoVotos.some(v => v.id === playerId && v.votos === Math.max(...chamigoVotos.map(c => c.votos)))) {
-                                currentPeriodStats.chamigos += 1;
-                                currentYearTotalStats.chamigos += 1;
-                                playerStats.overallTotal.chamigos += 1;
-                            }
-                        } catch (e) {
-                            console.warn('Error parsing chamigo votes for match', matchId, ':', e);
-                        }
-                    }
-
-                    // TT counts
-                    if (ttAttendeesStr) {
-                        const ttAttendees = ttAttendeesStr.split(',').filter(Boolean);
-                        if (ttAttendees.includes(playerId)) {
-                            currentPeriodStats.tt += 1;
-                            currentYearTotalStats.tt += 1;
-                            playerStats.overallTotal.tt += 1;
-                        }
+                    } else if (result !== 'Suspendido' && allPlayersInMatch.includes(pId)) { // If player was in losing team
+                        playerStats[pId].pp += 1;
                     }
                 }
             });
