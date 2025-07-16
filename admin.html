@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -24,16 +25,36 @@
         }
         /* Estilos para el efecto de arrastre */
         .player-draggable {
-            @apply bg-white p-2 rounded-md shadow-sm mb-2 flex justify-between items-center;
-            cursor: grab; /* Cambia el cursor a una mano al pasar el ratón */
+            background-color: #ffffff; /* bg-white */
+            padding: 0.25rem 0.5rem; /* Menor padding: 4px arriba/abajo, 8px a los lados */
+            border-radius: 0.375rem; /* rounded-md */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+            margin-bottom: 0.25rem; /* mb-1 */
+            cursor: grab;
+
+            /* Propiedades clave para el ajuste de tamaño */
+            display: inline-block !important; /* Fuerza a que ocupe solo el espacio de su contenido */
+            width: auto !important;           /* Asegura que no tenga un ancho fijo o heredado */
+            height: auto !important;          /* Asegura que no tenga una altura fija o heredada */
+            flex: none !important;            /* Anula cualquier comportamiento de flexbox */
+            white-space: nowrap !important;   /* Evita que el texto se divida en varias líneas */
         }
+
         .player-draggable:active {
             cursor: grabbing; /* Cambia el cursor a una mano agarrando al hacer clic */
         }
+        
+        /* Estilos específicos para jugadores en el equipo oscuro */
+        #team-oscuros .player-draggable {
+            background-color: #000000 !important; /* Fondo negro */
+            color: #ffffff !important;           /* Texto blanco */
+        }
+        
         /* Nueva clase para feedback visual al arrastrar con toque */
         .player-draggable.dragging-touch {
             opacity: 0.7;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            /* Importante: No agregues aquí propiedades como width, height, padding, o background-color */
         }
         /* Estilo para el botón de cerrar sesión (Cruz) */
         .close-button {
@@ -345,30 +366,27 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Disponibles</h3>
-                        <div id="titulares-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
+                        <div id="titulares-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-1 min-h-[120px]">
                             <!-- Jugadores titulares se cargarán aquí -->
                             <p class="text-gray-500">Cargando titulares...</p>
                         </div>
                         <h4 class="font-semibold text-gray-700 mb-2 mt-4">Suplentes</h4>
-                        <div id="suplentes-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-2 min-h-[120px]">
+                        <div id="suplentes-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-1 min-h-[120px]">
                             <!-- Jugadores suplentes se cargarán aquí -->
                             <p class="text-gray-500">Cargando suplentes...</p>
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-xl font-medium text-gray-800 mb-3">Equipos Seleccionados (10/10)</h3>
+                        <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Seleccionados (<span id="total-selected-players">0</span>/10)</h3>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <h4 class="font-semibold text-gray-700 mb-2">Claros (<span id="claros-count">0</span>)</h4>
-                                <div id="team-claros" class="border border-blue-300 rounded-lg p-3 bg-blue-50 flex flex-wrap content-start gap-2 min-h-[120px]">
-                                    <!-- Jugadores del equipo Claros -->
-                                </div>
+                                <div id="team-claros" class="border border-gray-300 rounded-lg p-3 bg-white flex flex-wrap content-start gap-1 min-h-[120px] text-black">
+                            </div>
                             </div>
                             <div>
                                 <h4 class="font-semibold text-gray-700 mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
-                                <div id="team-oscuros" class="border border-red-300 rounded-lg p-3 bg-red-50 flex flex-wrap content-start gap-2 min-h-[120px]">
-                                    <!-- Jugadores del equipo Oscuros -->
-                                </div>
+                                <div id="team-oscuros" class="border border-gray-300 rounded-lg p-3 bg-gray-900 flex flex-wrap content-start gap-1 min-h-[120px] text-white"></div>
                             </div>
                         </div>
                         <button id="save-teams-button" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 w-full" disabled>
@@ -1333,25 +1351,34 @@
             const data = JSON.parse(e.dataTransfer.getData('text/plain'));
             const playerId = data.id;
             const sourceId = data.source;
-            const targetId = e.currentTarget.id;
-
-            console.log('Drop event (Desktop) on', e.currentTarget.id, 'for player:', data.name);
-
+            const targetElement = e.currentTarget; // El elemento DOM donde se suelta
+            const targetId = targetElement.id;     // La ID del elemento donde se suelta
+        
+            console.log('Drop event (Desktop) on', targetId, 'for player:', data.name);
+        
+            // NUEVO: VALIDACIÓN DE LÍMITE DE JUGADORES
+            if (targetId === 'team-claros' || targetId === 'team-oscuros') {
+                if (targetElement.children.length >= 5) {
+                    alert(`No se pueden agregar más de 5 jugadores al equipo ${targetId === 'team-claros' ? 'Claros' : 'Oscuros'}.`);
+                    console.log(`Intento fallido: Equipo ${targetId} ya tiene 5 jugadores.`);
+                    return; // Impide el drop si el equipo ya tiene 5 jugadores
+                }
+            }
+        
             if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
                 (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
                 console.log('Arrastre no permitido entre Titulares y Suplentes.');
                 return;
             }
-
+        
             if (sourceId === targetId) return;
-
+        
             const draggedElement = document.querySelector(`#${sourceId} .player-draggable[data-id="${playerId}"]`);
             if (draggedElement) {
-                document.getElementById(targetId).appendChild(draggedElement);
+                targetElement.appendChild(draggedElement); // Usamos targetElement aquí
             }
             updateTeamCounts();
         }
-
         // --- Touch Drag-and-Drop Handlers ---
         function handleTouchStart(e) {
             if (e.touches.length === 1) {
@@ -1441,38 +1468,63 @@
         function handleTouchDrop(draggedElement, dropZone) {
             const sourceId = originalParentOfDraggedPlayer.id;
             const targetId = dropZone.id;
-
+        
             console.log('Touch Drop event on', targetId, 'for player:', draggedElement.dataset.name);
-
+        
+            // NUEVO: VALIDACIÓN DE LÍMITE DE JUGADORES
+            if (targetId === 'team-claros' || targetId === 'team-oscuros') {
+                if (dropZone.children.length >= 5) {
+                    alert(`No se pueden agregar más de 5 jugadores al equipo ${targetId === 'team-claros' ? 'Claros' : 'Oscuros'}.`);
+                    console.log(`Intento fallido: Equipo ${targetId} ya tiene 5 jugadores.`);
+                    // Si no se puede agregar, el elemento debe volver a su origen
+                    if (originalParentOfDraggedPlayer) {
+                        originalParentOfDraggedPlayer.appendChild(draggedElement);
+                    }
+                    return; // Impide el drop si el equipo ya tiene 5 jugadores
+                }
+            }
+        
             if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
                 (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
                 console.log('Arrastre no permitido entre Titulares y Suplentes.');
+                // Si no se puede agregar, el elemento debe volver a su origen
                 if (originalParentOfDraggedPlayer) {
                     originalParentOfDraggedPlayer.appendChild(draggedElement);
                 }
                 return;
             }
-
+        
             if (sourceId === targetId) {
+                // Si se soltó en el mismo lugar, simplemente asegúrate de que no haya sido removido
+                if (originalParentOfDraggedPlayer && !originalParentOfDraggedPlayer.contains(draggedElement)) {
+                    originalParentOfDraggedPlayer.appendChild(draggedElement);
+                }
                 return;
             }
-
+        
+            // Si el draggedElement ya fue removido por alguna razón (por ejemplo, en handleTouchEnd),
+            // asegúrate de que no cause un error al intentar removerlo de nuevo.
             if (originalParentOfDraggedPlayer && originalParentOfDraggedPlayer.contains(draggedElement)) {
                 originalParentOfDraggedPlayer.removeChild(draggedElement);
             }
-
-            dropZone.appendChild(draggedElement);
-
+            
+            dropZone.appendChild(draggedElement); // Ahora esto solo se ejecuta si pasó las validaciones
+        
             updateTeamCounts();
         }
 
         function updateTeamCounts() {
             const clarosPlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
             const oscurosPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
-
+        
             clarosCountSpan.textContent = clarosPlayers.length;
             oscurosCountSpan.textContent = oscurosPlayers.length;
-
+        
+            // NUEVO: Calcular el total de jugadores seleccionados
+            const totalSelectedPlayers = clarosPlayers.length + oscurosPlayers.length;
+            document.getElementById('total-selected-players').textContent = totalSelectedPlayers; // Actualizar el nuevo contador
+        
+            // Mantener la lógica para habilitar/deshabilitar el botón de guardar equipos
             if (clarosPlayers.length === 5 && oscurosPlayers.length === 5) {
                 saveTeamsButton.disabled = false;
             } else {
