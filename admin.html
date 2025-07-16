@@ -1350,25 +1350,34 @@
             const data = JSON.parse(e.dataTransfer.getData('text/plain'));
             const playerId = data.id;
             const sourceId = data.source;
-            const targetId = e.currentTarget.id;
-
-            console.log('Drop event (Desktop) on', e.currentTarget.id, 'for player:', data.name);
-
+            const targetElement = e.currentTarget; // El elemento DOM donde se suelta
+            const targetId = targetElement.id;     // La ID del elemento donde se suelta
+        
+            console.log('Drop event (Desktop) on', targetId, 'for player:', data.name);
+        
+            // NUEVO: VALIDACIÓN DE LÍMITE DE JUGADORES
+            if (targetId === 'team-claros' || targetId === 'team-oscuros') {
+                if (targetElement.children.length >= 5) {
+                    alert(`No se pueden agregar más de 5 jugadores al equipo ${targetId === 'team-claros' ? 'Claros' : 'Oscuros'}.`);
+                    console.log(`Intento fallido: Equipo ${targetId} ya tiene 5 jugadores.`);
+                    return; // Impide el drop si el equipo ya tiene 5 jugadores
+                }
+            }
+        
             if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
                 (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
                 console.log('Arrastre no permitido entre Titulares y Suplentes.');
                 return;
             }
-
+        
             if (sourceId === targetId) return;
-
+        
             const draggedElement = document.querySelector(`#${sourceId} .player-draggable[data-id="${playerId}"]`);
             if (draggedElement) {
-                document.getElementById(targetId).appendChild(draggedElement);
+                targetElement.appendChild(draggedElement); // Usamos targetElement aquí
             }
             updateTeamCounts();
         }
-
         // --- Touch Drag-and-Drop Handlers ---
         function handleTouchStart(e) {
             if (e.touches.length === 1) {
@@ -1458,28 +1467,48 @@
         function handleTouchDrop(draggedElement, dropZone) {
             const sourceId = originalParentOfDraggedPlayer.id;
             const targetId = dropZone.id;
-
+        
             console.log('Touch Drop event on', targetId, 'for player:', draggedElement.dataset.name);
-
+        
+            // NUEVO: VALIDACIÓN DE LÍMITE DE JUGADORES
+            if (targetId === 'team-claros' || targetId === 'team-oscuros') {
+                if (dropZone.children.length >= 5) {
+                    alert(`No se pueden agregar más de 5 jugadores al equipo ${targetId === 'team-claros' ? 'Claros' : 'Oscuros'}.`);
+                    console.log(`Intento fallido: Equipo ${targetId} ya tiene 5 jugadores.`);
+                    // Si no se puede agregar, el elemento debe volver a su origen
+                    if (originalParentOfDraggedPlayer) {
+                        originalParentOfDraggedPlayer.appendChild(draggedElement);
+                    }
+                    return; // Impide el drop si el equipo ya tiene 5 jugadores
+                }
+            }
+        
             if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
                 (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
                 console.log('Arrastre no permitido entre Titulares y Suplentes.');
+                // Si no se puede agregar, el elemento debe volver a su origen
                 if (originalParentOfDraggedPlayer) {
                     originalParentOfDraggedPlayer.appendChild(draggedElement);
                 }
                 return;
             }
-
+        
             if (sourceId === targetId) {
+                // Si se soltó en el mismo lugar, simplemente asegúrate de que no haya sido removido
+                if (originalParentOfDraggedPlayer && !originalParentOfDraggedPlayer.contains(draggedElement)) {
+                    originalParentOfDraggedPlayer.appendChild(draggedElement);
+                }
                 return;
             }
-
+        
+            // Si el draggedElement ya fue removido por alguna razón (por ejemplo, en handleTouchEnd),
+            // asegúrate de que no cause un error al intentar removerlo de nuevo.
             if (originalParentOfDraggedPlayer && originalParentOfDraggedPlayer.contains(draggedElement)) {
                 originalParentOfDraggedPlayer.removeChild(draggedElement);
             }
-
-            dropZone.appendChild(draggedElement);
-
+            
+            dropZone.appendChild(draggedElement); // Ahora esto solo se ejecuta si pasó las validaciones
+        
             updateTeamCounts();
         }
 
