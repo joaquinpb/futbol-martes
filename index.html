@@ -40,7 +40,6 @@
             --text-secondary: #a0aec0;
             --border-default: #4a5568;
             --bg-table-header: #4a5568;
-            --text-table-header: #ffffff;
             --bg-table-row-odd: #2d3748;
             --bg-table-row-even: #4a5568;
             --bg-table-row-hover: #1a202c;
@@ -219,6 +218,8 @@
             <button class="tab-button" data-tab="ausentismo-content"><i class="fas fa-times-circle mr-2"></i>Ausentismo</button>
             <button class="tab-button" data-tab="estadisticas-content"><i class="fas fa-chart-bar mr-2"></i>Estadísticas</button>
             <button class="tab-button" data-tab="equipos-content"><i class="fas fa-futbol mr-2"></i>Equipos</button>
+            <button class="tab-button" data-tab="fixture-content"><i class="fas fa-calendar-alt mr-2"></i>Fixture</button>
+            <button class="tab-button" data-tab="individual-stats-content"><i class="fas fa-history mr-2"></i>Histórico</button>
         </div>
     </nav>
 
@@ -295,6 +296,14 @@
                 <div id="equipos-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando stats...</div>
                 <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden justify-items-center mx-auto"></div>
             </div>
+            <div id="fixture-content" class="tab-content hidden">
+                 <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500">FIXTURE</h2>
+                 <!-- Resto del contenido de Fixture aquí -->
+            </div>
+             <div id="individual-stats-content" class="tab-content hidden">
+                <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500">HISTÓRICO</h2>
+                 <!-- Resto del contenido de Histórico aquí -->
+            </div>
         </div>
     </div>
 
@@ -302,7 +311,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- 2. Tu script principal -->
     <script>
-        async function initializeApp() {
+        function initializeApp() {
             const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co'; 
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -361,12 +370,15 @@
 
                     if (match.chamigo_votes) {
                         const votes = match.chamigo_votes;
-                        const maxVotes = Math.max(...Object.values(votes));
-                        if (maxVotes > 0) {
-                            const chamigos = Object.keys(votes).filter(id => votes[id] === maxVotes);
-                            chamigos.forEach(id => {
-                                if (playerStats[id]) playerStats[id].chamigos++;
-                            });
+                        const voteValues = Object.values(votes);
+                        if (voteValues.length > 0) {
+                            const maxVotes = Math.max(...voteValues);
+                            if (maxVotes > 0) {
+                                const chamigos = Object.keys(votes).filter(id => votes[id] === maxVotes);
+                                chamigos.forEach(id => {
+                                    if (playerStats[id]) playerStats[id].chamigos++;
+                                });
+                            }
                         }
                     }
                     
@@ -528,7 +540,6 @@
             });
         }
 
-        // CORRECCIÓN: Se usa un bootstrapper para asegurar que Supabase esté listo.
         function bootstrapApp() {
             if (window.supabase) {
                 initializeApp();
