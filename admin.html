@@ -761,12 +761,12 @@
     <script>
         // --- Configuración de Supabase ---
         // ¡IMPORTANTE! Reemplaza con tus propias credenciales de Supabase.
-        const SUPABASE_URL = 'TU_SUPABASE_URL'; 
-        const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY'; 
+        const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
     
         // Inicializa el cliente de Supabase
-        // CORRECCIÓN: Se cambió el nombre de la constante a 'supabaseClient' para evitar conflictos.
-        const supabaseClient = window.supabase.createClient(https://ezoqqzequstrzemlbsoa.supabase.co, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ);
+        // CORRECCIÓN FINAL: Accedemos a 'supabase' a través del objeto 'window'
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
         // --- Cache de Datos (se llenará desde Supabase en el próximo paso) ---
         let allPlayersData = []; 
@@ -869,7 +869,6 @@
                 return;
             }
     
-            // CORRECCIÓN: Usar la constante 'supabaseClient'
             const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     
             if (error) {
@@ -883,7 +882,6 @@
          * Cierra la sesión del usuario.
          */
         const handleSignoutClick = async () => {
-            // CORRECCIÓN: Usar la constante 'supabaseClient'
             const { error } = await supabaseClient.auth.signOut();
             if (error) {
                 console.error('Error al cerrar sesión:', error);
@@ -1065,7 +1063,7 @@
             const filteredPlayers = []; 
     
             if (filteredPlayers.length === 0) {
-                playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.';
+                playersLoadingMessageAdmin.textContent = 'Aún no se han cargado jugadores desde Supabase.';
                 return;
             }
     
@@ -1239,7 +1237,6 @@
             return `${dd}/${mm}/${yyyy}`;
         }
         
-        // CORRECCIÓN: La función ahora es async y usa 'await' para obtener la sesión.
         async function handleResize() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) return;
@@ -1458,7 +1455,6 @@
             window.addEventListener('resize', handleResize);
     
             // Escuchar cambios de autenticación (login y logout) para manejar la UI
-            // CORRECCIÓN: Usar la constante 'supabaseClient'
             supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
         });
     
