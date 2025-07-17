@@ -453,11 +453,24 @@
         <h1 class="text-3xl md:text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500">Panel de Administración</h1>
 
         <!-- Authentication buttons -->
-        <div id="auth-container" class="text-center mb-8">
-            <button id="authorize_button" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
-                Autorizar Google Sheets
-            </button>
-            <p id="auth-status" class="text-center text-red-500 mt-4">Por favor, autoriza la aplicación para acceder a los datos.</p>
+        <div id="auth-container" class="max-w-md mx-auto">
+            <div class="p-8 border rounded-lg shadow-sm bg-white dark:bg-gray-800 dark:border-gray-700">
+                <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                        <input type="email" id="email" class="w-full p-2 border rounded-md" placeholder="tu@email.com">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
+                        <input type="password" id="password" class="w-full p-2 border rounded-md" placeholder="••••••••">
+                    </div>
+                    <button id="login-button" class="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
+                        Entrar
+                    </button>
+                </div>
+                <p id="auth-status" class="text-center text-red-500 mt-4 h-4"></p>
+            </div>
         </div>
 
         <!-- Admin Content -->
@@ -746,42 +759,49 @@
     </div>
 
     <script>
-        // ¡IMPORTANTE! Reemplaza 'TU_CLIENT_ID' con tu ID de Cliente de OAuth 2.0
-        const CLIENT_ID = '490772160476-4cmd0dse3b74o65g1n9s1q5itlbjavbb.apps.googleusercontent.com';
-        // ¡IMPORTANTE! Reemplaza 'TU_ID_DE_HOJA_DE_CALCULO' con el ID de tu Google Sheet
-        const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E';
-
-        // Ámbitos de autorización necesarios para leer y escribir en Google Sheets
-        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-
-        let tokenClient;
-        let gapiInited = false;
-        let gisInited = false;
-        let allPlayersData = []; // Cache de todos los jugadores
-        let allMatchesData = []; // Cache de todos los partidos
-        let sheetIds = {}; // Almacena los sheetIds por nombre de hoja
-
+        // --- Configuración de Supabase ---
+        // ¡IMPORTANTE! Reemplaza con tus propias credenciales de Supabase.
+        const SUPABASE_URL = 'TU_SUPABASE_URL'; 
+        const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY'; 
+    
+        // Inicializa el cliente de Supabase
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+        // --- Cache de Datos (se llenará desde Supabase en el próximo paso) ---
+        let allPlayersData = []; 
+        let allMatchesData = []; 
+    
         // Variables para el drag-and-drop táctil
         let currentDraggedPlayer = null;
         let originalParentOfDraggedPlayer = null;
         
         // --- Elementos del DOM ---
-        const authorizeButton = document.getElementById('authorize_button');
-        const signoutButton = document.getElementById('signout_button');
-        const authStatus = document.getElementById('auth-status');
+        // Contenedores principales
+        const authContainer = document.getElementById('auth-container');
         const adminContent = document.getElementById('admin-content');
         const mainAdminContentContainer = document.querySelector('.main-admin-content-container');
-        const hamburgerButton = document.getElementById('hamburger-button');
         const sideMenu = document.getElementById('side-menu');
+        const hamburgerButton = document.getElementById('hamburger-button');
         const overlay = document.getElementById('overlay');
+        
+        // Autenticación
+        const loginButton = document.getElementById('login-button');
+        const signoutButton = document.getElementById('signout_button');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const authStatus = document.getElementById('auth-status');
+    
+        // Navegación y Pestañas
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
+    
+        // Modal de Confirmación
         const customConfirmModal = document.getElementById('custom-confirm-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalMessage = document.getElementById('modal-message');
         const modalCancelButton = document.getElementById('modal-cancel-button');
         const modalConfirmButton = document.getElementById('modal-confirm-button');
-
+    
         // Gestión de Jugadores
         const playerIdInput = document.getElementById('player-id');
         const playerNameInput = document.getElementById('player-name');
@@ -794,7 +814,7 @@
         const playerListNameFilter = document.getElementById('player-list-name-filter');
         const playerListStatusFilter = document.getElementById('player-list-status-filter');
         const playerListRoleFilter = document.getElementById('player-list-role-filter');
-
+    
         // Armar Equipos
         const teamMatchDateInput = document.getElementById('team-match-date');
         const titularesPlayersDiv = document.getElementById('titulares-players');
@@ -804,7 +824,7 @@
         const clarosCountSpan = document.getElementById('claros-count');
         const oscurosCountSpan = document.getElementById('oscuros-count');
         const saveTeamsButton = document.getElementById('save-teams-button');
-
+    
         // Resultados
         const matchDateInput = document.getElementById('match-date');
         const matchResultSelect = document.getElementById('match-result');
@@ -813,14 +833,14 @@
         const resultsMatchListDiv = document.getElementById('results-match-list');
         const registerMatchButton = document.getElementById('register-match-button');
         const deleteMatchButton = document.getElementById('delete-match-button');
-
+    
         // Chamigo
         const chamigoVotingPlayersDiv = document.getElementById('chamigo-voting-players');
         const registerChamigoButton = document.getElementById('register-chamigo-button');
         const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select');
         const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select');
         const chamigoMatchListDiv = document.getElementById('chamigo-match-list');
-
+    
         // TT
         const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
         const registerTtButton = document.getElementById('register-tt-button');
@@ -832,119 +852,72 @@
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         const darkModeIcon = document.getElementById('dark-mode-icon');
         const htmlElement = document.documentElement;
-
-        // --- Funciones de Modo Oscuro ---
-        function applyTheme(theme) {
-            if (theme === 'dark') {
-                htmlElement.classList.add('dark');
-                darkModeIcon.classList.remove('fa-moon');
-                darkModeIcon.classList.add('fa-sun');
-            } else {
-                htmlElement.classList.remove('dark');
-                darkModeIcon.classList.remove('fa-sun');
-                darkModeIcon.classList.add('fa-moon');
+    
+        // --- Funciones de Autenticación con Supabase ---
+    
+        /**
+         * Intenta iniciar sesión con email y contraseña.
+         */
+        const handleLogin = async () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            authStatus.textContent = ''; // Limpiar mensajes de error
+    
+            if (!email || !password) {
+                authStatus.textContent = 'Por favor, ingresa email y contraseña.';
+                return;
             }
-             localStorage.setItem('theme', theme);
-        }
-
-        function toggleTheme() {
-            const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
-            applyTheme(currentTheme);
-        }
-
-        // --- Funciones de Autenticación ---
-        function loadGapiScript() {
-            const script = document.createElement('script');
-            script.src = 'https://apis.google.com/js/api.js';
-            script.async = true;
-            script.defer = true;
-            script.onload = () => gapi.load('client', initializeGapiClient);
-            document.head.appendChild(script);
-        }
-
-        function loadGisScript() {
-            const script = document.createElement('script');
-            script.src = 'https://accounts.google.com/gsi/client';
-            script.async = true;
-            script.defer = true;
-            script.onload = gisLoaded;
-            document.head.appendChild(script);
-        }
-
-        async function initializeGapiClient() {
-            try {
-                await gapi.client.init({
-                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                });
-                gapiInited = true;
-                maybeEnableAuthUI();
-            } catch (err) {
-                console.error("Error al inicializar gapi.client:", err);
-                authStatus.textContent = `Error al inicializar la API de Google. Revisa la consola.`;
+    
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+    
+            if (error) {
+                console.error('Error de login:', error.message);
+                authStatus.textContent = 'Email o contraseña incorrectos.';
             }
-        }
-
-        function gisLoaded() {
-            try {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: CLIENT_ID,
-                    scope: SCOPES,
-                    callback: '', // Se define en handleAuthClick
-                });
-                gisInited = true;
-                maybeEnableAuthUI();
-            } catch (err) {
-                 console.error("Error al inicializar GIS:", err);
-                 authStatus.textContent = 'Error al cargar la autenticación de Google. Intenta recargar.';
+            // Si el login es exitoso, onAuthStateChange se encargará del resto.
+        };
+    
+        /**
+         * Cierra la sesión del usuario.
+         */
+        const handleSignoutClick = async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión.');
             }
-        }
-
-        function maybeEnableAuthUI() {
-            if (gapiInited && gisInited) {
-                if (gapi.client.getToken() === null) {
-                    // No hay token, mostrar UI de login
-                    document.getElementById('auth-container').classList.remove('hidden');
-                    adminContent.classList.add('hidden');
-                    sideMenu.classList.add('hidden');
-                    hamburgerButton.classList.add('hidden');
-                } else {
-                    // Hay token, proceder a la app
-                    handleAuthSuccess();
-                }
-            }
-        }
-
-        function handleAuthClick() {
-            if (!tokenClient) return;
-            tokenClient.callback = async (resp) => {
-                if (resp.error) {
-                    console.error('Error de autenticación:', resp);
-                    authStatus.textContent = `Error de autenticación: ${resp.error_description || resp.error}`;
-                    return;
-                }
-                handleAuthSuccess();
-            };
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({ prompt: 'consent' });
-            } else {
-                tokenClient.requestAccessToken({ prompt: '' });
-            }
-        }
-
-        async function handleAuthSuccess() {
-            document.getElementById('auth-container').classList.add('hidden');
-            adminContent.classList.remove('hidden');
-            updateUIForAuth();
-            await loadAllDataAndDisplayAllContent();
-            setupTabNavigation();
-            
-            // Activar la primera pestaña por defecto
-            const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
-            if (defaultTabButton) {
-                defaultTabButton.click();
-            }
-        }
+            // onAuthStateChange se encargará de mostrar el formulario de login.
+        };
         
+        /**
+         * Maneja el evento de cambio de estado de autenticación (login/logout).
+         * Muestra el contenido principal o el formulario de login según corresponda.
+         */
+        const handleAuthStateChange = async (event, session) => {
+            if (session) {
+                // Usuario logueado
+                authContainer.classList.add('hidden');
+                adminContent.classList.remove('hidden');
+                updateUIForAuth(); // Esta función tuya maneja el menú lateral
+                await loadAllDataAndDisplayAllContent(); // Cargamos los datos después del login
+                setupTabNavigation();
+                const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
+                if (defaultTabButton) {
+                    defaultTabButton.classList.add('active'); // Marcar como activo
+                    document.getElementById(defaultTabButton.dataset.tab).classList.remove('hidden'); // Mostrar contenido
+                }
+            } else {
+                // Usuario no logueado
+                authContainer.classList.remove('hidden');
+                adminContent.classList.add('hidden');
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.add('hidden');
+                overlay.classList.remove('open');
+                document.body.classList.remove('overflow-hidden');
+            }
+        };
+    
         function updateUIForAuth() {
             if (window.innerWidth >= 768) { // Desktop
                 sideMenu.classList.remove('hidden');
@@ -956,24 +929,26 @@
                 hamburgerButton.classList.remove('hidden');
             }
         }
-
-        function handleSignoutClick() {
-            const token = gapi.client.getToken();
-            if (token !== null) {
-                google.accounts.oauth2.revoke(token.access_token);
-                gapi.client.setToken('');
-                
-                document.getElementById('auth-container').classList.remove('hidden');
-                authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
-                adminContent.classList.add('hidden');
-                sideMenu.classList.add('hidden');
-                sideMenu.classList.remove('open');
-                hamburgerButton.classList.add('hidden');
-                overlay.classList.remove('open');
-                document.body.classList.remove('overflow-hidden');
+    
+        // --- Funciones de Modo Oscuro ---
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                htmlElement.classList.add('dark');
+                darkModeIcon.classList.remove('fa-moon');
+                darkModeIcon.classList.add('fa-sun');
+            } else {
+                htmlElement.classList.remove('dark');
+                darkModeIcon.classList.remove('fa-sun');
+                darkModeIcon.classList.add('fa-moon');
             }
+            localStorage.setItem('theme', theme);
         }
-
+    
+        function toggleTheme() {
+            const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(currentTheme);
+        }
+    
         // --- Custom Confirmation Modal ---
         function showCustomConfirm(title, message) {
             return new Promise((resolve) => {
@@ -990,96 +965,67 @@
                 };
             });
         }
-
-        // --- Funciones de Carga de Datos ---
+    
+        // --- Funciones de Carga de Datos (AÚN CON CÓDIGO DE GOOGLE SHEETS) ---
+        // ¡OJO! En el próximo paso reemplazaremos estas funciones para que usen Supabase.
+        // Por ahora, las dejamos para que la app no se rompa por completo.
         async function loadAllData() {
-            try {
-                if (!gapi.client.sheets) {
-                    throw new Error("API de Google Sheets no cargada.");
-                }
-
-                const metadataResponse = await gapi.client.sheets.spreadsheets.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    fields: 'sheets.properties',
-                });
-                if (metadataResponse.result && metadataResponse.result.sheets) {
-                    metadataResponse.result.sheets.forEach(sheet => {
-                        sheetIds[sheet.properties.title] = sheet.properties.sheetId;
-                    });
-                }
-
-                const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:D',
-                });
-                allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
-
-                const matchesResponse = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G',
-                });
-                allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : [];
-
-            } catch (err) {
-                console.error('Error al cargar datos:', err);
-                alert(`Error al cargar datos: ${err.result?.error?.message || err.message}`);
-            }
+            console.warn("loadAllData() todavía usa la lógica de Google Sheets. Se reemplazará en el siguiente paso.");
+            // Simulamos que no hay datos para evitar errores
+            allPlayersData = [];
+            allMatchesData = [];
+            return Promise.resolve();
         }
-
+    
         async function loadAllDataAndDisplayAllContent() {
             await loadAllData();
             renderPlayersListAdmin();
             renderAvailablePlayersForTeams();
             populateResultsMatchYearSelect();
             populateChamigoTtMatchYearSelect();
-            setInitialFilters(); // NUEVO: Llamar a la función para setear los filtros
+            setInitialFilters();
         }
-
-        // --- NUEVA FUNCIÓN: Setear filtros iniciales ---
+        
+        // --- El resto de tus funciones (UI, Drag & Drop, etc.) se mantienen igual ---
+        // --- COPIA Y PEGA EL RESTO DE TUS FUNCIONES DESDE AQUÍ ---
+        // (Desde 'setInitialFilters' hasta el final de tu script original)
+    
         function setInitialFilters() {
             const today = new Date();
             const currentYear = today.getFullYear();
-            const currentMonth = today.getMonth(); // 0-indexed (0 for January)
-
+            const currentMonth = today.getMonth();
+    
             const selectsToUpdate = [
                 { year: 'results-match-year-select', month: 'results-match-month-select' },
                 { year: 'chamigo-match-year-select', month: 'chamigo-match-month-select' },
                 { year: 'tt-match-year-select', month: 'tt-match-month-select' }
             ];
-
+    
             selectsToUpdate.forEach(pair => {
                 const yearSelect = document.getElementById(pair.year);
                 const monthSelect = document.getElementById(pair.month);
-
-                // Setear año actual si existe en las opciones
                 if (Array.from(yearSelect.options).some(opt => opt.value == currentYear)) {
                     yearSelect.value = currentYear;
                 }
-                
-                // Setear mes actual
                 monthSelect.value = currentMonth;
-
-                // Disparar evento change para actualizar las listas de partidos
                 yearSelect.dispatchEvent(new Event('change'));
                 monthSelect.dispatchEvent(new Event('change'));
             });
         }
-
-
-        // --- Funciones de Pestañas ---
+    
         function setupTabNavigation() {
             tabButtons.forEach(button => {
                 button.addEventListener('click', handleTabButtonClick);
             });
         }
-
+    
         function handleTabButtonClick(event) {
             const clickedButton = event.currentTarget;
             tabButtons.forEach(btn => btn.classList.remove('active'));
             tabContents.forEach(content => content.classList.add('hidden'));
             clickedButton.classList.add('active');
             document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
-
+    
             if (window.innerWidth < 768) {
                 toggleSideMenu();
             }
@@ -1088,8 +1034,7 @@
             if (tabId === 'players-management') renderPlayersListAdmin();
             if (tabId === 'team-formation') renderAvailablePlayersForTeams();
         }
-
-        // --- Toggle Side Menu Functionality ---
+    
         function toggleSideMenu() {
             if (window.innerWidth < 768) {
                 const isOpen = sideMenu.classList.toggle('open');
@@ -1102,19 +1047,18 @@
                 }
             }
         }
-
-        // --- Gestión de Jugadores (AMB) ---
+    
         function renderPlayersListAdmin() {
             playersListAdminTableBody.innerHTML = '';
             const table = document.querySelector('#players-list-admin table');
             playersLoadingMessageAdmin.classList.remove('hidden');
             table.classList.add('hidden');
             playersLoadingMessageAdmin.textContent = 'Cargando jugadores...';
-
+    
             const nameFilter = playerListNameFilter.value.toLowerCase();
             const statusFilter = playerListStatusFilter.value;
             const roleFilter = playerListRoleFilter.value;
-
+    
             const filteredPlayers = allPlayersData.filter(player => {
                 const [id, nombre = '', estado = '', rol = 'Titular'] = player;
                 const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
@@ -1122,12 +1066,12 @@
                 const matchesRole = roleFilter === 'Todos' || rol === roleFilter;
                 return matchesName && matchesStatus && matchesRole;
             });
-
+    
             if (filteredPlayers.length === 0) {
                 playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.';
                 return;
             }
-
+    
             filteredPlayers.forEach(([id, nombre, estado, rol = 'Titular']) => {
                 const row = document.createElement('tr');
                 row.className = 'border-b hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700';
@@ -1143,7 +1087,7 @@
                 `;
                 playersListAdminTableBody.appendChild(row);
             });
-
+    
             document.querySelectorAll('.edit-player-button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const { id, name, status, role } = e.target.dataset;
@@ -1157,105 +1101,27 @@
             playersLoadingMessageAdmin.classList.add('hidden');
             table.classList.remove('hidden');
         }
-
+    
         savePlayerButton.addEventListener('click', async () => {
-            const id = playerIdInput.value.trim();
-            const name = playerNameInput.value.trim();
-            const status = playerStatusSelect.value;
-            const role = playerRoleSelect.value;
-
-            if (!name) {
-                alert('El nombre del jugador no puede estar vacío.');
-                return;
-            }
-            
-            const isEditing = id !== '';
-            const duplicate = allPlayersData.find(p => p[1].toLowerCase() === name.toLowerCase() && (!isEditing || p[0] !== id));
-            if (duplicate) {
-                alert(`Ya existe un jugador con el nombre "${name}".`);
-                return;
-            }
-
-            try {
-                let rowToUpdateIndex = allPlayersData.findIndex(p => p[0] === id);
-                let newPlayerId = id;
-
-                if (rowToUpdateIndex === -1) { // Nuevo jugador
-                    const maxIdNum = allPlayersData.reduce((max, p) => Math.max(max, parseInt(p[0]?.replace('J', '') || 0)), 0);
-                    newPlayerId = 'J' + String(maxIdNum + 1).padStart(3, '0');
-                    const newPlayerRow = [newPlayerId, name, status, role];
-                    allPlayersData.push(newPlayerRow);
-                    rowToUpdateIndex = allPlayersData.length - 1;
-                } else { // Modificar jugador
-                    allPlayersData[rowToUpdateIndex] = [id, name, status, role];
-                }
-
-                const range = `Jugadores!A${rowToUpdateIndex + 2}:D${rowToUpdateIndex + 2}`;
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: range,
-                    valueInputOption: 'RAW',
-                    resource: { values: [allPlayersData[rowToUpdateIndex]] },
-                });
-
-                alert('Jugador guardado exitosamente.');
-                playerIdInput.value = '';
-                playerNameInput.value = '';
-                await loadAllDataAndDisplayAllContent();
-            } catch (err) {
-                console.error('Error al guardar jugador:', err);
-                alert(`Error al guardar jugador: ${err.message}.`);
-            }
+            console.warn("savePlayerButton todavía usa la lógica de Google Sheets.");
+            alert("Funcionalidad no migrada a Supabase todavía.");
         });
-
+    
         deletePlayerButton.addEventListener('click', async () => {
-            const idToDelete = playerIdInput.value.trim();
-            if (!idToDelete) {
-                alert('Por favor, selecciona un jugador para eliminar.');
-                return;
-            }
-
-            const confirmed = await showCustomConfirm('Confirmar Eliminación', `¿Estás seguro de que quieres marcar al jugador con ID ${idToDelete} como Inactivo?`);
-            if (!confirmed) return;
-
-            try {
-                const rowIndex = allPlayersData.findIndex(p => p[0] === idToDelete);
-                if (rowIndex === -1) {
-                    alert('Jugador no encontrado.');
-                    return;
-                }
-
-                allPlayersData[rowIndex][2] = 'Inactivo'; // Marcar como inactivo
-                const range = `Jugadores!C${rowIndex + 2}`; // Solo actualizar la columna de estado
-
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: range,
-                    valueInputOption: 'RAW',
-                    resource: { values: [['Inactivo']] },
-                });
-
-                alert(`Jugador con ID ${idToDelete} marcado como Inactivo.`);
-                playerIdInput.value = '';
-                playerNameInput.value = '';
-                await loadAllDataAndDisplayAllContent();
-            } catch (err) {
-                console.error('Error al eliminar jugador:', err);
-                alert(`Error al eliminar jugador: ${err.message}.`);
-            }
+            console.warn("deletePlayerButton todavía usa la lógica de Google Sheets.");
+            alert("Funcionalidad no migrada a Supabase todavía.");
         });
         
-        // --- Armar Equipos ---
         function renderAvailablePlayersForTeams() {
             titularesPlayersDiv.innerHTML = '';
             suplentesPlayersDiv.innerHTML = '';
-
+    
             const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
             if (activePlayers.length === 0) {
                 titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos.</p>';
                 return;
             }
-
+    
             activePlayers.forEach(([id, nombre, estado, rol = 'Titular']) => {
                 const playerElement = document.createElement('div');
                 playerElement.className = 'player-draggable';
@@ -1265,7 +1131,7 @@
                 playerElement.textContent = nombre;
                 playerElement.addEventListener('dragstart', handleDragStart);
                 playerElement.addEventListener('touchstart', handleTouchStart, { passive: false });
-
+    
                 if (rol === 'Titular') {
                     titularesPlayersDiv.appendChild(playerElement);
                 } else {
@@ -1274,7 +1140,6 @@
             });
         }
         
-        // --- Drag & Drop (Desktop & Touch) ---
         function handleDragStart(e) {
             e.dataTransfer.setData('text/plain', JSON.stringify({
                 id: e.target.dataset.id,
@@ -1283,7 +1148,7 @@
             }));
             e.dataTransfer.effectAllowed = 'move';
         }
-
+    
         function handleTouchStart(e) {
             if (e.touches.length !== 1) return;
             e.preventDefault();
@@ -1304,7 +1169,7 @@
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
             document.addEventListener('touchend', handleTouchEnd);
         }
-
+    
         function handleTouchMove(e) {
             if (!currentDraggedPlayer) return;
             e.preventDefault();
@@ -1321,8 +1186,7 @@
             const touch = e.changedTouches[0];
             const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
             currentDraggedPlayer.style.visibility = 'visible';
-
-            // Reset styles
+    
             currentDraggedPlayer.style.position = '';
             currentDraggedPlayer.style.left = '';
             currentDraggedPlayer.style.top = '';
@@ -1331,21 +1195,21 @@
             currentDraggedPlayer.style.pointerEvents = '';
             currentDraggedPlayer.style.zIndex = '';
             currentDraggedPlayer.classList.remove('dragging-touch');
-
+    
             const dropZone = dropTarget ? dropTarget.closest('#titulares-players, #suplentes-players, #team-claros, #team-oscuros') : null;
             
             if (dropZone) {
                 handleDropLogic(currentDraggedPlayer, dropZone);
             } else {
-                originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer); // Return to original parent
+                originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
             }
-
+    
             document.removeEventListener('touchmove', handleTouchMove);
             document.removeEventListener('touchend', handleTouchEnd);
             currentDraggedPlayer = null;
             originalParentOfDraggedPlayer = null;
         }
-
+    
         [titularesPlayersDiv, suplentesPlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(dropZone => {
             dropZone.addEventListener('dragover', (e) => e.preventDefault());
             dropZone.addEventListener('drop', (e) => {
@@ -1366,7 +1230,7 @@
             if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') || (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
                 return;
             }
-
+    
             if ((targetId === 'team-claros' || targetId === 'team-oscuros') && dropZone.children.length >= 5) {
                 alert(`El equipo ya tiene 5 jugadores.`);
                 if (draggedElement.parentNode !== originalParentOfDraggedPlayer && originalParentOfDraggedPlayer) {
@@ -1374,11 +1238,11 @@
                 }
                 return;
             }
-
+    
             dropZone.appendChild(draggedElement);
             updateTeamCounts();
         }
-
+    
         function updateTeamCounts() {
             const clarosCount = teamClarosDiv.children.length;
             const oscurosCount = teamOscurosDiv.children.length;
@@ -1388,60 +1252,27 @@
             saveTeamsButton.disabled = !(clarosCount === 5 && oscurosCount === 5);
         }
         
-        // --- Utilidades ---
-        function parseDate(dateString) { // DD/MM/YYYY -> Date
+        function parseDate(dateString) {
             const [day, month, year] = dateString.split('/').map(Number);
             return new Date(year, month - 1, day);
         }
-
-        function parseYYYYMMDDToLocalDate(dateString) { // YYYY-MM-DD -> Date
+    
+        function parseYYYYMMDDToLocalDate(dateString) {
             const [year, month, day] = dateString.split('-').map(Number);
             return new Date(year, month - 1, day);
         }
-
-        function formatDateToDDMMYYYY(date) { // Date -> DD/MM/YYYY
+    
+        function formatDateToDDMMYYYY(date) {
             const dd = String(date.getDate()).padStart(2, '0');
             const mm = String(date.getMonth() + 1).padStart(2, '0');
             const yyyy = date.getFullYear();
             return `${dd}/${mm}/${yyyy}`;
         }
         
-        // --- Inicialización ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            applyTheme(savedTheme);
-
-            loadGapiScript();
-            loadGisScript();
-
-            authorizeButton.addEventListener('click', handleAuthClick);
-            signoutButton.addEventListener('click', handleSignoutClick);
-            hamburgerButton.addEventListener('click', toggleSideMenu);
-            overlay.addEventListener('click', toggleSideMenu);
-            darkModeToggle.addEventListener('click', toggleTheme);
-            
-            playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
-            playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
-            playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
-            
-            resultsMatchYearSelect.addEventListener('change', populateMatchSelects);
-            resultsMatchMonthSelect.addEventListener('change', populateMatchSelects);
-            
-            chamigoMatchYearSelect.addEventListener('change', populateChamigoTtMatchLists);
-            chamigoMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
-            
-            ttMatchYearSelect.addEventListener('change', populateChamigoTtMatchLists);
-            ttMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
-            
-            handleResize();
-        });
-
-        window.addEventListener('resize', handleResize);
-
         function handleResize() {
-            const isAuthed = gapi?.client?.getToken() !== null;
-            if (!isAuthed) return;
-
+            const session = supabase.auth.getSession();
+            if (!session) return;
+    
             if (window.innerWidth >= 768) {
                 sideMenu.classList.remove('hidden');
                 sideMenu.classList.add('open');
@@ -1456,64 +1287,10 @@
         }
         
         saveTeamsButton.addEventListener('click', async () => {
-            const clarosPlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
-            const oscurosPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
-            const matchDateInputVal = teamMatchDateInput.value;
-
-            if (!matchDateInputVal) {
-                alert('Por favor, selecciona la fecha del partido.');
-                return;
-            }
-
-            if (clarosPlayers.length !== 5 || oscurosPlayers.length !== 5) {
-                alert('Debes seleccionar exactamente 5 jugadores para cada equipo.');
-                return;
-            }
-
-            const formattedDate = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal));
-
-            const existingMatch = allMatchesData.find(match => match[1] === formattedDate);
-            if (existingMatch) {
-                alert(`Ya existe un partido registrado para la fecha ${formattedDate}. Por favor, elige otra fecha.`);
-                return;
-            }
-
-            try {
-                const maxIdNum = allMatchesData.reduce((max, m) => {
-                    const num = parseInt(m[0]?.replace('P', '') || 0);
-                    return Math.max(max, num);
-                }, 0);
-                const newMatchId = 'P' + String(maxIdNum + 1).padStart(3, '0');
-
-                const newMatchRow = [
-                    newMatchId,
-                    formattedDate,
-                    clarosPlayers.join(','),
-                    oscurosPlayers.join(','),
-                    '', '', '' // Resultado, Chamigo, TT
-                ];
-
-                await gapi.client.sheets.spreadsheets.values.append({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Partidos!A:G',
-                    valueInputOption: 'RAW',
-                    resource: { values: [newMatchRow] },
-                });
-
-                alert(`Equipos guardados para el partido ${newMatchId}.`);
-                await loadAllDataAndDisplayAllContent();
-                teamClarosDiv.innerHTML = '';
-                teamOscurosDiv.innerHTML = '';
-                updateTeamCounts();
-                teamMatchDateInput.value = '';
-                renderAvailablePlayersForTeams();
-
-            } catch (err) {
-                console.error('Error al guardar equipos:', err);
-                alert(`Error al guardar equipos: ${err.result?.error?.message || err.message}.`);
-            }
+            console.warn("saveTeamsButton todavía usa la lógica de Google Sheets.");
+            alert("Funcionalidad no migrada a Supabase todavía.");
         });
-
+    
         function populateResultsMatchYearSelect() {
             const years = [...new Set(allMatchesData.map(m => parseDate(m[1]).getFullYear()))].sort((a,b) => b-a);
             resultsMatchYearSelect.innerHTML = '';
@@ -1524,114 +1301,49 @@
                 resultsMatchYearSelect.appendChild(option);
             });
         }
-
+    
         function populateMatchSelects() {
             const selectedYear = resultsMatchYearSelect.value;
             const selectedMonth = resultsMatchMonthSelect.value;
             resultsMatchListDiv.innerHTML = '';
-
+    
             const filteredMatches = allMatchesData.filter(match => {
                 const matchDate = parseDate(match[1]);
                 const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
                 const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
                 return yearMatch && monthMatch;
             }).sort((a,b) => parseDate(b[1]) - parseDate(a[1]));
-
+    
             if (filteredMatches.length === 0) {
                 resultsMatchListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
                 return;
             }
-
+    
             filteredMatches.forEach(match => {
                 const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
                 const matchItem = document.createElement('div');
-                matchItem.className = `match-item ${resultado ? 'has-result' : 'no-result'}`;
+                matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${resultado ? 'has-result' : 'no-result'}`;
                 matchItem.dataset.matchId = id;
                 matchItem.innerHTML = `<p class="font-semibold">${fecha}</p><p class="text-xs text-gray-500">Resultado: ${resultado || 'Pendiente'}</p>`;
                 resultsMatchListDiv.appendChild(matchItem);
                 matchItem.addEventListener('click', () => {
-                    document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                    matchItem.classList.add('selected');
+                    document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected', 'border-indigo-500'));
+                    matchItem.classList.add('selected', 'border-indigo-500');
                     const [day, month, year] = fecha.split('/');
                     matchDateInput.value = `${year}-${month}-${day}`;
                     matchResultSelect.value = resultado || '';
                 });
             });
         }
-
+    
         registerMatchButton.addEventListener('click', async () => {
-            const selectedMatchItem = document.querySelector('#results-match-list .match-item.selected');
-            if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido.');
-                return;
-            }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
-            const result = matchResultSelect.value;
-            
-            try {
-                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-                if (matchIndex === -1) throw new Error('Partido no encontrado');
-                
-                allMatchesData[matchIndex][4] = result;
-                
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!E${matchIndex + 2}`,
-                    valueInputOption: 'RAW',
-                    resource: { values: [[result]] },
-                });
-
-                alert('Resultado actualizado.');
-                await loadAllDataAndDisplayAllContent();
-                matchDateInput.value = '';
-                matchResultSelect.value = '';
-            } catch (err) {
-                console.error('Error al registrar resultado:', err);
-                alert(`Error al registrar resultado: ${err.result?.error?.message || err.message}.`);
-            }
+            console.warn("registerMatchButton todavía usa la lógica de Google Sheets.");
+            alert("Funcionalidad no migrada a Supabase todavía.");
         });
-
+    
         deleteMatchButton.addEventListener('click', async () => {
-            const selectedMatchItem = document.querySelector('#results-match-list .match-item.selected');
-            if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido para eliminar.');
-                return;
-            }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
-            const confirmed = await showCustomConfirm('Confirmar Eliminación', `¿Seguro que quieres eliminar el partido ID ${selectedMatchId}? Esta acción es irreversible.`);
-            if (!confirmed) return;
-
-            try {
-                const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-                if (matchIndex === -1) throw new Error('Partido no encontrado');
-                
-                const sheetRowIndex = matchIndex + 2;
-                if (sheetIds['Partidos'] === undefined) throw new Error("No se pudo encontrar el ID de la hoja 'Partidos'.");
-                
-                await gapi.client.sheets.spreadsheets.batchUpdate({
-                    spreadsheetId: SPREADSHEET_ID,
-                    resource: {
-                        requests: [{
-                            deleteDimension: {
-                                range: {
-                                    sheetId: sheetIds['Partidos'],
-                                    dimension: 'ROWS',
-                                    startIndex: sheetRowIndex - 1,
-                                    endIndex: sheetRowIndex
-                                }
-                            }
-                        }]
-                    }
-                });
-
-                alert('Partido eliminado exitosamente.');
-                await loadAllDataAndDisplayAllContent();
-                matchDateInput.value = '';
-                matchResultSelect.value = '';
-            } catch (err) {
-                console.error('Error al eliminar partido:', err);
-                alert(`Error al eliminar partido: ${err.result?.error?.message || err.message}.`);
-            }
+            console.warn("deleteMatchButton todavía usa la lógica de Google Sheets.");
+            alert("Funcionalidad no migrada a Supabase todavía.");
         });
         
         function populateChamigoTtMatchYearSelect() {
@@ -1651,38 +1363,38 @@
             populateMatchListForTab(chamigoMatchListDiv, chamigoMatchYearSelect, chamigoMatchMonthSelect, handleChamigoMatchSelection, 'chamigo');
             populateMatchListForTab(ttMatchListDiv, ttMatchYearSelect, ttMatchMonthSelect, handleTtMatchSelection, 'tt');
         }
-
+    
         function populateMatchListForTab(targetListDiv, yearSelect, monthSelect, onMatchClickCallback, tabName) {
             const selectedYear = yearSelect.value;
             const selectedMonth = monthSelect.value;
             targetListDiv.innerHTML = '';
-
+    
             const filteredMatches = allMatchesData.filter(match => {
                 const matchDate = parseDate(match[1]);
                 const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
                 const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
                 return yearMatch && monthMatch;
             }).sort((a,b) => parseDate(b[1]) - parseDate(a[1]));
-
+    
             if (filteredMatches.length === 0) {
                 targetListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
                 return;
             }
-
+    
             filteredMatches.forEach(match => {
                 const [id, fecha, , , , chamigoVotos, ttAttendees] = match;
                 const matchItem = document.createElement('div');
                 let isComplete = false;
                 if (tabName === 'chamigo') isComplete = chamigoVotos && chamigoVotos.trim() !== '';
                 if (tabName === 'tt') isComplete = ttAttendees && ttAttendees.trim() !== '';
-                matchItem.className = `match-item ${isComplete ? 'has-result' : 'no-result'}`;
+                matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${isComplete ? 'has-result' : 'no-result'}`;
                 matchItem.dataset.matchId = id;
                 matchItem.innerHTML = `<p class="font-semibold">${fecha}</p>`;
                 targetListDiv.appendChild(matchItem);
                 matchItem.addEventListener('click', () => {
-                     document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected'));
-                     matchItem.classList.add('selected');
-                     onMatchClickCallback(id);
+                    document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected', 'border-indigo-500'));
+                    matchItem.classList.add('selected', 'border-indigo-500');
+                    onMatchClickCallback(id);
                 });
             });
         }
@@ -1691,10 +1403,10 @@
             chamigoVotingPlayersDiv.innerHTML = '';
             const match = allMatchesData.find(m => m[0] === selectedMatchId);
             if (!match) return;
-
+    
             const playerIDs = [...new Set([...(match[2]||'').split(','), ...(match[3]||'').split(',')])].filter(Boolean);
             const existingVotes = match[5] ? JSON.parse(match[5]) : [];
-
+    
             playerIDs.forEach(id => {
                 const player = allPlayersData.find(p => p[0] === id);
                 if (!player) return;
@@ -1710,33 +1422,8 @@
         }
         
         registerChamigoButton.addEventListener('click', async () => {
-            const selectedMatchItem = document.querySelector('#chamigo-match-list .match-item.selected');
-            if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido.');
-                return;
-            }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
-            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-            if (matchIndex === -1) return;
-
-            const votes = Array.from(document.querySelectorAll('.chamigo-vote-input'))
-                .map(input => ({ id: input.dataset.id, votos: parseInt(input.value) || 0 }))
-                .filter(v => v.votos > 0);
-            
-            try {
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!F${matchIndex + 2}`,
-                    valueInputOption: 'RAW',
-                    resource: { values: [[JSON.stringify(votes)]] },
-                });
-                alert('Votos de Chamigo guardados.');
-                await loadAllDataAndDisplayAllContent();
-                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido...</p>';
-            } catch(err) {
-                console.error("Error al guardar Chamigo:", err);
-                alert(`Error: ${err.result?.error?.message || err.message}`);
-            }
+            console.warn("registerChamigoButton todavía usa la lógica de Google Sheets.");
+            alert("Funcionalidad no migrada a Supabase todavía.");
         });
         
         function handleTtMatchSelection(selectedMatchId) {
@@ -1746,7 +1433,7 @@
             
             const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
             const existingAttendees = (match[6] || '').split(',');
-
+    
             activePlayers.forEach(player => {
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'flex items-center space-x-2';
@@ -1759,33 +1446,47 @@
         }
         
         registerTtButton.addEventListener('click', async () => {
-            const selectedMatchItem = document.querySelector('#tt-match-list .match-item.selected');
-            if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido.');
-                return;
-            }
-            const selectedMatchId = selectedMatchItem.dataset.matchId;
-            const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-            if (matchIndex === -1) return;
-
-            const attendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
-
-            try {
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!G${matchIndex + 2}`,
-                    valueInputOption: 'RAW',
-                    resource: { values: [[attendees.join(',')]] },
-                });
-                alert('Asistencia a TT guardada.');
-                await loadAllDataAndDisplayAllContent();
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido...</p>';
-            } catch(err) {
-                console.error("Error al guardar TT:", err);
-                alert(`Error: ${err.result?.error?.message || err.message}`);
-            }
+            console.warn("registerTtButton todavía usa la lógica de Google Sheets.");
+            alert("Funcionalidad no migrada a Supabase todavía.");
         });
-
+    
+        // --- Inicialización ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Modo oscuro
+            const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(savedTheme);
+            darkModeToggle.addEventListener('click', toggleTheme);
+            
+            // Event Listeners de la App
+            loginButton.addEventListener('click', handleLogin);
+            // Permite hacer login con Enter en el campo de contraseña
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleLogin();
+                }
+            });
+            signoutButton.addEventListener('click', handleSignoutClick);
+            hamburgerButton.addEventListener('click', toggleSideMenu);
+            overlay.addEventListener('click', toggleSideMenu);
+            
+            // El resto de los listeners
+            playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
+            playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
+            playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
+            resultsMatchYearSelect.addEventListener('change', populateMatchSelects);
+            resultsMatchMonthSelect.addEventListener('change', populateMatchSelects);
+            chamigoMatchYearSelect.addEventListener('change', populateChamigoTtMatchLists);
+            chamigoMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
+            ttMatchYearSelect.addEventListener('change', populateChamigoTtMatchLists);
+            ttMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
+            
+            handleResize();
+            window.addEventListener('resize', handleResize);
+    
+            // Escuchar cambios de autenticación (login y logout) para manejar la UI
+            supabase.auth.onAuthStateChange(handleAuthStateChange);
+        });
+    
     </script>
 </body>
 </html>
