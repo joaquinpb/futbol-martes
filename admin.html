@@ -760,687 +760,592 @@
 
     <script>
         // --- Configuración de Supabase ---
-        // ¡IMPORTANTE! Reemplaza con tus propias credenciales de Supabase.
+        // Se usan los valores que proporcionaste.
         const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
     
-        // Inicializa el cliente de Supabase
-        // CORRECCIÓN FINAL: Accedemos a 'supabase' a través del objeto 'window'
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-        // --- Cache de Datos (se llenará desde Supabase en el próximo paso) ---
-        let allPlayersData = []; 
-        let allMatchesData = []; 
-    
-        // Variables para el drag-and-drop táctil
-        let currentDraggedPlayer = null;
-        let originalParentOfDraggedPlayer = null;
-        
-        // --- Elementos del DOM ---
-        // Contenedores principales
-        const authContainer = document.getElementById('auth-container');
-        const adminContent = document.getElementById('admin-content');
-        const mainAdminContentContainer = document.querySelector('.main-admin-content-container');
-        const sideMenu = document.getElementById('side-menu');
-        const hamburgerButton = document.getElementById('hamburger-button');
-        const overlay = document.getElementById('overlay');
-        
-        // Autenticación
-        const loginButton = document.getElementById('login-button');
-        const signoutButton = document.getElementById('signout_button');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const authStatus = document.getElementById('auth-status');
-    
-        // Navegación y Pestañas
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
-    
-        // Modal de Confirmación
-        const customConfirmModal = document.getElementById('custom-confirm-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const modalCancelButton = document.getElementById('modal-cancel-button');
-        const modalConfirmButton = document.getElementById('modal-confirm-button');
-    
-        // Gestión de Jugadores
-        const playerIdInput = document.getElementById('player-id');
-        const playerNameInput = document.getElementById('player-name');
-        const playerStatusSelect = document.getElementById('player-status');
-        const playerRoleSelect = document.getElementById('player-role');
-        const savePlayerButton = document.getElementById('save-player-button');
-        const deletePlayerButton = document.getElementById('delete-player-button');
-        const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
-        const playersLoadingMessageAdmin = document.getElementById('players-loading-message-admin');
-        const playerListNameFilter = document.getElementById('player-list-name-filter');
-        const playerListStatusFilter = document.getElementById('player-list-status-filter');
-        const playerListRoleFilter = document.getElementById('player-list-role-filter');
-    
-        // Armar Equipos
-        const teamMatchDateInput = document.getElementById('team-match-date');
-        const titularesPlayersDiv = document.getElementById('titulares-players');
-        const suplentesPlayersDiv = document.getElementById('suplentes-players');
-        const teamClarosDiv = document.getElementById('team-claros');
-        const teamOscurosDiv = document.getElementById('team-oscuros');
-        const clarosCountSpan = document.getElementById('claros-count');
-        const oscurosCountSpan = document.getElementById('oscuros-count');
-        const saveTeamsButton = document.getElementById('save-teams-button');
-    
-        // Resultados
-        const matchDateInput = document.getElementById('match-date');
-        const matchResultSelect = document.getElementById('match-result');
-        const resultsMatchYearSelect = document.getElementById('results-match-year-select');
-        const resultsMatchMonthSelect = document.getElementById('results-match-month-select');
-        const resultsMatchListDiv = document.getElementById('results-match-list');
-        const registerMatchButton = document.getElementById('register-match-button');
-        const deleteMatchButton = document.getElementById('delete-match-button');
-    
-        // Chamigo
-        const chamigoVotingPlayersDiv = document.getElementById('chamigo-voting-players');
-        const registerChamigoButton = document.getElementById('register-chamigo-button');
-        const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select');
-        const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select');
-        const chamigoMatchListDiv = document.getElementById('chamigo-match-list');
-    
-        // TT
-        const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
-        const registerTtButton = document.getElementById('register-tt-button');
-        const ttMatchYearSelect = document.getElementById('tt-match-year-select');
-        const ttMatchMonthSelect = document.getElementById('tt-match-month-select');
-        const ttMatchListDiv = document.getElementById('tt-match-list');
-        
-        // Modo Oscuro
-        const darkModeToggle = document.getElementById('dark-mode-toggle');
-        const darkModeIcon = document.getElementById('dark-mode-icon');
-        const htmlElement = document.documentElement;
-    
-        // --- Funciones de Autenticación con Supabase ---
-    
-        /**
-         * Intenta iniciar sesión con email y contraseña.
-         */
-        const handleLogin = async () => {
-            const email = emailInput.value.trim();
-            const password = passwordInput.value.trim();
-            authStatus.textContent = ''; // Limpiar mensajes de error
-    
-            if (!email || !password) {
-                authStatus.textContent = 'Por favor, ingresa email y contraseña.';
-                return;
-            }
-    
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    
-            if (error) {
-                console.error('Error de login:', error.message);
-                authStatus.textContent = 'Email o contraseña incorrectos.';
-            }
-            // Si el login es exitoso, onAuthStateChange se encargará del resto.
-        };
-    
-        /**
-         * Cierra la sesión del usuario.
-         */
-        const handleSignoutClick = async () => {
-            const { error } = await supabaseClient.auth.signOut();
-            if (error) {
-                console.error('Error al cerrar sesión:', error);
-                alert('Error al cerrar sesión.');
-            }
-            // onAuthStateChange se encargará de mostrar el formulario de login.
-        };
-        
-        /**
-         * Maneja el evento de cambio de estado de autenticación (login/logout).
-         * Muestra el contenido principal o el formulario de login según corresponda.
-         */
-        const handleAuthStateChange = async (event, session) => {
-            if (session) {
-                // Usuario logueado
-                authContainer.classList.add('hidden');
-                adminContent.classList.remove('hidden');
-                updateUIForAuth(); // Esta función tuya maneja el menú lateral
-                await loadAllDataAndDisplayAllContent(); // Cargamos los datos después del login
-                setupTabNavigation();
-                const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
-                if (defaultTabButton) {
-                    defaultTabButton.classList.add('active'); // Marcar como activo
-                    document.getElementById(defaultTabButton.dataset.tab).classList.remove('hidden'); // Mostrar contenido
-                }
-            } else {
-                // Usuario no logueado
-                authContainer.classList.remove('hidden');
-                adminContent.classList.add('hidden');
-                sideMenu.classList.add('hidden');
-                sideMenu.classList.remove('open');
-                hamburgerButton.classList.add('hidden');
-                overlay.classList.remove('open');
-                document.body.classList.remove('overflow-hidden');
-            }
-        };
-    
-        function updateUIForAuth() {
-            if (window.innerWidth >= 768) { // Desktop
-                sideMenu.classList.remove('hidden');
-                sideMenu.classList.add('open');
-                hamburgerButton.classList.add('hidden');
-            } else { // Mobile
-                sideMenu.classList.add('hidden');
-                sideMenu.classList.remove('open');
-                hamburgerButton.classList.remove('hidden');
-            }
-        }
-    
-        // --- Funciones de Modo Oscuro ---
-        function applyTheme(theme) {
-            if (theme === 'dark') {
-                htmlElement.classList.add('dark');
-                darkModeIcon.classList.remove('fa-moon');
-                darkModeIcon.classList.add('fa-sun');
-            } else {
-                htmlElement.classList.remove('dark');
-                darkModeIcon.classList.remove('fa-sun');
-                darkModeIcon.classList.add('fa-moon');
-            }
-            localStorage.setItem('theme', theme);
-        }
-    
-        function toggleTheme() {
-            const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
-            applyTheme(currentTheme);
-        }
-    
-        // --- Custom Confirmation Modal ---
-        function showCustomConfirm(title, message) {
-            return new Promise((resolve) => {
-                modalTitle.textContent = title;
-                modalMessage.textContent = message;
-                customConfirmModal.classList.remove('hidden');
-                modalConfirmButton.onclick = () => {
-                    customConfirmModal.classList.add('hidden');
-                    resolve(true);
-                };
-                modalCancelButton.onclick = () => {
-                    customConfirmModal.classList.add('hidden');
-                    resolve(false);
-                };
-            });
-        }
-    
-        // --- Funciones de Carga de Datos (AÚN CON CÓDIGO DE GOOGLE SHEETS) ---
-        // ¡OJO! En el próximo paso reemplazaremos estas funciones para que usen Supabase.
-        // Por ahora, las dejamos para que la app no se rompa por completo.
-        async function loadAllData() {
-            console.warn("loadAllData() todavía usa la lógica de Google Sheets. Se reemplazará en el siguiente paso.");
-            // Simulamos que no hay datos para evitar errores
-            allPlayersData = [];
-            allMatchesData = [];
-            return Promise.resolve();
-        }
-    
-        async function loadAllDataAndDisplayAllContent() {
-            await loadAllData();
-            renderPlayersListAdmin();
-            renderAvailablePlayersForTeams();
-            populateResultsMatchYearSelect();
-            populateChamigoTtMatchYearSelect();
-            setInitialFilters();
-        }
-        
-        // --- El resto de tus funciones (UI, Drag & Drop, etc.) se mantienen igual ---
-    
-        function setInitialFilters() {
-            const today = new Date();
-            const currentYear = today.getFullYear();
-            const currentMonth = today.getMonth();
-    
-            const selectsToUpdate = [
-                { year: 'results-match-year-select', month: 'results-match-month-select' },
-                { year: 'chamigo-match-year-select', month: 'chamigo-match-month-select' },
-                { year: 'tt-match-year-select', month: 'tt-match-month-select' }
-            ];
-    
-            selectsToUpdate.forEach(pair => {
-                const yearSelect = document.getElementById(pair.year);
-                const monthSelect = document.getElementById(pair.month);
-                if (Array.from(yearSelect.options).some(opt => opt.value == currentYear)) {
-                    yearSelect.value = currentYear;
-                }
-                monthSelect.value = currentMonth;
-                yearSelect.dispatchEvent(new Event('change'));
-                monthSelect.dispatchEvent(new Event('change'));
-            });
-        }
-    
-        function setupTabNavigation() {
-            tabButtons.forEach(button => {
-                button.addEventListener('click', handleTabButtonClick);
-            });
-        }
-    
-        function handleTabButtonClick(event) {
-            const clickedButton = event.currentTarget;
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.add('hidden'));
-            clickedButton.classList.add('active');
-            document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
-    
-            if (window.innerWidth < 768) {
-                toggleSideMenu();
-            }
+        // --- Inicialización y Lógica Principal ---
+        // CORRECCIÓN: Se mueve toda la lógica dentro de DOMContentLoaded para asegurar que la librería de Supabase se haya cargado.
+        document.addEventListener('DOMContentLoaded', () => {
             
-            const tabId = clickedButton.dataset.tab;
-            if (tabId === 'players-management') renderPlayersListAdmin();
-            if (tabId === 'team-formation') renderAvailablePlayersForTeams();
-        }
+            // Inicializa el cliente de Supabase
+            const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-        function toggleSideMenu() {
-            if (window.innerWidth < 768) {
-                const isOpen = sideMenu.classList.toggle('open');
-                overlay.classList.toggle('open', isOpen);
-                document.body.classList.toggle('overflow-hidden', isOpen);
-                if (isOpen) {
+            // --- Cache de Datos ---
+            let allPlayersData = []; 
+            let allMatchesData = []; 
+    
+            // Variables para el drag-and-drop táctil
+            let currentDraggedPlayer = null;
+            let originalParentOfDraggedPlayer = null;
+            
+            // --- Elementos del DOM ---
+            const authContainer = document.getElementById('auth-container');
+            const adminContent = document.getElementById('admin-content');
+            const sideMenu = document.getElementById('side-menu');
+            const hamburgerButton = document.getElementById('hamburger-button');
+            const overlay = document.getElementById('overlay');
+            const loginButton = document.getElementById('login-button');
+            const signoutButton = document.getElementById('signout_button');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const authStatus = document.getElementById('auth-status');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const customConfirmModal = document.getElementById('custom-confirm-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalCancelButton = document.getElementById('modal-cancel-button');
+            const modalConfirmButton = document.getElementById('modal-confirm-button');
+            const playerIdInput = document.getElementById('player-id');
+            const playerNameInput = document.getElementById('player-name');
+            const playerStatusSelect = document.getElementById('player-status');
+            const playerRoleSelect = document.getElementById('player-role');
+            const savePlayerButton = document.getElementById('save-player-button');
+            const deletePlayerButton = document.getElementById('delete-player-button');
+            const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
+            const playersLoadingMessageAdmin = document.getElementById('players-loading-message-admin');
+            const playerListNameFilter = document.getElementById('player-list-name-filter');
+            const playerListStatusFilter = document.getElementById('player-list-status-filter');
+            const playerListRoleFilter = document.getElementById('player-list-role-filter');
+            const teamMatchDateInput = document.getElementById('team-match-date');
+            const titularesPlayersDiv = document.getElementById('titulares-players');
+            const suplentesPlayersDiv = document.getElementById('suplentes-players');
+            const teamClarosDiv = document.getElementById('team-claros');
+            const teamOscurosDiv = document.getElementById('team-oscuros');
+            const clarosCountSpan = document.getElementById('claros-count');
+            const oscurosCountSpan = document.getElementById('oscuros-count');
+            const saveTeamsButton = document.getElementById('save-teams-button');
+            const matchDateInput = document.getElementById('match-date');
+            const matchResultSelect = document.getElementById('match-result');
+            const resultsMatchYearSelect = document.getElementById('results-match-year-select');
+            const resultsMatchMonthSelect = document.getElementById('results-match-month-select');
+            const resultsMatchListDiv = document.getElementById('results-match-list');
+            const registerMatchButton = document.getElementById('register-match-button');
+            const deleteMatchButton = document.getElementById('delete-match-button');
+            const chamigoVotingPlayersDiv = document.getElementById('chamigo-voting-players');
+            const registerChamigoButton = document.getElementById('register-chamigo-button');
+            const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select');
+            const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select');
+            const chamigoMatchListDiv = document.getElementById('chamigo-match-list');
+            const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
+            const registerTtButton = document.getElementById('register-tt-button');
+            const ttMatchYearSelect = document.getElementById('tt-match-year-select');
+            const ttMatchMonthSelect = document.getElementById('tt-match-month-select');
+            const ttMatchListDiv = document.getElementById('tt-match-list');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const darkModeIcon = document.getElementById('dark-mode-icon');
+            const htmlElement = document.documentElement;
+    
+            // --- Funciones de Autenticación con Supabase ---
+            const handleLogin = async () => {
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+                authStatus.textContent = '';
+                if (!email || !password) {
+                    authStatus.textContent = 'Por favor, ingresa email y contraseña.';
+                    return;
+                }
+                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) {
+                    console.error('Error de login:', error.message);
+                    authStatus.textContent = 'Email o contraseña incorrectos.';
+                }
+            };
+    
+            const handleSignoutClick = async () => {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) {
+                    console.error('Error al cerrar sesión:', error);
+                    alert('Error al cerrar sesión.');
+                }
+            };
+            
+            const handleAuthStateChange = async (event, session) => {
+                if (session) {
+                    authContainer.classList.add('hidden');
+                    adminContent.classList.remove('hidden');
+                    updateUIForAuth();
+                    await loadAllDataAndDisplayAllContent();
+                    setupTabNavigation();
+                    const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
+                    if (defaultTabButton) {
+                        defaultTabButton.classList.add('active');
+                        document.getElementById(defaultTabButton.dataset.tab).classList.remove('hidden');
+                    }
+                } else {
+                    authContainer.classList.remove('hidden');
+                    adminContent.classList.add('hidden');
+                    sideMenu.classList.add('hidden');
+                    sideMenu.classList.remove('open');
+                    hamburgerButton.classList.add('hidden');
+                    overlay.classList.remove('open');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            };
+    
+            function updateUIForAuth() {
+                if (window.innerWidth >= 768) {
                     sideMenu.classList.remove('hidden');
+                    sideMenu.classList.add('open');
+                    hamburgerButton.classList.add('hidden');
                 } else {
-                    setTimeout(() => sideMenu.classList.add('hidden'), 300);
+                    sideMenu.classList.add('hidden');
+                    sideMenu.classList.remove('open');
+                    hamburgerButton.classList.remove('hidden');
                 }
             }
-        }
     
-        function renderPlayersListAdmin() {
-            playersListAdminTableBody.innerHTML = '';
-            const table = document.querySelector('#players-list-admin table');
-            playersLoadingMessageAdmin.classList.remove('hidden');
-            table.classList.add('hidden');
-            playersLoadingMessageAdmin.textContent = 'Cargando jugadores...';
-    
-            const nameFilter = playerListNameFilter.value.toLowerCase();
-            const statusFilter = playerListStatusFilter.value;
-            const roleFilter = playerListRoleFilter.value;
-    
-            // Esta función se va a modificar mucho en el próximo paso.
-            // Por ahora, solo mostramos que no hay datos.
-            const filteredPlayers = []; 
-    
-            if (filteredPlayers.length === 0) {
-                playersLoadingMessageAdmin.textContent = 'Aún no se han cargado jugadores desde Supabase.';
-                return;
-            }
-    
-            // ... (el resto de la lógica de renderizado queda para después)
-        }
-    
-        savePlayerButton.addEventListener('click', async () => {
-            console.warn("savePlayerButton todavía usa la lógica de Google Sheets.");
-            alert("Funcionalidad no migrada a Supabase todavía.");
-        });
-    
-        deletePlayerButton.addEventListener('click', async () => {
-            console.warn("deletePlayerButton todavía usa la lógica de Google Sheets.");
-            alert("Funcionalidad no migrada a Supabase todavía.");
-        });
-        
-        function renderAvailablePlayersForTeams() {
-            titularesPlayersDiv.innerHTML = '';
-            suplentesPlayersDiv.innerHTML = '';
-    
-            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
-            if (activePlayers.length === 0) {
-                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos.</p>';
-                return;
-            }
-    
-            activePlayers.forEach(([id, nombre, estado, rol = 'Titular']) => {
-                const playerElement = document.createElement('div');
-                playerElement.className = 'player-draggable';
-                playerElement.draggable = true;
-                playerElement.dataset.id = id;
-                playerElement.dataset.name = nombre;
-                playerElement.textContent = nombre;
-                playerElement.addEventListener('dragstart', handleDragStart);
-                playerElement.addEventListener('touchstart', handleTouchStart, { passive: false });
-    
-                if (rol === 'Titular') {
-                    titularesPlayersDiv.appendChild(playerElement);
+            // --- Funciones de UI (Modo Oscuro, Modal, etc.) ---
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    htmlElement.classList.add('dark');
+                    darkModeIcon.classList.remove('fa-moon');
+                    darkModeIcon.classList.add('fa-sun');
                 } else {
-                    suplentesPlayersDiv.appendChild(playerElement);
+                    htmlElement.classList.remove('dark');
+                    darkModeIcon.classList.remove('fa-sun');
+                    darkModeIcon.classList.add('fa-moon');
                 }
+                localStorage.setItem('theme', theme);
+            }
+    
+            function toggleTheme() {
+                const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
+                applyTheme(currentTheme);
+            }
+    
+            function showCustomConfirm(title, message) {
+                return new Promise((resolve) => {
+                    modalTitle.textContent = title;
+                    modalMessage.textContent = message;
+                    customConfirmModal.classList.remove('hidden');
+                    modalConfirmButton.onclick = () => {
+                        customConfirmModal.classList.add('hidden');
+                        resolve(true);
+                    };
+                    modalCancelButton.onclick = () => {
+                        customConfirmModal.classList.add('hidden');
+                        resolve(false);
+                    };
+                });
+            }
+    
+            // --- Funciones de Carga de Datos (AÚN NO FUNCIONALES) ---
+            async function loadAllData() {
+                console.warn("loadAllData() todavía usa la lógica de Google Sheets. Se reemplazará en el siguiente paso.");
+                allPlayersData = [];
+                allMatchesData = [];
+                return Promise.resolve();
+            }
+    
+            async function loadAllDataAndDisplayAllContent() {
+                await loadAllData();
+                renderPlayersListAdmin();
+                renderAvailablePlayersForTeams();
+                populateResultsMatchYearSelect();
+                populateChamigoTtMatchYearSelect();
+                setInitialFilters();
+            }
+            
+            // --- El resto de tus funciones (UI, Drag & Drop, etc.) ---
+            function setInitialFilters() {
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                const currentMonth = today.getMonth();
+                const selectsToUpdate = [
+                    { year: 'results-match-year-select', month: 'results-match-month-select' },
+                    { year: 'chamigo-match-year-select', month: 'chamigo-match-month-select' },
+                    { year: 'tt-match-year-select', month: 'tt-match-month-select' }
+                ];
+                selectsToUpdate.forEach(pair => {
+                    const yearSelect = document.getElementById(pair.year);
+                    const monthSelect = document.getElementById(pair.month);
+                    if (Array.from(yearSelect.options).some(opt => opt.value == currentYear)) {
+                        yearSelect.value = currentYear;
+                    }
+                    monthSelect.value = currentMonth;
+                    yearSelect.dispatchEvent(new Event('change'));
+                    monthSelect.dispatchEvent(new Event('change'));
+                });
+            }
+    
+            function setupTabNavigation() {
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', handleTabButtonClick);
+                });
+            }
+    
+            function handleTabButtonClick(event) {
+                const clickedButton = event.currentTarget;
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.add('hidden'));
+                clickedButton.classList.add('active');
+                document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
+                if (window.innerWidth < 768) {
+                    toggleSideMenu();
+                }
+                const tabId = clickedButton.dataset.tab;
+                if (tabId === 'players-management') renderPlayersListAdmin();
+                if (tabId === 'team-formation') renderAvailablePlayersForTeams();
+            }
+    
+            function toggleSideMenu() {
+                if (window.innerWidth < 768) {
+                    const isOpen = sideMenu.classList.toggle('open');
+                    overlay.classList.toggle('open', isOpen);
+                    document.body.classList.toggle('overflow-hidden', isOpen);
+                    if (isOpen) {
+                        sideMenu.classList.remove('hidden');
+                    } else {
+                        setTimeout(() => sideMenu.classList.add('hidden'), 300);
+                    }
+                }
+            }
+    
+            function renderPlayersListAdmin() {
+                playersListAdminTableBody.innerHTML = '';
+                const table = document.querySelector('#players-list-admin table');
+                playersLoadingMessageAdmin.classList.remove('hidden');
+                table.classList.add('hidden');
+                playersLoadingMessageAdmin.textContent = 'Cargando jugadores...';
+                const filteredPlayers = []; 
+                if (filteredPlayers.length === 0) {
+                    playersLoadingMessageAdmin.textContent = 'Aún no se han cargado jugadores desde Supabase.';
+                    return;
+                }
+            }
+    
+            savePlayerButton.addEventListener('click', async () => {
+                console.warn("Funcionalidad no migrada a Supabase todavía.");
+                alert("Funcionalidad no migrada a Supabase todavía.");
             });
-        }
-        
-        function handleDragStart(e) {
-            e.dataTransfer.setData('text/plain', JSON.stringify({
-                id: e.target.dataset.id,
-                name: e.target.dataset.name,
-                source: e.target.parentNode.id
-            }));
-            e.dataTransfer.effectAllowed = 'move';
-        }
     
-        function handleTouchStart(e) {
-            if (e.touches.length !== 1) return;
-            e.preventDefault();
+            deletePlayerButton.addEventListener('click', async () => {
+                console.warn("Funcionalidad no migrada a Supabase todavía.");
+                alert("Funcionalidad no migrada a Supabase todavía.");
+            });
             
-            currentDraggedPlayer = e.target;
-            originalParentOfDraggedPlayer = currentDraggedPlayer.parentNode;
+            function renderAvailablePlayersForTeams() {
+                titularesPlayersDiv.innerHTML = '';
+                suplentesPlayersDiv.innerHTML = '';
+                const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
+                if (activePlayers.length === 0) {
+                    titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos.</p>';
+                    return;
+                }
+                activePlayers.forEach(([id, nombre, estado, rol = 'Titular']) => {
+                    const playerElement = document.createElement('div');
+                    playerElement.className = 'player-draggable';
+                    playerElement.draggable = true;
+                    playerElement.dataset.id = id;
+                    playerElement.dataset.name = nombre;
+                    playerElement.textContent = nombre;
+                    playerElement.addEventListener('dragstart', handleDragStart);
+                    playerElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+                    if (rol === 'Titular') {
+                        titularesPlayersDiv.appendChild(playerElement);
+                    } else {
+                        suplentesPlayersDiv.appendChild(playerElement);
+                    }
+                });
+            }
             
-            const rect = currentDraggedPlayer.getBoundingClientRect();
-            currentDraggedPlayer.style.position = 'fixed';
-            currentDraggedPlayer.style.left = `${rect.left}px`;
-            currentDraggedPlayer.style.top = `${rect.top}px`;
-            currentDraggedPlayer.style.width = `${rect.width}px`;
-            currentDraggedPlayer.style.height = `${rect.height}px`;
-            currentDraggedPlayer.style.pointerEvents = 'none';
-            currentDraggedPlayer.style.zIndex = '1000';
-            currentDraggedPlayer.classList.add('dragging-touch');
-            
-            document.addEventListener('touchmove', handleTouchMove, { passive: false });
-            document.addEventListener('touchend', handleTouchEnd);
-        }
-    
-        function handleTouchMove(e) {
-            if (!currentDraggedPlayer) return;
-            e.preventDefault();
-            
-            const touch = e.touches[0];
-            currentDraggedPlayer.style.left = `${touch.clientX - currentDraggedPlayer.offsetWidth / 2}px`;
-            currentDraggedPlayer.style.top = `${touch.clientY - currentDraggedPlayer.offsetHeight / 2}px`;
-        }
-        
-        function handleTouchEnd(e) {
-            if (!currentDraggedPlayer) return;
-            
-            currentDraggedPlayer.style.visibility = 'hidden';
-            const touch = e.changedTouches[0];
-            const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
-            currentDraggedPlayer.style.visibility = 'visible';
-    
-            currentDraggedPlayer.style.position = '';
-            currentDraggedPlayer.style.left = '';
-            currentDraggedPlayer.style.top = '';
-            currentDraggedPlayer.style.width = '';
-            currentDraggedPlayer.style.height = '';
-            currentDraggedPlayer.style.pointerEvents = '';
-            currentDraggedPlayer.style.zIndex = '';
-            currentDraggedPlayer.classList.remove('dragging-touch');
-    
-            const dropZone = dropTarget ? dropTarget.closest('#titulares-players, #suplentes-players, #team-claros, #team-oscuros') : null;
-            
-            if (dropZone) {
-                handleDropLogic(currentDraggedPlayer, dropZone);
-            } else {
-                originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
+            function handleDragStart(e) {
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    id: e.target.dataset.id,
+                    name: e.target.dataset.name,
+                    source: e.target.parentNode.id
+                }));
+                e.dataTransfer.effectAllowed = 'move';
             }
     
-            document.removeEventListener('touchmove', handleTouchMove);
-            document.removeEventListener('touchend', handleTouchEnd);
-            currentDraggedPlayer = null;
-            originalParentOfDraggedPlayer = null;
-        }
-    
-        [titularesPlayersDiv, suplentesPlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(dropZone => {
-            dropZone.addEventListener('dragover', (e) => e.preventDefault());
-            dropZone.addEventListener('drop', (e) => {
+            function handleTouchStart(e) {
+                if (e.touches.length !== 1) return;
                 e.preventDefault();
-                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-                const draggedElement = document.querySelector(`[data-id="${data.id}"]`);
-                const dropZone = e.currentTarget;
-                handleDropLogic(draggedElement, dropZone);
-            });
-        });
-        
-        function handleDropLogic(draggedElement, dropZone) {
-            const sourceId = draggedElement.parentNode.id;
-            const targetId = dropZone.id;
-            
-            if (sourceId === targetId) return;
-            
-            if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') || (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
-                return;
+                currentDraggedPlayer = e.target;
+                originalParentOfDraggedPlayer = currentDraggedPlayer.parentNode;
+                const rect = currentDraggedPlayer.getBoundingClientRect();
+                currentDraggedPlayer.style.position = 'fixed';
+                currentDraggedPlayer.style.left = `${rect.left}px`;
+                currentDraggedPlayer.style.top = `${rect.top}px`;
+                currentDraggedPlayer.style.width = `${rect.width}px`;
+                currentDraggedPlayer.style.height = `${rect.height}px`;
+                currentDraggedPlayer.style.pointerEvents = 'none';
+                currentDraggedPlayer.style.zIndex = '1000';
+                currentDraggedPlayer.classList.add('dragging-touch');
+                document.addEventListener('touchmove', handleTouchMove, { passive: false });
+                document.addEventListener('touchend', handleTouchEnd);
             }
     
-            if ((targetId === 'team-claros' || targetId === 'team-oscuros') && dropZone.children.length >= 5) {
-                alert(`El equipo ya tiene 5 jugadores.`);
-                if (draggedElement.parentNode !== originalParentOfDraggedPlayer && originalParentOfDraggedPlayer) {
-                    originalParentOfDraggedPlayer.appendChild(draggedElement);
+            function handleTouchMove(e) {
+                if (!currentDraggedPlayer) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                currentDraggedPlayer.style.left = `${touch.clientX - currentDraggedPlayer.offsetWidth / 2}px`;
+                currentDraggedPlayer.style.top = `${touch.clientY - currentDraggedPlayer.offsetHeight / 2}px`;
+            }
+            
+            function handleTouchEnd(e) {
+                if (!currentDraggedPlayer) return;
+                currentDraggedPlayer.style.visibility = 'hidden';
+                const touch = e.changedTouches[0];
+                const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+                currentDraggedPlayer.style.visibility = 'visible';
+                currentDraggedPlayer.style.position = '';
+                currentDraggedPlayer.style.left = '';
+                currentDraggedPlayer.style.top = '';
+                currentDraggedPlayer.style.width = '';
+                currentDraggedPlayer.style.height = '';
+                currentDraggedPlayer.style.pointerEvents = '';
+                currentDraggedPlayer.style.zIndex = '';
+                currentDraggedPlayer.classList.remove('dragging-touch');
+                const dropZone = dropTarget ? dropTarget.closest('#titulares-players, #suplentes-players, #team-claros, #team-oscuros') : null;
+                if (dropZone) {
+                    handleDropLogic(currentDraggedPlayer, dropZone);
+                } else {
+                    originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
                 }
-                return;
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleTouchEnd);
+                currentDraggedPlayer = null;
+                originalParentOfDraggedPlayer = null;
             }
     
-            dropZone.appendChild(draggedElement);
-            updateTeamCounts();
-        }
-    
-        function updateTeamCounts() {
-            const clarosCount = teamClarosDiv.children.length;
-            const oscurosCount = teamOscurosDiv.children.length;
-            clarosCountSpan.textContent = clarosCount;
-            oscurosCountSpan.textContent = oscurosCount;
-            document.getElementById('total-selected-players').textContent = clarosCount + oscurosCount;
-            saveTeamsButton.disabled = !(clarosCount === 5 && oscurosCount === 5);
-        }
-        
-        function parseDate(dateString) {
-            const [day, month, year] = dateString.split('/').map(Number);
-            return new Date(year, month - 1, day);
-        }
-    
-        function parseYYYYMMDDToLocalDate(dateString) {
-            const [year, month, day] = dateString.split('-').map(Number);
-            return new Date(year, month - 1, day);
-        }
-    
-        function formatDateToDDMMYYYY(date) {
-            const dd = String(date.getDate()).padStart(2, '0');
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const yyyy = date.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
-        }
-        
-        async function handleResize() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) return;
-    
-            if (window.innerWidth >= 768) {
-                sideMenu.classList.remove('hidden');
-                sideMenu.classList.add('open');
-                hamburgerButton.classList.add('hidden');
-                overlay.classList.remove('open');
-                document.body.classList.remove('overflow-hidden');
-            } else {
-                sideMenu.classList.add('hidden');
-                sideMenu.classList.remove('open');
-                hamburgerButton.classList.remove('hidden');
-            }
-        }
-        
-        saveTeamsButton.addEventListener('click', async () => {
-            console.warn("saveTeamsButton todavía usa la lógica de Google Sheets.");
-            alert("Funcionalidad no migrada a Supabase todavía.");
-        });
-    
-        function populateResultsMatchYearSelect() {
-            const years = allMatchesData.length > 0 
-                ? [...new Set(allMatchesData.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a)
-                : [];
-            resultsMatchYearSelect.innerHTML = '';
-            years.forEach(year => {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year;
-                resultsMatchYearSelect.appendChild(option);
-            });
-        }
-    
-        function populateMatchSelects() {
-            const selectedYear = resultsMatchYearSelect.value;
-            const selectedMonth = resultsMatchMonthSelect.value;
-            resultsMatchListDiv.innerHTML = '';
-    
-            const filteredMatches = allMatchesData.filter(match => {
-                const matchDate = new Date(match.match_date);
-                const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
-                const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
-                return yearMatch && monthMatch;
-            }).sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
-    
-            if (filteredMatches.length === 0) {
-                resultsMatchListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
-                return;
-            }
-    
-            filteredMatches.forEach(match => {
-                const fecha = formatDateToDDMMYYYY(new Date(match.match_date));
-                const matchItem = document.createElement('div');
-                matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${match.result ? 'has-result' : 'no-result'}`;
-                matchItem.dataset.matchId = match.id;
-                matchItem.innerHTML = `<p class="font-semibold">${fecha}</p><p class="text-xs text-gray-500">Resultado: ${match.result || 'Pendiente'}</p>`;
-                resultsMatchListDiv.appendChild(matchItem);
-                matchItem.addEventListener('click', () => {
-                    document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected', 'border-indigo-500'));
-                    matchItem.classList.add('selected', 'border-indigo-500');
-                    matchDateInput.value = match.match_date;
-                    matchResultSelect.value = match.result || '';
+            [titularesPlayersDiv, suplentesPlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(dropZone => {
+                dropZone.addEventListener('dragover', (e) => e.preventDefault());
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    const draggedElement = document.querySelector(`[data-id="${data.id}"]`);
+                    const dropZone = e.currentTarget;
+                    handleDropLogic(draggedElement, dropZone);
                 });
             });
-        }
+            
+            function handleDropLogic(draggedElement, dropZone) {
+                const sourceId = draggedElement.parentNode.id;
+                const targetId = dropZone.id;
+                if (sourceId === targetId) return;
+                if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') || (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
+                    return;
+                }
+                if ((targetId === 'team-claros' || targetId === 'team-oscuros') && dropZone.children.length >= 5) {
+                    alert(`El equipo ya tiene 5 jugadores.`);
+                    if (draggedElement.parentNode !== originalParentOfDraggedPlayer && originalParentOfDraggedPlayer) {
+                        originalParentOfDraggedPlayer.appendChild(draggedElement);
+                    }
+                    return;
+                }
+                dropZone.appendChild(draggedElement);
+                updateTeamCounts();
+            }
     
-        registerMatchButton.addEventListener('click', async () => {
-            console.warn("registerMatchButton todavía usa la lógica de Google Sheets.");
-            alert("Funcionalidad no migrada a Supabase todavía.");
-        });
+            function updateTeamCounts() {
+                const clarosCount = teamClarosDiv.children.length;
+                const oscurosCount = teamOscurosDiv.children.length;
+                clarosCountSpan.textContent = clarosCount;
+                oscurosCountSpan.textContent = oscurosCount;
+                document.getElementById('total-selected-players').textContent = clarosCount + oscurosCount;
+                saveTeamsButton.disabled = !(clarosCount === 5 && oscurosCount === 5);
+            }
+            
+            function parseDate(dateString) {
+                const [day, month, year] = dateString.split('/').map(Number);
+                return new Date(year, month - 1, day);
+            }
     
-        deleteMatchButton.addEventListener('click', async () => {
-            console.warn("deleteMatchButton todavía usa la lógica de Google Sheets.");
-            alert("Funcionalidad no migrada a Supabase todavía.");
-        });
-        
-        function populateChamigoTtMatchYearSelect() {
-             const years = allMatchesData.length > 0 
-                ? [...new Set(allMatchesData.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a)
-                : [];
-            [chamigoMatchYearSelect, ttMatchYearSelect].forEach(select => {
-                select.innerHTML = '';
+            function parseYYYYMMDDToLocalDate(dateString) {
+                const [year, month, day] = dateString.split('-').map(Number);
+                return new Date(year, month - 1, day);
+            }
+    
+            function formatDateToDDMMYYYY(date) {
+                const dd = String(date.getDate()).padStart(2, '0');
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const yyyy = date.getFullYear();
+                return `${dd}/${mm}/${yyyy}`;
+            }
+            
+            async function handleResize() {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) return;
+                if (window.innerWidth >= 768) {
+                    sideMenu.classList.remove('hidden');
+                    sideMenu.classList.add('open');
+                    hamburgerButton.classList.add('hidden');
+                    overlay.classList.remove('open');
+                    document.body.classList.remove('overflow-hidden');
+                } else {
+                    sideMenu.classList.add('hidden');
+                    sideMenu.classList.remove('open');
+                    hamburgerButton.classList.remove('hidden');
+                }
+            }
+            
+            saveTeamsButton.addEventListener('click', async () => {
+                 alert("Funcionalidad no migrada a Supabase todavía.");
+            });
+    
+            function populateResultsMatchYearSelect() {
+                const years = allMatchesData.length > 0 
+                    ? [...new Set(allMatchesData.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a)
+                    : [];
+                resultsMatchYearSelect.innerHTML = '';
                 years.forEach(year => {
                     const option = document.createElement('option');
                     option.value = year;
                     option.textContent = year;
-                    select.appendChild(option);
+                    resultsMatchYearSelect.appendChild(option);
                 });
-            });
-        }
-        
-        function populateChamigoTtMatchLists() {
-            populateMatchListForTab(chamigoMatchListDiv, chamigoMatchYearSelect, chamigoMatchMonthSelect, handleChamigoMatchSelection, 'chamigo');
-            populateMatchListForTab(ttMatchListDiv, ttMatchYearSelect, ttMatchMonthSelect, handleTtMatchSelection, 'tt');
-        }
-    
-        function populateMatchListForTab(targetListDiv, yearSelect, monthSelect, onMatchClickCallback, tabName) {
-            const selectedYear = yearSelect.value;
-            const selectedMonth = monthSelect.value;
-            targetListDiv.innerHTML = '';
-    
-            const filteredMatches = allMatchesData.filter(match => {
-                const matchDate = new Date(match.match_date);
-                const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
-                const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
-                return yearMatch && monthMatch;
-            }).sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
-    
-            if (filteredMatches.length === 0) {
-                targetListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
-                return;
             }
     
-            filteredMatches.forEach(match => {
-                const fecha = formatDateToDDMMYYYY(new Date(match.match_date));
-                const matchItem = document.createElement('div');
-                let isComplete = false;
-                if (tabName === 'chamigo') isComplete = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
-                if (tabName === 'tt') isComplete = match.tt_attendees && match.tt_attendees.length > 0;
-                matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${isComplete ? 'has-result' : 'no-result'}`;
-                matchItem.dataset.matchId = match.id;
-                matchItem.innerHTML = `<p class="font-semibold">${fecha}</p>`;
-                targetListDiv.appendChild(matchItem);
-                matchItem.addEventListener('click', () => {
-                    document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected', 'border-indigo-500'));
-                    matchItem.classList.add('selected', 'border-indigo-500');
-                    onMatchClickCallback(match.id);
+            function populateMatchSelects() {
+                const selectedYear = resultsMatchYearSelect.value;
+                const selectedMonth = resultsMatchMonthSelect.value;
+                resultsMatchListDiv.innerHTML = '';
+                const filteredMatches = allMatchesData.filter(match => {
+                    const matchDate = new Date(match.match_date);
+                    const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
+                    const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
+                    return yearMatch && monthMatch;
+                }).sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
+                if (filteredMatches.length === 0) {
+                    resultsMatchListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
+                    return;
+                }
+                filteredMatches.forEach(match => {
+                    const fecha = formatDateToDDMMYYYY(new Date(match.match_date));
+                    const matchItem = document.createElement('div');
+                    matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${match.result ? 'has-result' : 'no-result'}`;
+                    matchItem.dataset.matchId = match.id;
+                    matchItem.innerHTML = `<p class="font-semibold">${fecha}</p><p class="text-xs text-gray-500">Resultado: ${match.result || 'Pendiente'}</p>`;
+                    resultsMatchListDiv.appendChild(matchItem);
+                    matchItem.addEventListener('click', () => {
+                        document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected', 'border-indigo-500'));
+                        matchItem.classList.add('selected', 'border-indigo-500');
+                        matchDateInput.value = match.match_date;
+                        matchResultSelect.value = match.result || '';
+                    });
                 });
-            });
-        }
-        
-        function handleChamigoMatchSelection(selectedMatchId) {
-            chamigoVotingPlayersDiv.innerHTML = '';
-            const match = allMatchesData.find(m => m.id === selectedMatchId);
-            if (!match) return;
+            }
     
-            const playerIDs = [...new Set([...(match.team_white_players||[]), ...(match.team_dark_players||[])])].filter(Boolean);
-            const existingVotes = match.chamigo_votes || {};
-    
-            playerIDs.forEach(id => {
-                const player = allPlayersData.find(p => p.id === id);
-                if (!player) return;
-                const voteCount = existingVotes[id] || 0;
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex items-center space-x-2';
-                playerDiv.innerHTML = `
-                    <label class="block text-sm font-medium w-24 truncate" title="${player.name}">${player.name}:</label>
-                    <input type="number" data-id="${id}" class="chamigo-vote-input mt-1 block w-20 rounded-md shadow-sm sm:text-sm p-2" value="${voteCount}" min="0">
-                `;
-                chamigoVotingPlayersDiv.appendChild(playerDiv);
+            registerMatchButton.addEventListener('click', async () => {
+                alert("Funcionalidad no migrada a Supabase todavía.");
             });
-        }
-        
-        registerChamigoButton.addEventListener('click', async () => {
-            console.warn("registerChamigoButton todavía usa la lógica de Google Sheets.");
-            alert("Funcionalidad no migrada a Supabase todavía.");
-        });
-        
-        function handleTtMatchSelection(selectedMatchId) {
-            ttAttendancePlayersDiv.innerHTML = '';
-            const match = allMatchesData.find(m => m.id === selectedMatchId);
-            if (!match) return;
+    
+            deleteMatchButton.addEventListener('click', async () => {
+                alert("Funcionalidad no migrada a Supabase todavía.");
+            });
             
-            const activePlayers = allPlayersData.filter(p => p.status === 'Activo');
-            const existingAttendees = match.tt_attendees || [];
+            function populateChamigoTtMatchYearSelect() {
+                 const years = allMatchesData.length > 0 
+                    ? [...new Set(allMatchesData.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a)
+                    : [];
+                [chamigoMatchYearSelect, ttMatchYearSelect].forEach(select => {
+                    select.innerHTML = '';
+                    years.forEach(year => {
+                        const option = document.createElement('option');
+                        option.value = year;
+                        option.textContent = year;
+                        select.appendChild(option);
+                    });
+                });
+            }
+            
+            function populateChamigoTtMatchLists() {
+                populateMatchListForTab(chamigoMatchListDiv, chamigoMatchYearSelect, chamigoMatchMonthSelect, handleChamigoMatchSelection, 'chamigo');
+                populateMatchListForTab(ttMatchListDiv, ttMatchYearSelect, ttMatchMonthSelect, handleTtMatchSelection, 'tt');
+            }
     
-            activePlayers.forEach(player => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex items-center space-x-2';
-                playerDiv.innerHTML = `
-                    <input type="checkbox" id="tt-player-${player.id}" data-id="${player.id}" class="tt-checkbox h-4 w-4 rounded" ${existingAttendees.includes(player.id) ? 'checked' : ''}>
-                    <label for="tt-player-${player.id}" class="text-sm font-medium">${player.name}</label>
-                `;
-                ttAttendancePlayersDiv.appendChild(playerDiv);
+            function populateMatchListForTab(targetListDiv, yearSelect, monthSelect, onMatchClickCallback, tabName) {
+                const selectedYear = yearSelect.value;
+                const selectedMonth = monthSelect.value;
+                targetListDiv.innerHTML = '';
+                const filteredMatches = allMatchesData.filter(match => {
+                    const matchDate = new Date(match.match_date);
+                    const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
+                    const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
+                    return yearMatch && monthMatch;
+                }).sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
+                if (filteredMatches.length === 0) {
+                    targetListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
+                    return;
+                }
+                filteredMatches.forEach(match => {
+                    const fecha = formatDateToDDMMYYYY(new Date(match.match_date));
+                    const matchItem = document.createElement('div');
+                    let isComplete = false;
+                    if (tabName === 'chamigo') isComplete = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
+                    if (tabName === 'tt') isComplete = match.tt_attendees && match.tt_attendees.length > 0;
+                    matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${isComplete ? 'has-result' : 'no-result'}`;
+                    matchItem.dataset.matchId = match.id;
+                    matchItem.innerHTML = `<p class="font-semibold">${fecha}</p>`;
+                    targetListDiv.appendChild(matchItem);
+                    matchItem.addEventListener('click', () => {
+                        document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected', 'border-indigo-500'));
+                        matchItem.classList.add('selected', 'border-indigo-500');
+                        onMatchClickCallback(match.id);
+                    });
+                });
+            }
+            
+            function handleChamigoMatchSelection(selectedMatchId) {
+                chamigoVotingPlayersDiv.innerHTML = '';
+                const match = allMatchesData.find(m => m.id === selectedMatchId);
+                if (!match) return;
+                const playerIDs = [...new Set([...(match.team_white_players||[]), ...(match.team_dark_players||[])])].filter(Boolean);
+                const existingVotes = match.chamigo_votes || {};
+                playerIDs.forEach(id => {
+                    const player = allPlayersData.find(p => p.id === id);
+                    if (!player) return;
+                    const voteCount = existingVotes[id] || 0;
+                    const playerDiv = document.createElement('div');
+                    playerDiv.className = 'flex items-center space-x-2';
+                    playerDiv.innerHTML = `
+                        <label class="block text-sm font-medium w-24 truncate" title="${player.name}">${player.name}:</label>
+                        <input type="number" data-id="${id}" class="chamigo-vote-input mt-1 block w-20 rounded-md shadow-sm sm:text-sm p-2" value="${voteCount}" min="0">
+                    `;
+                    chamigoVotingPlayersDiv.appendChild(playerDiv);
+                });
+            }
+            
+            registerChamigoButton.addEventListener('click', async () => {
+                alert("Funcionalidad no migrada a Supabase todavía.");
             });
-        }
-        
-        registerTtButton.addEventListener('click', async () => {
-            console.warn("registerTtButton todavía usa la lógica de Google Sheets.");
-            alert("Funcionalidad no migrada a Supabase todavía.");
-        });
+            
+            function handleTtMatchSelection(selectedMatchId) {
+                ttAttendancePlayersDiv.innerHTML = '';
+                const match = allMatchesData.find(m => m.id === selectedMatchId);
+                if (!match) return;
+                const activePlayers = allPlayersData.filter(p => p.status === 'Activo');
+                const existingAttendees = match.tt_attendees || [];
+                activePlayers.forEach(player => {
+                    const playerDiv = document.createElement('div');
+                    playerDiv.className = 'flex items-center space-x-2';
+                    playerDiv.innerHTML = `
+                        <input type="checkbox" id="tt-player-${player.id}" data-id="${player.id}" class="tt-checkbox h-4 w-4 rounded" ${existingAttendees.includes(player.id) ? 'checked' : ''}>
+                        <label for="tt-player-${player.id}" class="text-sm font-medium">${player.name}</label>
+                    `;
+                    ttAttendancePlayersDiv.appendChild(playerDiv);
+                });
+            }
+            
+            registerTtButton.addEventListener('click', async () => {
+                alert("Funcionalidad no migrada a Supabase todavía.");
+            });
     
-        // --- Inicialización ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Modo oscuro
+            // --- Arranque de la aplicación ---
             const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             applyTheme(savedTheme);
             darkModeToggle.addEventListener('click', toggleTheme);
-            
-            // Event Listeners de la App
             loginButton.addEventListener('click', handleLogin);
-            // Permite hacer login con Enter en el campo de contraseña
             passwordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    handleLogin();
-                }
+                if (e.key === 'Enter') handleLogin();
             });
             signoutButton.addEventListener('click', handleSignoutClick);
             hamburgerButton.addEventListener('click', toggleSideMenu);
             overlay.addEventListener('click', toggleSideMenu);
-            
-            // El resto de los listeners
             playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
             playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
             playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
@@ -1450,11 +1355,10 @@
             chamigoMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
             ttMatchYearSelect.addEventListener('change', populateChamigoTtMatchLists);
             ttMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
-            
             handleResize();
             window.addEventListener('resize', handleResize);
     
-            // Escuchar cambios de autenticación (login y logout) para manejar la UI
+            // Escuchar cambios de autenticación para manejar la UI
             supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
         });
     
