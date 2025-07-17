@@ -1217,9 +1217,14 @@
         }
 
         function formatDateToDDMMYYYY(date) {
-            const dd = String(date.getDate()).padStart(2, '0');
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const yyyy = date.getFullYear();
+            const d = new Date(date);
+            // Corregir problema de zona horaria
+            const userTimezoneOffset = d.getTimezoneOffset() * 60000;
+            const correctedDate = new Date(d.getTime() + userTimezoneOffset);
+            
+            const dd = String(correctedDate.getDate()).padStart(2, '0');
+            const mm = String(correctedDate.getMonth() + 1).padStart(2, '0');
+            const yyyy = correctedDate.getFullYear();
             return `${dd}/${mm}/${yyyy}`;
         }
         
@@ -1240,17 +1245,293 @@
         }
         
         saveTeamsButton.addEventListener('click', async () => {
-             alert("Funcionalidad no migrada a Supabase todavía.");
+             const teamWhitePlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
+             const teamDarkPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
+             const matchDate = teamMatchDateInput.value;
+
+             if (!matchDate) {
+                 alert('Por favor, selecciona la fecha del partido.');
+                 return;
+             }
+             if (teamWhitePlayers.length !== 5 || teamDarkPlayers.length !== 5) {
+                 alert('Debes seleccionar 5 jugadores por equipo.');
+                 return;
+             }
+
+             try {
+                const { error } = await supabaseClient
+                    .from('matches')
+                    .insert([{ 
+                        match_date: matchDate,
+                        team_white_players: teamWhitePlayers,
+                        team_dark_players: teamDarkPlayers
+                    }]);
+                if (error) throw error;
+                alert('Partido creado exitosamente!');
+                teamMatchDateInput.value = '';
+                teamClarosDiv.innerHTML = '';
+                teamOscurosDiv.innerHTML = '';
+                updateTeamCounts();
+                await loadAllDataAndDisplayAllContent();
+             } catch(error) {
+                console.error('Error creando partido:', error);
+                alert(`Error al crear el partido: ${error.message}`);
+             }
         });
 
         function populateResultsMatchYearSelect() {
-            // Esta función se conectará en el siguiente paso
+            const years = allMatchesData.length > 0 
+                ? [...new Set(allMatchesData.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a)
+                : [];
+            resultsMatchYearSelect.innerHTML = '';
+            years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                resultsMatchYearSelect.appendChild(option);
+            });
         }
+
+        function populateMatchSelects() {
+            const selectedYear = resultsMatchYearSelect.value;
+            const selectedMonth = resultsMatchMonthSelect.value;
+            resultsMatchListDiv.innerHTML = '';
+            const filteredMatches = allMatchesData.filter(match => {
+                const matchDate = new Date(match.match_date);
+                const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
+                const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
+                return yearMatch && monthMatch;
+            }).sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
+            if (filteredMatches.length === 0) {
+                resultsMatchListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
+                return;
+            }
+            filteredMatches.forEach(match => {
+                const fecha = formatDateToDDMMYYYY(match.match_date);
+                const matchItem = document.createElement('div');
+                matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${match.result ? 'has-result' : 'no-result'}`;
+                matchItem.dataset.matchId = match.id;
+                matchItem.innerHTML = `<p class="font-semibold">${fecha}</p><p class="text-xs text-gray-500">Resultado: ${match.result || 'Pendiente'}</p>`;
+                resultsMatchListDiv.appendChild(matchItem);
+                matchItem.addEventListener('click', () => {
+                    document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected', 'border-indigo-500'));
+                    matchItem.classList.add('selected', 'border-indigo-500');
+                    matchDateInput.value = match.match_date;
+                    matchResultSelect.value = match.result || '';
+                });
+            });
+        }
+
+        registerMatchButton.addEventListener('click', async () => {
+            const selectedMatchItem = document.querySelector('#results-match-list .match-item.selected');
+            if (!selectedMatchItem) {
+                alert('Por favor, selecciona un partido.');
+                return;
+            }
+            const matchId = selectedMatchItem.dataset.matchId;
+            const result = matchResultSelect.value;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('matches')
+                    .update({ result: result })
+                    .eq('id', matchId);
+                if (error) throw error;
+                alert('Resultado actualizado!');
+                await loadAllDataAndDisplayAllContent();
+            } catch (error) {
+                console.error('Error actualizando resultado:', error);
+                alert(`Error al actualizar el resultado: ${error.message}`);
+            }
+        });
+
+        deleteMatchButton.addEventListener('click', async () => {
+            const selectedMatchItem = document.querySelector('#results-match-list .match-item.selected');
+            if (!selectedMatchItem) {
+                alert('Por favor, selecciona un partido para eliminar.');
+                return;
+            }
+            const matchId = selectedMatchItem.dataset.matchId;
+
+            const confirmed = await showCustomConfirm('Confirmar Eliminación', `¿Seguro que quieres eliminar este partido? Esta acción es irreversible.`);
+            if (!confirmed) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('matches')
+                    .delete()
+                    .eq('id', matchId);
+                if (error) throw error;
+                alert('Partido eliminado exitosamente.');
+                matchDateInput.value = '';
+                matchResultSelect.value = '';
+                await loadAllDataAndDisplayAllContent();
+            } catch (error) {
+                console.error('Error al eliminar partido:', error);
+                alert(`Error al eliminar el partido: ${error.message}`);
+            }
+        });
+        
         function populateChamigoTtMatchYearSelect() {
-            // Esta función se conectará en el siguiente paso
+             const years = allMatchesData.length > 0 
+                ? [...new Set(allMatchesData.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a)
+                : [];
+            [chamigoMatchYearSelect, ttMatchYearSelect].forEach(select => {
+                select.innerHTML = '';
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    select.appendChild(option);
+                });
+            });
         }
+        
+        function populateChamigoTtMatchLists() {
+            populateMatchListForTab(chamigoMatchListDiv, chamigoMatchYearSelect, chamigoMatchMonthSelect, handleChamigoMatchSelection, 'chamigo');
+            populateMatchListForTab(ttMatchListDiv, ttMatchYearSelect, ttMatchMonthSelect, handleTtMatchSelection, 'tt');
+        }
+
+        function populateMatchListForTab(targetListDiv, yearSelect, monthSelect, onMatchClickCallback, tabName) {
+            const selectedYear = yearSelect.value;
+            const selectedMonth = monthSelect.value;
+            targetListDiv.innerHTML = '';
+            const filteredMatches = allMatchesData.filter(match => {
+                const matchDate = new Date(match.match_date);
+                const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
+                const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
+                return yearMatch && monthMatch;
+            }).sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
+            if (filteredMatches.length === 0) {
+                targetListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
+                return;
+            }
+            filteredMatches.forEach(match => {
+                const fecha = formatDateToDDMMYYYY(match.match_date);
+                const matchItem = document.createElement('div');
+                let isComplete = false;
+                if (tabName === 'chamigo') isComplete = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
+                if (tabName === 'tt') isComplete = match.tt_attendees && match.tt_attendees.length > 0;
+                matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${isComplete ? 'has-result' : 'no-result'}`;
+                matchItem.dataset.matchId = match.id;
+                matchItem.innerHTML = `<p class="font-semibold">${fecha}</p>`;
+                targetListDiv.appendChild(matchItem);
+                matchItem.addEventListener('click', () => {
+                    document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected', 'border-indigo-500'));
+                    matchItem.classList.add('selected', 'border-indigo-500');
+                    onMatchClickCallback(match.id);
+                });
+            });
+        }
+        
+        function handleChamigoMatchSelection(selectedMatchId) {
+            chamigoVotingPlayersDiv.innerHTML = '';
+            const match = allMatchesData.find(m => m.id === selectedMatchId);
+            if (!match) return;
+            const playerIDs = [...new Set([...(match.team_white_players||[]), ...(match.team_dark_players||[])])].filter(Boolean);
+            const existingVotes = match.chamigo_votes || {};
+            playerIDs.forEach(id => {
+                const player = allPlayersData.find(p => p.id === id);
+                if (!player) return;
+                const voteCount = existingVotes[id] || 0;
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'flex items-center space-x-2';
+                playerDiv.innerHTML = `
+                    <label class="block text-sm font-medium w-24 truncate" title="${player.name}">${player.name}:</label>
+                    <input type="number" data-id="${id}" class="chamigo-vote-input mt-1 block w-20 rounded-md shadow-sm sm:text-sm p-2" value="${voteCount}" min="0">
+                `;
+                chamigoVotingPlayersDiv.appendChild(playerDiv);
+            });
+        }
+        
+        registerChamigoButton.addEventListener('click', async () => {
+            const selectedMatchItem = document.querySelector('#chamigo-match-list .match-item.selected');
+            if (!selectedMatchItem) {
+                alert('Por favor, selecciona un partido.');
+                return;
+            }
+            const matchId = selectedMatchItem.dataset.matchId;
+            const votes = {};
+            document.querySelectorAll('.chamigo-vote-input').forEach(input => {
+                const voteCount = parseInt(input.value) || 0;
+                if (voteCount > 0) {
+                    votes[input.dataset.id] = voteCount;
+                }
+            });
+
+            try {
+                const { error } = await supabaseClient
+                    .from('matches')
+                    .update({ chamigo_votes: votes })
+                    .eq('id', matchId);
+                if (error) throw error;
+                alert('Votos de Chamigo guardados!');
+                await loadAllDataAndDisplayAllContent();
+            } catch (error) {
+                console.error('Error guardando votos de Chamigo:', error);
+                alert(`Error al guardar los votos: ${error.message}`);
+            }
+        });
+        
+        function handleTtMatchSelection(selectedMatchId) {
+            ttAttendancePlayersDiv.innerHTML = '';
+            const match = allMatchesData.find(m => m.id === selectedMatchId);
+            if (!match) return;
+            const activePlayers = allPlayersData.filter(p => p.status === 'Activo');
+            const existingAttendees = match.tt_attendees || [];
+            activePlayers.forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'flex items-center space-x-2';
+                playerDiv.innerHTML = `
+                    <input type="checkbox" id="tt-player-${player.id}" data-id="${player.id}" class="tt-checkbox h-4 w-4 rounded" ${existingAttendees.includes(player.id) ? 'checked' : ''}>
+                    <label for="tt-player-${player.id}" class="text-sm font-medium">${player.name}</label>
+                `;
+                ttAttendancePlayersDiv.appendChild(playerDiv);
+            });
+        }
+        
+        registerTtButton.addEventListener('click', async () => {
+            const selectedMatchItem = document.querySelector('#tt-match-list .match-item.selected');
+            if (!selectedMatchItem) {
+                alert('Por favor, selecciona un partido.');
+                return;
+            }
+            const matchId = selectedMatchItem.dataset.matchId;
+            const attendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('matches')
+                    .update({ tt_attendees: attendees })
+                    .eq('id', matchId);
+                if (error) throw error;
+                alert('Asistencia a TT guardada!');
+                await loadAllDataAndDisplayAllContent();
+            } catch (error) {
+                console.error('Error guardando asistencia a TT:', error);
+                alert(`Error al guardar la asistencia: ${error.message}`);
+            }
+        });
+
         function setInitialFilters() {
-            // Esta función se conectará en el siguiente paso
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+            const selectsToUpdate = [
+                { year: 'results-match-year-select', month: 'results-match-month-select' },
+                { year: 'chamigo-match-year-select', month: 'chamigo-match-month-select' },
+                { year: 'tt-match-year-select', month: 'tt-match-month-select' }
+            ];
+            selectsToUpdate.forEach(pair => {
+                const yearSelect = document.getElementById(pair.year);
+                const monthSelect = document.getElementById(pair.month);
+                if (Array.from(yearSelect.options).some(opt => opt.value == currentYear)) {
+                    yearSelect.value = currentYear;
+                }
+                monthSelect.value = currentMonth;
+                yearSelect.dispatchEvent(new Event('change'));
+                monthSelect.dispatchEvent(new Event('change'));
+            });
         }
         
         // --- Arranque de la aplicación ---
@@ -1267,8 +1548,13 @@
         playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
         playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
         playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
+        resultsMatchYearSelect.addEventListener('change', populateMatchSelects);
+        resultsMatchMonthSelect.addEventListener('change', populateMatchSelects);
+        chamigoMatchYearSelect.addEventListener('change', populateChamigoTtMatchLists);
+        chamigoMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
+        ttMatchYearSelect.addEventListener('change', populateChamigoTtMatchLists);
+        ttMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
         
-        handleResize();
         window.addEventListener('resize', handleResize);
 
         // Escuchar cambios de autenticación para manejar la UI
