@@ -717,11 +717,15 @@
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+            // --- Cache de Datos ---
             let allPlayersData = []; 
             let allMatchesData = []; 
+
+            // Variables para el drag-and-drop táctil
             let currentDraggedPlayer = null;
             let originalParentOfDraggedPlayer = null;
             
+            // --- Elementos del DOM ---
             const authContainer = document.getElementById('auth-container');
             const adminContent = document.getElementById('admin-content');
             const loadingContainer = document.getElementById('loading-container');
@@ -1089,6 +1093,22 @@
             }
             function setInitialFilters() {
                 // Esta función se conectará en el siguiente paso
+            }
+            
+            async function handleResize() {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (!session) return;
+                if (window.innerWidth >= 768) {
+                    sideMenu.classList.remove('hidden');
+                    sideMenu.classList.add('open');
+                    hamburgerButton.classList.add('hidden');
+                    overlay.classList.remove('open');
+                    document.body.classList.remove('overflow-hidden');
+                } else {
+                    sideMenu.classList.add('hidden');
+                    sideMenu.classList.remove('open');
+                    hamburgerButton.classList.remove('hidden');
+                }
             }
             
             // --- Arranque de la aplicación ---
