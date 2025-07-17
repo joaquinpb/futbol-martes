@@ -613,7 +613,7 @@
             .player-wrapper.claros.horizontal-layout:nth-child(2) { top: 30%; left: 75%; } /* Defensor 1 */
             .player-wrapper.claros.horizontal-layout:nth-child(3) { top: 70%; left: 75%; } /* Defensor 2 */
             .player-wrapper.claros.horizontal-layout:nth-child(4) { top: 40%; left: 60%; } /* Centrocampista/Delantero 1 (Ajustado verticalmente) */
-            .player-wrapper.claros.horizontal-layout:nth-child(5) { top: 60%; left: 60%; }    /* Centrocampista/Delantero 2 (Ajustado verticalmente) */
+            .player-wrapper.claros.horizontal-layout:nth-child(5) { top: 60%; left: 60%; }   /* Centrocampista/Delantero 2 (Ajustado verticalmente) */
 
             /* Oscuros (Mitad izquierda) - 1 Portero, 2 Defensores, 2 Centrocampistas/Delanteros */
             .player-wrapper.oscuros.horizontal-layout:nth-child(1) { top: 50%; left: 10%; } /* Portero */
@@ -934,7 +934,7 @@
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 text-sm font-light">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -977,7 +977,7 @@
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 text-sm font-light">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1020,7 +1020,7 @@
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 text-sm font-light">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1063,7 +1063,7 @@
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 text-sm font-light">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1105,7 +1105,7 @@
                     </tr>
                 </thead>
                 <tbody class="text-gray-600 text-sm font-light">
-                        </tbody>
+                </tbody>
             </table>
         </div>
 
@@ -1184,7 +1184,7 @@
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 text-sm font-light">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1312,7 +1312,7 @@
                         <i class="fas fa-times-circle"></i>
                     </button>
                     <div id="individual-player-results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
-                        </div>
+                    </div>
                 </div>
                 <input type="hidden" id="selected-player-id"> </div>
             <div class="overflow-x-auto">
@@ -1336,7 +1336,7 @@
                         </tr>
                     </thead>
                     <tbody class="text-gray-600 text-sm font-light">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -2434,7 +2434,7 @@
                 const playerMarker = document.createElement('div');
                 playerMarker.classList.add('player-marker', 'claros');
                 // Usar el número del ID sin ceros iniciales
-                playerMarker.textContent = parseInt(playerId.replace('J', '')).toString();    
+                playerMarker.textContent = parseInt(playerId.replace('J', '')).toString();   
                 if (chamigosIds.includes(playerId)) {
                     const starIcon = document.createElement('i');
                     starIcon.classList.add('fas', 'fa-star', 'text-yellow-400');
@@ -2462,7 +2462,7 @@
                 const playerMarker = document.createElement('div');
                 playerMarker.classList.add('player-marker', 'oscuros');
                 // Usar el número del ID sin ceros iniciales
-                playerMarker.textContent = parseInt(playerId.replace('J', '')).toString();    
+                playerMarker.textContent = parseInt(playerId.replace('J', '')).toString();   
                 if (chamigosIds.includes(playerId)) {
                     const starIcon = document.createElement('i');
                     starIcon.classList.add('fas', 'fa-star', 'text-yellow-400');
@@ -2851,13 +2851,22 @@
                         resultItem.classList.add('p-2', 'cursor-pointer', 'hover:bg-gray-100');
                         resultItem.textContent = player[1];
                         resultItem.dataset.playerId = player[0]; // Almacenar el ID del jugador
-                        resultItem.addEventListener('click', () => {
+                        
+                        // =================================================================
+                        // INICIO DE LA CORRECCIÓN: Cambiar 'click' por 'mousedown'
+                        // =================================================================
+                        resultItem.addEventListener('mousedown', (e) => {
+                            e.preventDefault(); // Evita que el input pierda el foco antes de que se maneje el evento.
                             playerSearchInput.value = player[1];
                             selectedPlayerIdInput.value = resultItem.dataset.playerId;
                             playerResultsDiv.classList.add('hidden');
                             highlightedIndex = -1; // Reiniciar el resaltado después de la selección
                             renderIndividualStatsTable();
                         });
+                        // =================================================================
+                        // FIN DE LA CORRECCIÓN
+                        // =================================================================
+
                         playerResultsDiv.appendChild(resultItem);
                     });
                     playerResultsDiv.classList.remove('hidden'); // Asegura que los resultados sean visibles
@@ -2936,10 +2945,10 @@
                 } else if (event.key === 'Enter') {
                     event.preventDefault(); // Evitar el envío del formulario
                     if (highlightedIndex !== -1) {
-                        results[highlightedIndex].click(); // Simular clic en el elemento resaltado
+                        results[highlightedIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); // Simular mousedown
                     } else if (results.length > 0) {
                         // Si no hay ningún elemento resaltado explícitamente, pero los resultados están visibles, seleccionar el primero
-                        results[0].click();
+                        results[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); // Simular mousedown
                     }
                 }
             });
