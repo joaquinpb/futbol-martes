@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,6 +6,12 @@
     <title>Panel de Administración Fútbol 5</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Font Awesome para los iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Carga de la fuente Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* Asegura que html y body ocupen toda la altura para que los porcentajes funcionen */
         html, body {
@@ -17,152 +21,260 @@
         /* Fuente Inter para una mejor legibilidad */
         body {
             font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* --- ESTILOS BASE (MODO CLARO) --- */
+        body {
             background-color: #f0f2f5; /* Un gris claro para el fondo */
-            /* min-height: 100vh; -- Eliminado, ahora usamos height: 100% en html y body */
-            margin: 0; /* Elimina el margen predeterminado del body */
-            padding: 0; /* Elimina el padding predeterminado del body */
-            display: flex; /* Hacemos el body un contenedor flex */
-            flex-direction: column; /* Por defecto, los elementos se apilan en columna (mobile-first) */
-        }
-        /* Estilos para el efecto de arrastre */
-        .player-draggable {
-            background-color: #ffffff; /* bg-white */
-            padding: 0.25rem 0.5rem; /* Menor padding: 4px arriba/abajo, 8px a los lados */
-            border-radius: 0.375rem; /* rounded-md */
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
-            margin-bottom: 0.25rem; /* mb-1 */
-            cursor: grab;
-
-            /* Propiedades clave para el ajuste de tamaño */
-            display: inline-block !important; /* Fuerza a que ocupe solo el espacio de su contenido */
-            width: auto !important;           /* Asegura que no tenga un ancho fijo o heredado */
-            height: auto !important;          /* Asegura que no tenga una altura fija o heredada */
-            flex: none !important;            /* Anula cualquier comportamiento de flexbox */
-            white-space: nowrap !important;   /* Evita que el texto se divida en varias líneas */
         }
 
-        .player-draggable:active {
-            cursor: grabbing; /* Cambia el cursor a una mano agarrando al hacer clic */
+        .main-admin-content-container {
+            background-color: #ffffff;
+            color: #1f2937; /* gray-800 */
         }
-        
-        /* Estilos específicos para jugadores en el equipo oscuro */
-        #team-oscuros .player-draggable {
-            background-color: #000000 !important; /* Fondo negro */
-            color: #ffffff !important;           /* Texto blanco */
+
+        h1, h2, h3, h4, h5, h6 {
+            color: #374151; /* gray-700 */
         }
-        
-        /* Nueva clase para feedback visual al arrastrar con toque */
-        .player-draggable.dragging-touch {
-            opacity: 0.7;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            /* Importante: No agregues aquí propiedades como width, height, padding, o background-color */
+
+        label, .text-gray-700 {
+            color: #374151; /* gray-700 */
         }
-        /* Estilo para el botón de cerrar sesión (Cruz) */
-        .close-button {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #ef4444; /* Rojo 500 de Tailwind */
-            cursor: pointer;
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.5rem;
-            border-radius: 9999px; /* Fully rounded */
-            transition: background-color 0.3s ease, color 0.3s ease;
+
+        .text-gray-500 {
+            color: #6b7280; /* gray-500 */
         }
-        .close-button:hover {
-            background-color: #fecaca; /* Rojo 100 de Tailwind */
-            color: #dc2626; /* Rojo 600 de Tailwind */
+
+        input, select {
+            background-color: #ffffff;
+            border-color: #d1d5db; /* gray-300 */
+            color: #1f2937; /* gray-800 */
         }
-        /* Estilo para los elementos de la lista de partidos seleccionables */
+
+        input::placeholder {
+            color: #9ca3af; /* gray-400 */
+        }
+
+        .tab-content, .p-4.border {
+            border-color: #e5e7eb; /* gray-200 */
+        }
+
         .match-item {
-            @apply bg-white p-3 rounded-md shadow-sm mb-2 cursor-pointer hover:bg-gray-100 transition duration-150 ease-in-out;
+            transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
         }
-        .match-item.selected {
-            @apply bg-indigo-100 border-l-4 border-indigo-500;
-        }
-        /* Nuevos estilos para el sombreado de partidos */
+
         .match-item.no-result {
             background-color: #fee2e2; /* bg-red-100 pastel */
         }
         .match-item.has-result {
             background-color: #dcfce7; /* bg-green-100 pastel */
         }
-
-        /* Estilos para la tabla de posiciones (tomados de index.html) - Mantenidos por si se usan en otra parte, aunque la sección principal se elimina */
-        #leaderboard-table-admin {
-            @apply min-w-full bg-white rounded-lg shadow-md;
+        .match-item:hover {
+            background-color: #f3f4f6; /* gray-100 */
         }
-        #leaderboard-table-admin th, #leaderboard-table-admin td {
-            @apply py-3 px-6 text-left;
-        }
-        /* Encabezado de la tabla: fondo negro, texto blanco */
-        #leaderboard-table-admin thead th {
-            background-color: #1a202c !important; /* Fondo negro (bg-gray-900) */
-            color: #ffffff !important; /* Texto blanco (text-white) */
-            text-transform: uppercase;
-            font-size: 0.875rem; /* text-sm */
-            line-height: 1.25rem; /* leading-normal */
-        }
-        #leaderboard-table-admin tbody tr:nth-child(odd) {
-            background-color: #f7fafc !important; /* Gris muy claro (bg-gray-100) */
-        }
-        #leaderboard-table-admin tbody tr:nth-child(even) {
-            background-color: #edf2f7 !important; /* Gris ligeramente más oscuro (bg-gray-200) */
-        }
-        #leaderboard-table-admin tbody tr {
-            border-bottom: 1px solid #cbd5e0; /* border-gray-300 */
-            transition: background-color 150ms ease-in-out; /* transition duration-150 ease-in-out */
-        }
-        tbody tr:hover {
-            background-color: #e2e8f0 !important; /* Tono de gris al pasar el cursor (hover:bg-gray-300) */
-        }
-        #leaderboard-table-admin tbody tr:last-child {
-            border-bottom: 0; /* Eliminar borde inferior de la última fila */
-        }
-        #leaderboard-table-admin tbody td {
-            color: #4a5568; /* text-gray-600 */
+        .match-item.selected {
+            background-color: #e0e7ff; /* indigo-100 */
+            border-color: #6366f1; /* indigo-500 */
         }
 
-        /* --- Estilos para el menú lateral responsivo --- */
+        #players-list-admin table {
+             background-color: #ffffff;
+        }
+        #players-list-admin thead tr {
+            background-color: #f3f4f6; /* gray-100 */
+            color: #374151; /* gray-700 */
+        }
+        #players-list-admin tbody tr {
+            border-color: #e5e7eb; /* gray-200 */
+        }
+        #players-list-admin tbody tr:hover {
+            background-color: #f9fafb; /* gray-50 */
+        }
+        #players-list-admin tbody td {
+            color: #4b5563; /* gray-600 */
+        }
+
+        #custom-confirm-modal .bg-white {
+            background-color: #ffffff;
+        }
+
+
+        /* --- ESTILOS MODO OSCURO --- */
+        html.dark body {
+            background-color: #111827; /* gray-900 */
+        }
+
+        html.dark .main-admin-content-container {
+            background-color: #1f2937; /* gray-800 */
+            color: #d1d5db; /* gray-300 */
+        }
+
+        html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+            color: #f9fafb; /* gray-50 */
+        }
+        
+        html.dark .text-indigo-800 {
+            color: #a5b4fc; /* indigo-300 */
+        }
+        
+        html.dark .border-indigo-500 {
+            border-color: #818cf8; /* indigo-400 */
+        }
+
+        html.dark label, html.dark .text-gray-700 {
+            color: #d1d5db; /* gray-300 */
+        }
+
+        html.dark .text-gray-500 {
+            color: #9ca3af; /* gray-400 */
+        }
+        
+        html.dark .text-gray-800 {
+             color: #f9fafb; /* gray-50 */
+        }
+
+        html.dark input, html.dark select {
+            background-color: #374151; /* gray-700 */
+            border-color: #4b5563; /* gray-600 */
+            color: #f9fafb; /* gray-50 */
+        }
+
+        html.dark input::placeholder {
+            color: #9ca3af; /* gray-400 */
+        }
+
+        html.dark .tab-content, html.dark .p-4.border {
+            border-color: #4b5563; /* gray-600 */
+        }
+
+        html.dark .match-item.no-result {
+            background-color: #5c2b2b; /* Darker red */
+        }
+        html.dark .match-item.has-result {
+            background-color: #2a553a; /* Darker green */
+        }
+        html.dark .match-item:hover {
+            background-color: #374151; /* gray-700 */
+        }
+        html.dark .match-item.selected {
+            background-color: #3730a3; /* indigo-800 */
+            border-color: #a5b4fc; /* indigo-300 */
+        }
+        html.dark .match-item p {
+            color: #e5e7eb; /* gray-200 */
+        }
+         html.dark .match-item .text-gray-500 {
+            color: #9ca3af; /* gray-400 */
+        }
+
+
+        html.dark #players-list-admin table {
+             background-color: #1f2937; /* gray-800 */
+        }
+        html.dark #players-list-admin thead tr {
+            background-color: #374151; /* gray-700 */
+            color: #e5e7eb; /* gray-200 */
+        }
+        html.dark #players-list-admin tbody tr {
+            border-color: #4b5563; /* gray-600 */
+        }
+        html.dark #players-list-admin tbody tr:hover {
+            background-color: #374151; /* gray-700 */
+        }
+        html.dark #players-list-admin tbody td {
+            color: #d1d5db; /* gray-300 */
+        }
+        
+        html.dark #titulares-players, html.dark #suplentes-players {
+            background-color: #374151; /* gray-700 */
+            border-color: #4b5563; /* gray-600 */
+        }
+        
+        html.dark #chamigo-match-list, html.dark #tt-match-list, html.dark #results-match-list {
+            background-color: #1f2937; /* gray-800 */
+            border-color: #4b5563; /* gray-600 */
+        }
+        
+        html.dark #custom-confirm-modal .bg-white {
+            background-color: #1f2937; /* gray-800 */
+        }
+
+        /* Estilos que NO cambian con el modo oscuro */
+        .player-draggable {
+            background-color: #ffffff;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            margin-bottom: 0.25rem;
+            cursor: grab;
+            display: inline-block !important;
+            width: auto !important;
+            height: auto !important;
+            flex: none !important;
+            white-space: nowrap !important;
+            color: #000000 !important; /* Texto siempre negro para contraste */
+        }
+
+        .player-draggable:active {
+            cursor: grabbing;
+        }
+        
+        #team-oscuros .player-draggable {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+        }
+
+        /* El fondo de los contenedores de equipos permanece igual */
+        #team-claros {
+            background-color: #ffffff !important;
+        }
+
+        #team-oscuros {
+            background-color: #1a202c !important; /* bg-gray-900 */
+        }
+        
+        /* --- Resto de los estilos --- */
+
+        .player-draggable.dragging-touch {
+            opacity: 0.7;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
         #side-menu {
-            position: fixed; /* Mantenido como fixed según tu última versión */
+            position: fixed;
             top: 0;
             left: 0;
-            height: 100vh; /* Mantenido como 100vh según tu última versión */
-            width: 256px; /* w-64 */
+            height: 100vh;
+            width: 256px;
             background-color: #312e81; /* indigo-800 */
             color: white;
-            transform: translateX(-100%); /* Oculto por defecto */
+            transform: translateX(-100%);
             transition: transform 0.3s ease-in-out;
             z-index: 40;
-            display: flex; /* Usar flex para el diseño vertical de las pestañas */
+            display: flex;
             flex-direction: column;
-            padding-top: 1rem; /* Añadir algo de padding en la parte superior */
-            overflow-y: auto; /* Permite desplazamiento interno si el contenido del menú es muy largo */
+            overflow-y: auto;
         }
 
-        /* Esta clase será aplicada por JS para hacerlo visible */
         #side-menu.open {
             transform: translateX(0);
         }
 
-        /* Asegura que la clase 'hidden' siempre oculte el elemento */
         #side-menu.hidden {
             display: none !important;
         }
 
         #overlay {
-            position: fixed; /* El overlay debe seguir siendo fixed para cubrir la ventana */
-            inset: 0; /* top:0, right:0, bottom:0, left:0 */
+            position: fixed;
+            inset: 0;
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 30;
-            display: none; /* Oculto por defecto */
+            display: none;
         }
 
         #overlay.open {
-            display: block; /* Mostrar cuando el menú lateral esté abierto (solo móvil) */
+            display: block;
         }
 
         #hamburger-button {
@@ -171,30 +283,27 @@
             left: 1rem;
             z-index: 50;
             padding: 0.5rem;
-            border-radius: 0.375rem; /* rounded-md */
+            border-radius: 0.375rem;
             background-color: #4f46e5; /* indigo-600 */
             color: white;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-lg */
-        }
-
-        /* El botón de cerrar menú lateral (la cruz) ahora estará oculto por defecto y siempre */
-        #close-side-menu-button {
-            display: none !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         #side-menu .tab-button, #side-menu .sidebar-link {
-            padding-left: 1.5rem; /* px-6 */
-            padding-right: 1.5rem; /* px-6 */
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
             text-align: left;
-            width: 100%; /* Ancho completo dentro de la barra lateral */
-            border-radius: 0; /* Sin esquinas redondeadas para pestañas verticales */
-            margin-bottom: 0.25rem; /* mb-1 */
-            color: white; /* Texto blanco para barra lateral oscura */
+            width: 100%;
+            border-radius: 0;
+            margin-bottom: 0.25rem;
+            color: white;
             transition: background-color 0.15s ease-in-out;
-            display: flex; /* Para alinear el texto y el icono */
-            align-items: center; /* Para alinear el texto y el icono */
-            gap: 0.5rem; /* Espacio entre texto e icono */
-            white-space: nowrap; /* Asegura que el texto y el icono no se envuelvan */
+            display: flex;
+            align-items: center;
+            gap: 0.75rem; /* Aumentado el gap */
+            white-space: nowrap;
+             padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
         }
         #side-menu .tab-button.active {
             background-color: #4338ca; /* indigo-700 */
@@ -202,192 +311,173 @@
         #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
             background-color: #4f46e5; /* indigo-600 */
         }
+        
+        /* NUEVO: Estilos para el contenedor del título del menú y el botón de tema */
+        .menu-title-container {
+            padding: 0.5rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+        }
 
-        #signout_button_sidebar,
-        #signout_button_mobile_sidebar {
-            margin-bottom: 2rem; /* Unificado: 2rem de separación del borde inferior */
+        .menu-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* NUEVO: Estilos para el nuevo botón de modo oscuro circular */
+        #dark-mode-toggle {
+            background-color: #4338ca; /* indigo-700 */
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.15s ease-in-out;
+        }
+
+        #dark-mode-toggle:hover {
+            background-color: #4f46e5; /* indigo-600 */
         }
 
         @media (min-width: 768px) {
             body {
-                flex-direction: row; /* Los elementos se colocan en fila en desktop */
-                align-items: flex-start; /* Alinea los ítems al inicio del contenedor flex */
+                flex-direction: row;
+                align-items: flex-start;
             }
             #side-menu {
-                position: relative; /* En desktop, vuelve a ser relativo y parte del flujo */
-                transform: translateX(0); /* Siempre visible cuando no está 'hidden' */
-                flex-shrink: 0; /* Evita que se encoja */
-                height: 100vh; /* Mantiene la altura completa del body */
-                border-right: 1px solid #e2e8f0; /* border-gray-200 */
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+                position: relative;
+                transform: translateX(0);
+                flex-shrink: 0;
+                height: 100vh;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             }
-
-            #side-menu .tab-button, #side-menu .sidebar-link {
-                color: white; /* Asegura que el texto permanezca blanco sobre fondo oscuro */
-            }
-            #side-menu .tab-button.active {
-                background-color: #4338ca; /* indigo-700 */
-                color: white; /* Asegura que el texto permanezca blanco sobre fondo oscuro */
-                border-left: 4px solid #4f46e5; /* border-indigo-500 */
-            }
-            #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
-                background-color: #4f46e5; /* indigo-600 */
-            }
-
-            #signout_button_mobile_sidebar {
+            #overlay, #hamburger-button {
                 display: none !important;
             }
-            #signout_button_sidebar {
-                display: block !important;
-            }
-            #overlay {
-                display: none !important;
-            }
-            #hamburger-button {
-                display: none !important; /* Siempre oculto en desktop */
-            }
-
             .main-admin-content-container {
-                flex-grow: 1; /* Permite que el contenido principal ocupe el espacio restante */
-                margin: 2rem auto; /* Centrado horizontal. Arriba/abajo 2rem. */
-                padding: 2rem; /* Padding para desktop */
-                width: auto; /* Dejar que flex-grow y max-width controlen el ancho */
-            }
-            /* Esta clase se añade/quita por JS para el margen izquierdo cuando el sidebar está visible */
-            .main-admin-content-container.has-sidebar-margin {
-                margin-left: 2rem; /* Margen fijo para separar del sidebar */
+                flex-grow: 1;
+                margin: 2rem;
+                padding: 2rem;
+                width: auto;
             }
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col md:flex-row">
-    <!-- Hamburger Button (visible on all screens) -->
+<body class="flex flex-col md:flex-row">
+    <!-- Hamburger Button (visible on mobile) -->
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg hidden">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
-    <!-- Side Navigation Menu (fixed, slides in/out on all screens) -->
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40 hidden">
-        <!-- Título del menú lateral -->
-        <div class="p-4 flex items-center justify-between">
-            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+    <!-- Side Navigation Menu -->
+    <nav id="side-menu" class="hidden">
+        <div class="menu-title-container">
+            <h2 class="menu-title">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
                 MENÚ
             </h2>
-            <!-- El botón de cerrar (cruz) ha sido eliminado de aquí -->
+            <!-- NUEVO: Botón de modo oscuro circular -->
+            <button id="dark-mode-toggle">
+                <i class="fas fa-moon" id="dark-mode-icon"></i>
+            </button>
         </div>
-        <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
-            <!-- Botones de las pestañas con el nuevo orden e iconos -->
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="team-formation">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-4.5-7.5l-2.25 2.25m0 0l-2.25 2.25M18 15l-2.25 2.25m0 0l-2.25 2.25M15.75 12a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-                </svg>
+        <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-grow">
+            <!-- Botones de las pestañas -->
+            <button class="tab-button" data-tab="team-formation">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-4.5-7.5l-2.25 2.25m0 0l-2.25 2.25M18 15l-2.25 2.25m0 0l-2.25 2.25M15.75 12a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" /></svg>
                 Armar Equipos
             </button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="match-results">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25H2.25A2.25 2.25 0 0 1 0 19.5V12A2.25 2.25 0 0 1 2.25 9.75h19.5A2.25 2.25 0 0 1 24 12v7.5a2.25 2.25 0 0 1-2.25 2.25H16.5" />
-                </svg>
+            <button class="tab-button" data-tab="match-results">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25H2.25A2.25 2.25 0 0 1 0 19.5V12A2.25 2.25 0 0 1 2.25 9.75h19.5A2.25 2.25 0 0 1 24 12v7.5a2.25 2.25 0 0 1-2.25 2.25H16.5" /></svg>
                 Resultados
             </button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-management">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .472.334l5.64.423a.563.563 0 0 1 .314.976l-4.067 3.323a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.563.563 0 0 0-.582 0l-4.725 2.885a.562.562 0 0 1-.84-.61l1.285-5.385a.563.563 0 0 0-.182-.557L3.92 9.345a.563.563 0 0 1 .313-.976l5.64-.423a.563.563 0 0 0 .472-.334L11.48 3.5Z" />
-                </svg>
+            <button class="tab-button" data-tab="chamigo-management">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .472.334l5.64.423a.563.563 0 0 1 .314.976l-4.067 3.323a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.563.563 0 0 0-.582 0l-4.725 2.885a.562.562 0 0 1-.84-.61l1.285-5.385a.563.563 0 0 0-.182-.557L3.92 9.345a.563.563 0 0 1 .313-.976l5.64-.423a.563.563 0 0 0 .472-.334L11.48 3.5Z" /></svg>
                 Chamigo
             </button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-attendance">
-                <!-- Icono de chopp de cerveza -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-beer">
-                    <path d="M18 19V2h-1M6 19V2h1M2 19h20v3H2zM12 19V2a4 4 0 0 0-4 4v13" />
-                </svg>
+            <button class="tab-button" data-tab="tt-attendance">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-beer"><path d="M18 19V2h-1M6 19V2h1M2 19h20v3H2zM12 19V2a4 4 0 0 0-4 4v13" /></svg>
                 TT
             </button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="players-management">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                </svg>
+            <button class="tab-button" data-tab="players-management">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
                 ABM Jugadores
             </button>
-            <!-- ENLACE A TABLA DE POSICIONES EXTERNA - Ahora "Estadísticas" con icono de gráfico de acciones -->
-            <a href="index.html" target="_blank" rel="noopener noreferrer" class="sidebar-link py-2 px-4 text-white font-medium hover:bg-indigo-700">
-                <!-- Icono de gráfico de acciones con flecha en subida -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-line-chart">
-                    <path d="M3 3v18h18" />
-                    <path d="m18 21-8-8-4 4-3-3" />
-                    <path d="m18 14 4-4H18V6" />
-                </svg>
+            <a href="index.html" target="_blank" rel="noopener noreferrer" class="sidebar-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-line-chart"><path d="M3 3v18h18" /><path d="m18 21-8-8-4 4-3-3" /><path d="m18 14 4-4H18V6" /></svg>
                 Estadísticas
-                <!-- Icono de nueva pestaña (SVG) -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 ml-1">
-                    <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 18h-8.5A2.25 2.25 0 012 15.25v-8.5C2 4.75 3.25 3.5 4.75 3.5h4a.75.75 0 010 1.5h-4z" clip-rule="evenodd" />
-                    <path fill-rule="evenodd" d="M15.75 3a.75.75 0 01.75.75V9a.75.75 0 01-1.5 0V5.06L10.22 10.53a.75.75 0 01-1.06-1.06l5.47-5.47H12a.75.75 0 010-1.5h3.75z" clip-rule="evenodd" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 ml-auto"><path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 18h-8.5A2.25 2.25 0 012 15.25v-8.5C2 4.75 3.25 3.5 4.75 3.5h4a.75.75 0 010 1.5h-4z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M15.75 3a.75.75 0 01.75.75V9a.75.75 0 01-1.5 0V5.06L10.22 10.53a.75.75 0 01-1.06-1.06l5.47-5.47H12a.75.75 0 010-1.5h3.75z" clip-rule="evenodd" /></svg>
             </a>
         </div>
-        <!-- Signout button for mobile sidebar -->
-        <button id="signout_button_mobile_sidebar" class="md:hidden mx-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 hidden">
-            Cerrar Sesión
-        </button>
-        <!-- Signout button inside sidebar for desktop -->
-        <button id="signout_button_sidebar" class="hidden mx-4 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300">
-            Cerrar Sesión
-        </button>
+        
+        <!-- Signout button -->
+        <div class="p-4 mt-auto">
+             <button id="signout_button" class="w-full px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300">
+                Cerrar Sesión
+            </button>
+        </div>
     </nav>
 
     <!-- Overlay for when side menu is open (visible on mobile only) -->
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
 
     <!-- Main Content Area -->
-    <div class="main-admin-content-container bg-white p-4 md:p-8 rounded-xl shadow-lg w-full max-w-5xl relative mx-auto">
-        <h1 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">Panel de Administración</h1>
+    <main class="main-admin-content-container p-4 md:p-8 rounded-xl shadow-lg w-full max-w-5xl relative mx-auto my-4 md:my-8">
+        <h1 class="text-3xl md:text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500">Panel de Administración</h1>
 
-        <!-- Authentication buttons (only authorize button remains here) -->
-        <div class="flex justify-center space-x-4 mb-8">
+        <!-- Authentication buttons -->
+        <div id="auth-container" class="text-center mb-8">
             <button id="authorize_button" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
                 Autorizar Google Sheets
             </button>
+            <p id="auth-status" class="text-center text-red-500 mt-4">Por favor, autoriza la aplicación para acceder a los datos.</p>
         </div>
-
-        <!-- Message for auth status -->
-        <p id="auth-status" class="text-center text-red-500 mb-6">Por favor, autoriza la aplicación para acceder a los datos.</p>
 
         <!-- Admin Content -->
         <div id="admin-content" class="hidden">
             <!-- Tab contents go here -->
-            <div id="team-formation" class="tab-content hidden"> <!-- Default active tab -->
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Armar Equipos</h2>
+            <div id="team-formation" class="tab-content hidden">
+                <h2 class="text-2xl font-semibold mb-4">Armar Equipos</h2>
                 <div class="mb-4">
-                    <label for="team-match-date" class="block text-sm font-medium text-gray-700">Fecha del Partido:</label>
+                    <label for="team-match-date" class="block text-sm font-medium">Fecha del Partido:</label>
                     <input type="date" id="team-match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
                 </div>
                 <p class="text-gray-500 mb-4">Selecciona 10 jugadores para formar los equipos Claros y Oscuros.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Disponibles</h3>
+                        <h3 class="text-xl font-medium mb-3">Jugadores Disponibles</h3>
                         <div id="titulares-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-1 min-h-[120px]">
-                            <!-- Jugadores titulares se cargarán aquí -->
                             <p class="text-gray-500">Cargando titulares...</p>
                         </div>
-                        <h4 class="font-semibold text-gray-700 mb-2 mt-4">Suplentes</h4>
+                        <h4 class="font-semibold mb-2 mt-4">Suplentes</h4>
                         <div id="suplentes-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-1 min-h-[120px]">
-                            <!-- Jugadores suplentes se cargarán aquí -->
                             <p class="text-gray-500">Cargando suplentes...</p>
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-xl font-medium text-gray-800 mb-3">Jugadores Seleccionados (<span id="total-selected-players">0</span>/10)</h3>
+                        <h3 class="text-xl font-medium mb-3">Jugadores Seleccionados (<span id="total-selected-players">0</span>/10)</h3>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Claros (<span id="claros-count">0</span>)</h4>
-                                <div id="team-claros" class="border border-gray-300 rounded-lg p-3 bg-white flex flex-wrap content-start gap-1 min-h-[120px] text-black">
-                            </div>
+                                <h4 class="font-semibold mb-2">Claros (<span id="claros-count">0</span>)</h4>
+                                <div id="team-claros" class="border border-gray-300 rounded-lg p-3 flex flex-wrap content-start gap-1 min-h-[120px]">
+                                </div>
                             </div>
                             <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
-                                <div id="team-oscuros" class="border border-gray-300 rounded-lg p-3 bg-gray-900 flex flex-wrap content-start gap-1 min-h-[120px] text-white"></div>
+                                <h4 class="font-semibold mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
+                                <div id="team-oscuros" class="border border-gray-300 rounded-lg p-3 flex flex-wrap content-start gap-1 min-h-[120px]"></div>
                             </div>
                         </div>
                         <button id="save-teams-button" class="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 w-full" disabled>
@@ -398,29 +488,28 @@
             </div>
 
             <div id="players-management" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Gestionar Jugadores</h2>
-                <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-medium text-gray-800 mb-3">Añadir/Modificar Jugador</h3>
+                <h2 class="text-2xl font-semibold mb-4">Gestionar Jugadores</h2>
+                <div class="mb-6 p-4 border rounded-lg shadow-sm">
+                    <h3 class="text-xl font-medium mb-3">Añadir/Modificar Jugador</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="player-id" class="block text-sm font-medium text-gray-700">ID Jugador (para modificar):</label>
-                            <input type="text" id="player-id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Dejar vacío para nuevo">
+                            <label for="player-id" class="block text-sm font-medium">ID Jugador (para modificar):</label>
+                            <input type="text" id="player-id" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2" placeholder="Dejar vacío para nuevo">
                         </div>
                         <div>
-                            <label for="player-name" class="block text-sm font-medium text-gray-700">Nombre:</label>
-                            <input type="text" id="player-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            <label for="player-name" class="block text-sm font-medium">Nombre:</label>
+                            <input type="text" id="player-name" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2">
                         </div>
                         <div>
-                            <label for="player-status" class="block text-sm font-medium text-gray-700">Estado:</label>
-                            <select id="player-status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <label for="player-status" class="block text-sm font-medium">Estado:</label>
+                            <select id="player-status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
                                 <option value="Activo">Activo</option>
                                 <option value="Inactivo">Inactivo</option>
                             </select>
                         </div>
-                        <!-- Nuevo campo para el Rol (Titular/Suplente) -->
                         <div>
-                            <label for="player-role" class="block text-sm font-medium text-gray-700">Rol:</label>
-                            <select id="player-role" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <label for="player-role" class="block text-sm font-medium">Rol:</label>
+                            <select id="player-role" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
                                 <option value="Titular">Titular</option>
                                 <option value="Suplente">Suplente</option>
                             </select>
@@ -436,24 +525,23 @@
                     </div>
                 </div>
 
-                <h3 class="text-xl font-medium text-gray-800 mb-3">Listado de Jugadores</h3>
-                <!-- Nuevos filtros para la tabla de jugadores -->
+                <h3 class="text-xl font-medium mb-3">Listado de Jugadores</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                        <label for="player-list-name-filter" class="block text-sm font-medium text-gray-700">Buscar por Nombre:</label>
-                        <input type="text" id="player-list-name-filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Ej: Mati">
+                        <label for="player-list-name-filter" class="block text-sm font-medium">Buscar por Nombre:</label>
+                        <input type="text" id="player-list-name-filter" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2" placeholder="Ej: Mati">
                     </div>
                     <div>
-                        <label for="player-list-status-filter" class="block text-sm font-medium text-gray-700">Filtrar por Estado:</label>
-                        <select id="player-list-status-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <label for="player-list-status-filter" class="block text-sm font-medium">Filtrar por Estado:</label>
+                        <select id="player-list-status-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
                             <option value="Todos">Todos</option>
                             <option value="Activo">Activo</option>
                             <option value="Inactivo">Inactivo</option>
                         </select>
                     </div>
                     <div>
-                        <label for="player-list-role-filter" class="block text-sm font-medium text-gray-700">Filtrar por Rol:</label>
-                        <select id="player-list-role-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                        <label for="player-list-role-filter" class="block text-sm font-medium">Filtrar por Rol:</label>
+                        <select id="player-list-role-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
                             <option value="Todos">Todos</option>
                             <option value="Titular">Titular</option>
                             <option value="Suplente">Suplente</option>
@@ -462,37 +550,35 @@
                 </div>
 
                 <div id="players-list-admin" class="overflow-x-auto">
-                    <p id="players-loading-message-admin" class="text-gray-500 text-center">Cargando jugadores...</p>
-                    <table class="min-w-full bg-white rounded-lg shadow hidden">
+                    <p id="players-loading-message-admin" class="text-center">Cargando jugadores...</p>
+                    <table class="min-w-full rounded-lg shadow hidden">
                         <thead>
-                            <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <tr class="uppercase text-sm leading-normal">
                                 <th class="py-3 px-6 text-left">ID</th>
                                 <th class="py-3 px-6 text-left">Nombre</th>
                                 <th class="py-3 px-6 text-left">Estado</th>
-                                <th class="py-3 px-6 text-left">Rol</th> <!-- Nueva columna para Rol -->
+                                <th class="py-3 px-6 text-left">Rol</th>
                                 <th class="py-3 px-6 text-center">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody class="text-gray-600 text-sm font-light">
-                            <!-- Filas de jugadores se cargarán aquí -->
+                        <tbody class="text-sm font-light">
                         </tbody>
                     </table>
                 </div>
             </div>
 
             <div id="match-results" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Resultados</h2>
-                <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <!-- Sección de Detalles del Partido Seleccionado - MOVIDA ARRIBA -->
-                    <h3 class="text-xl font-medium text-gray-800 mb-3">Partido Seleccionado</h3>
+                 <h2 class="text-2xl font-semibold mb-4">Resultados</h2>
+                <div class="mb-6 p-4 border rounded-lg shadow-sm">
+                    <h3 class="text-xl font-medium mb-3">Partido Seleccionado</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label for="match-date" class="block text-sm font-medium text-gray-700">Fecha del Partido:</label>
-                            <input type="date" id="match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" readonly>
+                            <label for="match-date" class="block text-sm font-medium">Fecha del Partido:</label>
+                            <input type="date" id="match-date" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2" readonly>
                         </div>
                         <div>
-                            <label for="match-result" class="block text-sm font-medium text-gray-700">Resultado:</label>
-                            <select id="match-result" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <label for="match-result" class="block text-sm font-medium">Resultado:</label>
+                            <select id="match-result" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
                                 <option value="">Seleccionar resultado</option>
                                 <option value="Claros">Claros</option>
                                 <option value="Oscuros">Oscuros</option>
@@ -510,18 +596,16 @@
                         </button>
                     </div>
 
-                    <h3 class="text-xl font-medium text-gray-800 mb-3 mt-6">Seleccionar Partido</h3>
-                    <!-- Filtros para seleccionar partido -->
+                    <h3 class="text-xl font-medium mb-3 mt-6">Seleccionar Partido</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label for="results-match-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                            <select id="results-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                                <!-- Opciones de año se generarán dinámicamente -->
+                            <label for="results-match-year-select" class="block text-sm font-medium">Año:</label>
+                            <select id="results-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
                             </select>
                         </div>
                         <div>
-                            <label for="results-match-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
-                            <select id="results-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                            <label for="results-match-month-select" class="block text-sm font-medium">Mes:</label>
+                            <select id="results-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
                                 <option value="all">Todos</option>
                                 <option value="0">Enero</option>
                                 <option value="1">Febrero</option>
@@ -538,67 +622,62 @@
                             </select>
                         </div>
                     </div>
-                    <!-- Este div ahora contendrá la lista de partidos dinámicamente -->
-                    <label class="block text-sm font-medium text-gray-700 mt-4">Partidos Disponibles:</label>
-                    <div id="results-match-list" class="mt-1 border border-gray-300 rounded-md shadow-sm max-h-80 overflow-y-auto p-2 bg-white grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <label class="block text-sm font-medium mt-4">Partidos Disponibles:</label>
+                    <div id="results-match-list" class="mt-1 border rounded-md shadow-sm max-h-80 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                         <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
-                        <!-- Los partidos se cargarán aquí dinámicamente como divs clickeables -->
                     </div>
                 </div>
             </div>
 
             <div id="chamigo-management" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Chamigo</h2>
-                <div class="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-medium text-gray-800 mb-3">Registrar Votos de Chamigo</h3>
+                <h2 class="text-2xl font-semibold mb-4">Chamigo</h2>
+                <div class="mb-6 p-4 border rounded-lg shadow-sm">
+                    <h3 class="text-xl font-medium mb-3">Registrar Votos de Chamigo</h3>
                     <div id="chamigo-voting-players" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                        <!-- Jugadores para votar por Chamigo se cargarán aquí -->
                         <p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>
                     </div>
-                    <button id="register-chamigo-button" class="px-6 py-3 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 transition duration-300 w-full">
+                    <button id="register-chamigo-button" class="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition duration-300 w-full">
                         Registrar Chamigo(s)
                     </button>
                 </div>
 
-                <h3 class="text-xl font-medium text-gray-800 mb-3 mt-6">Seleccionar Partido</h3>
+                <h3 class="text-xl font-medium mb-3 mt-6">Seleccionar Partido</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label for="chamigo-match-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                        <select id="chamigo-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <!-- Opciones de año se generarán dinámicamente -->
+                        <label for="chamigo-match-year-select" class="block text-sm font-medium">Año:</label>
+                        <select id="chamigo-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
                         </select>
                     </div>
                     <div>
-                        <label for="chamigo-match-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
-                        <select id="chamigo-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                                <option value="all">Todos</option>
-                                <option value="0">Enero</option>
-                                <option value="1">Febrero</option>
-                                <option value="2">Marzo</option>
-                                <option value="3">Abril</option>
-                                <option value="4">Mayo</option>
-                                <option value="5">Junio</option>
-                                <option value="6">Julio</option>
-                                <option value="7">Agosto</option>
-                                <option value="8">Septiembre</option>
-                                <option value="9">Octubre</option>
-                                <option value="10">Noviembre</option>
-                                <option value="11">Diciembre</option>
+                        <label for="chamigo-match-month-select" class="block text-sm font-medium">Mes:</label>
+                        <select id="chamigo-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
+                            <option value="all">Todos</option>
+                            <option value="0">Enero</option>
+                            <option value="1">Febrero</option>
+                            <option value="2">Marzo</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Mayo</option>
+                            <option value="5">Junio</option>
+                            <option value="6">Julio</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Septiembre</option>
+                            <option value="9">Octubre</option>
+                            <option value="10">Noviembre</option>
+                            <option value="11">Diciembre</option>
                         </select>
                     </div>
                 </div>
-                <label class="block text-sm font-medium text-gray-700 mt-4">Partidos Disponibles:</label>
-                <div id="chamigo-match-list" class="mt-1 border border-gray-300 rounded-md shadow-sm max-h-80 overflow-y-auto p-2 bg-white grid grid-cols-1 md:grid-cols-2 gap-2">
+                <label class="block text-sm font-medium mt-4">Partidos Disponibles:</label>
+                <div id="chamigo-match-list" class="mt-1 border rounded-md shadow-sm max-h-80 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                     <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
                 </div>
             </div>
 
             <div id="tt-attendance" class="tab-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">TT</h2>
-                <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-medium text-gray-800 mb-3">Registrar Asistencia TT</h3>
-                    <div id="tt-attendance-players" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                        <!-- Jugadores para asistencia TT se cargarán aquí -->
+                 <h2 class="text-2xl font-semibold mb-4">TT</h2>
+                <div class="p-4 border rounded-lg shadow-sm">
+                    <h3 class="text-xl font-medium mb-3">Registrar Asistencia TT</h3>
+                    <div id="tt-attendance-players" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
                         <p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>
                     </div>
                     <button id="register-tt-button" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300 w-full">
@@ -606,48 +685,45 @@
                     </button>
                 </div>
 
-                <h3 class="text-xl font-medium text-gray-800 mb-3 mt-6">Seleccionar Partido</h3>
+                <h3 class="text-xl font-medium mb-3 mt-6">Seleccionar Partido</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label for="tt-match-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                        <select id="tt-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                            <!-- Opciones de año se generarán dinámicamente -->
+                        <label for="tt-match-year-select" class="block text-sm font-medium">Año:</label>
+                        <select id="tt-match-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
                         </select>
                     </div>
                     <div>
-                        <label for="tt-match-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
-                        <select id="tt-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
-                                <option value="all">Todos</option>
-                                <option value="0">Enero</option>
-                                <option value="1">Febrero</option>
-                                <option value="2">Marzo</option>
-                                <option value="3">Abril</option>
-                                <option value="4">Mayo</option>
-                                <option value="5">Junio</option>
-                                <option value="6">Julio</option>
-                                <option value="7">Agosto</option>
-                                <option value="8">Septiembre</option>
-                                <option value="9">Octubre</option>
-                                <option value="10">Noviembre</option>
-                                <option value="11">Diciembre</option>
+                        <label for="tt-match-month-select" class="block text-sm font-medium">Mes:</label>
+                        <select id="tt-match-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
+                           <option value="all">Todos</option>
+                            <option value="0">Enero</option>
+                            <option value="1">Febrero</option>
+                            <option value="2">Marzo</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Mayo</option>
+                            <option value="5">Junio</option>
+                            <option value="6">Julio</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Septiembre</option>
+                            <option value="9">Octubre</option>
+                            <option value="10">Noviembre</option>
+                            <option value="11">Diciembre</option>
                         </select>
                     </div>
                 </div>
-                <label class="block text-sm font-medium text-gray-700 mt-4">Partidos Disponibles:</label>
-                <div id="tt-match-list" class="mt-1 border border-gray-300 rounded-md shadow-sm max-h-80 overflow-y-auto p-2 bg-white grid grid-cols-1 md:grid-cols-2 gap-2">
+                <label class="block text-sm font-medium mt-4">Partidos Disponibles:</label>
+                <div id="tt-match-list" class="mt-1 border rounded-md shadow-sm max-h-80 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                     <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
                 </div>
             </div>
-
-            <!-- La pestaña de Tabla de Posiciones se ha eliminado de aquí -->
         </div>
-    </div>
+    </main>
 
     <!-- Custom Modal for Confirmation -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4" id="modal-title">Confirmar Acción</h3>
-            <p class="text-gray-700 mb-6" id="modal-message">¿Estás seguro de que quieres realizar esta acción?</p>
+            <h3 class="text-lg font-semibold mb-4" id="modal-title">Confirmar Acción</h3>
+            <p class="mb-6" id="modal-message">¿Estás seguro de que quieres realizar esta acción?</p>
             <div class="flex justify-end space-x-4">
                 <button id="modal-cancel-button" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition">Cancelar</button>
                 <button id="modal-confirm-button" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">Confirmar</button>
@@ -655,8 +731,6 @@
         </div>
     </div>
 
-    <!-- Script de la API de Google -->
-    <!-- Se eliminan los script tags async defer del head y se cargan dinámicamente en el DOMContentLoaded -->
     <script>
         // ¡IMPORTANTE! Reemplaza 'TU_CLIENT_ID' con tu ID de Cliente de OAuth 2.0
         const CLIENT_ID = '490772160476-4cmd0dse3b74o65g1n9s1q5itlbjavbb.apps.googleusercontent.com';
@@ -671,32 +745,23 @@
         let gisInited = false;
         let allPlayersData = []; // Cache de todos los jugadores
         let allMatchesData = []; // Cache de todos los partidos
-        let sheetIds = {}; // Nuevo: Almacena los sheetIds por nombre de hoja
+        let sheetIds = {}; // Almacena los sheetIds por nombre de hoja
 
         // Variables para el drag-and-drop táctil
         let currentDraggedPlayer = null;
         let originalParentOfDraggedPlayer = null;
-        let initialTouchX, initialTouchY;
-        let initialElementX, initialElementY;
-        let isDraggingTouch = false;
-
-        // Elementos del DOM
+        
+        // --- Elementos del DOM ---
         const authorizeButton = document.getElementById('authorize_button');
-        const signoutButtonSidebar = document.getElementById('signout_button_sidebar'); // Nuevo botón de cerrar sesión en sidebar (desktop)
-        const signoutButtonMobileSidebar = document.getElementById('signout_button_mobile_sidebar'); // Nuevo botón de cerrar sesión en sidebar (mobile)
+        const signoutButton = document.getElementById('signout_button');
         const authStatus = document.getElementById('auth-status');
         const adminContent = document.getElementById('admin-content');
-        const mainAdminContentContainer = document.querySelector('.main-admin-content-container'); // Referencia al contenedor principal
-
-        // Nuevos elementos para el menú lateral
+        const mainAdminContentContainer = document.querySelector('.main-admin-content-container');
         const hamburgerButton = document.getElementById('hamburger-button');
         const sideMenu = document.getElementById('side-menu');
-        // const closeSideMenuButton = document.getElementById('close-side-menu-button'); // Eliminado: Ya no se usa la cruz
         const overlay = document.getElementById('overlay');
-        const tabButtons = document.querySelectorAll('.tab-button'); // Obtener todos los botones de pestaña
-        const tabContents = document.querySelectorAll('.tab-content'); // Obtener todos los contenidos de las pestañas
-
-        // Custom Confirmation Modal elements
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
         const customConfirmModal = document.getElementById('custom-confirm-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalMessage = document.getElementById('modal-message');
@@ -707,21 +772,19 @@
         const playerIdInput = document.getElementById('player-id');
         const playerNameInput = document.getElementById('player-name');
         const playerStatusSelect = document.getElementById('player-status');
-        const playerRoleSelect = document.getElementById('player-role'); // Nuevo: Selector de Rol
+        const playerRoleSelect = document.getElementById('player-role');
         const savePlayerButton = document.getElementById('save-player-button');
         const deletePlayerButton = document.getElementById('delete-player-button');
         const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
-        const playersLoadingMessageAdmin = document.getElementById('players-loading-message-admin'); // Mensaje de carga
-        // Nuevos filtros de Gestión de Jugadores
+        const playersLoadingMessageAdmin = document.getElementById('players-loading-message-admin');
         const playerListNameFilter = document.getElementById('player-list-name-filter');
         const playerListStatusFilter = document.getElementById('player-list-status-filter');
         const playerListRoleFilter = document.getElementById('player-list-role-filter');
 
-
         // Armar Equipos
-        const teamMatchDateInput = document.getElementById('team-match-date'); // Nuevo: Fecha en Armar Equipos
-        const titularesPlayersDiv = document.getElementById('titulares-players'); // Nuevo: Jugadores Titulares
-        const suplentesPlayersDiv = document.getElementById('suplentes-players'); // Nuevo: Jugadores Suplentes
+        const teamMatchDateInput = document.getElementById('team-match-date');
+        const titularesPlayersDiv = document.getElementById('titulares-players');
+        const suplentesPlayersDiv = document.getElementById('suplentes-players');
         const teamClarosDiv = document.getElementById('team-claros');
         const teamOscurosDiv = document.getElementById('team-oscuros');
         const clarosCountSpan = document.getElementById('claros-count');
@@ -733,47 +796,64 @@
         const matchResultSelect = document.getElementById('match-result');
         const resultsMatchYearSelect = document.getElementById('results-match-year-select');
         const resultsMatchMonthSelect = document.getElementById('results-match-month-select');
-        const resultsMatchListDiv = document.getElementById('results-match-list'); // Ahora es un div, no un select
+        const resultsMatchListDiv = document.getElementById('results-match-list');
         const registerMatchButton = document.getElementById('register-match-button');
-        const deleteMatchButton = document.getElementById('delete-match-button'); // Nuevo botón de eliminar partido
+        const deleteMatchButton = document.getElementById('delete-match-button');
 
         // Chamigo
         const chamigoVotingPlayersDiv = document.getElementById('chamigo-voting-players');
         const registerChamigoButton = document.getElementById('register-chamigo-button');
-        const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select'); // Nuevo
-        const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select'); // Nuevo
-        const chamigoMatchListDiv = document.getElementById('chamigo-match-list'); // Nuevo
+        const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select');
+        const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select');
+        const chamigoMatchListDiv = document.getElementById('chamigo-match-list');
 
         // TT
         const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
         const registerTtButton = document.getElementById('register-tt-button');
-        const ttMatchYearSelect = document.getElementById('tt-match-year-select'); // Nuevo
-        const ttMatchMonthSelect = document.getElementById('tt-match-month-select'); // Nuevo
-        const ttMatchListDiv = document.getElementById('tt-match-list'); // Nuevo
+        const ttMatchYearSelect = document.getElementById('tt-match-year-select');
+        const ttMatchMonthSelect = document.getElementById('tt-match-month-select');
+        const ttMatchListDiv = document.getElementById('tt-match-list');
+        
+        // Modo Oscuro
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const darkModeIcon = document.getElementById('dark-mode-icon');
+        const htmlElement = document.documentElement;
 
+        // --- Funciones de Modo Oscuro ---
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                htmlElement.classList.add('dark');
+                darkModeIcon.classList.remove('fa-moon');
+                darkModeIcon.classList.add('fa-sun');
+            } else {
+                htmlElement.classList.remove('dark');
+                darkModeIcon.classList.remove('fa-sun');
+                darkModeIcon.classList.add('fa-moon');
+            }
+             localStorage.setItem('theme', theme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(currentTheme);
+        }
 
         // --- Funciones de Autenticación ---
-
-        // Función para cargar la biblioteca GAPI
         function loadGapiScript() {
             const script = document.createElement('script');
             script.src = 'https://apis.google.com/js/api.js';
             script.async = true;
             script.defer = true;
-            script.onload = () => {
-                // Una vez que gapi.js está cargado, podemos usar gapi.load
-                gapi.load('client', initializeGapiClient);
-            };
+            script.onload = () => gapi.load('client', initializeGapiClient);
             document.head.appendChild(script);
         }
 
-        // Función para cargar la biblioteca GIS
         function loadGisScript() {
             const script = document.createElement('script');
             script.src = 'https://accounts.google.com/gsi/client';
             script.async = true;
             script.defer = true;
-            script.onload = gisLoaded; // gisLoaded se encargará de inicializar tokenClient
+            script.onload = gisLoaded;
             document.head.appendChild(script);
         }
 
@@ -783,120 +863,83 @@
                     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
                 });
                 gapiInited = true;
-                maybeEnableAuthButtons();
+                maybeEnableAuthUI();
             } catch (err) {
                 console.error("Error al inicializar gapi.client:", err);
-                authStatus.textContent = `Error al inicializar la API de Google: ${err.message || err.error_description || JSON.stringify(err)}. Revisa la consola.`;
-                authStatus.classList.remove('hidden');
+                authStatus.textContent = `Error al inicializar la API de Google. Revisa la consola.`;
             }
         }
 
         function gisLoaded() {
-            // Asegurarse de que google.accounts.oauth2 esté disponible
-            if (typeof google !== 'undefined' && typeof google.accounts !== 'undefined' && typeof google.accounts.oauth2 !== 'undefined') {
+            try {
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CLIENT_ID,
                     scope: SCOPES,
                     callback: '', // Se define en handleAuthClick
                 });
                 gisInited = true;
-                maybeEnableAuthButtons();
-            } else {
-                console.error("google.accounts.oauth2 no está disponible después de cargar gsi/client.js");
-                authStatus.textContent = 'Error al cargar la biblioteca de autenticación de Google. Intenta recargar la página.';
-                authStatus.classList.remove('hidden');
+                maybeEnableAuthUI();
+            } catch (err) {
+                 console.error("Error al inicializar GIS:", err);
+                 authStatus.textContent = 'Error al cargar la autenticación de Google. Intenta recargar.';
             }
         }
 
-        function maybeEnableAuthButtons() {
+        function maybeEnableAuthUI() {
             if (gapiInited && gisInited) {
-                authorizeButton.style.display = 'block';
-                if (gapi.client.getToken() !== null) {
-                    handleAuthSuccess();
-                } else {
-                    authStatus.textContent = 'Por favor, autoriza la aplicación para acceder a los datos.';
-                    authStatus.classList.remove('hidden');
-                    // Asegurarse de que el menú y el botón estén ocultos si no hay token
-                    sideMenu.classList.add('hidden'); // Asegura que esté oculto
-                    sideMenu.classList.remove('open'); // Asegura que el transform esté reseteado
-                    hamburgerButton.classList.add('hidden');
-                    signoutButtonMobileSidebar.classList.add('hidden');
-                    signoutButtonSidebar.classList.add('hidden');
+                if (gapi.client.getToken() === null) {
+                    // No hay token, mostrar UI de login
+                    document.getElementById('auth-container').classList.remove('hidden');
                     adminContent.classList.add('hidden');
-                    
-                    // Centrar main content cuando sidebar está oculto
-                    mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Asegura que no tenga margen izquierdo
-                    mainAdminContentContainer.style.marginLeft = 'auto';
-                    mainAdminContentContainer.style.marginRight = 'auto';
+                    sideMenu.classList.add('hidden');
+                    hamburgerButton.classList.add('hidden');
+                } else {
+                    // Hay token, proceder a la app
+                    handleAuthSuccess();
                 }
             }
         }
 
         function handleAuthClick() {
-            // Asegurarse de que tokenClient esté definido antes de usarlo
-            if (!tokenClient) {
-                console.error("tokenClient no está inicializado. Intenta recargar la página o autorizar de nuevo.");
-                alert("Error: La autenticación no está lista. Por favor, recarga la página e intenta de nuevo.");
-                return;
-            }
-
+            if (!tokenClient) return;
             tokenClient.callback = async (resp) => {
                 if (resp.error) {
                     console.error('Error de autenticación:', resp);
                     authStatus.textContent = `Error de autenticación: ${resp.error_description || resp.error}`;
-                    authStatus.classList.remove('hidden');
                     return;
                 }
                 handleAuthSuccess();
             };
-
             if (gapi.client.getToken() === null) {
-                // Si no hay token, solicita uno
-                tokenClient.requestAccessToken({prompt: 'consent'});
+                tokenClient.requestAccessToken({ prompt: 'consent' });
             } else {
-                // Si ya hay token, úsalo para solicitar un nuevo token (refrescar)
-                tokenClient.requestAccessToken({prompt: ''});
+                tokenClient.requestAccessToken({ prompt: '' });
             }
         }
 
         async function handleAuthSuccess() {
-            authorizeButton.style.display = 'none';
-            signoutButtonSidebar.classList.remove('hidden');
-            signoutButtonMobileSidebar.classList.remove('hidden');
-            authStatus.classList.add('hidden');
-            adminContent.classList.remove('hidden'); // Mostrar el contenido de administración
-            
-            if (window.innerWidth >= 768) {
-                sideMenu.classList.remove('hidden'); // Mostrar sidebar en desktop
-                sideMenu.classList.add('open'); // Asegurarse de que esté abierto (transform: translateX(0))
-                hamburgerButton.classList.add('hidden'); // Ocultar hamburguesa en desktop
-                // Aplicar márgenes específicos para desktop cuando sidebar está visible
-                mainAdminContentContainer.classList.add('has-sidebar-margin'); // Aplica margin-left: 2rem
-            } else {
-                sideMenu.classList.add('hidden'); // Empezar oculto en móvil
-                sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado para estado inicial móvil
-                hamburgerButton.classList.remove('hidden'); // Mostrar hamburguesa en móvil
-                // Resetear márgenes para móvil
-                mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margin-left fijo
-            }
-            // Asegurarse de que el centrado horizontal funcione en ambos casos
-            mainAdminContentContainer.style.marginLeft = 'auto';
-            mainAdminContentContainer.style.marginRight = 'auto';
-
-
-            await loadAllDataAndDisplayAllContent(); // Cargar todos los datos y renderizar todo
+            document.getElementById('auth-container').classList.add('hidden');
+            adminContent.classList.remove('hidden');
+            updateUIForAuth();
+            await loadAllDataAndDisplayAllContent();
             setupTabNavigation();
             
-            // Establecer "Armar Equipos" como la pestaña activa por defecto
+            // Activar la primera pestaña por defecto
             const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
-            const defaultTabContent = document.getElementById('team-formation');
-
-            tabContents.forEach(content => content.classList.add('hidden'));
-            tabButtons.forEach(button => button.classList.remove('active'));
-
-            if (defaultTabButton && defaultTabContent) {
-                defaultTabButton.classList.add('active');
-                defaultTabContent.classList.remove('hidden');
+            if (defaultTabButton) {
+                defaultTabButton.click();
+            }
+        }
+        
+        function updateUIForAuth() {
+            if (window.innerWidth >= 768) { // Desktop
+                sideMenu.classList.remove('hidden');
+                sideMenu.classList.add('open');
+                hamburgerButton.classList.add('hidden');
+            } else { // Mobile
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.remove('hidden');
             }
         }
 
@@ -905,38 +948,15 @@
             if (token !== null) {
                 google.accounts.oauth2.revoke(token.access_token);
                 gapi.client.setToken('');
-                authorizeButton.style.display = 'block';
-                signoutButtonSidebar.classList.add('hidden');
-                signoutButtonMobileSidebar.classList.add('hidden');
-                adminContent.classList.add('hidden'); // Ocultar el contenido de administración
                 
-                sideMenu.classList.add('hidden'); // Asegurarse de que sidebar esté oculto
-                sideMenu.classList.remove('open'); // Asegurarse de que esté cerrado (para estado móvil)
-                hamburgerButton.classList.add('hidden');
-                overlay.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
-
-                // Resetear márgenes de main content a auto para centrar después de cerrar sesión
-                mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margin-left fijo
-                mainAdminContentContainer.style.marginLeft = 'auto';
-                mainAdminContentContainer.style.marginRight = 'auto';
-
+                document.getElementById('auth-container').classList.remove('hidden');
                 authStatus.textContent = 'Sesión cerrada. Por favor, autoriza de nuevo.';
-                authStatus.classList.remove('hidden');
-                // Limpiar todas las interfaces
-                playersListAdminTableBody.innerHTML = '';
-                playersLoadingMessageAdmin.textContent = 'Cargando jugadores...';
-                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando titulares...</p>';
-                suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando suplentes...</p>';
-                teamClarosDiv.innerHTML = '';
-                teamOscurosDiv.innerHTML = '';
-                clarosCountSpan.textContent = '0';
-                oscurosCountSpan.textContent = '0';
-                resultsMatchListDiv.innerHTML = '<p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>';
-                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-                chamigoMatchListDiv.innerHTML = '<p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>';
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-                ttMatchListDiv.innerHTML = '<p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>';
+                adminContent.classList.add('hidden');
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.add('hidden');
+                overlay.classList.remove('open');
+                document.body.classList.remove('overflow-hidden');
             }
         }
 
@@ -946,67 +966,37 @@
                 modalTitle.textContent = title;
                 modalMessage.textContent = message;
                 customConfirmModal.classList.remove('hidden');
-
-                const onConfirm = () => {
-                    hideCustomConfirm();
+                modalConfirmButton.onclick = () => {
+                    customConfirmModal.classList.add('hidden');
                     resolve(true);
                 };
-
-                const onCancel = () => {
-                    hideCustomConfirm();
+                modalCancelButton.onclick = () => {
+                    customConfirmModal.classList.add('hidden');
                     resolve(false);
                 };
-
-                modalConfirmButton.onclick = onConfirm;
-                modalCancelButton.onclick = onCancel;
-
-                const handleKeyDown = (e) => {
-                    if (e.key === 'Escape') {
-                        onCancel();
-                        document.removeEventListener('keydown', handleKeyDown);
-                    }
-                };
-                document.addEventListener('keydown', handleKeyDown);
             });
         }
 
-        function hideCustomConfirm() {
-            customConfirmModal.classList.add('hidden');
-            modalConfirmButton.onclick = null;
-            modalCancelButton.onclick = null;
-        }
-
-
         // --- Funciones de Carga de Datos ---
-
         async function loadAllData() {
             try {
-                // Asegurarse de que gapi.client.sheets esté disponible
                 if (!gapi.client.sheets) {
-                    console.error("gapi.client.sheets no está disponible. ¿Se inicializó correctamente el cliente de la API de Google?");
-                    throw new Error("API de Google Sheets no cargada correctamente.");
+                    throw new Error("API de Google Sheets no cargada.");
                 }
 
                 const metadataResponse = await gapi.client.sheets.spreadsheets.get({
                     spreadsheetId: SPREADSHEET_ID,
                     fields: 'sheets.properties',
                 });
-
                 if (metadataResponse.result && metadataResponse.result.sheets) {
                     metadataResponse.result.sheets.forEach(sheet => {
                         sheetIds[sheet.properties.title] = sheet.properties.sheetId;
                     });
-                    console.log("IDs de hojas cargados:", sheetIds);
-                } else {
-                    console.warn("No se pudo recuperar la metadata de las hojas. Usando IDs por defecto (0).");
-                    sheetIds['Partidos'] = 0;
-                    sheetIds['Jugadores'] = 0;
                 }
 
-                // MODIFICADO: Rango de Jugadores ahora es A:D (ID_Jugador, Nombre, Estado, Rol)
                 const playersResponse = await gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: 'Jugadores!A:D',  
+                    range: 'Jugadores!A:D',
                 });
                 allPlayersData = playersResponse.result.values ? playersResponse.result.values.slice(1) : [];
 
@@ -1017,14 +1007,8 @@
                 allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : [];
 
             } catch (err) {
-                console.error('Error al cargar todos los datos:', err);
-                let userErrorMessage = 'Error desconocido al cargar datos.';
-                if (err && err.result && err.result.error && err.result.error.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.result.error.message}. Revisa la consola para más detalles.`;
-                } else if (err && err.message) {
-                    userErrorMessage = `Error al cargar datos: ${err.message}. Revisa la consola para más detalles.`;
-                }
-                alert(userErrorMessage);
+                console.error('Error al cargar datos:', err);
+                alert(`Error al cargar datos: ${err.result?.error?.message || err.message}`);
             }
         }
 
@@ -1033,86 +1017,86 @@
             renderPlayersListAdmin();
             renderAvailablePlayersForTeams();
             populateResultsMatchYearSelect();
-            populateMatchSelects();
             populateChamigoTtMatchYearSelect();
-            populateChamigoTtMatchLists();
+            setInitialFilters(); // NUEVO: Llamar a la función para setear los filtros
         }
+
+        // --- NUEVA FUNCIÓN: Setear filtros iniciales ---
+        function setInitialFilters() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth(); // 0-indexed (0 for January)
+
+            const selectsToUpdate = [
+                { year: 'results-match-year-select', month: 'results-match-month-select' },
+                { year: 'chamigo-match-year-select', month: 'chamigo-match-month-select' },
+                { year: 'tt-match-year-select', month: 'tt-match-month-select' }
+            ];
+
+            selectsToUpdate.forEach(pair => {
+                const yearSelect = document.getElementById(pair.year);
+                const monthSelect = document.getElementById(pair.month);
+
+                // Setear año actual si existe en las opciones
+                if (Array.from(yearSelect.options).some(opt => opt.value == currentYear)) {
+                    yearSelect.value = currentYear;
+                }
+                
+                // Setear mes actual
+                monthSelect.value = currentMonth;
+
+                // Disparar evento change para actualizar las listas de partidos
+                yearSelect.dispatchEvent(new Event('change'));
+                monthSelect.dispatchEvent(new Event('change'));
+            });
+        }
+
 
         // --- Funciones de Pestañas ---
         function setupTabNavigation() {
             tabButtons.forEach(button => {
-                button.removeEventListener('click', handleTabButtonClick);
                 button.addEventListener('click', handleTabButtonClick);
             });
         }
 
         function handleTabButtonClick(event) {
             const clickedButton = event.currentTarget;
-            
             tabButtons.forEach(btn => btn.classList.remove('active'));
             tabContents.forEach(content => content.classList.add('hidden'));
-
             clickedButton.classList.add('active');
             document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
 
             if (window.innerWidth < 768) {
-                toggleSideMenu(); // Cierra el menú lateral en móvil al seleccionar una pestaña
+                toggleSideMenu();
             }
-
-            if (clickedButton.dataset.tab === 'players-management') {
-                renderPlayersListAdmin();
-            } else if (clickedButton.dataset.tab === 'team-formation') {
-                renderAvailablePlayersForTeams();
-                teamClarosDiv.innerHTML = '';
-                teamOscurosDiv.innerHTML = '';
-                clarosCountSpan.textContent = '0';
-                oscurosCountSpan.textContent = '0';
-                saveTeamsButton.disabled = true;
-                teamMatchDateInput.value = '';
-            } else if (clickedButton.dataset.tab === 'match-results') {
-                populateResultsMatchYearSelect();
-                resultsMatchMonthSelect.value = 'all';
-                populateMatchSelects();
-                matchDateInput.value = '';
-                matchResultSelect.value = '';
-            } else if (clickedButton.dataset.tab === 'chamigo-management') {
-                populateChamigoTtMatchYearSelect();
-                chamigoMatchMonthSelect.value = 'all';
-                populateChamigoTtMatchLists();
-                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-            } else if (clickedButton.dataset.tab === 'tt-attendance') {
-                populateChamigoTtMatchYearSelect();
-                ttMatchMonthSelect.value = 'all';
-                populateChamigoTtMatchLists();
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-            }
+            
+            // Recargar contenido específico de la pestaña si es necesario
+            const tabId = clickedButton.dataset.tab;
+            if (tabId === 'players-management') renderPlayersListAdmin();
+            if (tabId === 'team-formation') renderAvailablePlayersForTeams();
         }
 
         // --- Toggle Side Menu Functionality ---
         function toggleSideMenu() {
-            const isMobile = window.innerWidth < 768;
-            if (isMobile) {
-                if (sideMenu.classList.contains('hidden')) {
-                    sideMenu.classList.remove('hidden'); // Remove hidden before toggling open
-                }
-                sideMenu.classList.toggle('open');
-                overlay.classList.toggle('open');
-                document.body.classList.toggle('overflow-hidden');
-                if (sideMenu.classList.contains('open')) {
-                    hamburgerButton.classList.add('hidden'); // Hide hamburger when sidebar opens on mobile
+            if (window.innerWidth < 768) {
+                const isOpen = sideMenu.classList.toggle('open');
+                overlay.classList.toggle('open', isOpen);
+                document.body.classList.toggle('overflow-hidden', isOpen);
+                if (isOpen) {
+                    sideMenu.classList.remove('hidden');
                 } else {
-                    hamburgerButton.classList.remove('hidden'); // Show hamburger when sidebar closes on mobile
-                    sideMenu.classList.add('hidden'); // Add hidden back when closing on mobile
+                    // Pequeña demora para que la transición de cierre termine antes de ocultar
+                    setTimeout(() => sideMenu.classList.add('hidden'), 300);
                 }
             }
         }
 
         // --- Gestión de Jugadores (AMB) ---
-
         function renderPlayersListAdmin() {
             playersListAdminTableBody.innerHTML = '';
-            document.querySelector('#players-list-admin table').classList.add('hidden');
+            const table = document.querySelector('#players-list-admin table');
             playersLoadingMessageAdmin.classList.remove('hidden');
+            table.classList.add('hidden');
             playersLoadingMessageAdmin.textContent = 'Cargando jugadores...';
 
             const nameFilter = playerListNameFilter.value.toLowerCase();
@@ -1120,8 +1104,7 @@
             const roleFilter = playerListRoleFilter.value;
 
             const filteredPlayers = allPlayersData.filter(player => {
-                // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
-                const [id, nombre, estado, rol = 'Titular'] = player; // MODIFICADO: Destructuring ajustado
+                const [id, nombre = '', estado = '', rol = 'Titular'] = player;
                 const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
                 const matchesStatus = statusFilter === 'Todos' || estado === statusFilter;
                 const matchesRole = roleFilter === 'Todos' || rol === roleFilter;
@@ -1133,43 +1116,35 @@
                 return;
             }
 
-            filteredPlayers.forEach((player, index) => {
-                // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
-                const [id, nombre, estado, rol = 'Titular'] = player; // MODIFICADO: Destructuring ajustado
-                const row = `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-6 text-left">${id}</td>
-                        <td class="py-3 px-6 text-left">${nombre}</td>
-                        <td class="py-3 px-6 text-left">${estado}</td>
-                        <td class="py-3 px-6 text-left">${rol}</td>
-                        <td class="py-3 px-6 text-center">
-                            <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs"
-                                data-id="${id}"
-                                data-name="${nombre}"
-                                data-status="${estado}"
-                                data-role="${rol}">Editar</button>
-                        </td>
-                    </tr>
+            filteredPlayers.forEach(([id, nombre, estado, rol = 'Titular']) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left">${id}</td>
+                    <td class="py-3 px-6 text-left">${nombre}</td>
+                    <td class="py-3 px-6 text-left">${estado}</td>
+                    <td class="py-3 px-6 text-left">${rol}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs"
+                            data-id="${id}" data-name="${nombre}" data-status="${estado}" data-role="${rol}">Editar</button>
+                    </td>
                 `;
-                playersListAdminTableBody.innerHTML += row;
+                playersListAdminTableBody.appendChild(row);
             });
 
             document.querySelectorAll('.edit-player-button').forEach(button => {
                 button.addEventListener('click', (e) => {
-                    playerIdInput.value = e.target.dataset.id;
-                    playerNameInput.value = e.target.dataset.name;
-                    playerStatusSelect.value = e.target.dataset.status;
-                    playerRoleSelect.value = e.target.dataset.role;
+                    const { id, name, status, role } = e.target.dataset;
+                    playerIdInput.value = id;
+                    playerNameInput.value = name;
+                    playerStatusSelect.value = status;
+                    playerRoleSelect.value = role;
                 });
             });
+            
             playersLoadingMessageAdmin.classList.add('hidden');
-            document.querySelector('#players-list-admin table').classList.remove('hidden');
+            table.classList.remove('hidden');
         }
-
-        playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
-        playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
-        playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
-
 
         savePlayerButton.addEventListener('click', async () => {
             const id = playerIdInput.value.trim();
@@ -1181,18 +1156,11 @@
                 alert('El nombre del jugador no puede estar vacío.');
                 return;
             }
-
-            const normalizedNewName = name.toLowerCase();
-            const isEditingExistingPlayer = id !== '';
-
-            const duplicatePlayer = allPlayersData.find(p => {
-                const existingId = p[0];
-                const existingName = p[1].toLowerCase();
-                return existingName === normalizedNewName && (!isEditingExistingPlayer || existingId !== id);
-            });
-
-            if (duplicatePlayer) {
-                alert(`Ya existe un jugador con el nombre "${name}". Por favor, elige un nombre diferente.`);
+            
+            const isEditing = id !== '';
+            const duplicate = allPlayersData.find(p => p[1].toLowerCase() === name.toLowerCase() && (!isEditing || p[0] !== id));
+            if (duplicate) {
+                alert(`Ya existe un jugador con el nombre "${name}".`);
                 return;
             }
 
@@ -1200,56 +1168,43 @@
                 let rowToUpdateIndex = allPlayersData.findIndex(p => p[0] === id);
                 let newPlayerId = id;
 
-                if (rowToUpdateIndex === -1) {
-                    const maxIdNum = allPlayersData.reduce((max, p) => {
-                        const num = parseInt(p[0]?.replace('J', '') || 0);
-                        return Math.max(max, num);
-                    }, 0);
+                if (rowToUpdateIndex === -1) { // Nuevo jugador
+                    const maxIdNum = allPlayersData.reduce((max, p) => Math.max(max, parseInt(p[0]?.replace('J', '') || 0)), 0);
                     newPlayerId = 'J' + String(maxIdNum + 1).padStart(3, '0');
-                    // New player row only contains relevant fields: ID, Nombre, Estado, Rol
-                    const newPlayerRow = [newPlayerId, name, status, role]; // MODIFICADO: Eliminados campos de estadísticas
+                    const newPlayerRow = [newPlayerId, name, status, role];
                     allPlayersData.push(newPlayerRow);
                     rowToUpdateIndex = allPlayersData.length - 1;
-                } else {
-                    allPlayersData[rowToUpdateIndex][1] = name;
-                    allPlayersData[rowToUpdateIndex][2] = status;
-                    allPlayersData[rowToUpdateIndex][3] = role; // Rol is now at index 3
+                } else { // Modificar jugador
+                    allPlayersData[rowToUpdateIndex] = [id, name, status, role];
                 }
 
-                const values = [allPlayersData[rowToUpdateIndex]];
-                // Update range to reflect new column count (A:D)
-                const range = `Jugadores!A${rowToUpdateIndex + 2}:D${rowToUpdateIndex + 2}`; // MODIFICADO: Rango ajustado a A:D
-
+                const range = `Jugadores!A${rowToUpdateIndex + 2}:D${rowToUpdateIndex + 2}`;
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
                     range: range,
                     valueInputOption: 'RAW',
-                    resource: { values: values },
+                    resource: { values: [allPlayersData[rowToUpdateIndex]] },
                 });
 
                 alert('Jugador guardado exitosamente.');
                 playerIdInput.value = '';
                 playerNameInput.value = '';
-                playerStatusSelect.value = 'Activo';
-                playerRoleSelect.value = 'Titular';
                 await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al guardar jugador:', err);
-                alert(`Error al guardar jugador: ${err.message}. Revisa la consola.`);
+                alert(`Error al guardar jugador: ${err.message}.`);
             }
         });
 
         deletePlayerButton.addEventListener('click', async () => {
             const idToDelete = playerIdInput.value.trim();
             if (!idToDelete) {
-                alert('Por favor, selecciona un jugador para eliminar usando su ID.');
+                alert('Por favor, selecciona un jugador para eliminar.');
                 return;
             }
 
-            const confirmed = await showCustomConfirm('Confirmar Eliminación', `¿Estás seguro de que quieres marcar al jugador con ID ${idToDelete} como Inactivo? Esto no se puede deshacer fácilmente.`);
-            if (!confirmed) {
-                return;
-            }
+            const confirmed = await showCustomConfirm('Confirmar Eliminación', `¿Estás seguro de que quieres marcar al jugador con ID ${idToDelete} como Inactivo?`);
+            if (!confirmed) return;
 
             try {
                 const rowIndex = allPlayersData.findIndex(p => p[0] === idToDelete);
@@ -1258,50 +1213,38 @@
                     return;
                 }
 
-                allPlayersData[rowIndex][2] = 'Inactivo'; // Update status to Inactivo
-                const values = [allPlayersData[rowIndex]];
-                // Update range to reflect new column count (A:D)
-                const range = `Jugadores!A${rowIndex + 2}:D${rowIndex + 2}`; // MODIFICADO: Rango ajustado a A:D
+                allPlayersData[rowIndex][2] = 'Inactivo'; // Marcar como inactivo
+                const range = `Jugadores!C${rowIndex + 2}`; // Solo actualizar la columna de estado
 
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
                     range: range,
                     valueInputOption: 'RAW',
-                    resource: { values: values },
+                    resource: { values: [['Inactivo']] },
                 });
 
                 alert(`Jugador con ID ${idToDelete} marcado como Inactivo.`);
                 playerIdInput.value = '';
                 playerNameInput.value = '';
-                playerStatusSelect.value = 'Activo';
-                playerRoleSelect.value = 'Titular';
                 await loadAllDataAndDisplayAllContent();
             } catch (err) {
                 console.error('Error al eliminar jugador:', err);
-                alert(`Error al eliminar jugador: ${err.message}. Revisa la consola.`);
+                alert(`Error al eliminar jugador: ${err.message}.`);
             }
         });
-
+        
         // --- Armar Equipos ---
-
         function renderAvailablePlayersForTeams() {
-            titularesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando titulares...</p>';
-            suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">Cargando suplentes...</p>';
-
-            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
-
-            if (activePlayers.length === 0) {
-                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos.</p>';
-                suplentesPlayersDiv.innerHTML = '';
-                return;
-            }
-            
             titularesPlayersDiv.innerHTML = '';
             suplentesPlayersDiv.innerHTML = '';
 
-            activePlayers.forEach(player => {
-                // allPlayersData now contains [ID_Jugador, Nombre, Estado, Rol]
-                const [id, nombre, estado, rol = 'Titular'] = player; // MODIFICADO: Destructuring ajustado
+            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
+            if (activePlayers.length === 0) {
+                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos.</p>';
+                return;
+            }
+
+            activePlayers.forEach(([id, nombre, estado, rol = 'Titular']) => {
                 const playerElement = document.createElement('div');
                 playerElement.className = 'player-draggable';
                 playerElement.draggable = true;
@@ -1309,26 +1252,18 @@
                 playerElement.dataset.name = nombre;
                 playerElement.textContent = nombre;
                 playerElement.addEventListener('dragstart', handleDragStart);
-                playerElement.addEventListener('touchstart', handleTouchStart);
-                
+                playerElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+
                 if (rol === 'Titular') {
                     titularesPlayersDiv.appendChild(playerElement);
                 } else {
                     suplentesPlayersDiv.appendChild(playerElement);
                 }
             });
-
-            if (titularesPlayersDiv.children.length === 0) {
-                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay titulares activos.</p>';
-            }
-            if (suplentesPlayersDiv.children.length === 0) {
-                suplentesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay suplentes activos.</p>';
-            }
         }
-
-        // --- Desktop Drag-and-Drop Handlers ---
+        
+        // --- Drag & Drop (Desktop & Touch) ---
         function handleDragStart(e) {
-            console.log('Drag started for player (Desktop):', e.target.dataset.name);
             e.dataTransfer.setData('text/plain', JSON.stringify({
                 id: e.target.dataset.id,
                 name: e.target.dataset.name,
@@ -1337,202 +1272,177 @@
             e.dataTransfer.effectAllowed = 'move';
         }
 
-        [titularesPlayersDiv, suplentesPlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(dropZone => {
-            dropZone.addEventListener('dragover', handleDragOver);
-            dropZone.addEventListener('drop', handleDrop);
-        });
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-            const playerId = data.id;
-            const sourceId = data.source;
-            const targetElement = e.currentTarget; // El elemento DOM donde se suelta
-            const targetId = targetElement.id;     // La ID del elemento donde se suelta
-        
-            console.log('Drop event (Desktop) on', targetId, 'for player:', data.name);
-        
-            // NUEVO: VALIDACIÓN DE LÍMITE DE JUGADORES
-            if (targetId === 'team-claros' || targetId === 'team-oscuros') {
-                if (targetElement.children.length >= 5) {
-                    alert(`No se pueden agregar más de 5 jugadores al equipo ${targetId === 'team-claros' ? 'Claros' : 'Oscuros'}.`);
-                    console.log(`Intento fallido: Equipo ${targetId} ya tiene 5 jugadores.`);
-                    return; // Impide el drop si el equipo ya tiene 5 jugadores
-                }
-            }
-        
-            if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
-                (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
-                console.log('Arrastre no permitido entre Titulares y Suplentes.');
-                return;
-            }
-        
-            if (sourceId === targetId) return;
-        
-            const draggedElement = document.querySelector(`#${sourceId} .player-draggable[data-id="${playerId}"]`);
-            if (draggedElement) {
-                targetElement.appendChild(draggedElement); // Usamos targetElement aquí
-            }
-            updateTeamCounts();
-        }
-        // --- Touch Drag-and-Drop Handlers ---
         function handleTouchStart(e) {
-            if (e.touches.length === 1) {
-                isDraggingTouch = true;
-                currentDraggedPlayer = e.target;
-                originalParentOfDraggedPlayer = e.target.parentNode;
-                currentDraggedPlayer.classList.add('dragging-touch');
-
-                initialTouchX = e.touches[0].clientX;
-                initialTouchY = e.touches[0].clientY;
-
-                const rect = currentDraggedPlayer.getBoundingClientRect();
-                initialElementX = rect.left;
-                initialElementY = rect.top;
-
-                currentDraggedPlayer.style.position = 'fixed';
-                currentDraggedPlayer.style.zIndex = '1000';
-                currentDraggedPlayer.style.pointerEvents = 'none';
-
-                currentDraggedPlayer.style.left = initialElementX + 'px';
-                currentDraggedPlayer.style.top = initialElementY + 'px';
-
-                document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                document.addEventListener('touchend', handleTouchEnd);
-            }
+            if (e.touches.length !== 1) return;
+            e.preventDefault();
+            
+            currentDraggedPlayer = e.target;
+            originalParentOfDraggedPlayer = currentDraggedPlayer.parentNode;
+            
+            const rect = currentDraggedPlayer.getBoundingClientRect();
+            currentDraggedPlayer.style.position = 'fixed';
+            currentDraggedPlayer.style.left = `${rect.left}px`;
+            currentDraggedPlayer.style.top = `${rect.top}px`;
+            currentDraggedPlayer.style.width = `${rect.width}px`;
+            currentDraggedPlayer.style.height = `${rect.height}px`;
+            currentDraggedPlayer.style.pointerEvents = 'none';
+            currentDraggedPlayer.style.zIndex = '1000';
+            currentDraggedPlayer.classList.add('dragging-touch');
+            
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd);
         }
 
         function handleTouchMove(e) {
-            if (!isDraggingTouch) return;
+            if (!currentDraggedPlayer) return;
             e.preventDefault();
-
-            const currentTouchX = e.touches[0].clientX;
-            const currentTouchY = e.touches[0].clientY;
-
-            const deltaX = currentTouchX - initialTouchX;
-            const deltaY = currentTouchY - initialTouchY;
-
-            currentDraggedPlayer.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            
+            const touch = e.touches[0];
+            currentDraggedPlayer.style.left = `${touch.clientX - currentDraggedPlayer.offsetWidth / 2}px`;
+            currentDraggedPlayer.style.top = `${touch.clientY - currentDraggedPlayer.offsetHeight / 2}px`;
         }
-
+        
         function handleTouchEnd(e) {
-            if (!isDraggingTouch) return;
+            if (!currentDraggedPlayer) return;
+            
+            currentDraggedPlayer.style.visibility = 'hidden';
+            const touch = e.changedTouches[0];
+            const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+            currentDraggedPlayer.style.visibility = 'visible';
 
-            isDraggingTouch = false;
-            currentDraggedPlayer.classList.remove('dragging-touch');
+            // Reset styles
             currentDraggedPlayer.style.position = '';
-            currentDraggedPlayer.style.zIndex = '';
+            currentDraggedPlayer.style.left = '';
+            currentDraggedPlayer.style.top = '';
+            currentDraggedPlayer.style.width = '';
+            currentDraggedPlayer.style.height = '';
             currentDraggedPlayer.style.pointerEvents = '';
-            currentDraggedPlayer.style.transform = '';
+            currentDraggedPlayer.style.zIndex = '';
+            currentDraggedPlayer.classList.remove('dragging-touch');
+
+            const dropZone = dropTarget ? dropTarget.closest('#titulares-players, #suplentes-players, #team-claros, #team-oscuros') : null;
+            
+            if (dropZone) {
+                handleDropLogic(currentDraggedPlayer, dropZone);
+            } else {
+                originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer); // Return to original parent
+            }
 
             document.removeEventListener('touchmove', handleTouchMove);
             document.removeEventListener('touchend', handleTouchEnd);
-
-            const touch = e.changedTouches[0];
-            const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-
-            if (targetElement) {
-                let dropZone = null;
-                let current = targetElement;
-                while (current && current !== document.body) {
-                    if (current.id === 'titulares-players' ||
-                        current.id === 'suplentes-players' ||
-                        current.id === 'team-claros' ||
-                        current.id === 'team-oscuros') {
-                        dropZone = current;
-                        break;
-                    }
-                    current = current.parentNode;
-                }
-
-                if (dropZone) {
-                    handleTouchDrop(currentDraggedPlayer, dropZone);
-                } else {
-                    if (originalParentOfDraggedPlayer) {
-                        originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
-                    }
-                }
-            } else {
-                if (originalParentOfDraggedPlayer) {
-                    originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
-                }
-            }
             currentDraggedPlayer = null;
             originalParentOfDraggedPlayer = null;
         }
 
-        function handleTouchDrop(draggedElement, dropZone) {
-            const sourceId = originalParentOfDraggedPlayer.id;
+        [titularesPlayersDiv, suplentesPlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(dropZone => {
+            dropZone.addEventListener('dragover', (e) => e.preventDefault());
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                const draggedElement = document.querySelector(`[data-id="${data.id}"]`);
+                const dropZone = e.currentTarget;
+                handleDropLogic(draggedElement, dropZone);
+            });
+        });
+        
+        function handleDropLogic(draggedElement, dropZone) {
+            const sourceId = draggedElement.parentNode.id;
             const targetId = dropZone.id;
-        
-            console.log('Touch Drop event on', targetId, 'for player:', draggedElement.dataset.name);
-        
-            // NUEVO: VALIDACIÓN DE LÍMITE DE JUGADORES
-            if (targetId === 'team-claros' || targetId === 'team-oscuros') {
-                if (dropZone.children.length >= 5) {
-                    alert(`No se pueden agregar más de 5 jugadores al equipo ${targetId === 'team-claros' ? 'Claros' : 'Oscuros'}.`);
-                    console.log(`Intento fallido: Equipo ${targetId} ya tiene 5 jugadores.`);
-                    // Si no se puede agregar, el elemento debe volver a su origen
-                    if (originalParentOfDraggedPlayer) {
-                        originalParentOfDraggedPlayer.appendChild(draggedElement);
-                    }
-                    return; // Impide el drop si el equipo ya tiene 5 jugadores
-                }
-            }
-        
-            if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') ||
-                (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
-                console.log('Arrastre no permitido entre Titulares y Suplentes.');
-                // Si no se puede agregar, el elemento debe volver a su origen
-                if (originalParentOfDraggedPlayer) {
-                    originalParentOfDraggedPlayer.appendChild(draggedElement);
-                }
-                return;
-            }
-        
-            if (sourceId === targetId) {
-                // Si se soltó en el mismo lugar, simplemente asegúrate de que no haya sido removido
-                if (originalParentOfDraggedPlayer && !originalParentOfDraggedPlayer.contains(draggedElement)) {
-                    originalParentOfDraggedPlayer.appendChild(draggedElement);
-                }
-                return;
-            }
-        
-            // Si el draggedElement ya fue removido por alguna razón (por ejemplo, en handleTouchEnd),
-            // asegúrate de que no cause un error al intentar removerlo de nuevo.
-            if (originalParentOfDraggedPlayer && originalParentOfDraggedPlayer.contains(draggedElement)) {
-                originalParentOfDraggedPlayer.removeChild(draggedElement);
-            }
             
-            dropZone.appendChild(draggedElement); // Ahora esto solo se ejecuta si pasó las validaciones
-        
+            if (sourceId === targetId) return;
+            
+            if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') || (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
+                return;
+            }
+
+            if ((targetId === 'team-claros' || targetId === 'team-oscuros') && dropZone.children.length >= 5) {
+                alert(`El equipo ya tiene 5 jugadores.`);
+                if (draggedElement.parentNode !== originalParentOfDraggedPlayer && originalParentOfDraggedPlayer) {
+                    originalParentOfDraggedPlayer.appendChild(draggedElement);
+                }
+                return;
+            }
+
+            dropZone.appendChild(draggedElement);
             updateTeamCounts();
         }
 
         function updateTeamCounts() {
-            const clarosPlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
-            const oscurosPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
+            const clarosCount = teamClarosDiv.children.length;
+            const oscurosCount = teamOscurosDiv.children.length;
+            clarosCountSpan.textContent = clarosCount;
+            oscurosCountSpan.textContent = oscurosCount;
+            document.getElementById('total-selected-players').textContent = clarosCount + oscurosCount;
+            saveTeamsButton.disabled = !(clarosCount === 5 && oscurosCount === 5);
+        }
         
-            clarosCountSpan.textContent = clarosPlayers.length;
-            oscurosCountSpan.textContent = oscurosPlayers.length;
-        
-            // NUEVO: Calcular el total de jugadores seleccionados
-            const totalSelectedPlayers = clarosPlayers.length + oscurosPlayers.length;
-            document.getElementById('total-selected-players').textContent = totalSelectedPlayers; // Actualizar el nuevo contador
-        
-            // Mantener la lógica para habilitar/deshabilitar el botón de guardar equipos
-            if (clarosPlayers.length === 5 && oscurosPlayers.length === 5) {
-                saveTeamsButton.disabled = false;
-            } else {
-                saveTeamsButton.disabled = true;
-            }
+        // --- Utilidades ---
+        function parseDate(dateString) { // DD/MM/YYYY -> Date
+            const [day, month, year] = dateString.split('/').map(Number);
+            return new Date(year, month - 1, day);
         }
 
+        function parseYYYYMMDDToLocalDate(dateString) { // YYYY-MM-DD -> Date
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function formatDateToDDMMYYYY(date) { // Date -> DD/MM/YYYY
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        }
+        
+        // --- Inicialización ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(savedTheme);
+
+            loadGapiScript();
+            loadGisScript();
+
+            authorizeButton.addEventListener('click', handleAuthClick);
+            signoutButton.addEventListener('click', handleSignoutClick);
+            hamburgerButton.addEventListener('click', toggleSideMenu);
+            overlay.addEventListener('click', toggleSideMenu);
+            darkModeToggle.addEventListener('click', toggleTheme);
+            
+            playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
+            playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
+            playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
+            
+            resultsMatchYearSelect.addEventListener('change', populateMatchSelects);
+            resultsMatchMonthSelect.addEventListener('change', populateMatchSelects);
+            
+            chamigoMatchYearSelect.addEventListener('change', populateChamigoTtMatchLists);
+            chamigoMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
+            
+            ttMatchYearSelect.addEventListener('change', populateChamigoTtMatchLists);
+            ttMatchMonthSelect.addEventListener('change', populateChamigoTtMatchLists);
+            
+            handleResize();
+        });
+
+        window.addEventListener('resize', handleResize);
+
+        function handleResize() {
+            const isAuthed = gapi?.client?.getToken() !== null;
+            if (!isAuthed) return;
+
+            if (window.innerWidth >= 768) {
+                sideMenu.classList.remove('hidden');
+                sideMenu.classList.add('open');
+                hamburgerButton.classList.add('hidden');
+                overlay.classList.remove('open');
+                document.body.classList.remove('overflow-hidden');
+            } else {
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.remove('hidden');
+            }
+        }
+        
         saveTeamsButton.addEventListener('click', async () => {
             const clarosPlayers = Array.from(teamClarosDiv.children).map(el => el.dataset.id);
             const oscurosPlayers = Array.from(teamOscurosDiv.children).map(el => el.dataset.id);
@@ -1568,9 +1478,7 @@
                     formattedDate,
                     clarosPlayers.join(','),
                     oscurosPlayers.join(','),
-                    '',
-                    '',
-                    ''
+                    '', '', '' // Resultado, Chamigo, TT
                 ];
 
                 await gapi.client.sheets.spreadsheets.values.append({
@@ -1580,338 +1488,114 @@
                     resource: { values: [newMatchRow] },
                 });
 
-                alert(`Equipos guardados para el partido ${newMatchId} en la fecha ${formattedDate}.`);
+                alert(`Equipos guardados para el partido ${newMatchId}.`);
                 await loadAllDataAndDisplayAllContent();
-                titularesPlayersDiv.innerHTML = '';
-                suplentesPlayersDiv.innerHTML = '';
                 teamClarosDiv.innerHTML = '';
                 teamOscurosDiv.innerHTML = '';
-                clarosCountSpan.textContent = '0';
-                oscurosCountSpan.textContent = '0';
-                saveTeamsButton.disabled = true;
+                updateTeamCounts();
                 teamMatchDateInput.value = '';
+                renderAvailablePlayersForTeams();
+
             } catch (err) {
                 console.error('Error al guardar equipos:', err);
-                alert(`Error al guardar equipos: ${err.message}. Revisa la consola.`);
+                alert(`Error al guardar equipos: ${err.result?.error?.message || err.message}.`);
             }
         });
 
-        // --- Funciones para poblar selectores de partidos (Resultados, Chamigo, TT) ---
         function populateResultsMatchYearSelect() {
-            const years = new Set();
-            allMatchesData.forEach(match => {
-                const dateString = match[1];
-                if (dateString) {
-                    const date = parseDate(dateString);
-                    years.add(date.getFullYear());
-                }
-            });
-
-            const sortedYears = Array.from(years).sort((a, b) => b - a);
-
+            const years = [...new Set(allMatchesData.map(m => parseDate(m[1]).getFullYear()))].sort((a,b) => b-a);
             resultsMatchYearSelect.innerHTML = '';
-            const currentYear = new Date().getFullYear();
-            if (sortedYears.length > 0) {
-                sortedYears.forEach(year => {
-                    const option = document.createElement('option');
-                    option.value = year;
-                    option.textContent = year;
-                    resultsMatchYearSelect.appendChild(option);
-                });
-                if (sortedYears.includes(currentYear)) {
-                    resultsMatchYearSelect.value = currentYear;
-                } else {
-                    resultsMatchYearSelect.value = sortedYears[0];
-                }
-            } else {
+            years.forEach(year => {
                 const option = document.createElement('option');
-                option.value = currentYear;
-                option.textContent = currentYear;
+                option.value = year;
+                option.textContent = year;
                 resultsMatchYearSelect.appendChild(option);
-            }
+            });
         }
 
         function populateMatchSelects() {
             const selectedYear = resultsMatchYearSelect.value;
             const selectedMonth = resultsMatchMonthSelect.value;
-
             resultsMatchListDiv.innerHTML = '';
 
             const filteredMatches = allMatchesData.filter(match => {
-                const dateString = match[1];
-                if (!dateString) return false;
-                const matchDate = parseDate(dateString);
-                const matchYear = matchDate.getFullYear();
-                const matchMonth = matchDate.getMonth();
-
-                const yearMatch = selectedYear === 'all' || matchYear === parseInt(selectedYear);
-                const monthMatch = selectedMonth === 'all' || matchMonth === parseInt(selectedMonth);
-
+                const matchDate = parseDate(match[1]);
+                const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
+                const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
                 return yearMatch && monthMatch;
-            });
+            }).sort((a,b) => parseDate(b[1]) - parseDate(a[1]));
 
-            const sortedMatches = [...filteredMatches].sort((a, b) => {
-                const dateA = parseDate(a[1]);
-                const dateB = parseDate(b[1]);
-                return dateB - dateA;
-            });
-
-            if (sortedMatches.length === 0) {
+            if (filteredMatches.length === 0) {
                 resultsMatchListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
                 return;
             }
 
-            sortedMatches.forEach(match => {
+            filteredMatches.forEach(match => {
                 const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
                 const matchItem = document.createElement('div');
-                if (resultado && resultado.trim() !== '') {
-                    matchItem.className = 'match-item has-result';
-                } else {
-                    matchItem.className = 'match-item no-result';
-                }
+                matchItem.className = `match-item ${resultado ? 'has-result' : 'no-result'}`;
                 matchItem.dataset.matchId = id;
-
-                const clarosNames = clarosIDs.split(',').map(id => {
-                    const player = allPlayersData.find(p => p[0] === id);
-                    return player ? player[1] : `ID:${id}`;
-                }).join(', ');
-                const oscurosNames = oscurosIDs.split(',').map(id => {
-                    const player = allPlayersData.find(p => p[0] === id);
-                    return player ? player[1] : `ID:${id}`;
-                }).join(', ');
-                
-                matchItem.innerHTML = `
-                    <p class="font-semibold">${fecha}</p>
-                    <p class="text-sm text-gray-700">Claros: ${clarosNames}</p>
-                    <p class="text-sm text-gray-700">Oscuros: ${oscurosNames}</p>
-                    ${resultado ? `<p class="text-xs text-gray-500">Resultado: ${resultado}</p>` : '<p class="text-xs text-gray-500">Sin resultado</p>'}
-                `;
+                matchItem.innerHTML = `<p class="font-semibold">${fecha}</p><p class="text-xs text-gray-500">Resultado: ${resultado || 'Pendiente'}</p>`;
                 resultsMatchListDiv.appendChild(matchItem);
-
                 matchItem.addEventListener('click', () => {
                     document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
                     matchItem.classList.add('selected');
-
-                    const selectedMatch = allMatchesData.find(m => m[0] === id);
-                    if (selectedMatch) {
-                        const [mId, mFecha, mClarosIDs, mOscurosIDs, mResultado] = selectedMatch;
-                        const [day, month, year] = mFecha.split('/');
-                        matchDateInput.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                        matchResultSelect.value = mResultado || '';
-                    }
+                    const [day, month, year] = fecha.split('/');
+                    matchDateInput.value = `${year}-${month}-${day}`;
+                    matchResultSelect.value = resultado || '';
                 });
             });
         }
-
-        // --- NUEVAS FUNCIONES PARA CHAMIGO Y TT ---
-
-        function populateChamigoTtMatchYearSelect() {
-            const years = new Set();
-            allMatchesData.forEach(match => {
-                const dateString = match[1];
-                if (dateString) {
-                    const date = parseDate(dateString);
-                    years.add(date.getFullYear());
-                }
-            });
-
-            const sortedYears = Array.from(years).sort((a, b) => b - a);
-
-            [chamigoMatchYearSelect, ttMatchYearSelect].forEach(selectElement => {
-                selectElement.innerHTML = '';
-                const currentYear = new Date().getFullYear();
-                if (sortedYears.length > 0) {
-                    sortedYears.forEach(year => {
-                        const option = document.createElement('option');
-                        option.value = year;
-                        option.textContent = year;
-                        selectElement.appendChild(option);
-                    });
-                    if (sortedYears.includes(currentYear)) {
-                        selectElement.value = currentYear;
-                    } else {
-                        selectElement.value = sortedYears[0];
-                    }
-                } else {
-                    const option = document.createElement('option');
-                    option.value = currentYear;
-                    option.textContent = currentYear;
-                    selectElement.appendChild(option);
-                }
-            });
-        }
-
-        function populateMatchListForTab(targetListDiv, yearSelect, monthSelect, onMatchClickCallback, tabName) {
-            const selectedYear = yearSelect.value;
-            const selectedMonth = monthSelect.value;
-
-            targetListDiv.innerHTML = '';
-
-            const filteredMatches = allMatchesData.filter(match => {
-                const dateString = match[1];
-                if (!dateString) return false;
-                const matchDate = parseDate(dateString);
-                const matchYear = matchDate.getFullYear();
-                const matchMonth = matchDate.getMonth();
-
-                const yearMatch = selectedYear === 'all' || matchYear === parseInt(selectedYear);
-                const monthMatch = selectedMonth === 'all' || matchMonth === parseInt(selectedMonth);
-
-                return yearMatch && monthMatch;
-            });
-
-            const sortedMatches = [...filteredMatches].sort((a, b) => {
-                const dateA = parseDate(a[1]);
-                const dateB = parseDate(b[1]);
-                return dateB - dateA;
-            });
-
-            if (sortedMatches.length === 0) {
-                targetListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
-                return;
-            }
-
-            sortedMatches.forEach(match => {
-                const [id, fecha, clarosIDs, oscurosIDs, resultado, chamigoVotos, ttAttendees] = match;
-                const matchItem = document.createElement('div');
-                
-                let shouldBeGreen = false;
-                if (tabName === 'chamigo') {
-                    shouldBeGreen = (chamigoVotos && chamigoVotos.trim() !== '');
-                } else if (tabName === 'tt') {
-                    shouldBeGreen = (ttAttendees && ttAttendees.trim() !== '');
-                } else {
-                    shouldBeGreen = (resultado && resultado.trim() !== '');
-                }
-
-                if (shouldBeGreen) {
-                    matchItem.className = 'match-item has-result';
-                } else {
-                    matchItem.className = 'match-item no-result';
-                }
-
-                matchItem.dataset.matchId = id;
-
-                const clarosNames = clarosIDs.split(',').map(id => {
-                    const player = allPlayersData.find(p => p[0] === id);
-                    return player ? player[1] : `ID:${id}`;
-                }).join(', ');
-                const oscurosNames = oscurosIDs.split(',').map(id => {
-                    const player = allPlayersData.find(p => p[0] === id);
-                    return player ? player[1] : `ID:${id}`;
-                }).join(', ');
-                
-                matchItem.innerHTML = `
-                    <p class="font-semibold">${fecha}</p>
-                    <p class="text-sm text-gray-700">Claros: ${clarosNames}</p>
-                    <p class="text-sm text-gray-700">Oscuros: ${oscurosNames}</p>
-                    ${resultado ? `<p class="text-xs text-gray-500">Resultado: ${resultado}</p>` : '<p class="text-xs text-gray-500">Sin resultado</p>'}
-                `;
-                targetListDiv.appendChild(matchItem);
-
-                matchItem.addEventListener('click', () => {
-                    document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected'));
-                    matchItem.classList.add('selected');
-
-                    onMatchClickCallback(id);
-                });
-            });
-        }
-
-        function populateChamigoTtMatchLists() {
-            populateMatchListForTab(chamigoMatchListDiv, chamigoMatchYearSelect, chamigoMatchMonthSelect, handleChamigoMatchSelection, 'chamigo');
-            populateMatchListForTab(ttMatchListDiv, ttMatchYearSelect, ttMatchMonthSelect, handleTtMatchSelection, 'tt');
-        }
-
-        resultsMatchYearSelect.addEventListener('change', populateMatchSelects);
-        resultsMatchMonthSelect.addEventListener('change', populateMatchSelects);
-
-        chamigoMatchYearSelect.addEventListener('change', () => populateChamigoTtMatchLists());
-        chamigoMatchMonthSelect.addEventListener('change', () => populateChamigoTtMatchLists());
-
-        ttMatchYearSelect.addEventListener('change', () => populateChamigoTtMatchLists());
-        ttMatchMonthSelect.addEventListener('change', () => populateChamigoTtMatchLists());
-
-
-        // --- Resultados ---
 
         registerMatchButton.addEventListener('click', async () => {
             const selectedMatchItem = document.querySelector('#results-match-list .match-item.selected');
             if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido de la lista.');
+                alert('Por favor, selecciona un partido.');
                 return;
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
             const result = matchResultSelect.value;
-            const matchDateInputVal = matchDateInput.value;
-
-            if (!selectedMatchId || !result || !matchDateInputVal) {
-                alert('Por favor, selecciona un partido, ingresa la fecha y el resultado.');
-                return;
-            }
-
+            
             try {
                 const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-                if (matchIndex === -1) {
-                    alert('Partido no encontrado.');
-                    return;
-                }
-
-                const currentMatch = allMatchesData[matchIndex];
-                // Update match date and result in allMatchesData
-                currentMatch[1] = formatDateToDDMMYYYY(parseYYYYMMDDToLocalDate(matchDateInputVal));
-                currentMatch[4] = result; // Update result column
-
+                if (matchIndex === -1) throw new Error('Partido no encontrado');
+                
+                allMatchesData[matchIndex][4] = result;
+                
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!A${matchIndex + 2}:G${matchIndex + 2}`, // Update the entire row for the match
+                    range: `Partidos!E${matchIndex + 2}`,
                     valueInputOption: 'RAW',
-                    resource: { values: [currentMatch] },
+                    resource: { values: [[result]] },
                 });
 
-                alert('Resultado del partido actualizado exitosamente.');
+                alert('Resultado actualizado.');
+                await loadAllDataAndDisplayAllContent();
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
-                document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                await loadAllDataAndDisplayAllContent();
             } catch (err) {
-                console.error('Error al registrar partido:', err);
-                alert(`Error al registrar partido: ${err.message}. Revisa la consola.`);
+                console.error('Error al registrar resultado:', err);
+                alert(`Error al registrar resultado: ${err.result?.error?.message || err.message}.`);
             }
         });
 
-        async function deleteMatchButtonClickHandler() {
+        deleteMatchButton.addEventListener('click', async () => {
             const selectedMatchItem = document.querySelector('#results-match-list .match-item.selected');
             if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido de la lista para eliminar.');
+                alert('Por favor, selecciona un partido para eliminar.');
                 return;
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
-
-            const confirmed = await showCustomConfirm(
-                'Confirmar Eliminación de Partido',
-                `¿Estás seguro de que quieres eliminar el partido seleccionado (ID: ${selectedMatchId})? Esta acción es irreversible.`
-            );
-
-            if (!confirmed) {
-                return;
-            }
+            const confirmed = await showCustomConfirm('Confirmar Eliminación', `¿Seguro que quieres eliminar el partido ID ${selectedMatchId}? Esta acción es irreversible.`);
+            if (!confirmed) return;
 
             try {
                 const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-                if (matchIndex === -1) {
-                    alert('Partido no encontrado.');
-                    return;
-                }
-
-                const sheetRowIndex = matchIndex + 2; // +2 because Sheets is 1-indexed and has a header row
-
-                if (sheetIds['Partidos'] === undefined) {
-                    console.error("Sheet ID for 'Partidos' not found. Cannot delete row.");
-                    alert("Error: No se pudo encontrar la hoja 'Partidos'. Por favor, recarga la página e intenta de nuevo.");
-                    return;
-                }
-
+                if (matchIndex === -1) throw new Error('Partido no encontrado');
+                
+                const sheetRowIndex = matchIndex + 2;
+                if (sheetIds['Partidos'] === undefined) throw new Error("No se pudo encontrar el ID de la hoja 'Partidos'.");
+                
                 await gapi.client.sheets.spreadsheets.batchUpdate({
                     spreadsheetId: SPREADSHEET_ID,
                     resource: {
@@ -1920,8 +1604,8 @@
                                 range: {
                                     sheetId: sheetIds['Partidos'],
                                     dimension: 'ROWS',
-                                    startIndex: sheetRowIndex - 1, // API is 0-indexed for startIndex
-                                    endIndex: sheetRowIndex // API is exclusive for endIndex
+                                    startIndex: sheetRowIndex - 1,
+                                    endIndex: sheetRowIndex
                                 }
                             }
                         }]
@@ -1929,283 +1613,167 @@
                 });
 
                 alert('Partido eliminado exitosamente.');
+                await loadAllDataAndDisplayAllContent();
                 matchDateInput.value = '';
                 matchResultSelect.value = '';
-                document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected'));
-                await loadAllDataAndDisplayAllContent(); // Reload all data after deletion
             } catch (err) {
                 console.error('Error al eliminar partido:', err);
-                alert(`Error al eliminar partido: ${err.message}. Revisa la consola.`);
+                alert(`Error al eliminar partido: ${err.result?.error?.message || err.message}.`);
             }
+        });
+        
+        function populateChamigoTtMatchYearSelect() {
+            const years = [...new Set(allMatchesData.map(m => parseDate(m[1]).getFullYear()))].sort((a,b) => b-a);
+            [chamigoMatchYearSelect, ttMatchYearSelect].forEach(select => {
+                select.innerHTML = '';
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    select.appendChild(option);
+                });
+            });
+        }
+        
+        function populateChamigoTtMatchLists() {
+            populateMatchListForTab(chamigoMatchListDiv, chamigoMatchYearSelect, chamigoMatchMonthSelect, handleChamigoMatchSelection, 'chamigo');
+            populateMatchListForTab(ttMatchListDiv, ttMatchYearSelect, ttMatchMonthSelect, handleTtMatchSelection, 'tt');
         }
 
+        function populateMatchListForTab(targetListDiv, yearSelect, monthSelect, onMatchClickCallback, tabName) {
+            const selectedYear = yearSelect.value;
+            const selectedMonth = monthSelect.value;
+            targetListDiv.innerHTML = '';
 
-        // --- Funciones de Chamigo ---
+            const filteredMatches = allMatchesData.filter(match => {
+                const matchDate = parseDate(match[1]);
+                const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
+                const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
+                return yearMatch && monthMatch;
+            }).sort((a,b) => parseDate(b[1]) - parseDate(a[1]));
 
-        function handleChamigoMatchSelection(selectedMatchId) {
-            chamigoVotingPlayersDiv.innerHTML = '';
-            if (selectedMatchId) {
-                const match = allMatchesData.find(m => m[0] === selectedMatchId);
-                if (match) {
-                    const clarosIDs = match[2] ? match[2].split(',') : [];
-                    const oscurosIDs = match[3] ? match[3].split(',') : [];
-                    const playersInMatchIDs = [...new Set([...clarosIDs, ...oscurosIDs])];
-
-                    const playersInMatch = playersInMatchIDs.map(id => {
-                        const player = allPlayersData.find(p => p[0] === id);
-                        return { id: id, name: player ? player[1] : `ID:${id}` };
-                    });
-                    renderChamigoVotingPlayers(playersInMatch);
-
-                    if (match[5]) { // ChamigoVotos column
-                        try {
-                            const existingVotes = JSON.parse(match[5]);
-                            existingVotes.forEach(vote => {
-                                const input = chamigoVotingPlayersDiv.querySelector(`input[data-id="${vote.id}"]`);
-                                if (input) {
-                                    input.value = vote.votos;
-                                }
-                            });
-                        } catch (e) {
-                            console.warn("Error al parsear votos de chamigo existentes:", e);
-                        }
-                    }
-                }
-            } else {
-                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-            }
-        }
-
-        function renderChamigoVotingPlayers(playersInMatch) {
-            chamigoVotingPlayersDiv.innerHTML = '';
-            if (playersInMatch.length === 0) {
-                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores para votar por Chamigo en este partido.</p>';
+            if (filteredMatches.length === 0) {
+                targetListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
                 return;
             }
 
-            playersInMatch.forEach(player => {
+            filteredMatches.forEach(match => {
+                const [id, fecha, , , , chamigoVotos, ttAttendees] = match;
+                const matchItem = document.createElement('div');
+                let isComplete = false;
+                if (tabName === 'chamigo') isComplete = chamigoVotos && chamigoVotos.trim() !== '';
+                if (tabName === 'tt') isComplete = ttAttendees && ttAttendees.trim() !== '';
+                matchItem.className = `match-item ${isComplete ? 'has-result' : 'no-result'}`;
+                matchItem.dataset.matchId = id;
+                matchItem.innerHTML = `<p class="font-semibold">${fecha}</p>`;
+                targetListDiv.appendChild(matchItem);
+                matchItem.addEventListener('click', () => {
+                     document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected'));
+                     matchItem.classList.add('selected');
+                     onMatchClickCallback(id);
+                });
+            });
+        }
+        
+        function handleChamigoMatchSelection(selectedMatchId) {
+            chamigoVotingPlayersDiv.innerHTML = '';
+            const match = allMatchesData.find(m => m[0] === selectedMatchId);
+            if (!match) return;
+
+            const playerIDs = [...new Set([...(match[2]||'').split(','), ...(match[3]||'').split(',')])].filter(Boolean);
+            const existingVotes = match[5] ? JSON.parse(match[5]) : [];
+
+            playerIDs.forEach(id => {
+                const player = allPlayersData.find(p => p[0] === id);
+                if (!player) return;
+                const vote = existingVotes.find(v => v.id === id);
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'flex items-center space-x-2';
                 playerDiv.innerHTML = `
-                    <label class="block text-sm font-medium text-gray-700">${player.name}:</label>
-                    <input type="number" data-id="${player.id}" class="chamigo-vote-input mt-1 block w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" value="0" min="0">
+                    <label class="block text-sm font-medium w-24 truncate" title="${player[1]}">${player[1]}:</label>
+                    <input type="number" data-id="${id}" class="chamigo-vote-input mt-1 block w-20 rounded-md shadow-sm sm:text-sm p-2" value="${vote ? vote.votos : 0}" min="0">
                 `;
                 chamigoVotingPlayersDiv.appendChild(playerDiv);
             });
         }
-
+        
         registerChamigoButton.addEventListener('click', async () => {
             const selectedMatchItem = document.querySelector('#chamigo-match-list .match-item.selected');
             if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido de la lista para registrar el Chamigo.');
+                alert('Por favor, selecciona un partido.');
                 return;
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
-
             const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-            if (matchIndex === -1) {
-                alert('Partido no encontrado.');
-                return;
-            }
+            if (matchIndex === -1) return;
 
-            const currentMatch = allMatchesData[matchIndex];
-            const voteInputs = document.querySelectorAll('.chamigo-vote-input');
-            let votes = [];
-            voteInputs.forEach(input => {
-                const playerId = input.dataset.id;
-                const numVotes = parseInt(input.value || 0);
-                if (numVotes > 0) {
-                    votes.push({ id: playerId, votos: numVotes });
-                }
-            });
-
-            if (votes.length === 0) {
-                alert('No se han ingresado votos para Chamigo.');
-                return;
-            }
-
-            currentMatch[5] = JSON.stringify(votes); // Update ChamigoVotos column
-
+            const votes = Array.from(document.querySelectorAll('.chamigo-vote-input'))
+                .map(input => ({ id: input.dataset.id, votos: parseInt(input.value) || 0 }))
+                .filter(v => v.votos > 0);
+            
             try {
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!F${matchIndex + 2}`, // Update only the ChamigoVotos column
+                    range: `Partidos!F${matchIndex + 2}`,
                     valueInputOption: 'RAW',
-                    resource: { values: [[currentMatch[5]]] },
+                    resource: { values: [[JSON.stringify(votes)]] },
                 });
-
-                alert('Chamigo(s) registrado(s) exitosamente.');
-                document.querySelectorAll('.chamigo-vote-input').forEach(input => input.value = '0');
-                await loadAllDataAndDisplayAllContent(); // Reload all data
-            } catch (err) {
-                console.error('Error al registrar Chamigo:', err);
-                alert(`Error al registrar Chamigo: ${err.message}. Revisa la consola.`);
+                alert('Votos de Chamigo guardados.');
+                await loadAllDataAndDisplayAllContent();
+                chamigoVotingPlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido...</p>';
+            } catch(err) {
+                console.error("Error al guardar Chamigo:", err);
+                alert(`Error: ${err.result?.error?.message || err.message}`);
             }
         });
-
-        // --- Funciones de Asistencia TT ---
-
+        
         function handleTtMatchSelection(selectedMatchId) {
             ttAttendancePlayersDiv.innerHTML = '';
-            if (selectedMatchId) {
-                const match = allMatchesData.find(m => m[0] === selectedMatchId);
-                if (match) {
-                    renderTtAttendancePlayers(allPlayersData.filter(p => p[2] === 'Activo').map(p => ({id: p[0], name: p[1]})));
+            const match = allMatchesData.find(m => m[0] === selectedMatchId);
+            if (!match) return;
+            
+            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
+            const existingAttendees = (match[6] || '').split(',');
 
-                    if (match[6]) { // TtAttendees column
-                        const existingAttendees = match[6].split(',');
-                        existingAttendees.forEach(id => {
-                            const checkbox = ttAttendancePlayersDiv.querySelector(`input[data-id="${id}"]`);
-                            if (checkbox) {
-                                checkbox.checked = true;
-                            }
-                        });
-                    }
-                }
-            } else {
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>';
-            }
-        }
-
-        function renderTtAttendancePlayers(playersToRender) {
-            ttAttendancePlayersDiv.innerHTML = '';
-            if (playersToRender.length === 0) {
-                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos disponibles para registrar asistencia TT.</p>';
-                return;
-            }
-
-            playersToRender.forEach(player => {
+            activePlayers.forEach(player => {
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'flex items-center space-x-2';
                 playerDiv.innerHTML = `
-                    <input type="checkbox" id="tt-player-${player.id}" data-id="${player.id}" class="tt-checkbox h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
-                    <label for="tt-player-${player.id}" class="text-sm font-medium text-gray-700">${player.name}</label>
+                    <input type="checkbox" id="tt-player-${player[0]}" data-id="${player[0]}" class="tt-checkbox h-4 w-4 rounded" ${existingAttendees.includes(player[0]) ? 'checked' : ''}>
+                    <label for="tt-player-${player[0]}" class="text-sm font-medium">${player[1]}</label>
                 `;
                 ttAttendancePlayersDiv.appendChild(playerDiv);
             });
         }
-
+        
         registerTtButton.addEventListener('click', async () => {
             const selectedMatchItem = document.querySelector('#tt-match-list .match-item.selected');
             if (!selectedMatchItem) {
-                alert('Por favor, selecciona un partido de la lista para registrar la asistencia TT.');
+                alert('Por favor, selecciona un partido.');
                 return;
             }
             const selectedMatchId = selectedMatchItem.dataset.matchId;
-
             const matchIndex = allMatchesData.findIndex(m => m[0] === selectedMatchId);
-            if (matchIndex === -1) {
-                alert('Partido no encontrado.');
-                return;
-            }
+            if (matchIndex === -1) return;
 
-            const currentMatch = allMatchesData[matchIndex];
-            const ttAttendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
-
-            currentMatch[6] = ttAttendees.join(','); // Update TtAttendees column
+            const attendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
 
             try {
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
-                    range: `Partidos!G${matchIndex + 2}`, // Update only the TtAttendees column
+                    range: `Partidos!G${matchIndex + 2}`,
                     valueInputOption: 'RAW',
-                    resource: { values: [[currentMatch[6]]] },
+                    resource: { values: [[attendees.join(',')]] },
                 });
-
-                alert('Asistencia al Tercer Tiempo registrada exitosamente.');
-                // Uncheck all checkboxes after saving
-                document.querySelectorAll('.tt-checkbox').forEach(cb => cb.checked = false);
-                await loadAllDataAndDisplayAllContent(); // Reload all data
-            } catch (err) {
-                console.error('Error al registrar asistencia TT:', err);
-                alert(`Error al registrar asistencia TT: ${err.message}. Revisa la consola.`);
+                alert('Asistencia a TT guardada.');
+                await loadAllDataAndDisplayAllContent();
+                ttAttendancePlayersDiv.innerHTML = '<p class="text-gray-500">Selecciona un partido...</p>';
+            } catch(err) {
+                console.error("Error al guardar TT:", err);
+                alert(`Error: ${err.result?.error?.message || err.message}`);
             }
         });
 
-
-        // --- Utilidades ---
-        function parseDate(dateString) {
-            const [day, month, year] = dateString.split('/').map(Number);
-            return new Date(year, month - 1, day);
-        }
-
-        function parseYYYYMMDDToLocalDate(dateString) {
-            const [year, month, day] = dateString.split('-').map(Number);
-            return new Date(year, month - 1, day);
-        }
-
-        function formatDateToDDMMYYYY(date) {
-            const dd = String(date.getDate()).padStart(2, '0');
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const yyyy = date.getFullYear();
-            return `${dd}/${mm}/${yyyy}`;
-        }
-
-
-        // --- Inicialización ---
-        authorizeButton.addEventListener('click', handleAuthClick);
-        signoutButtonSidebar.addEventListener('click', handleSignoutClick);
-        signoutButtonMobileSidebar.addEventListener('click', handleSignoutClick);
-        deleteMatchButton.addEventListener('click', deleteMatchButtonClickHandler);
-
-        hamburgerButton.addEventListener('click', toggleSideMenu);
-        overlay.addEventListener('click', () => {
-            if (window.innerWidth < 768) {
-                toggleSideMenu();
-            }
-        });
-
-        // Evento para manejar el redimensionamiento de la ventana
-        window.addEventListener('resize', () => {
-            if (gapi.client.getToken() !== null) { // Si está autenticado
-                if (window.innerWidth >= 768) {
-                    sideMenu.classList.remove('hidden'); // Mostrar sidebar
-                    sideMenu.classList.add('open');
-                    hamburgerButton.classList.add('hidden');
-                    overlay.classList.remove('open');
-                    document.body.classList.remove('overflow-hidden');
-                    mainAdminContentContainer.classList.add('has-sidebar-margin'); // Aplicar margen en desktop
-                } else { // Móvil
-                    // Al redimensionar a móvil, el menú debe estar oculto por defecto
-                    sideMenu.classList.add('hidden');
-                    sideMenu.classList.remove('open'); // Asegura que el transform esté reseteado
-                    hamburgerButton.classList.remove('hidden');
-                    overlay.classList.remove('open');
-                    document.body.classList.remove('overflow-hidden');
-                    mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margen en móvil
-                }
-            } else { // No autenticado (estado de login)
-                sideMenu.classList.add('hidden');
-                sideMenu.classList.remove('open');
-                hamburgerButton.classList.add('hidden');
-                overlay.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
-                mainAdminContentContainer.classList.remove('has-sidebar-margin'); // Remover margen en login
-            }
-            // Asegurarse de que el centrado horizontal funcione en ambos casos
-            mainAdminContentContainer.style.marginLeft = 'auto';
-            mainAdminContentContainer.style.marginRight = 'auto';
-        });
-
-
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Panel de Administración de Fútbol 5 cargado!');
-            // Asegurarse de que el botón de hamburguesa y el menú lateral estén ocultos al inicio
-            hamburgerButton.classList.add('hidden');
-            sideMenu.classList.add('hidden');
-            sideMenu.classList.remove('open');
-            signoutButtonMobileSidebar.classList.add('hidden');
-            signoutButtonSidebar.classList.add('hidden');
-            adminContent.classList.add('hidden');
-            // Asegurar que no haya margen al cargar, y que esté centrado
-            mainAdminContentContainer.classList.remove('has-sidebar-margin');
-            mainAdminContentContainer.style.marginLeft = 'auto';
-            mainAdminContentContainer.style.marginRight = 'auto';
-
-            // Cargar las bibliotecas de Google API de forma segura
-            loadGapiScript();
-            loadGisScript();
-        });
     </script>
 </body>
 </html>
