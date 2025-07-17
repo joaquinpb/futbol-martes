@@ -1363,9 +1363,21 @@
             supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
         }
     
-        // CORRECCIÓN: Se agrega este listener al evento 'load' del documento.
-        // Esto asegura que todos los recursos, incluyendo scripts externos, se hayan cargado.
-        window.addEventListener('load', initializeApp);
+        /**
+         * Esta función actúa como un "cargador". Espera a que la librería de Supabase
+         * esté disponible en el objeto `window` antes de llamar a `initializeApp`.
+         */
+        function bootstrapApp() {
+            if (window.supabase) {
+                initializeApp();
+            } else {
+                // Si no está lista, espera 50ms y vuelve a intentar.
+                setTimeout(bootstrapApp, 50);
+            }
+        }
+    
+        // Inicia el proceso de carga de la aplicación.
+        bootstrapApp();
     
     </script>
 </body>
