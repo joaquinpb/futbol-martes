@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración Fútbol 5</title>
     <!-- Carga de Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Carga de Font Awesome para los iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Carga de la fuente Inter -->
@@ -758,19 +758,12 @@
         </div>
     </div>
 
-    <script>
-        // --- Configuración de Supabase ---
-        const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
-    
-        /**
-         * Esta es la función principal que contiene toda la lógica de la aplicación.
-         * Solo se ejecutará DESPUÉS de que la librería de Supabase se haya cargado por completo.
-         */
-        function initializeApp() {
-            console.log("Paso 2: La aplicación se está inicializando.");
-            
-            // Inicializa el cliente de Supabase (ahora es seguro hacerlo)
+        <script>
+        // Se ejecuta cuando el HTML está listo. Como el script de Supabase está antes, ya estará cargado.
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Configuración de Supabase ---
+            const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
             // --- Cache de Datos ---
@@ -841,12 +834,8 @@
     
             // --- Funciones de Autenticación con Supabase ---
             const handleLogin = async () => {
-                console.log("Paso 3: Se hizo clic en Login. Ejecutando handleLogin...");
-                
-                // Desactivar botón y mostrar feedback visual
                 loginButton.disabled = true;
                 loginButton.textContent = "Entrando...";
-    
                 const email = emailInput.value.trim();
                 const password = passwordInput.value.trim();
                 authStatus.textContent = '';
@@ -856,35 +845,20 @@
                     loginButton.textContent = "Entrar";
                     return;
                 }
-    
-                console.log("Paso 4: Intentando iniciar sesión en Supabase...");
                 const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                
                 if (error) {
-                    console.error('Error de login:', error.message);
                     authStatus.textContent = 'Email o contraseña incorrectos.';
-                } else {
-                    console.log("Paso 5: Login exitoso (sin errores). Esperando a onAuthStateChange...");
-                    // No es necesario hacer nada más aquí, onAuthStateChange se encargará
                 }
-    
-                // Reactivar el botón
                 loginButton.disabled = false;
                 loginButton.textContent = "Entrar";
             };
     
             const handleSignoutClick = async () => {
-                const { error } = await supabaseClient.auth.signOut();
-                if (error) {
-                    console.error('Error al cerrar sesión:', error);
-                    alert('Error al cerrar sesión.');
-                }
+                await supabaseClient.auth.signOut();
             };
             
             const handleAuthStateChange = async (event, session) => {
-                console.log(`Paso 6: onAuthStateChange se disparó. Evento: ${event}`);
                 if (session) {
-                    console.log("Paso 7: Hay una sesión activa. Mostrando contenido de admin...");
                     authContainer.classList.add('hidden');
                     adminContent.classList.remove('hidden');
                     updateUIForAuth();
@@ -896,7 +870,6 @@
                         document.getElementById(defaultTabButton.dataset.tab).classList.remove('hidden');
                     }
                 } else {
-                    console.log("Paso 7: No hay sesión. Mostrando formulario de login.");
                     authContainer.classList.remove('hidden');
                     adminContent.classList.add('hidden');
                     sideMenu.classList.add('hidden');
@@ -1383,24 +1356,7 @@
     
             // Escuchar cambios de autenticación para manejar la UI
             supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
-        }
-    
-        /**
-         * Esta función actúa como un "cargador". Espera a que la librería de Supabase
-         * esté disponible en el objeto `window` antes de llamar a `initializeApp`.
-         */
-        function bootstrapApp() {
-            console.log("Paso 1: Esperando a que Supabase se cargue...");
-            if (window.supabase) {
-                initializeApp();
-            } else {
-                // Si no está lista, espera 50ms y vuelve a intentar.
-                setTimeout(bootstrapApp, 50);
-            }
-        }
-    
-        // Inicia el proceso de carga de la aplicación.
-        bootstrapApp();
+        });
     
     </script>
 </body>
