@@ -302,236 +302,242 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- 2. Tu script principal -->
     <script>
-        const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        async function initializeApp() {
+            const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
+            const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let allPlayersData = [];
-        let allMatchesData = [];
+            let allPlayersData = [];
+            let allMatchesData = [];
 
-        const loadingContainer = document.getElementById('loading-container');
-        const contentWrapper = document.getElementById('content-wrapper');
-        const tabButtons = document.querySelectorAll('.tab-button');
-        
-        async function loadAllData() {
-            try {
-                const { data: players, error: playersError } = await supabaseClient
-                    .from('players')
-                    .select('*');
-                if (playersError) throw playersError;
-                allPlayersData = players;
+            const loadingContainer = document.getElementById('loading-container');
+            const contentWrapper = document.getElementById('content-wrapper');
+            const tabButtons = document.querySelectorAll('.tab-button');
+            
+            async function loadAllData() {
+                try {
+                    const { data: players, error: playersError } = await supabaseClient.from('players').select('*');
+                    if (playersError) throw playersError;
+                    allPlayersData = players;
 
-                const { data: matches, error: matchesError } = await supabaseClient
-                    .from('matches')
-                    .select('*');
-                if (matchesError) throw matchesError;
-                allMatchesData = matches;
-            } catch (error) {
-                loadingContainer.innerHTML = `<p>Error al cargar los datos: ${error.message}</p>`;
-                throw error; // Re-throw para que la cadena de promesas se detenga
+                    const { data: matches, error: matchesError } = await supabaseClient.from('matches').select('*');
+                    if (matchesError) throw matchesError;
+                    allMatchesData = matches;
+                } catch (error) {
+                    loadingContainer.innerHTML = `<p>Error al cargar los datos: ${error.message}</p>`;
+                    throw error;
+                }
             }
-        }
 
-        function calculateAllStats() {
-            const playerStats = {};
-            allPlayersData.forEach(player => {
-                playerStats[player.id] = {
-                    id: player.id,
-                    name: player.name,
-                    points: 0, pg: 0, pe: 0, pp: 0, pj: 0,
-                    chamigos: 0, tt: 0, ausentes: 0
-                };
-            });
+            function calculateAllStats() {
+                const playerStats = {};
+                allPlayersData.forEach(player => {
+                    playerStats[player.id] = {
+                        id: player.id, name: player.name,
+                        points: 0, pg: 0, pe: 0, pp: 0, pj: 0,
+                        chamigos: 0, tt: 0, ausentes: 0
+                    };
+                });
 
-            const teamStats = { clarosWins: 0, oscurosWins: 0, empates: 0, suspendidos: 0 };
-            const playedMatches = allMatchesData.filter(m => m.result && m.result !== 'Suspendido');
+                const teamStats = { clarosWins: 0, oscurosWins: 0, empates: 0, suspendidos: 0 };
+                const playedMatches = allMatchesData.filter(m => m.result && m.result !== 'Suspendido');
 
-            allMatchesData.forEach(match => {
-                if (match.result === 'Claros') teamStats.clarosWins++;
-                else if (match.result === 'Oscuros') teamStats.oscurosWins++;
-                else if (match.result === 'Empate') teamStats.empates++;
-                else if (match.result === 'Suspendido') teamStats.suspendidos++;
+                allMatchesData.forEach(match => {
+                    if (match.result === 'Claros') teamStats.clarosWins++;
+                    else if (match.result === 'Oscuros') teamStats.oscurosWins++;
+                    else if (match.result === 'Empate') teamStats.empates++;
+                    else if (match.result === 'Suspendido') teamStats.suspendidos++;
 
-                const matchPlayers = [...(match.team_white_players || []), ...(match.team_dark_players || [])];
-                matchPlayers.forEach(pId => {
-                    if (playerStats[pId] && match.result !== 'Suspendido') {
-                        playerStats[pId].pj++;
-                        if (match.result === 'Claros' && match.team_white_players.includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
-                        else if (match.result === 'Oscuros' && match.team_dark_players.includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
-                        else if (match.result === 'Empate') { playerStats[pId].points += 1; playerStats[pId].pe++; }
-                        else { playerStats[pId].pp++; }
+                    const matchPlayers = [...(match.team_white_players || []), ...(match.team_dark_players || [])];
+                    matchPlayers.forEach(pId => {
+                        if (playerStats[pId] && match.result !== 'Suspendido') {
+                            playerStats[pId].pj++;
+                            if (match.result === 'Claros' && match.team_white_players.includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
+                            else if (match.result === 'Oscuros' && match.team_dark_players.includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
+                            else if (match.result === 'Empate') { playerStats[pId].points += 1; playerStats[pId].pe++; }
+                            else { playerStats[pId].pp++; }
+                        }
+                    });
+
+                    if (match.chamigo_votes) {
+                        const votes = match.chamigo_votes;
+                        const maxVotes = Math.max(...Object.values(votes));
+                        if (maxVotes > 0) {
+                            const chamigos = Object.keys(votes).filter(id => votes[id] === maxVotes);
+                            chamigos.forEach(id => {
+                                if (playerStats[id]) playerStats[id].chamigos++;
+                            });
+                        }
+                    }
+                    
+                    if (match.tt_attendees) {
+                        match.tt_attendees.forEach(id => {
+                            if (playerStats[id]) playerStats[id].tt++;
+                        });
                     }
                 });
 
-                if (match.chamigo_votes) {
-                    const votes = match.chamigo_votes;
-                    const maxVotes = Math.max(...Object.values(votes));
-                    const chamigos = Object.keys(votes).filter(id => votes[id] === maxVotes);
-                    chamigos.forEach(id => {
-                        if (playerStats[id]) playerStats[id].chamigos++;
-                    });
-                }
-                
-                if (match.tt_attendees) {
-                    match.tt_attendees.forEach(id => {
-                        if (playerStats[id]) playerStats[id].tt++;
-                    });
-                }
-            });
+                Object.values(playerStats).forEach(player => {
+                    player.efectividad = player.pj > 0 ? ((player.points / (player.pj * 3)) * 100).toFixed(2) : "0.00";
+                    player.ausentes = playedMatches.length - player.pj;
+                });
 
-            Object.values(playerStats).forEach(player => {
-                player.efectividad = player.pj > 0 ? ((player.points / (player.pj * 3)) * 100).toFixed(2) : "0.00";
-                player.ausentes = playedMatches.length - player.pj;
-            });
-
-            return { players: Object.values(playerStats), teamStats };
-        }
-
-        function renderTable(tableId, data, columns) {
-            const table = document.getElementById(tableId);
-            const tableBody = table.querySelector('tbody');
-            const loadingMessage = document.getElementById(`${tableId.replace('-table', '')}-loading-message`);
-            
-            tableBody.innerHTML = '';
-            if (data.length === 0) {
-                loadingMessage.textContent = 'No hay datos para mostrar.';
-                loadingMessage.classList.remove('hidden');
-                table.classList.add('hidden');
-                return;
+                return { players: Object.values(playerStats), teamStats };
             }
 
-            data.forEach((item, index) => {
-                const row = document.createElement('tr');
-                let rowHTML = `<td class="py-3 px-3 text-center">${index + 1}</td>`;
-                columns.forEach(col => {
-                    let value = item[col.key];
-                    if (col.key === 'efectividad') value += '%';
-                    rowHTML += `<td class="py-3 px-3 ${col.align === 'left' ? 'text-left-player' : 'text-center'}">${value}</td>`;
+            function renderTable(tableId, data, columns) {
+                const table = document.getElementById(tableId);
+                const tableBody = table.querySelector('tbody');
+                const loadingMessage = document.getElementById(`${tableId.replace('-table', '')}-loading-message`);
+                
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    loadingMessage.textContent = 'No hay datos para mostrar.';
+                    loadingMessage.classList.remove('hidden');
+                    table.classList.add('hidden');
+                    return;
+                }
+
+                data.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    let rowHTML = `<td class="py-3 px-3 text-center">${index + 1}</td>`;
+                    columns.forEach(col => {
+                        let value = item[col.key];
+                        if (col.key === 'efectividad') value += '%';
+                        rowHTML += `<td class="py-3 px-3 ${col.align === 'left' ? 'text-left-player' : 'text-center'}">${value}</td>`;
+                    });
+                    row.innerHTML = rowHTML;
+                    tableBody.appendChild(row);
                 });
-                row.innerHTML = rowHTML;
-                tableBody.appendChild(row);
+
+                loadingMessage.classList.add('hidden');
+                table.classList.remove('hidden');
+            }
+
+            function renderAllTables() {
+                const { players, teamStats } = calculateAllStats();
+                const activePlayers = players.filter(p => p.pj > 0);
+
+                renderTable('leaderboard-table', [...activePlayers].sort((a, b) => b.points - a.points), [
+                    { key: 'name', align: 'left' }, { key: 'points', align: 'center' }, { key: 'efectividad', align: 'center' }
+                ]);
+                renderTable('chamigo-table', [...activePlayers].sort((a, b) => b.chamigos - a.chamigos), [
+                    { key: 'name', align: 'left' }, { key: 'chamigos', align: 'center' }
+                ]);
+                renderTable('tt-table', [...activePlayers].sort((a, b) => b.tt - a.tt), [
+                    { key: 'name', align: 'left' }, { key: 'tt', align: 'center' }
+                ]);
+                renderTable('presentismo-table', [...activePlayers].sort((a, b) => b.pj - a.pj), [
+                    { key: 'name', align: 'left' }, { key: 'pj', align: 'center' }
+                ]);
+                renderTable('ausentismo-table', [...activePlayers].sort((a, b) => b.ausentes - a.ausentes), [
+                    { key: 'name', align: 'left' }, { key: 'ausentes', align: 'center' }
+                ]);
+                renderTable('estadisticas-table', [...activePlayers].sort((a, b) => b.points - a.points), [
+                    { key: 'name', align: 'left' }, { key: 'points', align: 'center' }, { key: 'pg', align: 'center' },
+                    { key: 'pe', align: 'center' }, { key: 'pp', align: 'center' }, { key: 'pj', align: 'center' },
+                    { key: 'efectividad', align: 'center' }, { key: 'chamigos', align: 'center' }, { key: 'tt', align: 'center' },
+                    { key: 'ausentes', align: 'center' }
+                ]);
+                
+                const equiposDisplay = document.getElementById('equipos-stats-display');
+                document.getElementById('equipos-loading-message').classList.add('hidden');
+                equiposDisplay.innerHTML = `
+                    <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
+                        <span class="text-3xl font-bold">${teamStats.oscurosWins}</span><span class="text-sm uppercase">Oscuros Ganados</span>
+                    </div>
+                    <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
+                        <span class="text-3xl font-bold">${teamStats.clarosWins}</span><span class="text-sm uppercase">Claros Ganados</span>
+                    </div>
+                    <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
+                        <span class="text-3xl font-bold">${teamStats.empates}</span><span class="text-sm uppercase">Empates</span>
+                    </div>
+                    <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
+                        <span class="text-3xl font-bold">${teamStats.suspendidos}</span><span class="text-sm uppercase">Suspendidos</span>
+                    </div>
+                    <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
+                        <span class="text-3xl font-bold">${teamStats.clarosWins + teamStats.oscurosWins + teamStats.empates}</span><span class="text-sm uppercase">Partidos Jugados</span>
+                    </div>
+                `;
+                equiposDisplay.classList.remove('hidden');
+            }
+
+            function activateTab(tabId) {
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                
+                const targetButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
+                if (targetButton) targetButton.classList.add('active');
+                
+                const targetContent = document.getElementById(tabId);
+                if (targetContent) targetContent.classList.remove('hidden');
+            }
+
+            // --- Lógica del menú lateral y modo oscuro ---
+            const hamburgerButton = document.getElementById('hamburger-button');
+            const sideMenu = document.getElementById('side-menu');
+            const overlay = document.getElementById('overlay');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const darkModeIcon = document.getElementById('dark-mode-icon');
+
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    darkModeIcon.classList.remove('fa-moon');
+                    darkModeIcon.classList.add('fa-sun');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    darkModeIcon.classList.remove('fa-sun');
+                    darkModeIcon.classList.add('fa-moon');
+                }
+                localStorage.setItem('theme', theme);
+            }
+
+            darkModeToggle.addEventListener('click', () => {
+                const currentTheme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+                applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
             });
 
-            loadingMessage.classList.add('hidden');
-            table.classList.remove('hidden');
-        }
+            function toggleSideMenu() {
+                sideMenu.classList.toggle('open');
+                overlay.classList.toggle('open');
+                document.body.classList.toggle('overflow-hidden');
+            }
 
-        function renderAllTables() {
-            const { players, teamStats } = calculateAllStats();
-            const activePlayers = players.filter(p => p.pj > 0);
+            hamburgerButton.addEventListener('click', toggleSideMenu);
+            overlay.addEventListener('click', toggleSideMenu);
 
-            renderTable('leaderboard-table', [...activePlayers].sort((a, b) => b.points - a.points), [
-                { key: 'name', align: 'left' }, { key: 'points', align: 'center' }, { key: 'efectividad', align: 'center' }
-            ]);
-            renderTable('chamigo-table', [...activePlayers].sort((a, b) => b.chamigos - a.chamigos), [
-                { key: 'name', align: 'left' }, { key: 'chamigos', align: 'center' }
-            ]);
-            renderTable('tt-table', [...activePlayers].sort((a, b) => b.tt - a.tt), [
-                { key: 'name', align: 'left' }, { key: 'tt', align: 'center' }
-            ]);
-            renderTable('presentismo-table', [...activePlayers].sort((a, b) => b.pj - a.pj), [
-                { key: 'name', align: 'left' }, { key: 'pj', align: 'center' }
-            ]);
-            renderTable('ausentismo-table', [...activePlayers].sort((a, b) => b.ausentes - a.ausentes), [
-                { key: 'name', align: 'left' }, { key: 'ausentes', align: 'center' }
-            ]);
-            renderTable('estadisticas-table', [...activePlayers].sort((a, b) => b.points - a.points), [
-                { key: 'name', align: 'left' }, { key: 'points', align: 'center' }, { key: 'pg', align: 'center' },
-                { key: 'pe', align: 'center' }, { key: 'pp', align: 'center' }, { key: 'pj', align: 'center' },
-                { key: 'efectividad', align: 'center' }, { key: 'chamigos', align: 'center' }, { key: 'tt', align: 'center' },
-                { key: 'ausentes', align: 'center' }
-            ]);
-            
-            const equiposDisplay = document.getElementById('equipos-stats-display');
-            document.getElementById('equipos-loading-message').classList.add('hidden');
-            equiposDisplay.innerHTML = `
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.oscurosWins}</span><span class="text-sm uppercase">Oscuros Ganados</span>
-                </div>
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.clarosWins}</span><span class="text-sm uppercase">Claros Ganados</span>
-                </div>
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.empates}</span><span class="text-sm uppercase">Empates</span>
-                </div>
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.suspendidos}</span><span class="text-sm uppercase">Suspendidos</span>
-                </div>
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.clarosWins + teamStats.oscurosWins + teamStats.empates}</span><span class="text-sm uppercase">Partidos Jugados</span>
-                </div>
-            `;
-            equiposDisplay.classList.remove('hidden');
-        }
+            // Aplicar tema guardado al cargar
+            const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(savedTheme);
 
-        function activateTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            
-            const targetButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
-            if (targetButton) targetButton.classList.add('active');
-            
-            const targetContent = document.getElementById(tabId);
-            if (targetContent) targetContent.classList.remove('hidden');
-        }
-
-        // --- Arranque de la aplicación ---
-        async function main() {
-            try {
-                await loadAllData();
+            // --- Arranque de la aplicación ---
+            loadAllData().then(() => {
+                loadingContainer.classList.add('hidden');
+                contentWrapper.classList.remove('hidden');
                 renderAllTables();
                 activateTab('leaderboard-content'); // Activar la primera pestaña por defecto
-            } catch (error) {
+                
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        activateTab(e.currentTarget.dataset.tab);
+                    });
+                });
+            }).catch(error => {
                 console.error("No se pudo inicializar la aplicación:", error);
-            }
-        }
-
-        main();
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                activateTab(e.currentTarget.dataset.tab);
             });
-        });
+        }
 
-        // Lógica del menú lateral y modo oscuro
-        const hamburgerButton = document.getElementById('hamburger-button');
-        const sideMenu = document.getElementById('side-menu');
-        const overlay = document.getElementById('overlay');
-        const darkModeToggle = document.getElementById('dark-mode-toggle');
-        const darkModeIcon = document.getElementById('dark-mode-icon');
-        const htmlElement = document.documentElement;
-
-        function applyTheme(theme) {
-            if (theme === 'dark') {
-                document.body.classList.add('dark-mode');
-                darkModeIcon.classList.remove('fa-moon');
-                darkModeIcon.classList.add('fa-sun');
+        // CORRECCIÓN: Se usa un bootstrapper para asegurar que Supabase esté listo.
+        function bootstrapApp() {
+            if (window.supabase) {
+                initializeApp();
             } else {
-                document.body.classList.remove('dark-mode');
-                darkModeIcon.classList.remove('fa-sun');
-                darkModeIcon.classList.add('fa-moon');
+                setTimeout(bootstrapApp, 50);
             }
-            localStorage.setItem('theme', theme);
         }
 
-        darkModeToggle.addEventListener('click', () => {
-            const currentTheme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-            applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
-        });
-
-        function toggleSideMenu() {
-            sideMenu.classList.toggle('open');
-            overlay.classList.toggle('open');
-            document.body.classList.toggle('overflow-hidden');
-        }
-
-        hamburgerButton.addEventListener('click', toggleSideMenu);
-        overlay.addEventListener('click', toggleSideMenu);
-
-        // Aplicar tema guardado al cargar
-        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        applyTheme(savedTheme);
+        bootstrapApp();
     </script>
 </body>
 </html>
