@@ -765,7 +765,8 @@
         const SUPABASE_ANON_KEY = 'TU_SUPABASE_ANON_KEY'; 
     
         // Inicializa el cliente de Supabase
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // CORRECCIÓN: Se cambió el nombre de la constante a 'supabaseClient' para evitar conflictos.
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
         // --- Cache de Datos (se llenará desde Supabase en el próximo paso) ---
         let allPlayersData = []; 
@@ -868,7 +869,8 @@
                 return;
             }
     
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            // CORRECCIÓN: Usar la constante 'supabaseClient'
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     
             if (error) {
                 console.error('Error de login:', error.message);
@@ -881,7 +883,8 @@
          * Cierra la sesión del usuario.
          */
         const handleSignoutClick = async () => {
-            const { error } = await supabase.auth.signOut();
+            // CORRECCIÓN: Usar la constante 'supabaseClient'
+            const { error } = await supabaseClient.auth.signOut();
             if (error) {
                 console.error('Error al cerrar sesión:', error);
                 alert('Error al cerrar sesión.');
@@ -987,8 +990,6 @@
         }
         
         // --- El resto de tus funciones (UI, Drag & Drop, etc.) se mantienen igual ---
-        // --- COPIA Y PEGA EL RESTO DE TUS FUNCIONES DESDE AQUÍ ---
-        // (Desde 'setInitialFilters' hasta el final de tu script original)
     
         function setInitialFilters() {
             const today = new Date();
@@ -1059,47 +1060,16 @@
             const statusFilter = playerListStatusFilter.value;
             const roleFilter = playerListRoleFilter.value;
     
-            const filteredPlayers = allPlayersData.filter(player => {
-                const [id, nombre = '', estado = '', rol = 'Titular'] = player;
-                const matchesName = nameFilter === '' || nombre.toLowerCase().includes(nameFilter);
-                const matchesStatus = statusFilter === 'Todos' || estado === statusFilter;
-                const matchesRole = roleFilter === 'Todos' || rol === roleFilter;
-                return matchesName && matchesStatus && matchesRole;
-            });
+            // Esta función se va a modificar mucho en el próximo paso.
+            // Por ahora, solo mostramos que no hay datos.
+            const filteredPlayers = []; 
     
             if (filteredPlayers.length === 0) {
                 playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.';
                 return;
             }
     
-            filteredPlayers.forEach(([id, nombre, estado, rol = 'Titular']) => {
-                const row = document.createElement('tr');
-                row.className = 'border-b hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700';
-                row.innerHTML = `
-                    <td class="py-3 px-6 text-left">${id}</td>
-                    <td class="py-3 px-6 text-left">${nombre}</td>
-                    <td class="py-3 px-6 text-left">${estado}</td>
-                    <td class="py-3 px-6 text-left">${rol}</td>
-                    <td class="py-3 px-6 text-center">
-                        <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs"
-                            data-id="${id}" data-name="${nombre}" data-status="${estado}" data-role="${rol}">Editar</button>
-                    </td>
-                `;
-                playersListAdminTableBody.appendChild(row);
-            });
-    
-            document.querySelectorAll('.edit-player-button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const { id, name, status, role } = e.target.dataset;
-                    playerIdInput.value = id;
-                    playerNameInput.value = name;
-                    playerStatusSelect.value = status;
-                    playerRoleSelect.value = role;
-                });
-            });
-            
-            playersLoadingMessageAdmin.classList.add('hidden');
-            table.classList.remove('hidden');
+            // ... (el resto de la lógica de renderizado queda para después)
         }
     
         savePlayerButton.addEventListener('click', async () => {
@@ -1269,8 +1239,9 @@
             return `${dd}/${mm}/${yyyy}`;
         }
         
-        function handleResize() {
-            const session = supabase.auth.getSession();
+        // CORRECCIÓN: La función ahora es async y usa 'await' para obtener la sesión.
+        async function handleResize() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) return;
     
             if (window.innerWidth >= 768) {
@@ -1292,7 +1263,9 @@
         });
     
         function populateResultsMatchYearSelect() {
-            const years = [...new Set(allMatchesData.map(m => parseDate(m[1]).getFullYear()))].sort((a,b) => b-a);
+            const years = allMatchesData.length > 0 
+                ? [...new Set(allMatchesData.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a)
+                : [];
             resultsMatchYearSelect.innerHTML = '';
             years.forEach(year => {
                 const option = document.createElement('option');
@@ -1308,11 +1281,11 @@
             resultsMatchListDiv.innerHTML = '';
     
             const filteredMatches = allMatchesData.filter(match => {
-                const matchDate = parseDate(match[1]);
+                const matchDate = new Date(match.match_date);
                 const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
                 const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
                 return yearMatch && monthMatch;
-            }).sort((a,b) => parseDate(b[1]) - parseDate(a[1]));
+            }).sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
     
             if (filteredMatches.length === 0) {
                 resultsMatchListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
@@ -1320,18 +1293,17 @@
             }
     
             filteredMatches.forEach(match => {
-                const [id, fecha, clarosIDs, oscurosIDs, resultado] = match;
+                const fecha = formatDateToDDMMYYYY(new Date(match.match_date));
                 const matchItem = document.createElement('div');
-                matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${resultado ? 'has-result' : 'no-result'}`;
-                matchItem.dataset.matchId = id;
-                matchItem.innerHTML = `<p class="font-semibold">${fecha}</p><p class="text-xs text-gray-500">Resultado: ${resultado || 'Pendiente'}</p>`;
+                matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${match.result ? 'has-result' : 'no-result'}`;
+                matchItem.dataset.matchId = match.id;
+                matchItem.innerHTML = `<p class="font-semibold">${fecha}</p><p class="text-xs text-gray-500">Resultado: ${match.result || 'Pendiente'}</p>`;
                 resultsMatchListDiv.appendChild(matchItem);
                 matchItem.addEventListener('click', () => {
                     document.querySelectorAll('#results-match-list .match-item').forEach(item => item.classList.remove('selected', 'border-indigo-500'));
                     matchItem.classList.add('selected', 'border-indigo-500');
-                    const [day, month, year] = fecha.split('/');
-                    matchDateInput.value = `${year}-${month}-${day}`;
-                    matchResultSelect.value = resultado || '';
+                    matchDateInput.value = match.match_date;
+                    matchResultSelect.value = match.result || '';
                 });
             });
         }
@@ -1347,7 +1319,9 @@
         });
         
         function populateChamigoTtMatchYearSelect() {
-            const years = [...new Set(allMatchesData.map(m => parseDate(m[1]).getFullYear()))].sort((a,b) => b-a);
+             const years = allMatchesData.length > 0 
+                ? [...new Set(allMatchesData.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a)
+                : [];
             [chamigoMatchYearSelect, ttMatchYearSelect].forEach(select => {
                 select.innerHTML = '';
                 years.forEach(year => {
@@ -1370,11 +1344,11 @@
             targetListDiv.innerHTML = '';
     
             const filteredMatches = allMatchesData.filter(match => {
-                const matchDate = parseDate(match[1]);
+                const matchDate = new Date(match.match_date);
                 const yearMatch = selectedYear ? matchDate.getFullYear() == selectedYear : true;
                 const monthMatch = selectedMonth !== 'all' ? matchDate.getMonth() == selectedMonth : true;
                 return yearMatch && monthMatch;
-            }).sort((a,b) => parseDate(b[1]) - parseDate(a[1]));
+            }).sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
     
             if (filteredMatches.length === 0) {
                 targetListDiv.innerHTML = '<p class="text-gray-500">No hay partidos para los filtros seleccionados.</p>';
@@ -1382,40 +1356,40 @@
             }
     
             filteredMatches.forEach(match => {
-                const [id, fecha, , , , chamigoVotos, ttAttendees] = match;
+                const fecha = formatDateToDDMMYYYY(new Date(match.match_date));
                 const matchItem = document.createElement('div');
                 let isComplete = false;
-                if (tabName === 'chamigo') isComplete = chamigoVotos && chamigoVotos.trim() !== '';
-                if (tabName === 'tt') isComplete = ttAttendees && ttAttendees.trim() !== '';
+                if (tabName === 'chamigo') isComplete = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
+                if (tabName === 'tt') isComplete = match.tt_attendees && match.tt_attendees.length > 0;
                 matchItem.className = `match-item p-2 border rounded-md cursor-pointer ${isComplete ? 'has-result' : 'no-result'}`;
-                matchItem.dataset.matchId = id;
+                matchItem.dataset.matchId = match.id;
                 matchItem.innerHTML = `<p class="font-semibold">${fecha}</p>`;
                 targetListDiv.appendChild(matchItem);
                 matchItem.addEventListener('click', () => {
                     document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected', 'border-indigo-500'));
                     matchItem.classList.add('selected', 'border-indigo-500');
-                    onMatchClickCallback(id);
+                    onMatchClickCallback(match.id);
                 });
             });
         }
         
         function handleChamigoMatchSelection(selectedMatchId) {
             chamigoVotingPlayersDiv.innerHTML = '';
-            const match = allMatchesData.find(m => m[0] === selectedMatchId);
+            const match = allMatchesData.find(m => m.id === selectedMatchId);
             if (!match) return;
     
-            const playerIDs = [...new Set([...(match[2]||'').split(','), ...(match[3]||'').split(',')])].filter(Boolean);
-            const existingVotes = match[5] ? JSON.parse(match[5]) : [];
+            const playerIDs = [...new Set([...(match.team_white_players||[]), ...(match.team_dark_players||[])])].filter(Boolean);
+            const existingVotes = match.chamigo_votes || {};
     
             playerIDs.forEach(id => {
-                const player = allPlayersData.find(p => p[0] === id);
+                const player = allPlayersData.find(p => p.id === id);
                 if (!player) return;
-                const vote = existingVotes.find(v => v.id === id);
+                const voteCount = existingVotes[id] || 0;
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'flex items-center space-x-2';
                 playerDiv.innerHTML = `
-                    <label class="block text-sm font-medium w-24 truncate" title="${player[1]}">${player[1]}:</label>
-                    <input type="number" data-id="${id}" class="chamigo-vote-input mt-1 block w-20 rounded-md shadow-sm sm:text-sm p-2" value="${vote ? vote.votos : 0}" min="0">
+                    <label class="block text-sm font-medium w-24 truncate" title="${player.name}">${player.name}:</label>
+                    <input type="number" data-id="${id}" class="chamigo-vote-input mt-1 block w-20 rounded-md shadow-sm sm:text-sm p-2" value="${voteCount}" min="0">
                 `;
                 chamigoVotingPlayersDiv.appendChild(playerDiv);
             });
@@ -1428,18 +1402,18 @@
         
         function handleTtMatchSelection(selectedMatchId) {
             ttAttendancePlayersDiv.innerHTML = '';
-            const match = allMatchesData.find(m => m[0] === selectedMatchId);
+            const match = allMatchesData.find(m => m.id === selectedMatchId);
             if (!match) return;
             
-            const activePlayers = allPlayersData.filter(p => p[2] === 'Activo');
-            const existingAttendees = (match[6] || '').split(',');
+            const activePlayers = allPlayersData.filter(p => p.status === 'Activo');
+            const existingAttendees = match.tt_attendees || [];
     
             activePlayers.forEach(player => {
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'flex items-center space-x-2';
                 playerDiv.innerHTML = `
-                    <input type="checkbox" id="tt-player-${player[0]}" data-id="${player[0]}" class="tt-checkbox h-4 w-4 rounded" ${existingAttendees.includes(player[0]) ? 'checked' : ''}>
-                    <label for="tt-player-${player[0]}" class="text-sm font-medium">${player[1]}</label>
+                    <input type="checkbox" id="tt-player-${player.id}" data-id="${player.id}" class="tt-checkbox h-4 w-4 rounded" ${existingAttendees.includes(player.id) ? 'checked' : ''}>
+                    <label for="tt-player-${player.id}" class="text-sm font-medium">${player.name}</label>
                 `;
                 ttAttendancePlayersDiv.appendChild(playerDiv);
             });
@@ -1484,7 +1458,8 @@
             window.addEventListener('resize', handleResize);
     
             // Escuchar cambios de autenticación (login y logout) para manejar la UI
-            supabase.auth.onAuthStateChange(handleAuthStateChange);
+            // CORRECCIÓN: Usar la constante 'supabaseClient'
+            supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
         });
     
     </script>
