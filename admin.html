@@ -768,6 +768,7 @@
          * Solo se ejecutará DESPUÉS de que la librería de Supabase se haya cargado por completo.
          */
         function initializeApp() {
+            console.log("Paso 2: La aplicación se está inicializando.");
             
             // Inicializa el cliente de Supabase (ahora es seguro hacerlo)
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -840,18 +841,36 @@
     
             // --- Funciones de Autenticación con Supabase ---
             const handleLogin = async () => {
+                console.log("Paso 3: Se hizo clic en Login. Ejecutando handleLogin...");
+                
+                // Desactivar botón y mostrar feedback visual
+                loginButton.disabled = true;
+                loginButton.textContent = "Entrando...";
+    
                 const email = emailInput.value.trim();
                 const password = passwordInput.value.trim();
                 authStatus.textContent = '';
                 if (!email || !password) {
                     authStatus.textContent = 'Por favor, ingresa email y contraseña.';
+                    loginButton.disabled = false;
+                    loginButton.textContent = "Entrar";
                     return;
                 }
+    
+                console.log("Paso 4: Intentando iniciar sesión en Supabase...");
                 const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                
                 if (error) {
                     console.error('Error de login:', error.message);
                     authStatus.textContent = 'Email o contraseña incorrectos.';
+                } else {
+                    console.log("Paso 5: Login exitoso (sin errores). Esperando a onAuthStateChange...");
+                    // No es necesario hacer nada más aquí, onAuthStateChange se encargará
                 }
+    
+                // Reactivar el botón
+                loginButton.disabled = false;
+                loginButton.textContent = "Entrar";
             };
     
             const handleSignoutClick = async () => {
@@ -863,7 +882,9 @@
             };
             
             const handleAuthStateChange = async (event, session) => {
+                console.log(`Paso 6: onAuthStateChange se disparó. Evento: ${event}`);
                 if (session) {
+                    console.log("Paso 7: Hay una sesión activa. Mostrando contenido de admin...");
                     authContainer.classList.add('hidden');
                     adminContent.classList.remove('hidden');
                     updateUIForAuth();
@@ -875,6 +896,7 @@
                         document.getElementById(defaultTabButton.dataset.tab).classList.remove('hidden');
                     }
                 } else {
+                    console.log("Paso 7: No hay sesión. Mostrando formulario de login.");
                     authContainer.classList.remove('hidden');
                     adminContent.classList.add('hidden');
                     sideMenu.classList.add('hidden');
@@ -1368,6 +1390,7 @@
          * esté disponible en el objeto `window` antes de llamar a `initializeApp`.
          */
         function bootstrapApp() {
+            console.log("Paso 1: Esperando a que Supabase se cargue...");
             if (window.supabase) {
                 initializeApp();
             } else {
