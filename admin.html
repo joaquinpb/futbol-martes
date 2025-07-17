@@ -21,16 +21,15 @@
             font-family: 'Inter', sans-serif;
             transition: background-color 0.3s, color 0.3s;
         }
-        #app-container, #login-screen-wrapper {
+        #app-container, #auth-container {
             width: 100%;
-            height: 100%;
         }
 
         /* --- ESTILOS BASE (MODO CLARO) --- */
         body {
             background-color: #f0f2f5;
         }
-        .main-admin-content-container, #login-screen {
+        .main-admin-content-container {
             background-color: #ffffff;
             color: #1f2937;
         }
@@ -70,7 +69,7 @@
 
         /* --- ESTILOS MODO OSCURO --- */
         html.dark body { background-color: #111827; }
-        html.dark .main-admin-content-container, html.dark #login-screen { background-color: #1f2937; color: #d1d5db; }
+        html.dark .main-admin-content-container { background-color: #1f2937; color: #d1d5db; }
         html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 { color: #f9fafb; }
         html.dark .text-indigo-800 { color: #a5b4fc; }
         html.dark .border-indigo-500 { border-color: #818cf8; }
@@ -125,29 +124,17 @@
             #side-menu { position: relative; transform: translateX(0); flex-shrink: 0; height: 100vh; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
             #overlay, #hamburger-button { display: none !important; }
             .main-admin-content-container { flex-grow: 1; margin: 2rem; padding: 2rem; width: auto; }
-            #login-screen { max-width: 400px; }
         }
     </style>
 </head>
 <body>
-    <!-- Pantalla de Login (inicialmente visible) -->
-    <div id="login-screen-wrapper" class="w-full h-full flex items-center justify-center">
-        <div id="login-screen" class="p-8 rounded-xl shadow-lg w-full max-w-md mx-auto">
-            <h1 class="text-3xl font-extrabold text-center text-indigo-800 mb-8">Acceso Administrador</h1>
-            <form id="login-form">
-                <div class="mb-4">
-                    <label for="username" class="block text-sm font-medium mb-1">Usuario</label>
-                    <input type="text" id="username" name="username" autocomplete="username" required class="w-full p-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <div class="mb-6">
-                    <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
-                    <input type="password" id="password" name="password" autocomplete="current-password" required class="w-full p-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <button type="submit" class="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
-                    Ingresar
-                </button>
-                <p id="login-error" class="text-red-500 text-center mt-4 hidden"></p>
-            </form>
+    <!-- Contenedor de Autenticación (inicialmente visible) -->
+    <div id="auth-container" class="w-full h-full flex items-center justify-center">
+        <div class="text-center">
+            <button id="authorize_button" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
+                Autorizar Google Sheets
+            </button>
+            <p id="auth-status" class="text-center text-red-500 mt-4 hidden">Por favor, autoriza la aplicación para acceder a los datos.</p>
         </div>
     </div>
 
@@ -224,20 +211,23 @@
 
 
     <script>
-        const API_KEY = 'AIzaSyDNLwReGrX5FKBwjjKsMS9cz-hZNMIvAlM';
+        const CLIENT_ID = '490772160476-4cmd0dse3b74o65g1n9s1q5itlbjavbb.apps.googleusercontent.com';
         const SPREADSHEET_ID = '1bpNKl-UVHzbqsow4zOHE7-y5Cunm2xtpgyIodEQBi2E';
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
+        let tokenClient;
         let gapiInited = false;
+        let gisInited = false;
         let allPlayersData = [];
         let allMatchesData = [];
-        let allAdminsData = [];
+        let sheetIds = {};
         
         // --- Elementos del DOM ---
-        const loginScreenWrapper = document.getElementById('login-screen-wrapper');
+        const authContainer = document.getElementById('auth-container');
         const appContainer = document.getElementById('app-container');
-        const loginForm = document.getElementById('login-form');
-        const loginError = document.getElementById('login-error');
+        const authorizeButton = document.getElementById('authorize_button');
         const signoutButton = document.getElementById('signout_button');
+        const authStatus = document.getElementById('auth-status');
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         const darkModeIcon = document.getElementById('dark-mode-icon');
         const htmlElement = document.documentElement;
@@ -248,28 +238,89 @@
         
         // --- Lógica de Autenticación y Sesión ---
         
-        function checkSession() {
-            const loggedInUser = sessionStorage.getItem('adminUser');
-            if (loggedInUser) {
-                showApp();
-            } else {
-                showLogin();
+        function loadGapiScript() {
+            const script = document.createElement('script');
+            script.src = 'https://apis.google.com/js/api.js';
+            script.async = true;
+            script.defer = true;
+            script.onload = () => gapi.load('client', initializeGapiClient);
+            document.head.appendChild(script);
+        }
+
+        function loadGisScript() {
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.defer = true;
+            script.onload = gisLoaded;
+            document.head.appendChild(script);
+        }
+
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                });
+                gapiInited = true;
+                maybeEnableAuthUI();
+            } catch (err) {
+                console.error("Error al inicializar gapi.client:", err);
+                authStatus.textContent = `Error al inicializar la API de Google. Revisa la consola.`;
+                authStatus.classList.remove('hidden');
             }
         }
 
-        function showLogin() {
-            loginScreenWrapper.style.display = 'flex';
-            appContainer.style.display = 'none';
+        function gisLoaded() {
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: '', // Se define en handleAuthClick
+                });
+                gisInited = true;
+                maybeEnableAuthUI();
+            } catch (err) {
+                 console.error("Error al inicializar GIS:", err);
+                 authStatus.textContent = 'Error al cargar la autenticación de Google. Intenta recargar.';
+                 authStatus.classList.remove('hidden');
+            }
         }
 
-        async function showApp() {
-            loginScreenWrapper.style.display = 'none';
+        function maybeEnableAuthUI() {
+            if (gapiInited && gisInited) {
+                authContainer.classList.remove('hidden');
+                if (gapi.client.getToken() !== null) {
+                    handleAuthSuccess();
+                }
+            }
+        }
+
+        function handleAuthClick() {
+            if (!tokenClient) return;
+            tokenClient.callback = async (resp) => {
+                if (resp.error) {
+                    console.error('Error de autenticación:', resp);
+                    authStatus.textContent = `Error de autenticación: ${resp.error_description || resp.error}`;
+                    authStatus.classList.remove('hidden');
+                    return;
+                }
+                await handleAuthSuccess();
+            };
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } else {
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+        }
+
+        async function handleAuthSuccess() {
+            authContainer.style.display = 'none';
             appContainer.style.display = 'flex';
             
-            if (allPlayersData.length === 0) {
-                await loadAllDataAndDisplayAllContent();
-            }
+            await loadAllDataAndDisplayAllContent();
             setupTabNavigation();
+            updateUIForAuth();
+            
             if (!document.querySelector('.tab-button.active')) {
                 const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
                 if (defaultTabButton) {
@@ -277,45 +328,27 @@
                 }
             }
         }
-
-
-        async function handleLogin(event) {
-            event.preventDefault();
-            const username = loginForm.username.value;
-            const password = loginForm.password.value;
-            loginError.classList.add('hidden');
-
-            try {
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Admins!A:D',
-                });
-                allAdminsData = response.result.values ? response.result.values.slice(1) : [];
-                
-                const admin = allAdminsData.find(row => row[1] === username && row[2] === password);
-
-                if (admin) {
-                    const adminUser = {
-                        id: admin[0],
-                        username: admin[1],
-                        role: admin[3]
-                    };
-                    sessionStorage.setItem('adminUser', JSON.stringify(adminUser));
-                    showApp();
-                } else {
-                    loginError.textContent = 'Usuario o contraseña incorrectos.';
-                    loginError.classList.remove('hidden');
-                }
-            } catch (err) {
-                console.error('Error durante el inicio de sesión:', err);
-                loginError.textContent = 'Error al conectar. Verifica la API Key y que la hoja sea pública.';
-                loginError.classList.remove('hidden');
+        
+        function updateUIForAuth() {
+            if (window.innerWidth >= 768) { // Desktop
+                sideMenu.classList.remove('hidden');
+                sideMenu.classList.add('open');
+                hamburgerButton.classList.add('hidden');
+            } else { // Mobile
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.remove('hidden');
             }
         }
 
-        function handleLogout() {
-            sessionStorage.removeItem('adminUser');
-            window.location.reload();
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token, () => {
+                    gapi.client.setToken('');
+                    window.location.reload();
+                });
+            }
         }
 
         // --- Funciones de Modo Oscuro ---
@@ -352,6 +385,16 @@
                 });
                 allMatchesData = matchesResponse.result.values ? matchesResponse.result.values.slice(1) : [];
 
+                const metadataResponse = await gapi.client.sheets.spreadsheets.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    fields: 'sheets.properties',
+                });
+                if (metadataResponse.result && metadataResponse.result.sheets) {
+                    metadataResponse.result.sheets.forEach(sheet => {
+                        sheetIds[sheet.properties.title] = sheet.properties.sheetId;
+                    });
+                }
+
             } catch (err) {
                 console.error('Error al cargar datos:', err);
                 alert(`Error al cargar datos: ${err.result?.error?.message || err.message}`);
@@ -360,26 +403,6 @@
 
         async function loadAllDataAndDisplayAllContent() {
             await loadAllData();
-        }
-        
-        // --- Inicialización de Google API ---
-        function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
-        }
-
-        async function initializeGapiClient() {
-            try {
-                await gapi.client.init({
-                    apiKey: API_KEY,
-                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                });
-                gapiInited = true;
-                checkSession(); 
-            } catch (err) {
-                console.error("Error al inicializar gapi.client:", err);
-                loginError.textContent = 'No se pudo conectar con Google Sheets. Verifica la API Key.';
-                loginError.classList.remove('hidden');
-            }
         }
         
         // --- Lógica de Pestañas y Contenido Dinámico ---
@@ -1394,6 +1417,67 @@
             return `${dd}/${mm}/${yyyy}`;
         }
         
+        function setInitialFilters() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth(); // 0-indexed (0 for January)
+
+            const selectsToUpdate = [
+                { year: 'results-match-year-select', month: 'results-match-month-select' },
+                { year: 'chamigo-match-year-select', month: 'chamigo-match-month-select' },
+                { year: 'tt-match-year-select', month: 'tt-match-month-select' }
+            ];
+
+            selectsToUpdate.forEach(pair => {
+                const yearSelect = document.getElementById(pair.year);
+                const monthSelect = document.getElementById(pair.month);
+
+                if (Array.from(yearSelect.options).some(opt => opt.value == currentYear)) {
+                    yearSelect.value = currentYear;
+                }
+                
+                monthSelect.value = currentMonth;
+
+                yearSelect.dispatchEvent(new Event('change'));
+                monthSelect.dispatchEvent(new Event('change'));
+            });
+        }
+        
+        function toggleSideMenu() {
+            if (window.innerWidth < 768) {
+                const isOpen = sideMenu.classList.toggle('open');
+                overlay.classList.toggle('open', isOpen);
+                document.body.classList.toggle('overflow-hidden', isOpen);
+                if (isOpen) {
+                    sideMenu.classList.remove('hidden');
+                } else {
+                    setTimeout(() => sideMenu.classList.add('hidden'), 300);
+                }
+            }
+        }
+        
+        function showCustomConfirm(title, message) {
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const customConfirmModal = document.getElementById('custom-confirm-modal');
+            const modalConfirmButton = document.getElementById('modal-confirm-button');
+            const modalCancelButton = document.getElementById('modal-cancel-button');
+
+            return new Promise((resolve) => {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                customConfirmModal.classList.remove('hidden');
+                modalConfirmButton.onclick = () => {
+                    customConfirmModal.classList.add('hidden');
+                    resolve(true);
+                };
+                modalCancelButton.onclick = () => {
+                    customConfirmModal.classList.add('hidden');
+                    resolve(false);
+                };
+            });
+        }
+        
         // --- Inicialización General (Final) ---
         document.addEventListener('DOMContentLoaded', () => {
             const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -1406,8 +1490,8 @@
             script.onload = gapiLoaded;
             document.head.appendChild(script);
 
-            loginForm.addEventListener('submit', handleLogin);
-            signoutButton.addEventListener('click', handleLogout);
+            authorizeButton.addEventListener('click', handleAuthClick);
+            signoutButton.addEventListener('click', handleSignoutClick);
             darkModeToggle.addEventListener('click', toggleTheme);
             hamburgerButton.addEventListener('click', toggleSideMenu);
             overlay.addEventListener('click', toggleSideMenu);
