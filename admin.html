@@ -710,428 +710,429 @@
 
     <!-- 2. Tu script principal -->
     <script>
+        // CORRECCIÓN: Se declara la variable del cliente aquí para que sea global
         let supabaseClient;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co'; 
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // CORRECCIÓN: Se elimina el wrapper de DOMContentLoaded
+        const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ'; 
+        
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // --- Cache de Datos ---
-            let allPlayersData = []; 
-            let allMatchesData = []; 
+        // --- Cache de Datos ---
+        let allPlayersData = []; 
+        let allMatchesData = []; 
 
-            // Variables para el drag-and-drop táctil
-            let currentDraggedPlayer = null;
-            let originalParentOfDraggedPlayer = null;
-            
-            // --- Elementos del DOM ---
-            const authContainer = document.getElementById('auth-container');
-            const adminContent = document.getElementById('admin-content');
-            const loadingContainer = document.getElementById('loading-container');
-            const sideMenu = document.getElementById('side-menu');
-            const hamburgerButton = document.getElementById('hamburger-button');
-            const overlay = document.getElementById('overlay');
-            const loginButton = document.getElementById('login-button');
-            const signoutButton = document.getElementById('signout_button');
-            const emailInput = document.getElementById('email');
-            const passwordInput = document.getElementById('password');
-            const authStatus = document.getElementById('auth-status');
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
-            const customConfirmModal = document.getElementById('custom-confirm-modal');
-            const modalTitle = document.getElementById('modal-title');
-            const modalMessage = document.getElementById('modal-message');
-            const modalCancelButton = document.getElementById('modal-cancel-button');
-            const modalConfirmButton = document.getElementById('modal-confirm-button');
-            const playerIdInput = document.getElementById('player-id');
-            const playerNameInput = document.getElementById('player-name');
-            const playerStatusSelect = document.getElementById('player-status');
-            const playerRoleSelect = document.getElementById('player-role');
-            const savePlayerButton = document.getElementById('save-player-button');
-            const deletePlayerButton = document.getElementById('delete-player-button');
-            const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
-            const playersLoadingMessageAdmin = document.getElementById('players-loading-message-admin');
-            const playerListNameFilter = document.getElementById('player-list-name-filter');
-            const playerListStatusFilter = document.getElementById('player-list-status-filter');
-            const playerListRoleFilter = document.getElementById('player-list-role-filter');
-            const teamMatchDateInput = document.getElementById('team-match-date');
-            const titularesPlayersDiv = document.getElementById('titulares-players');
-            const suplentesPlayersDiv = document.getElementById('suplentes-players');
-            const teamClarosDiv = document.getElementById('team-claros');
-            const teamOscurosDiv = document.getElementById('team-oscuros');
-            const clarosCountSpan = document.getElementById('claros-count');
-            const oscurosCountSpan = document.getElementById('oscuros-count');
-            const saveTeamsButton = document.getElementById('save-teams-button');
-            const matchDateInput = document.getElementById('match-date');
-            const matchResultSelect = document.getElementById('match-result');
-            const resultsMatchYearSelect = document.getElementById('results-match-year-select');
-            const resultsMatchMonthSelect = document.getElementById('results-match-month-select');
-            const resultsMatchListDiv = document.getElementById('results-match-list');
-            const registerMatchButton = document.getElementById('register-match-button');
-            const deleteMatchButton = document.getElementById('delete-match-button');
-            const chamigoVotingPlayersDiv = document.getElementById('chamigo-voting-players');
-            const registerChamigoButton = document.getElementById('register-chamigo-button');
-            const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select');
-            const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select');
-            const chamigoMatchListDiv = document.getElementById('chamigo-match-list');
-            const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
-            const registerTtButton = document.getElementById('register-tt-button');
-            const ttMatchYearSelect = document.getElementById('tt-match-year-select');
-            const ttMatchMonthSelect = document.getElementById('tt-match-month-select');
-            const ttMatchListDiv = document.getElementById('tt-match-list');
-            const darkModeToggle = document.getElementById('dark-mode-toggle');
-            const darkModeIcon = document.getElementById('dark-mode-icon');
-            const htmlElement = document.documentElement;
+        // Variables para el drag-and-drop táctil
+        let currentDraggedPlayer = null;
+        let originalParentOfDraggedPlayer = null;
+        
+        // --- Elementos del DOM ---
+        const authContainer = document.getElementById('auth-container');
+        const adminContent = document.getElementById('admin-content');
+        const loadingContainer = document.getElementById('loading-container');
+        const sideMenu = document.getElementById('side-menu');
+        const hamburgerButton = document.getElementById('hamburger-button');
+        const overlay = document.getElementById('overlay');
+        const loginButton = document.getElementById('login-button');
+        const signoutButton = document.getElementById('signout_button');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const authStatus = document.getElementById('auth-status');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const customConfirmModal = document.getElementById('custom-confirm-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCancelButton = document.getElementById('modal-cancel-button');
+        const modalConfirmButton = document.getElementById('modal-confirm-button');
+        const playerIdInput = document.getElementById('player-id');
+        const playerNameInput = document.getElementById('player-name');
+        const playerStatusSelect = document.getElementById('player-status');
+        const playerRoleSelect = document.getElementById('player-role');
+        const savePlayerButton = document.getElementById('save-player-button');
+        const deletePlayerButton = document.getElementById('delete-player-button');
+        const playersListAdminTableBody = document.querySelector('#players-list-admin table tbody');
+        const playersLoadingMessageAdmin = document.getElementById('players-loading-message-admin');
+        const playerListNameFilter = document.getElementById('player-list-name-filter');
+        const playerListStatusFilter = document.getElementById('player-list-status-filter');
+        const playerListRoleFilter = document.getElementById('player-list-role-filter');
+        const teamMatchDateInput = document.getElementById('team-match-date');
+        const titularesPlayersDiv = document.getElementById('titulares-players');
+        const suplentesPlayersDiv = document.getElementById('suplentes-players');
+        const teamClarosDiv = document.getElementById('team-claros');
+        const teamOscurosDiv = document.getElementById('team-oscuros');
+        const clarosCountSpan = document.getElementById('claros-count');
+        const oscurosCountSpan = document.getElementById('oscuros-count');
+        const saveTeamsButton = document.getElementById('save-teams-button');
+        const matchDateInput = document.getElementById('match-date');
+        const matchResultSelect = document.getElementById('match-result');
+        const resultsMatchYearSelect = document.getElementById('results-match-year-select');
+        const resultsMatchMonthSelect = document.getElementById('results-match-month-select');
+        const resultsMatchListDiv = document.getElementById('results-match-list');
+        const registerMatchButton = document.getElementById('register-match-button');
+        const deleteMatchButton = document.getElementById('delete-match-button');
+        const chamigoVotingPlayersDiv = document.getElementById('chamigo-voting-players');
+        const registerChamigoButton = document.getElementById('register-chamigo-button');
+        const chamigoMatchYearSelect = document.getElementById('chamigo-match-year-select');
+        const chamigoMatchMonthSelect = document.getElementById('chamigo-match-month-select');
+        const chamigoMatchListDiv = document.getElementById('chamigo-match-list');
+        const ttAttendancePlayersDiv = document.getElementById('tt-attendance-players');
+        const registerTtButton = document.getElementById('register-tt-button');
+        const ttMatchYearSelect = document.getElementById('tt-match-year-select');
+        const ttMatchMonthSelect = document.getElementById('tt-match-month-select');
+        const ttMatchListDiv = document.getElementById('tt-match-list');
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const darkModeIcon = document.getElementById('dark-mode-icon');
+        const htmlElement = document.documentElement;
 
-            const handleLogin = async () => {
-                loginButton.disabled = true;
-                loginButton.textContent = "Entrando...";
-                const email = emailInput.value.trim();
-                const password = passwordInput.value.trim();
-                authStatus.textContent = '';
-                if (!email || !password) {
-                    authStatus.textContent = 'Por favor, ingresa email y contraseña.';
-                    loginButton.disabled = false;
-                    loginButton.textContent = "Entrar";
-                    return;
-                }
-                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) {
-                    authStatus.textContent = 'Email o contraseña incorrectos.';
-                }
+        const handleLogin = async () => {
+            loginButton.disabled = true;
+            loginButton.textContent = "Entrando...";
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            authStatus.textContent = '';
+            if (!email || !password) {
+                authStatus.textContent = 'Por favor, ingresa email y contraseña.';
                 loginButton.disabled = false;
                 loginButton.textContent = "Entrar";
-            };
+                return;
+            }
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                authStatus.textContent = 'Email o contraseña incorrectos.';
+            }
+            loginButton.disabled = false;
+            loginButton.textContent = "Entrar";
+        };
 
-            const handleSignoutClick = async () => {
-                await supabaseClient.auth.signOut();
-            };
-            
-            const handleAuthStateChange = async (event, session) => {
-                loadingContainer.classList.add('hidden');
-                if (session) {
-                    authContainer.classList.add('hidden');
-                    adminContent.classList.remove('hidden');
-                    updateUIForAuth();
-                    await loadAllDataAndDisplayAllContent();
-                    setupTabNavigation();
-                    const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
-                    if (defaultTabButton) {
-                        defaultTabButton.classList.add('active');
-                        document.getElementById(defaultTabButton.dataset.tab).classList.remove('hidden');
-                    }
-                } else {
-                    authContainer.classList.remove('hidden');
-                    adminContent.classList.add('hidden');
-                    sideMenu.classList.add('hidden');
-                    sideMenu.classList.remove('open');
-                    hamburgerButton.classList.add('hidden');
-                    overlay.classList.remove('open');
-                    document.body.classList.remove('overflow-hidden');
+        const handleSignoutClick = async () => {
+            await supabaseClient.auth.signOut();
+        };
+        
+        const handleAuthStateChange = async (event, session) => {
+            loadingContainer.classList.add('hidden');
+            if (session) {
+                authContainer.classList.add('hidden');
+                adminContent.classList.remove('hidden');
+                updateUIForAuth();
+                await loadAllDataAndDisplayAllContent();
+                setupTabNavigation();
+                const defaultTabButton = document.querySelector('.tab-button[data-tab="team-formation"]');
+                if (defaultTabButton) {
+                    defaultTabButton.classList.add('active');
+                    document.getElementById(defaultTabButton.dataset.tab).classList.remove('hidden');
                 }
-            };
+            } else {
+                authContainer.classList.remove('hidden');
+                adminContent.classList.add('hidden');
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.add('hidden');
+                overlay.classList.remove('open');
+                document.body.classList.remove('overflow-hidden');
+            }
+        };
 
-            function updateUIForAuth() {
-                if (window.innerWidth >= 768) {
+        function updateUIForAuth() {
+            if (window.innerWidth >= 768) {
+                sideMenu.classList.remove('hidden');
+                sideMenu.classList.add('open');
+                hamburgerButton.classList.add('hidden');
+            } else {
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.remove('hidden');
+            }
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                htmlElement.classList.add('dark');
+                darkModeIcon.classList.remove('fa-moon');
+                darkModeIcon.classList.add('fa-sun');
+            } else {
+                htmlElement.classList.remove('dark');
+                darkModeIcon.classList.remove('fa-sun');
+                darkModeIcon.classList.add('fa-moon');
+            }
+            localStorage.setItem('theme', theme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(currentTheme);
+        }
+
+        function showCustomConfirm(title, message) {
+            return new Promise((resolve) => {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                customConfirmModal.classList.remove('hidden');
+                modalConfirmButton.onclick = () => {
+                    customConfirmModal.classList.add('hidden');
+                    resolve(true);
+                };
+                modalCancelButton.onclick = () => {
+                    customConfirmModal.classList.add('hidden');
+                    resolve(false);
+                };
+            });
+        }
+
+        // --- Funciones de Carga de Datos (CONECTADAS A SUPABASE) ---
+        async function loadAllData() {
+            try {
+                const { data: players, error: playersError } = await supabaseClient
+                    .from('players')
+                    .select('*')
+                    .order('id', { ascending: true });
+
+                if (playersError) throw playersError;
+                allPlayersData = players;
+
+                const { data: matches, error: matchesError } = await supabaseClient
+                    .from('matches')
+                    .select('*')
+                    .order('match_date', { ascending: false });
+                
+                if (matchesError) throw matchesError;
+                allMatchesData = matches;
+
+            } catch (error) {
+                console.error('Error cargando datos desde Supabase:', error);
+                alert('No se pudieron cargar los datos. Revisa la consola.');
+            }
+        }
+
+        async function loadAllDataAndDisplayAllContent() {
+            await loadAllData();
+            renderPlayersListAdmin();
+            // Las siguientes funciones se conectarán en los próximos pasos
+            // renderAvailablePlayersForTeams();
+            // populateResultsMatchYearSelect();
+            // populateChamigoTtMatchYearSelect();
+            // setInitialFilters();
+        }
+        
+        function setupTabNavigation() {
+            tabButtons.forEach(button => {
+                button.addEventListener('click', handleTabButtonClick);
+            });
+        }
+
+        function handleTabButtonClick(event) {
+            const clickedButton = event.currentTarget;
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.add('hidden'));
+            clickedButton.classList.add('active');
+            document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
+            if (window.innerWidth < 768) {
+                toggleSideMenu();
+            }
+            const tabId = clickedButton.dataset.tab;
+            if (tabId === 'players-management') renderPlayersListAdmin();
+            // if (tabId === 'team-formation') renderAvailablePlayersForTeams();
+        }
+
+        function toggleSideMenu() {
+            if (window.innerWidth < 768) {
+                const isOpen = sideMenu.classList.toggle('open');
+                overlay.classList.toggle('open', isOpen);
+                document.body.classList.toggle('overflow-hidden', isOpen);
+                if (isOpen) {
                     sideMenu.classList.remove('hidden');
-                    sideMenu.classList.add('open');
-                    hamburgerButton.classList.add('hidden');
                 } else {
-                    sideMenu.classList.add('hidden');
-                    sideMenu.classList.remove('open');
-                    hamburgerButton.classList.remove('hidden');
+                    setTimeout(() => sideMenu.classList.add('hidden'), 300);
                 }
             }
+        }
 
-            function applyTheme(theme) {
-                if (theme === 'dark') {
-                    htmlElement.classList.add('dark');
-                    darkModeIcon.classList.remove('fa-moon');
-                    darkModeIcon.classList.add('fa-sun');
-                } else {
-                    htmlElement.classList.remove('dark');
-                    darkModeIcon.classList.remove('fa-sun');
-                    darkModeIcon.classList.add('fa-moon');
-                }
-                localStorage.setItem('theme', theme);
-            }
+        // --- Gestión de Jugadores (CONECTADO A SUPABASE) ---
+        function renderPlayersListAdmin() {
+            playersListAdminTableBody.innerHTML = '';
+            const table = document.querySelector('#players-list-admin table');
+            playersLoadingMessageAdmin.classList.remove('hidden');
+            table.classList.add('hidden');
 
-            function toggleTheme() {
-                const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
-                applyTheme(currentTheme);
-            }
+            const nameFilter = playerListNameFilter.value.toLowerCase();
+            const statusFilter = playerListStatusFilter.value;
+            const roleFilter = playerListRoleFilter.value;
 
-            function showCustomConfirm(title, message) {
-                return new Promise((resolve) => {
-                    modalTitle.textContent = title;
-                    modalMessage.textContent = message;
-                    customConfirmModal.classList.remove('hidden');
-                    modalConfirmButton.onclick = () => {
-                        customConfirmModal.classList.add('hidden');
-                        resolve(true);
-                    };
-                    modalCancelButton.onclick = () => {
-                        customConfirmModal.classList.add('hidden');
-                        resolve(false);
-                    };
-                });
-            }
-
-            // --- Funciones de Carga de Datos (CONECTADAS A SUPABASE) ---
-            async function loadAllData() {
-                try {
-                    const { data: players, error: playersError } = await supabaseClient
-                        .from('players')
-                        .select('*')
-                        .order('id', { ascending: true });
-
-                    if (playersError) throw playersError;
-                    allPlayersData = players;
-
-                    const { data: matches, error: matchesError } = await supabaseClient
-                        .from('matches')
-                        .select('*')
-                        .order('match_date', { ascending: false });
-                    
-                    if (matchesError) throw matchesError;
-                    allMatchesData = matches;
-
-                } catch (error) {
-                    console.error('Error cargando datos desde Supabase:', error);
-                    alert('No se pudieron cargar los datos. Revisa la consola.');
-                }
-            }
-
-            async function loadAllDataAndDisplayAllContent() {
-                await loadAllData();
-                renderPlayersListAdmin();
-                // Las siguientes funciones se conectarán en los próximos pasos
-                // renderAvailablePlayersForTeams();
-                // populateResultsMatchYearSelect();
-                // populateChamigoTtMatchYearSelect();
-                // setInitialFilters();
-            }
-            
-            function setupTabNavigation() {
-                tabButtons.forEach(button => {
-                    button.addEventListener('click', handleTabButtonClick);
-                });
-            }
-
-            function handleTabButtonClick(event) {
-                const clickedButton = event.currentTarget;
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.add('hidden'));
-                clickedButton.classList.add('active');
-                document.getElementById(clickedButton.dataset.tab).classList.remove('hidden');
-                if (window.innerWidth < 768) {
-                    toggleSideMenu();
-                }
-                const tabId = clickedButton.dataset.tab;
-                if (tabId === 'players-management') renderPlayersListAdmin();
-                // if (tabId === 'team-formation') renderAvailablePlayersForTeams();
-            }
-
-            function toggleSideMenu() {
-                if (window.innerWidth < 768) {
-                    const isOpen = sideMenu.classList.toggle('open');
-                    overlay.classList.toggle('open', isOpen);
-                    document.body.classList.toggle('overflow-hidden', isOpen);
-                    if (isOpen) {
-                        sideMenu.classList.remove('hidden');
-                    } else {
-                        setTimeout(() => sideMenu.classList.add('hidden'), 300);
-                    }
-                }
-            }
-
-            // --- Gestión de Jugadores (CONECTADO A SUPABASE) ---
-            function renderPlayersListAdmin() {
-                playersListAdminTableBody.innerHTML = '';
-                const table = document.querySelector('#players-list-admin table');
-                playersLoadingMessageAdmin.classList.remove('hidden');
-                table.classList.add('hidden');
-
-                const nameFilter = playerListNameFilter.value.toLowerCase();
-                const statusFilter = playerListStatusFilter.value;
-                const roleFilter = playerListRoleFilter.value;
-
-                const filteredPlayers = allPlayersData.filter(player => {
-                    const matchesName = nameFilter === '' || player.name.toLowerCase().includes(nameFilter);
-                    const matchesStatus = statusFilter === 'Todos' || player.status === statusFilter;
-                    const matchesRole = roleFilter === 'Todos' || player.role === roleFilter;
-                    return matchesName && matchesStatus && matchesRole;
-                });
-
-                if (filteredPlayers.length === 0) {
-                    playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.';
-                    return;
-                }
-
-                playersLoadingMessageAdmin.classList.add('hidden');
-                table.classList.remove('hidden');
-
-                filteredPlayers.forEach(player => {
-                    const row = document.createElement('tr');
-                    row.className = 'border-b hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700';
-                    row.innerHTML = `
-                        <td class="py-3 px-6 text-left">${player.id}</td>
-                        <td class="py-3 px-6 text-left">${player.name}</td>
-                        <td class="py-3 px-6 text-left">${player.status}</td>
-                        <td class="py-3 px-6 text-left">${player.role}</td>
-                        <td class="py-3 px-6 text-center">
-                            <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs">Editar</button>
-                        </td>
-                    `;
-                    // Guardamos los datos completos del jugador en el botón para fácil acceso
-                    row.querySelector('.edit-player-button').addEventListener('click', () => {
-                        playerIdInput.value = player.id;
-                        playerNameInput.value = player.name;
-                        playerStatusSelect.value = player.status;
-                        playerRoleSelect.value = player.role;
-                    });
-                    playersListAdminTableBody.appendChild(row);
-                });
-            }
-
-            savePlayerButton.addEventListener('click', async () => {
-                const id = playerIdInput.value.trim();
-                const name = playerNameInput.value.trim();
-                const status = playerStatusSelect.value;
-                const role = playerRoleSelect.value;
-
-                if (!name) {
-                    alert('El nombre del jugador no puede estar vacío.');
-                    return;
-                }
-
-                const isEditing = id !== '';
-                const playerData = { name, status, role };
-
-                try {
-                    if (isEditing) {
-                        // --- UPDATE ---
-                        const { error } = await supabaseClient
-                            .from('players')
-                            .update(playerData)
-                            .eq('id', id);
-                        if (error) throw error;
-                        alert('Jugador actualizado exitosamente.');
-                    } else {
-                        // --- INSERT ---
-                        // Generar nuevo ID
-                        const { data: lastPlayer, error: idError } = await supabaseClient
-                            .from('players')
-                            .select('id')
-                            .order('id', { ascending: false })
-                            .limit(1)
-                            .single();
-                        
-                        if (idError && idError.code !== 'PGRST116') throw idError; // Ignorar error si la tabla está vacía
-
-                        const lastIdNum = lastPlayer ? parseInt(lastPlayer.id.replace('J', '')) : 0;
-                        const newId = 'J' + String(lastIdNum + 1).padStart(3, '0');
-                        playerData.id = newId;
-
-                        const { error } = await supabaseClient
-                            .from('players')
-                            .insert([playerData]);
-                        if (error) throw error;
-                        alert('Jugador creado exitosamente.');
-                    }
-
-                    // Limpiar formulario y recargar datos
-                    playerIdInput.value = '';
-                    playerNameInput.value = '';
-                    await loadAllDataAndDisplayAllContent();
-
-                } catch (error) {
-                    console.error('Error al guardar jugador:', error);
-                    alert(`Error al guardar jugador: ${error.message}`);
-                }
+            const filteredPlayers = allPlayersData.filter(player => {
+                const matchesName = nameFilter === '' || player.name.toLowerCase().includes(nameFilter);
+                const matchesStatus = statusFilter === 'Todos' || player.status === statusFilter;
+                const matchesRole = roleFilter === 'Todos' || player.role === roleFilter;
+                return matchesName && matchesStatus && matchesRole;
             });
 
-            deletePlayerButton.addEventListener('click', async () => {
-                const idToDelete = playerIdInput.value.trim();
-                if (!idToDelete) {
-                    alert('Por favor, selecciona un jugador de la lista para eliminar.');
-                    return;
-                }
+            if (filteredPlayers.length === 0) {
+                playersLoadingMessageAdmin.textContent = 'No hay jugadores que coincidan con los filtros.';
+                return;
+            }
 
-                const confirmed = await showCustomConfirm('Confirmar Eliminación', `¿Estás seguro de que quieres marcar al jugador con ID ${idToDelete} como Inactivo?`);
-                if (!confirmed) return;
+            playersLoadingMessageAdmin.classList.add('hidden');
+            table.classList.remove('hidden');
 
-                try {
+            filteredPlayers.forEach(player => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700';
+                row.innerHTML = `
+                    <td class="py-3 px-6 text-left">${player.id}</td>
+                    <td class="py-3 px-6 text-left">${player.name}</td>
+                    <td class="py-3 px-6 text-left">${player.status}</td>
+                    <td class="py-3 px-6 text-left">${player.role}</td>
+                    <td class="py-3 px-6 text-center">
+                        <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs">Editar</button>
+                    </td>
+                `;
+                // Guardamos los datos completos del jugador en el botón para fácil acceso
+                row.querySelector('.edit-player-button').addEventListener('click', () => {
+                    playerIdInput.value = player.id;
+                    playerNameInput.value = player.name;
+                    playerStatusSelect.value = player.status;
+                    playerRoleSelect.value = player.role;
+                });
+                playersListAdminTableBody.appendChild(row);
+            });
+        }
+
+        savePlayerButton.addEventListener('click', async () => {
+            const id = playerIdInput.value.trim();
+            const name = playerNameInput.value.trim();
+            const status = playerStatusSelect.value;
+            const role = playerRoleSelect.value;
+
+            if (!name) {
+                alert('El nombre del jugador no puede estar vacío.');
+                return;
+            }
+
+            const isEditing = id !== '';
+            const playerData = { name, status, role };
+
+            try {
+                if (isEditing) {
+                    // --- UPDATE ---
                     const { error } = await supabaseClient
                         .from('players')
-                        .update({ status: 'Inactivo' })
-                        .eq('id', idToDelete);
+                        .update(playerData)
+                        .eq('id', id);
                     if (error) throw error;
-
-                    alert(`Jugador con ID ${idToDelete} marcado como Inactivo.`);
-                    playerIdInput.value = '';
-                    playerNameInput.value = '';
-                    await loadAllDataAndDisplayAllContent();
-
-                } catch (error) {
-                    console.error('Error al eliminar jugador:', error);
-                    alert(`Error al eliminar jugador: ${error.message}.`);
-                }
-            });
-            
-            // --- El resto de tus funciones (UI, Drag & Drop, etc.) ---
-            function renderAvailablePlayersForTeams() {
-                // Esta función se conectará en el siguiente paso
-            }
-            
-            function populateResultsMatchYearSelect() {
-                // Esta función se conectará en el siguiente paso
-            }
-            function populateChamigoTtMatchYearSelect() {
-                // Esta función se conectará en el siguiente paso
-            }
-            function setInitialFilters() {
-                // Esta función se conectará en el siguiente paso
-            }
-            
-            async function handleResize() {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (!session) return;
-                if (window.innerWidth >= 768) {
-                    sideMenu.classList.remove('hidden');
-                    sideMenu.classList.add('open');
-                    hamburgerButton.classList.add('hidden');
-                    overlay.classList.remove('open');
-                    document.body.classList.remove('overflow-hidden');
+                    alert('Jugador actualizado exitosamente.');
                 } else {
-                    sideMenu.classList.add('hidden');
-                    sideMenu.classList.remove('open');
-                    hamburgerButton.classList.remove('hidden');
-                }
-            }
-            
-            // --- Arranque de la aplicación ---
-            const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            applyTheme(savedTheme);
-            darkModeToggle.addEventListener('click', toggleTheme);
-            loginButton.addEventListener('click', handleLogin);
-            passwordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleLogin();
-            });
-            signoutButton.addEventListener('click', handleSignoutClick);
-            hamburgerButton.addEventListener('click', toggleSideMenu);
-            overlay.addEventListener('click', toggleSideMenu);
-            playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
-            playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
-            playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
-            
-            handleResize();
-            window.addEventListener('resize', handleResize);
+                    // --- INSERT ---
+                    // Generar nuevo ID
+                    const { data: lastPlayer, error: idError } = await supabaseClient
+                        .from('players')
+                        .select('id')
+                        .order('id', { ascending: false })
+                        .limit(1)
+                        .single();
+                    
+                    if (idError && idError.code !== 'PGRST116') throw idError; // Ignorar error si la tabla está vacía
 
-            // Escuchar cambios de autenticación para manejar la UI
-            supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
+                    const lastIdNum = lastPlayer ? parseInt(lastPlayer.id.replace('J', '')) : 0;
+                    const newId = 'J' + String(lastIdNum + 1).padStart(3, '0');
+                    playerData.id = newId;
+
+                    const { error } = await supabaseClient
+                        .from('players')
+                        .insert([playerData]);
+                    if (error) throw error;
+                    alert('Jugador creado exitosamente.');
+                }
+
+                // Limpiar formulario y recargar datos
+                playerIdInput.value = '';
+                playerNameInput.value = '';
+                await loadAllDataAndDisplayAllContent();
+
+            } catch (error) {
+                console.error('Error al guardar jugador:', error);
+                alert(`Error al guardar jugador: ${error.message}`);
+            }
         });
+
+        deletePlayerButton.addEventListener('click', async () => {
+            const idToDelete = playerIdInput.value.trim();
+            if (!idToDelete) {
+                alert('Por favor, selecciona un jugador de la lista para eliminar.');
+                return;
+            }
+
+            const confirmed = await showCustomConfirm('Confirmar Eliminación', `¿Estás seguro de que quieres marcar al jugador con ID ${idToDelete} como Inactivo?`);
+            if (!confirmed) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('players')
+                    .update({ status: 'Inactivo' })
+                    .eq('id', idToDelete);
+                if (error) throw error;
+
+                alert(`Jugador con ID ${idToDelete} marcado como Inactivo.`);
+                playerIdInput.value = '';
+                playerNameInput.value = '';
+                await loadAllDataAndDisplayAllContent();
+
+            } catch (error) {
+                console.error('Error al eliminar jugador:', error);
+                alert(`Error al eliminar jugador: ${error.message}.`);
+            }
+        });
+        
+        // --- El resto de tus funciones (UI, Drag & Drop, etc.) ---
+        function renderAvailablePlayersForTeams() {
+            // Esta función se conectará en el siguiente paso
+        }
+        
+        function populateResultsMatchYearSelect() {
+            // Esta función se conectará en el siguiente paso
+        }
+        function populateChamigoTtMatchYearSelect() {
+            // Esta función se conectará en el siguiente paso
+        }
+        function setInitialFilters() {
+            // Esta función se conectará en el siguiente paso
+        }
+        
+        async function handleResize() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) return;
+            if (window.innerWidth >= 768) {
+                sideMenu.classList.remove('hidden');
+                sideMenu.classList.add('open');
+                hamburgerButton.classList.add('hidden');
+                overlay.classList.remove('open');
+                document.body.classList.remove('overflow-hidden');
+            } else {
+                sideMenu.classList.add('hidden');
+                sideMenu.classList.remove('open');
+                hamburgerButton.classList.remove('hidden');
+            }
+        }
+        
+        // --- Arranque de la aplicación ---
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(savedTheme);
+        darkModeToggle.addEventListener('click', toggleTheme);
+        loginButton.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+        signoutButton.addEventListener('click', handleSignoutClick);
+        hamburgerButton.addEventListener('click', toggleSideMenu);
+        overlay.addEventListener('click', toggleSideMenu);
+        playerListNameFilter.addEventListener('input', renderPlayersListAdmin);
+        playerListStatusFilter.addEventListener('change', renderPlayersListAdmin);
+        playerListRoleFilter.addEventListener('change', renderPlayersListAdmin);
+        
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+        // Escuchar cambios de autenticación para manejar la UI
+        supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
     </script>
 </body>
 </html>
