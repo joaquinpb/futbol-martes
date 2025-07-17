@@ -908,8 +908,8 @@
         async function loadAllDataAndDisplayAllContent() {
             await loadAllData();
             renderPlayersListAdmin();
+            renderAvailablePlayersForTeams();
             // Las siguientes funciones se conectarán en los próximos pasos
-            // renderAvailablePlayersForTeams();
             // populateResultsMatchYearSelect();
             // populateChamigoTtMatchYearSelect();
             // setInitialFilters();
@@ -932,7 +932,7 @@
             }
             const tabId = clickedButton.dataset.tab;
             if (tabId === 'players-management') renderPlayersListAdmin();
-            // if (tabId === 'team-formation') renderAvailablePlayersForTeams();
+            if (tabId === 'team-formation') renderAvailablePlayersForTeams();
         }
 
         function toggleSideMenu() {
@@ -1084,17 +1084,144 @@
         
         // --- El resto de tus funciones (UI, Drag & Drop, etc.) ---
         function renderAvailablePlayersForTeams() {
-            // Esta función se conectará en el siguiente paso
+            titularesPlayersDiv.innerHTML = '';
+            suplentesPlayersDiv.innerHTML = '';
+            const activePlayers = allPlayersData.filter(p => p.status === 'Activo');
+            if (activePlayers.length === 0) {
+                titularesPlayersDiv.innerHTML = '<p class="text-gray-500">No hay jugadores activos.</p>';
+                return;
+            }
+            activePlayers.forEach((player) => {
+                const playerElement = document.createElement('div');
+                playerElement.className = 'player-draggable';
+                playerElement.draggable = true;
+                playerElement.dataset.id = player.id;
+                playerElement.dataset.name = player.name;
+                playerElement.textContent = player.name;
+                playerElement.addEventListener('dragstart', handleDragStart);
+                playerElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+                if (player.role === 'Titular') {
+                    titularesPlayersDiv.appendChild(playerElement);
+                } else {
+                    suplentesPlayersDiv.appendChild(playerElement);
+                }
+            });
         }
         
-        function populateResultsMatchYearSelect() {
-            // Esta función se conectará en el siguiente paso
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                id: e.target.dataset.id,
+                name: e.target.dataset.name,
+                source: e.target.parentNode.id
+            }));
+            e.dataTransfer.effectAllowed = 'move';
         }
-        function populateChamigoTtMatchYearSelect() {
-            // Esta función se conectará en el siguiente paso
+
+        function handleTouchStart(e) {
+            if (e.touches.length !== 1) return;
+            e.preventDefault();
+            currentDraggedPlayer = e.target;
+            originalParentOfDraggedPlayer = currentDraggedPlayer.parentNode;
+            const rect = currentDraggedPlayer.getBoundingClientRect();
+            currentDraggedPlayer.style.position = 'fixed';
+            currentDraggedPlayer.style.left = `${rect.left}px`;
+            currentDraggedPlayer.style.top = `${rect.top}px`;
+            currentDraggedPlayer.style.width = `${rect.width}px`;
+            currentDraggedPlayer.style.height = `${rect.height}px`;
+            currentDraggedPlayer.style.pointerEvents = 'none';
+            currentDraggedPlayer.style.zIndex = '1000';
+            currentDraggedPlayer.classList.add('dragging-touch');
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd);
         }
-        function setInitialFilters() {
-            // Esta función se conectará en el siguiente paso
+
+        function handleTouchMove(e) {
+            if (!currentDraggedPlayer) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            currentDraggedPlayer.style.left = `${touch.clientX - currentDraggedPlayer.offsetWidth / 2}px`;
+            currentDraggedPlayer.style.top = `${touch.clientY - currentDraggedPlayer.offsetHeight / 2}px`;
+        }
+        
+        function handleTouchEnd(e) {
+            if (!currentDraggedPlayer) return;
+            currentDraggedPlayer.style.visibility = 'hidden';
+            const touch = e.changedTouches[0];
+            const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+            currentDraggedPlayer.style.visibility = 'visible';
+            currentDraggedPlayer.style.position = '';
+            currentDraggedPlayer.style.left = '';
+            currentDraggedPlayer.style.top = '';
+            currentDraggedPlayer.style.width = '';
+            currentDraggedPlayer.style.height = '';
+            currentDraggedPlayer.style.pointerEvents = '';
+            currentDraggedPlayer.style.zIndex = '';
+            currentDraggedPlayer.classList.remove('dragging-touch');
+            const dropZone = dropTarget ? dropTarget.closest('#titulares-players, #suplentes-players, #team-claros, #team-oscuros') : null;
+            if (dropZone) {
+                handleDropLogic(currentDraggedPlayer, dropZone);
+            } else {
+                originalParentOfDraggedPlayer.appendChild(currentDraggedPlayer);
+            }
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+            currentDraggedPlayer = null;
+            originalParentOfDraggedPlayer = null;
+        }
+
+        [titularesPlayersDiv, suplentesPlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(dropZone => {
+            dropZone.addEventListener('dragover', (e) => e.preventDefault());
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                const draggedElement = document.querySelector(`[data-id="${data.id}"]`);
+                const dropZone = e.currentTarget;
+                handleDropLogic(draggedElement, dropZone);
+            });
+        });
+        
+        function handleDropLogic(draggedElement, dropZone) {
+            const sourceId = draggedElement.parentNode.id;
+            const targetId = dropZone.id;
+            if (sourceId === targetId) return;
+            if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') || (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
+                return;
+            }
+            if ((targetId === 'team-claros' || targetId === 'team-oscuros') && dropZone.children.length >= 5) {
+                alert(`El equipo ya tiene 5 jugadores.`);
+                if (draggedElement.parentNode !== originalParentOfDraggedPlayer && originalParentOfDraggedPlayer) {
+                    originalParentOfDraggedPlayer.appendChild(draggedElement);
+                }
+                return;
+            }
+            dropZone.appendChild(draggedElement);
+            updateTeamCounts();
+        }
+
+        function updateTeamCounts() {
+            const clarosCount = teamClarosDiv.children.length;
+            const oscurosCount = teamOscurosDiv.children.length;
+            clarosCountSpan.textContent = clarosCount;
+            oscurosCountSpan.textContent = oscurosCount;
+            document.getElementById('total-selected-players').textContent = clarosCount + oscurosCount;
+            saveTeamsButton.disabled = !(clarosCount === 5 && oscurosCount === 5);
+        }
+        
+        function parseDate(dateString) {
+            const [day, month, year] = dateString.split('/').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function parseYYYYMMDDToLocalDate(dateString) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function formatDateToDDMMYYYY(date) {
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
         }
         
         async function handleResize() {
@@ -1111,6 +1238,20 @@
                 sideMenu.classList.remove('open');
                 hamburgerButton.classList.remove('hidden');
             }
+        }
+        
+        saveTeamsButton.addEventListener('click', async () => {
+             alert("Funcionalidad no migrada a Supabase todavía.");
+        });
+
+        function populateResultsMatchYearSelect() {
+            // Esta función se conectará en el siguiente paso
+        }
+        function populateChamigoTtMatchYearSelect() {
+            // Esta función se conectará en el siguiente paso
+        }
+        function setInitialFilters() {
+            // Esta función se conectará en el siguiente paso
         }
         
         // --- Arranque de la aplicación ---
