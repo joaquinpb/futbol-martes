@@ -772,7 +772,55 @@
             htmlElement: document.documentElement,
         };
 
-        // --- MANEJO DE AUTENTICACIÓN ---
+        // --- MANEJO DE AUTENTICACIÓN Y CICLO DE VIDA ---
+        
+        const showLoginScreen = () => {
+            DOMElements.loadingContainer.classList.add('hidden');
+            DOMElements.authContainer.classList.remove('hidden');
+            DOMElements.adminContent.classList.add('hidden');
+            
+            DOMElements.sideMenu.classList.add('hidden-truly');
+            DOMElements.sideMenu.classList.remove('open');
+            DOMElements.hamburgerButton.classList.add('hidden');
+            DOMElements.overlay.classList.remove('open');
+            document.body.classList.remove('overflow-hidden');
+            
+            AppState.players = [];
+            AppState.matches = [];
+            AppState.isInitializing = false;
+        };
+
+        const loadAdminPanel = async () => {
+            if (AppState.isInitializing) return;
+            AppState.isInitializing = true;
+            
+            DOMElements.authContainer.classList.add('hidden');
+            DOMElements.adminContent.classList.add('hidden');
+            DOMElements.loadingContainer.classList.remove('hidden');
+
+            try {
+                const [players, matches] = await Promise.all([
+                    fetchData('players', { column: 'id', ascending: true }),
+                    fetchData('matches', { column: 'match_date', ascending: false })
+                ]);
+                AppState.players = players || [];
+                AppState.matches = matches || [];
+                
+                renderAllContent();
+                
+                DOMElements.loadingContainer.classList.add('hidden');
+                DOMElements.adminContent.classList.remove('hidden');
+                updateUIForAuth();
+
+            } catch (error) {
+                console.error("Error fatal durante la inicialización del panel:", error);
+                showToast("Error al cargar datos. Intente refrescar.", "error");
+                showLoginScreen(); // Si falla la carga, volvemos al login.
+            } finally {
+                AppState.isInitializing = false;
+            }
+        };
+
         const handleLogin = async (event) => {
             event.preventDefault();
             DOMElements.loginButton.disabled = true;
@@ -792,6 +840,7 @@
             if (error) {
                 DOMElements.authStatus.textContent = 'Email o contraseña incorrectos.';
             }
+            // onAuthStateChange se encargará de llamar a loadAdminPanel
             DOMElements.loginButton.disabled = false;
             DOMElements.loginButton.textContent = "Entrar";
         };
@@ -802,44 +851,7 @@
                 console.error("Signout error:", error);
                 showToast("Error al cerrar sesión.", "error");
             }
-            // onAuthStateChange se encargará de la transición de la UI y de limpiar el estado.
-        };
-
-        const handleAuthStateChange = async (event, session) => {
-            // CORRECCIÓN: Lógica de transición de vistas centralizada y robusta.
-            if (session) {
-                // Estado: Usuario logueado.
-                // 1. Ocultar todo menos el loader principal.
-                DOMElements.authContainer.classList.add('hidden');
-                DOMElements.adminContent.classList.add('hidden');
-                DOMElements.loadingContainer.classList.remove('hidden');
-
-                // 2. Cargar todos los datos necesarios.
-                await initializeAppData();
-
-                // 3. Una vez cargados los datos, mostrar el panel de admin.
-                DOMElements.loadingContainer.classList.add('hidden');
-                DOMElements.adminContent.classList.remove('hidden');
-                updateUIForAuth();
-            } else {
-                // Estado: Usuario no logueado.
-                // 1. Mostrar solo el formulario de login.
-                DOMElements.loadingContainer.classList.add('hidden');
-                DOMElements.authContainer.classList.remove('hidden');
-                DOMElements.adminContent.classList.add('hidden');
-                
-                // 2. Ocultar y resetear elementos del panel de admin.
-                DOMElements.sideMenu.classList.add('hidden-truly');
-                DOMElements.sideMenu.classList.remove('open');
-                DOMElements.hamburgerButton.classList.add('hidden');
-                DOMElements.overlay.classList.remove('open');
-                document.body.classList.remove('overflow-hidden');
-                
-                // 3. Limpiar el estado de la aplicación.
-                AppState.players = [];
-                AppState.matches = [];
-                AppState.isInitializing = false;
-            }
+            // onAuthStateChange se encargará de llamar a showLoginScreen
         };
 
         // --- LÓGICA DE DATOS (SUPABASE) ---
@@ -855,30 +867,8 @@
             }
         };
         
-        const initializeAppData = async () => {
-            if (AppState.isInitializing) return;
-            AppState.isInitializing = true;
-
-            try {
-                const [players, matches] = await Promise.all([
-                    fetchData('players', { column: 'id', ascending: true }),
-                    fetchData('matches', { column: 'match_date', ascending: false })
-                ]);
-                AppState.players = players || [];
-                AppState.matches = matches || [];
-                
-                renderAllContent();
-            } catch (error) {
-                console.error("Error fatal durante la inicialización de la app:", error);
-                showToast("Error al cargar datos. Intente refrescar.", "error");
-            } finally {
-                AppState.isInitializing = false;
-            }
-        };
-
         const refreshDataAndRender = async () => {
-            // Esta función ahora es un alias más legible para la inicialización.
-            await initializeAppData();
+            await loadAdminPanel();
         };
 
         // --- LÓGICA DE RENDERIZADO ---
@@ -887,11 +877,13 @@
             setInitialDateFilters();
             populateFilteredMatchLists();
 
-            // CORRECCIÓN: Lógica simplificada para activar la primera pestaña.
             let activeTab = document.querySelector('.tab-button.active')?.dataset.tab;
             if (!activeTab) {
                 const firstTabButton = DOMElements.tabButtons[0];
                 if (firstTabButton) {
+                    DOMElements.tabButtons.forEach(btn => btn.classList.remove('active'));
+                    DOMElements.tabContents.forEach(content => content.classList.add('hidden'));
+                    
                     firstTabButton.classList.add('active');
                     document.getElementById(firstTabButton.dataset.tab).classList.remove('hidden');
                     activeTab = firstTabButton.dataset.tab;
@@ -1354,8 +1346,7 @@
             // Autenticación
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             DOMElements.signoutButton.addEventListener('click', handleSignout);
-            supabase.auth.onAuthStateChange(handleAuthStateChange);
-
+            
             // Navegación y UI
             DOMElements.hamburgerButton.addEventListener('click', toggleSideMenu);
             DOMElements.overlay.addEventListener('click', toggleSideMenu);
@@ -1588,13 +1579,22 @@
         };
 
         // --- INICIALIZACIÓN DE LA APP ---
-        const initialize = () => {
+        const main = () => {
             const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             applyTheme(savedTheme);
             setupEventListeners();
+            
+            // CORRECCIÓN: El listener ahora solo se encarga de los CAMBIOS de estado.
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                    loadAdminPanel();
+                } else if (event === 'SIGNED_OUT') {
+                    showLoginScreen();
+                }
+            });
         };
 
-        initialize();
+        main();
     });
     </script>
 </body>
