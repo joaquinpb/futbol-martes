@@ -76,7 +76,6 @@
             -webkit-overflow-scrolling: touch;
         }
         table {
-            @apply rounded-lg shadow-md;
             background-color: var(--bg-main-content);
             width: 100%;
             border-collapse: collapse;
@@ -99,7 +98,53 @@
         }
         tbody tr:last-child { border-bottom: 0; }
         tbody td { color: var(--text-secondary); }
-        .overflow-x-auto-off { overflow-x: hidden; }
+        
+        /* --- ESTILOS PARA TABLAS CON SCROLL --- */
+        .table-container {
+            max-height: 70vh;
+            overflow: auto;
+            border-radius: 0.5rem;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .table-container thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* --- ESTILOS PARA COLUMNAS FIJAS (SOLO MOBILE) --- */
+        @media (max-width: 767px) {
+            .sticky-col {
+                position: sticky;
+                z-index: 5;
+            }
+            .sticky-col-1 {
+                left: 0;
+            }
+            #estadisticas-table .sticky-col-2 { left: 40px; }
+            #individual-stats-table .sticky-col-2 { left: 80px; }
+
+            /* Fondos para celdas fijas para evitar transparencias */
+            #estadisticas-table thead th.sticky-col,
+            #individual-stats-table thead th.sticky-col {
+                background-color: var(--bg-table-header) !important;
+                z-index: 15;
+            }
+            #estadisticas-table tbody tr td.sticky-col,
+            #individual-stats-table tbody tr td.sticky-col {
+                background-color: var(--bg-table-row-even);
+            }
+            #estadisticas-table tbody tr:nth-child(odd) td.sticky-col,
+            #individual-stats-table tbody tr:nth-child(odd) td.sticky-col {
+                background-color: var(--bg-table-row-odd);
+            }
+            /* Clases específicas para Histórico por su complejidad */
+            #individual-stats-table tr.bg-blue-200 td.sticky-col { background-color: var(--bg-blue-200) !important; }
+            #individual-stats-table tr.bg-gray-200 td.sticky-col { background-color: #e5e7eb !important; }
+            body.dark-mode #individual-stats-table tr.bg-gray-200 td.sticky-col { background-color: #4a5568 !important; }
+        }
+
         #side-menu {
             position: fixed;
             top: 0;
@@ -405,10 +450,9 @@
                 font-size: 0.85rem;
                 max-width: none;
             }
-            /* CORRECCIÓN 2: Render de Fixture en Desktop */
             #soccer-field-container.horizontal-layout {
-                width: 100%; /* Ocupa el 100% de su contenedor padre */
-                padding-top: 45.45%; /* Mantiene la relación de aspecto (100 / 2.2) */
+                width: 100%;
+                padding-top: 45.45%;
             }
             #fixture-details-display {
                 width: 35%;
@@ -664,9 +708,9 @@
                     </select>
                 </div>
             </div>
-            <div class="overflow-x-auto-off">
+            <div class="table-container">
                 <p id="leaderboard-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de posiciones...</p>
-                <table id="leaderboard-table" class="bg-white rounded-lg shadow hidden">
+                <table id="leaderboard-table" class="bg-white hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
                             <th class="py-3 px-3 text-center">#</th>
@@ -701,9 +745,9 @@
                     </select>
                 </div>
             </div>
-            <div class="overflow-x-auto-off">
+            <div class="table-container">
                 <p id="chamigo-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de Chamigos...</p>
-                <table id="chamigo-table" class="bg-white rounded-lg shadow hidden">
+                <table id="chamigo-table" class="bg-white hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
                             <th class="py-3 px-3 text-center">#</th>
@@ -737,9 +781,9 @@
                     </select>
                 </div>
             </div>
-            <div class="overflow-x-auto-off">
+            <div class="table-container">
                 <p id="tt-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de Asistencia TT...</p>
-                <table id="tt-table" class="bg-white rounded-lg shadow hidden">
+                <table id="tt-table" class="bg-white hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
                             <th class="py-3 px-3 text-center">#</th>
@@ -773,9 +817,9 @@
                     </select>
                 </div>
             </div>
-            <div class="overflow-x-auto-off">
+            <div class="table-container">
                 <p id="presentismo-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de Presentismo...</p>
-                <table id="presentismo-table" class="bg-white rounded-lg shadow hidden">
+                <table id="presentismo-table" class="bg-white hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
                             <th class="py-3 px-3 text-center">#</th>
@@ -809,17 +853,19 @@
                     </select>
                 </div>
             </div>
-            <p id="ausentismo-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de Ausentismo...</p>
-            <table id="ausentismo-table" class="bg-white rounded-lg shadow hidden">
-                <thead>
-                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                        <th class="py-3 px-3 text-center">#</th>
-                        <th class="py-3 px-3 text-left-player">Jugador</th>
-                        <th class="py-3 px-3 text-center">Ausentes</th>
-                    </tr>
-                </thead>
-                <tbody class="text-gray-600 text-sm font-light"></tbody>
-            </table>
+            <div class="table-container">
+                <p id="ausentismo-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de Ausentismo...</p>
+                <table id="ausentismo-table" class="bg-white hidden">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                            <th class="py-3 px-3 text-center">#</th>
+                            <th class="py-3 px-3 text-left-player">Jugador</th>
+                            <th class="py-3 px-3 text-center">Ausentes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light"></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="estadisticas-content" class="tab-content hidden">
@@ -864,13 +910,13 @@
                     </select>
                 </div>
             </div>
-            <div id="estadisticas-table-container" class="overflow-x-auto">
+            <div class="table-container">
                 <p id="estadisticas-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando estadísticas...</p>
-                <table id="estadisticas-table" class="bg-white rounded-lg shadow hidden">
+                <table id="estadisticas-table" class="bg-white hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-center">#</th>
-                            <th class="py-3 px-3 text-left-player">Jugador</th>
+                            <th class="py-3 px-2 text-center sticky-col sticky-col-1">#</th>
+                            <th class="py-3 px-3 text-left-player sticky-col sticky-col-2">Jugador</th>
                             <th class="py-3 px-3 text-center">Puntos</th>
                             <th class="py-3 px-3 text-center">PG</th>
                             <th class="py-3 px-3 text-center">PE</th>
@@ -947,7 +993,7 @@
                     </div>
                 </div>
                 <div id="fixture-details-display" class="flex-1 md:w-[35%] bg-white p-4 rounded-lg shadow-md mt-6 md:mt-0">
-                    <h3 class="font-semibold text-center text-gray-700 mb-2">Asistentes al TT</h3>
+                    <h3 class="font-semibold text-gray-700 mb-2">Asistentes al TT</h3>
                     <div class="overflow-x-auto">
                         <table id="tt-attendees-table" class="bg-white rounded-lg shadow">
                             <tbody class="text-gray-600 text-sm font-light"></tbody>
@@ -970,13 +1016,13 @@
                 </div>
                 <input type="hidden" id="selected-player-id">
             </div>
-            <div class="overflow-x-auto">
+            <div class="table-container">
                 <p id="individual-stats-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando estadísticas individuales...</p>
-                <table id="individual-stats-table" class="bg-white rounded-lg shadow hidden">
+                <table id="individual-stats-table" class="bg-white hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-left pl-4">Año</th>
-                            <th class="py-3 px-3 text-center">Torneo</th>
+                            <th class="py-3 px-3 text-left pl-4 sticky-col sticky-col-1">Año</th>
+                            <th class="py-3 px-3 text-center sticky-col sticky-col-2">Torneo</th>
                             <th class="py-3 px-3 text-center">Puntos</th>
                             <th class="py-3 px-3 text-center">PG</th>
                             <th class="py-3 px-3 text-center">PE</th>
@@ -1373,8 +1419,8 @@
 
             tableBody.innerHTML = rankedPlayers.map((player, index) => `
                 <tr class="border-b border-gray-200 hover:bg-gray-100">
-                    <td class="py-3 px-3 text-center">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player">${player.name}</td>
+                    <td class="py-3 px-2 text-center sticky-col sticky-col-1">${index + 1}</td>
+                    <td class="py-3 px-3 text-left-player sticky-col sticky-col-2">${player.name}</td>
                     <td class="py-3 px-3 text-center">${player.points}</td>
                     <td class="py-3 px-3 text-center">${player.pg}</td>
                     <td class="py-3 px-3 text-center">${player.pe}</td>
@@ -1422,7 +1468,6 @@
             statsDisplay.classList.remove('hidden');
         }
         
-        // --- FIXTURE SECTION (RECONSTRUIDO Y CORREGIDO) ---
         async function renderFixture() {
             const cardsContainer = document.getElementById('fixture-matches-cards-container');
             const loadingMessage = document.getElementById('fixture-loading-message');
@@ -1593,10 +1638,10 @@
 
             if (!playerStats) { loadingMessage.textContent = 'No se pudieron calcular las estadísticas.'; return; }
             
-            // Render TOTAL row
             tableBody.innerHTML += `
                 <tr class="bg-blue-200 font-bold text-indigo-800">
-                    <td class="py-3 px-3 text-left pl-4" colspan="2"><b>TOTAL</b></td>
+                    <td class="py-3 px-3 text-left pl-4 sticky-col sticky-col-1"><b>TOTAL</b></td>
+                    <td class="py-3 px-3 text-center sticky-col sticky-col-2"></td>
                     <td class="py-3 px-3 text-center">${playerStats.overallTotal.points}</td>
                     <td class="py-3 px-3 text-center">${playerStats.overallTotal.pg}</td>
                     <td class="py-3 px-3 text-center">${playerStats.overallTotal.pe}</td>
@@ -1609,14 +1654,13 @@
                 </tr>
             `;
 
-            // Render year and period rows
             Object.keys(playerStats.years).sort((a,b) => b-a).forEach(year => {
                 const yearData = playerStats.years[year];
                 if(yearData.total.pj > 0) {
                     tableBody.innerHTML += `
                         <tr class="year-total-row bg-gray-200 font-semibold text-gray-700 cursor-pointer" data-year="${year}">
-                            <td class="py-3 px-3 text-left pl-4"><i class="fas fa-plus-circle toggle-details mr-2 text-indigo-600 dark:text-blue-300"></i><b>${year}</b></td>
-                            <td class="py-3 px-3 text-center"><b>TOTAL AÑO</b></td>
+                            <td class="py-3 px-3 text-left pl-4 sticky-col sticky-col-1"><i class="fas fa-plus-circle toggle-details mr-2 text-indigo-600 dark:text-blue-300"></i><b>${year}</b></td>
+                            <td class="py-3 px-3 text-center sticky-col sticky-col-2"><b>TOTAL AÑO</b></td>
                             <td class="py-3 px-3 text-center">${yearData.total.points}</td>
                             <td class="py-3 px-3 text-center">${yearData.total.pg}</td>
                             <td class="py-3 px-3 text-center">${yearData.total.pe}</td>
@@ -1628,7 +1672,8 @@
                             <td class="py-3 px-3 text-center">${yearData.total.ausentes}</td>
                         </tr>
                         <tr class="period-details-row hidden" data-year-parent="${year}">
-                            <td class="py-3 px-3 text-left pl-12" colspan="2">Clausura</td>
+                            <td class="py-3 px-3 text-left pl-12 sticky-col sticky-col-1"></td>
+                            <td class="py-3 px-3 text-center sticky-col sticky-col-2">Clausura</td>
                             <td class="py-3 px-3 text-center">${yearData.clausura.points}</td>
                             <td class="py-3 px-3 text-center">${yearData.clausura.pg}</td>
                             <td class="py-3 px-3 text-center">${yearData.clausura.pe}</td>
@@ -1640,7 +1685,8 @@
                             <td class="py-3 px-3 text-center">${yearData.clausura.ausentes}</td>
                         </tr>
                         <tr class="period-details-row hidden" data-year-parent="${year}">
-                            <td class="py-3 px-3 text-left pl-12" colspan="2">Apertura</td>
+                            <td class="py-3 px-3 text-left pl-12 sticky-col sticky-col-1"></td>
+                            <td class="py-3 px-3 text-center sticky-col sticky-col-2">Apertura</td>
                             <td class="py-3 px-3 text-center">${yearData.apertura.points}</td>
                             <td class="py-3 px-3 text-center">${yearData.apertura.pg}</td>
                             <td class="py-3 px-3 text-center">${yearData.apertura.pe}</td>
@@ -1794,7 +1840,6 @@
             applyInitialResponsiveStyles();
             initializeApp();
 
-            // Event listener for collapsible rows in individual stats table
             const individualStatsTableBody = document.querySelector('#individual-stats-table tbody');
             if (individualStatsTableBody) {
                 individualStatsTableBody.addEventListener('click', (e) => {
