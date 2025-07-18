@@ -874,7 +874,7 @@
             <div id="user-management" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold mb-4">Gestionar Usuarios</h2>
                 <div class="mb-6 p-4 border rounded-lg shadow-sm">
-                    <h3 class="text-xl font-medium mb-3">Editar Rol de Usuario</h3>
+                    <h3 class="text-xl font-medium mb-3">Editar Usuario</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label for="user-id" class="block text-sm font-medium">ID Usuario:</label>
@@ -882,7 +882,7 @@
                         </div>
                         <div>
                             <label for="user-name" class="block text-sm font-medium">Nombre:</label>
-                            <input type="text" id="user-name" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2 bg-gray-100 dark:bg-gray-600" readonly>
+                            <input type="text" id="user-name" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2">
                         </div>
                         <div class="md:col-span-2">
                             <label for="user-email" class="block text-sm font-medium">Email:</label>
@@ -898,7 +898,7 @@
                     </div>
                     <div class="mt-6 flex space-x-3">
                         <button id="save-user-button" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300">
-                            Guardar Rol
+                            Guardar Cambios
                         </button>
                         <button id="clear-user-form-button" class="px-6 py-3 bg-gray-400 text-white font-semibold rounded-lg shadow-md hover:bg-gray-500 transition duration-300">
                             Limpiar
@@ -1104,7 +1104,6 @@
                 ];
 
                 if (AppState.userRole === 'Admin') {
-                    // CAMBIO: Llamar a la función RPC en lugar de a la tabla
                     dataPromises.push(supabase.rpc('get_all_users_with_roles'));
                 }
 
@@ -1112,7 +1111,7 @@
                 
                 AppState.players = players || [];
                 AppState.matches = matches || [];
-                AppState.users = usersResponse ? usersResponse.data : []; // El resultado de RPC está en .data
+                AppState.users = usersResponse ? usersResponse.data : [];
                 
                 renderAllContent();
                 
@@ -1425,16 +1424,17 @@
                 return;
             }
             const newRole = DOMElements.userRoleSelect.value;
+            const newName = DOMElements.userNameInput.value.trim();
             
             try {
-                const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', id);
+                const { error } = await supabase.from('profiles').update({ role: newRole, name: newName }).eq('id', id);
                 if (error) throw error;
-                showToast('Rol de usuario actualizado exitosamente.', 'success');
+                showToast('Usuario actualizado exitosamente.', 'success');
                 clearUserForm();
                 await refreshDataAndRender();
             } catch (error) {
-                console.error('Error al guardar el rol del usuario:', error);
-                showToast(`Error al guardar el rol: ${error.message}`, 'error');
+                console.error('Error al guardar el usuario:', error);
+                showToast(`Error al guardar: ${error.message}`, 'error');
             }
         };
 
