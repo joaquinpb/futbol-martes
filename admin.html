@@ -86,8 +86,8 @@
         #players-list-admin tbody td, #user-list-admin tbody td,
         #players-list-admin thead th, #user-list-admin thead th {
             color: #4b5563;
-            padding: 0.5rem; /* CAMBIO: Menos padding */
-            font-size: 0.75rem; /* CAMBIO: Texto más pequeño */
+            padding: 0.5rem;
+            font-size: 0.75rem;
         }
         #custom-confirm-modal .bg-white {
             background-color: #ffffff;
@@ -229,18 +229,16 @@
         #side-menu.open {
             transform: translateX(0);
         }
-        #side-menu.hidden-truly {
-            display: none !important;
-        }
+        /* CORRECCIÓN: Se elimina la regla #side-menu.hidden-truly para que el menú siempre esté en el DOM */
         #overlay {
             position: fixed;
             inset: 0;
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 30;
-            display: none; /* CORRECCIÓN: Estado base es oculto */
+            display: none;
         }
         #overlay.open {
-            display: block; /* La clase .open lo muestra */
+            display: block;
         }
         #hamburger-button {
             position: fixed;
@@ -269,10 +267,10 @@
             padding-bottom: 0.75rem;
         }
         #side-menu .tab-button {
-            padding-left: 2.5rem; /* Indentación para sub-items */
+            padding-left: 2.5rem;
         }
         #side-menu .tab-button.active {
-            background-color: #4f46e5; /* CAMBIO: Color más claro para el activo */
+            background-color: #4f46e5;
         }
         #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
             background-color: #4f46e5;
@@ -330,7 +328,7 @@
             justify-content: space-between;
             align-items: center;
             font-weight: 600;
-            background-color: #3730a3; /* CAMBIO: Color base más oscuro */
+            background-color: #3730a3;
             margin-bottom: 0.25rem;
         }
         .accordion-content {
@@ -446,13 +444,12 @@
 </head>
 <body class="flex flex-col md:flex-row">
     <!-- Hamburger Button (visible on mobile) -->
-    <!-- CORRECCIÓN: Se quita la clase 'hidden' inicial. El JS controlará su visibilidad. -->
     <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
     </button>
 
     <!-- Side Navigation Menu -->
-    <nav id="side-menu" class="hidden-truly">
+    <nav id="side-menu">
         <div class="menu-title-container">
             <h2 class="menu-title">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
@@ -527,7 +524,6 @@
     </nav>
 
     <!-- Overlay for when side menu is open (visible on mobile only) -->
-    <!-- CORRECCIÓN: Se quita la clase 'hidden' de Tailwind. El CSS base lo oculta y el JS lo muestra. -->
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30"></div>
 
     <!-- Main Content Area -->
@@ -1064,7 +1060,6 @@
             editTotalSelectedPlayersSpan: document.getElementById('edit-total-selected-players'),
             updateMatchButton: document.getElementById('update-match-button'),
             accordionHeaders: document.querySelectorAll('.accordion-header'),
-            // ABM Usuarios
             userIdInput: document.getElementById('user-id'),
             userNameInput: document.getElementById('user-name'),
             userEmailInput: document.getElementById('user-email'),
@@ -1083,7 +1078,6 @@
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
             DOMElements.adminContent.classList.add('hidden');
-            DOMElements.sideMenu.classList.add('hidden-truly');
             DOMElements.sideMenu.classList.remove('open');
             DOMElements.hamburgerButton.classList.add('hidden');
             DOMElements.overlay.classList.remove('open');
@@ -1129,7 +1123,6 @@
                 DOMElements.adminContent.classList.remove('hidden');
                 updateUIForAuth();
                 
-                // CORRECCIÓN: Abrir el acordeón después de que todo se haya renderizado.
                 openDefaultAccordion();
 
             } catch (error) {
@@ -1986,6 +1979,16 @@
             DOMElements.registerChamigoButton.addEventListener('click', handleRegisterChamigo);
             DOMElements.registerTtButton.addEventListener('click', handleRegisterTt);
             DOMElements.updateMatchButton.addEventListener('click', handleUpdateMatch);
+
+            // CORRECCIÓN: Listener para corregir estado de la UI al volver a la pestaña/app
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && window.innerWidth < 768) {
+                    const isMenuOpen = DOMElements.sideMenu.classList.contains('open');
+                    DOMElements.overlay.classList.toggle('open', isMenuOpen);
+                    DOMElements.hamburgerButton.classList.toggle('hidden', isMenuOpen);
+                    document.body.classList.toggle('overflow-hidden', isMenuOpen);
+                }
+            });
         };
         
         const handleTabButtonClick = (event) => {
@@ -2004,7 +2007,6 @@
         };
         
         const updateUIForAuth = () => {
-            // Control de visibilidad de menú por rol
             const userRole = AppState.userRole;
             document.querySelectorAll('[data-role="Admin"]').forEach(el => {
                 if (userRole !== 'Admin') {
@@ -2015,11 +2017,9 @@
             });
 
             if (window.innerWidth >= 768) {
-                DOMElements.sideMenu.classList.remove('hidden-truly');
-                DOMElements.sideMenu.classList.add('open');
+                DOMElements.sideMenu.classList.remove('open'); // Asegurarse que no esté open
                 DOMElements.hamburgerButton.classList.add('hidden');
             } else {
-                DOMElements.sideMenu.classList.add('hidden-truly');
                 DOMElements.sideMenu.classList.remove('open');
                 DOMElements.hamburgerButton.classList.remove('hidden');
             }
@@ -2175,11 +2175,6 @@
                 DOMElements.overlay.classList.toggle('open', isOpen);
                 DOMElements.hamburgerButton.classList.toggle('hidden', isOpen);
                 document.body.classList.toggle('overflow-hidden', isOpen);
-                if (isOpen) {
-                    DOMElements.sideMenu.classList.remove('hidden-truly');
-                } else {
-                    setTimeout(() => DOMElements.sideMenu.classList.add('hidden-truly'), 300);
-                }
             }
         };
 
@@ -2189,15 +2184,13 @@
             updateUIForAuth();
         };
 
-        // CORRECCIÓN: Nueva función para abrir el acordeón por defecto
         const openDefaultAccordion = () => {
             const partidosHeader = Array.from(DOMElements.accordionHeaders).find(h => h.querySelector('span')?.textContent.trim() === 'Partidos');
             if (partidosHeader && !partidosHeader.classList.contains('active')) {
                 partidosHeader.classList.add('active');
                 const content = partidosHeader.nextElementSibling;
                 if (content) {
-                    // Se establece la altura máxima al 'scrollHeight' para que la transición funcione
-                    content.style.maxHeight = "250px"; 
+                    content.style.maxHeight = content.scrollHeight + "px";
                 }
             }
         };
@@ -2208,9 +2201,6 @@
             const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             applyTheme(savedTheme);
             setupEventListeners();
-            
-            // CORRECCIÓN: Se elimina la lógica de apertura del acordeón de aquí.
-            // Se movió a `loadAdminPanel` para que se ejecute después de cargar los datos.
             
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === 'INITIAL_SESSION') {
