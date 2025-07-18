@@ -157,11 +157,11 @@
         html.dark #players-list-admin tbody td {
             color: #d1d5db;
         }
-        html.dark #titulares-players, html.dark #suplentes-players {
+        html.dark #titulares-players, html.dark #suplentes-players, html.dark #edit-match-available-players {
             background-color: #374151;
             border-color: #4b5563;
         }
-        html.dark #chamigo-match-list, html.dark #tt-match-list, html.dark #results-match-list {
+        html.dark #chamigo-match-list, html.dark #tt-match-list, html.dark #results-match-list, html.dark #edit-match-list {
             background-color: #1f2937;
             border-color: #4b5563;
         }
@@ -186,14 +186,14 @@
         .player-draggable:active {
             cursor: grabbing;
         }
-        #team-oscuros .player-draggable {
+        #team-oscuros .player-draggable, #edit-team-oscuros .player-draggable {
             background-color: #000000 !important;
             color: #ffffff !important;
         }
-        #team-claros {
+        #team-claros, #edit-team-claros {
             background-color: #ffffff !important;
         }
-        #team-oscuros {
+        #team-oscuros, #edit-team-oscuros {
             background-color: #1a202c !important;
         }
         /* --- Resto de los estilos --- */
@@ -218,7 +218,7 @@
         #side-menu.open {
             transform: translateX(0);
         }
-        #side-menu.hidden-truly { /* Renombrado para evitar conflictos */
+        #side-menu.hidden-truly {
             display: none !important;
         }
         #overlay {
@@ -340,7 +340,7 @@
         .date-input-wrapper {
             cursor: pointer;
         }
-        .tt-player-item {
+        .tt-player-item, .chamigo-player-item {
             padding: 0.75rem;
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
@@ -348,8 +348,11 @@
             transition: background-color 0.2s, border-color 0.2s, color 0.2s;
             text-align: center;
             font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .tt-player-item:hover {
+        .tt-player-item:hover, .chamigo-player-item:hover {
             background-color: #f3f4f6;
         }
         .tt-player-item.selected {
@@ -357,17 +360,30 @@
             border-color: #4f46e5;
             color: white;
         }
-        html.dark .tt-player-item {
+        .chamigo-vote-counter {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            min-width: 2rem;
+            text-align: center;
+        }
+        html.dark .tt-player-item, html.dark .chamigo-player-item {
             background-color: #374151;
             border-color: #4b5563;
         }
-        html.dark .tt-player-item:hover {
+        html.dark .tt-player-item:hover, html.dark .chamigo-player-item:hover {
             background-color: #4b5563;
         }
         html.dark .tt-player-item.selected {
             background-color: #6366f1;
             border-color: #6366f1;
             color: white;
+        }
+        html.dark .chamigo-vote-counter {
+            background-color: #3730a3;
+            color: #e0e7ff;
         }
     </style>
 </head>
@@ -412,6 +428,11 @@
             <button class="tab-button" data-tab="players-management">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
                 ABM Jugadores
+            </button>
+            <!-- CAMBIO: Nuevo botón para Editar Partido -->
+            <button class="tab-button" data-tab="edit-match">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                Editar Partido
             </button>
             <a href="index.html" target="_blank" rel="noopener noreferrer" class="sidebar-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-line-chart"><path d="M3 3v18h18" /><path d="m18 21-8-8-4 4-3-3" /><path d="m18 14 4-4H18V6" /></svg>
@@ -493,7 +514,6 @@
                             </div>
                         </div>
                         
-                        <!-- CAMBIO: Selector de fecha movido aquí -->
                         <div class="mt-6">
                             <label for="team-match-date" class="block text-sm font-medium">Fecha del Partido:</label>
                             <div id="team-match-date-wrapper" class="date-input-wrapper mt-1">
@@ -594,30 +614,32 @@
             <div id="match-results" class="tab-content hidden">
                  <h2 class="text-2xl font-semibold mb-4">Resultados</h2>
                  <div class="mb-6 p-4 border rounded-lg shadow-sm">
-                     <h3 class="text-xl font-medium mb-3">Partido Seleccionado</h3>
-                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                         <div>
-                             <label for="match-date" class="block text-sm font-medium">Fecha del Partido:</label>
-                             <input type="date" id="match-date" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2" readonly>
-                         </div>
-                         <div>
-                             <label for="match-result" class="block text-sm font-medium">Resultado:</label>
-                             <select id="match-result" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
-                                 <option value="">Seleccionar resultado</option>
-                                 <option value="Claros">Claros</option>
-                                 <option value="Oscuros">Oscuros</option>
-                                 <option value="Empate">Empate</option>
-                                 <option value="Suspendido">Suspendido</option>
-                             </select>
-                         </div>
-                     </div>
-                     <div class="flex space-x-3 mt-6">
-                         <button id="register-match-button" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 flex-1">
-                             Registrar Resultado
-                         </button>
-                         <button id="delete-match-button" class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 flex-1">
-                             Eliminar Partido
-                         </button>
+                     <div id="results-selection-panel" class="hidden">
+                        <h3 class="text-xl font-medium mb-3">Partido Seleccionado</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="match-date" class="block text-sm font-medium">Fecha del Partido:</label>
+                                <input type="date" id="match-date" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2" readonly>
+                            </div>
+                            <div>
+                                <label for="match-result" class="block text-sm font-medium">Resultado:</label>
+                                <select id="match-result" class="mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
+                                    <option value="">Seleccionar resultado</option>
+                                    <option value="Claros">Claros</option>
+                                    <option value="Oscuros">Oscuros</option>
+                                    <option value="Empate">Empate</option>
+                                    <option value="Suspendido">Suspendido</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex space-x-3 mt-6">
+                            <button id="register-match-button" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 flex-1">
+                                Registrar Resultado
+                            </button>
+                            <button id="delete-match-button" class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300 flex-1">
+                                Eliminar Partido
+                            </button>
+                        </div>
                      </div>
 
                      <h3 class="text-xl font-medium mb-3 mt-6">Seleccionar Partido</h3>
@@ -656,69 +678,130 @@
             <div id="chamigo-management" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold mb-4">Chamigo</h2>
                 <div class="mb-6 p-4 border rounded-lg shadow-sm">
-                    <h3 class="text-xl font-medium mb-3">Registrar Votos de Chamigo</h3>
-                    <div id="chamigo-voting-players" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                        <p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>
+                    <div id="chamigo-selection-panel" class="hidden">
+                        <h3 class="text-xl font-medium mb-3">Registrar Votos de Chamigo</h3>
+                        <div id="chamigo-voting-players" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                            <p class="text-gray-500 col-span-full">Selecciona un partido para cargar los jugadores.</p>
+                        </div>
+                        <button id="register-chamigo-button" class="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition duration-300 w-full">
+                            Registrar Chamigo(s)
+                        </button>
                     </div>
-                    <button id="register-chamigo-button" class="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition duration-300 w-full">
-                        Registrar Chamigo(s)
-                    </button>
-                </div>
 
-                <h3 class="text-xl font-medium mb-3 mt-6">Seleccionar Partido</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="chamigo-match-year-select" class="block text-sm font-medium">Año:</label>
-                        <select id="chamigo-match-year-select" class="match-year-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
-                        </select>
+                    <h3 class="text-xl font-medium mb-3 mt-6">Seleccionar Partido</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="chamigo-match-year-select" class="block text-sm font-medium">Año:</label>
+                            <select id="chamigo-match-year-select" class="match-year-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
+                            </select>
+                        </div>
+                        <div>
+                            <label for="chamigo-match-month-select" class="block text-sm font-medium">Mes:</label>
+                            <select id="chamigo-match-month-select" class="match-month-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
+                                <option value="all">Todos</option>
+                                <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label for="chamigo-match-month-select" class="block text-sm font-medium">Mes:</label>
-                        <select id="chamigo-match-month-select" class="match-month-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
-                            <option value="all">Todos</option>
-                            <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
-                        </select>
+                    <label class="block text-sm font-medium mt-4">Partidos Disponibles:</label>
+                    <div id="chamigo-match-list" class="match-list mt-1 border rounded-md shadow-sm max-h-80 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
                     </div>
-                </div>
-                <label class="block text-sm font-medium mt-4">Partidos Disponibles:</label>
-                <div id="chamigo-match-list" class="match-list mt-1 border rounded-md shadow-sm max-h-80 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
                 </div>
             </div>
 
             <div id="tt-attendance" class="tab-content hidden">
                  <h2 class="text-2xl font-semibold mb-4">TT</h2>
                  <div class="p-4 border rounded-lg shadow-sm">
-                     <h3 class="text-xl font-medium mb-3">Registrar Asistencia TT</h3>
-                     <!-- CAMBIO: Contenedor para la nueva lista de jugadores -->
-                     <div id="tt-attendance-players" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                         <p class="text-gray-500 col-span-full">Selecciona un partido para cargar los jugadores.</p>
+                     <div id="tt-selection-panel" class="hidden">
+                        <h3 class="text-xl font-medium mb-3">Registrar Asistencia TT</h3>
+                        <div id="tt-attendance-players" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                            <p class="text-gray-500 col-span-full">Selecciona un partido para cargar los jugadores.</p>
+                        </div>
+                        <button id="register-tt-button" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300 w-full">
+                            Registrar Asistencia TT
+                        </button>
                      </div>
-                     <button id="register-tt-button" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300 w-full">
-                         Registrar Asistencia TT
-                     </button>
-                 </div>
 
-                 <h3 class="text-xl font-medium mb-3 mt-6">Seleccionar Partido</h3>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                     <div>
-                         <label for="tt-match-year-select" class="block text-sm font-medium">Año:</label>
-                         <select id="tt-match-year-select" class="match-year-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
-                         </select>
+                     <h3 class="text-xl font-medium mb-3 mt-6">Seleccionar Partido</h3>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                         <div>
+                             <label for="tt-match-year-select" class="block text-sm font-medium">Año:</label>
+                             <select id="tt-match-year-select" class="match-year-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
+                             </select>
+                         </div>
+                         <div>
+                             <label for="tt-match-month-select" class="block text-sm font-medium">Mes:</label>
+                             <select id="tt-match-month-select" class="match-month-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
+                                <option value="all">Todos</option>
+                                <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+                             </select>
+                         </div>
                      </div>
-                     <div>
-                         <label for="tt-match-month-select" class="block text-sm font-medium">Mes:</label>
-                         <select id="tt-match-month-select" class="match-month-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
-                            <option value="all">Todos</option>
-                            <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
-                         </select>
+                     <label class="block text-sm font-medium mt-4">Partidos Disponibles:</label>
+                     <div id="tt-match-list" class="match-list mt-1 border rounded-md shadow-sm max-h-80 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                         <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
                      </div>
-                 </div>
-                 <label class="block text-sm font-medium mt-4">Partidos Disponibles:</label>
-                 <div id="tt-match-list" class="match-list mt-1 border rounded-md shadow-sm max-h-80 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                     <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
                  </div>
             </div>
+            
+            <!-- CAMBIO: Nueva sección para Editar Partido -->
+            <div id="edit-match" class="tab-content hidden">
+                <h2 class="text-2xl font-semibold mb-4">Editar Partido</h2>
+                <div class="mb-6 p-4 border rounded-lg shadow-sm">
+                    <div id="edit-match-panel" class="hidden">
+                        <h3 class="text-xl font-medium mb-3">Editando Partido</h3>
+                        <div class="mb-4">
+                            <label for="edit-match-date" class="block text-sm font-medium">Fecha del Partido:</label>
+                            <div id="edit-match-date-wrapper" class="date-input-wrapper mt-1">
+                                <input type="date" id="edit-match-date" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="text-xl font-medium mb-3">Jugadores Disponibles</h3>
+                                <div id="edit-match-available-players" class="border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-1 min-h-[240px]"></div>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-medium mb-3">Equipos del Partido</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 class="font-semibold mb-2">Claros</h4>
+                                        <div id="edit-team-claros" class="border border-gray-300 rounded-lg p-3 flex flex-wrap content-start gap-1 min-h-[120px]"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold mb-2">Oscuros</h4>
+                                        <div id="edit-team-oscuros" class="border border-gray-300 rounded-lg p-3 flex flex-wrap content-start gap-1 min-h-[120px]"></div>
+                                    </div>
+                                </div>
+                                <button id="update-match-button" class="mt-6 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300 w-full">
+                                    Guardar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-xl font-medium mb-3 mt-6">Seleccionar Partido para Editar</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="edit-match-year-select" class="block text-sm font-medium">Año:</label>
+                            <select id="edit-match-year-select" class="match-year-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm"></select>
+                        </div>
+                        <div>
+                            <label for="edit-match-month-select" class="block text-sm font-medium">Mes:</label>
+                            <select id="edit-match-month-select" class="match-month-select mt-1 block w-full pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md shadow-sm">
+                                <option value="all">Todos</option>
+                                <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option><option value="3">Abril</option><option value="4">Mayo</option><option value="5">Junio</option><option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option><option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="block text-sm font-medium mt-4">Partidos Disponibles:</label>
+                    <div id="edit-match-list" class="match-list mt-1 border rounded-md shadow-sm max-h-80 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <p class="text-gray-500">Selecciona un año y mes para ver los partidos.</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -748,7 +831,13 @@
         const AppState = {
             players: [],
             matches: [],
-            selectedMatchId: null,
+            selectedMatchIds: { // CAMBIO: Estado de selección por pestaña
+                results: null,
+                chamigo: null,
+                tt: null,
+                edit: null,
+            },
+            chamigoCurrentVotes: {}, // CAMBIO: Estado temporal para votos
             currentDraggedPlayer: null,
             originalParentOfDraggedPlayer: null,
             isInitializing: false, 
@@ -809,6 +898,17 @@
             darkModeToggle: document.getElementById('dark-mode-toggle'),
             darkModeIcon: document.getElementById('dark-mode-icon'),
             htmlElement: document.documentElement,
+            // Nuevos elementos
+            resultsSelectionPanel: document.getElementById('results-selection-panel'),
+            chamigoSelectionPanel: document.getElementById('chamigo-selection-panel'),
+            ttSelectionPanel: document.getElementById('tt-selection-panel'),
+            editMatchPanel: document.getElementById('edit-match-panel'),
+            editMatchDateInput: document.getElementById('edit-match-date'),
+            editMatchDateWrapper: document.getElementById('edit-match-date-wrapper'),
+            editTeamClarosDiv: document.getElementById('edit-team-claros'),
+            editTeamOscurosDiv: document.getElementById('edit-team-oscuros'),
+            editMatchAvailablePlayersDiv: document.getElementById('edit-match-available-players'),
+            updateMatchButton: document.getElementById('update-match-button'),
         };
 
         // --- MANEJO DE AUTENTICACIÓN Y CICLO DE VIDA ---
@@ -937,10 +1037,16 @@
                 case 'team-formation':
                     renderAvailablePlayersForTeams();
                     break;
-                case 'match-results':
+                case 'results':
                 case 'chamigo-management':
                 case 'tt-attendance':
+                case 'edit-match':
                     populateFilteredMatchLists();
+                    // Ocultar paneles de edición al cambiar de pestaña
+                    DOMElements.resultsSelectionPanel.classList.add('hidden');
+                    DOMElements.chamigoSelectionPanel.classList.add('hidden');
+                    DOMElements.ttSelectionPanel.classList.add('hidden');
+                    DOMElements.editMatchPanel.classList.add('hidden');
                     break;
             }
         };
@@ -1180,6 +1286,7 @@
             populateMatchListForTab('results');
             populateMatchListForTab('chamigo');
             populateMatchListForTab('tt');
+            populateMatchListForTab('edit-match'); // CAMBIO: Poblar nueva lista
         };
         
         const populateMatchListForTab = (tabName) => {
@@ -1210,7 +1317,7 @@
                 matchItem.addEventListener('click', () => {
                     document.querySelectorAll(`#${tabName}-match-list .match-item`).forEach(item => item.classList.remove('selected', 'border-indigo-500'));
                     matchItem.classList.add('selected', 'border-indigo-500');
-                    AppState.selectedMatchId = match.id;
+                    AppState.selectedMatchIds[tabName] = match.id;
                     handleMatchSelection(match, tabName);
                 });
                 listDiv.appendChild(matchItem);
@@ -1235,6 +1342,10 @@
                     isComplete = match.tt_attendees && match.tt_attendees.length > 0;
                     statusText = `Asistencia: ${isComplete ? 'Registrada' : 'Pendiente'}`;
                     break;
+                case 'edit-match':
+                    statusText = `Equipos: ${match.team_white_players?.length || 0} vs ${match.team_dark_players?.length || 0}`;
+                    isComplete = true; // Siempre se puede editar
+                    break;
             }
 
             item.className = `match-item p-2 border rounded-md cursor-pointer ${isComplete ? 'has-result' : 'no-result'}`;
@@ -1246,26 +1357,34 @@
         const handleMatchSelection = (match, tabName) => {
             switch (tabName) {
                 case 'results':
+                    DOMElements.resultsSelectionPanel.classList.remove('hidden');
                     DOMElements.matchDateInput.value = match.match_date;
                     DOMElements.matchResultSelect.value = match.result || '';
                     break;
                 case 'chamigo':
+                    DOMElements.chamigoSelectionPanel.classList.remove('hidden');
                     renderChamigoVotingPlayers(match);
                     break;
                 case 'tt':
+                    DOMElements.ttSelectionPanel.classList.remove('hidden');
                     renderTtAttendancePlayers(match);
+                    break;
+                case 'edit-match':
+                    DOMElements.editMatchPanel.classList.remove('hidden');
+                    renderEditMatchPanel(match);
                     break;
             }
         };
 
         const handleRegisterResult = async () => {
-            if (!AppState.selectedMatchId) {
+            const matchId = AppState.selectedMatchIds.results;
+            if (!matchId) {
                 showToast('Por favor, selecciona un partido.', 'warning');
                 return;
             }
             const result = DOMElements.matchResultSelect.value;
             try {
-                const { error } = await supabase.from('matches').update({ result }).eq('id', AppState.selectedMatchId);
+                const { error } = await supabase.from('matches').update({ result }).eq('id', matchId);
                 if (error) throw error;
                 showToast('Resultado actualizado!', 'success');
                 await refreshDataAndRender();
@@ -1276,7 +1395,8 @@
         };
 
         const handleDeleteMatch = async () => {
-            if (!AppState.selectedMatchId) {
+            const matchId = AppState.selectedMatchIds.results;
+            if (!matchId) {
                 showToast('Por favor, selecciona un partido para eliminar.', 'warning');
                 return;
             }
@@ -1284,12 +1404,11 @@
             if (!confirmed) return;
 
             try {
-                const { error } = await supabase.from('matches').delete().eq('id', AppState.selectedMatchId);
+                const { error } = await supabase.from('matches').delete().eq('id', matchId);
                 if (error) throw error;
                 showToast('Partido eliminado exitosamente.', 'success');
-                DOMElements.matchDateInput.value = '';
-                DOMElements.matchResultSelect.value = '';
-                AppState.selectedMatchId = null;
+                DOMElements.resultsSelectionPanel.classList.add('hidden');
+                AppState.selectedMatchIds.results = null;
                 await refreshDataAndRender();
             } catch (error) {
                 console.error('Error al eliminar partido:', error);
@@ -1301,39 +1420,62 @@
             const container = DOMElements.chamigoVotingPlayersDiv;
             container.innerHTML = '';
             const playerIDs = [...new Set([...(match.team_white_players||[]), ...(match.team_dark_players||[])])].filter(Boolean);
-            const existingVotes = match.chamigo_votes || {};
+            AppState.chamigoCurrentVotes = match.chamigo_votes || {};
 
             playerIDs.forEach(id => {
                 const player = AppState.players.find(p => p.id === id);
                 if (!player) return;
-                const voteCount = existingVotes[id] || 0;
+                
+                const voteCount = AppState.chamigoCurrentVotes[id] || 0;
+                
                 const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex items-center space-x-2';
+                playerDiv.className = 'chamigo-player-item';
+                playerDiv.dataset.id = id;
                 playerDiv.innerHTML = `
-                    <label class="block text-sm font-medium w-24 truncate" title="${player.name}">${player.name}:</label>
-                    <input type="number" data-id="${id}" class="chamigo-vote-input mt-1 block w-20 rounded-md shadow-sm sm:text-sm p-2" value="${voteCount}" min="0">
+                    <span>${player.name}</span>
+                    <span class="chamigo-vote-counter">${voteCount}</span>
                 `;
+                
+                playerDiv.addEventListener('click', () => {
+                    let currentVotes = AppState.chamigoCurrentVotes[id] || 0;
+                    currentVotes++;
+                    AppState.chamigoCurrentVotes[id] = currentVotes;
+                    playerDiv.querySelector('.chamigo-vote-counter').textContent = currentVotes;
+                });
+
+                playerDiv.addEventListener('dblclick', (e) => {
+                    e.preventDefault(); // Evitar zoom en móviles
+                    let currentVotes = AppState.chamigoCurrentVotes[id] || 0;
+                    currentVotes = Math.max(0, currentVotes - 1); // No bajar de 0
+                    AppState.chamigoCurrentVotes[id] = currentVotes;
+                    playerDiv.querySelector('.chamigo-vote-counter').textContent = currentVotes;
+                });
+                
                 container.appendChild(playerDiv);
             });
         };
 
         const handleRegisterChamigo = async () => {
-            if (!AppState.selectedMatchId) {
+            const matchId = AppState.selectedMatchIds.chamigo;
+            if (!matchId) {
                 showToast('Por favor, selecciona un partido.', 'warning');
                 return;
             }
-            const votes = {};
-            document.querySelectorAll('.chamigo-vote-input').forEach(input => {
-                const voteCount = parseInt(input.value) || 0;
-                if (voteCount > 0) {
-                    votes[input.dataset.id] = voteCount;
+            
+            // Limpiar votos en 0
+            const finalVotes = {};
+            for (const playerId in AppState.chamigoCurrentVotes) {
+                if (AppState.chamigoCurrentVotes[playerId] > 0) {
+                    finalVotes[playerId] = AppState.chamigoCurrentVotes[playerId];
                 }
-            });
+            }
 
             try {
-                const { error } = await supabase.from('matches').update({ chamigo_votes: votes }).eq('id', AppState.selectedMatchId);
+                const { error } = await supabase.from('matches').update({ chamigo_votes: finalVotes }).eq('id', matchId);
                 if (error) throw error;
                 showToast('Votos de Chamigo guardados!', 'success');
+                DOMElements.chamigoSelectionPanel.classList.add('hidden');
+                AppState.selectedMatchIds.chamigo = null;
                 await refreshDataAndRender();
             } catch (error) {
                 console.error('Error guardando votos de Chamigo:', error);
@@ -1370,22 +1512,88 @@
         };
 
         const handleRegisterTt = async () => {
-            if (!AppState.selectedMatchId) {
+            const matchId = AppState.selectedMatchIds.tt;
+            if (!matchId) {
                 showToast('Por favor, selecciona un partido.', 'warning');
                 return;
             }
             const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .tt-player-item.selected')).map(el => el.dataset.id);
 
             try {
-                const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
+                const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', matchId);
                 if (error) throw error;
                 showToast('Asistencia a TT guardada!', 'success');
+                DOMElements.ttSelectionPanel.classList.add('hidden');
+                AppState.selectedMatchIds.tt = null;
                 await refreshDataAndRender();
             } catch (error) {
                 console.error('Error guardando asistencia a TT:', error);
                 showToast(`Error al guardar la asistencia: ${error.message}`, 'error');
             }
         };
+
+        // --- LÓGICA PARA EDITAR PARTIDO ---
+        const renderEditMatchPanel = (match) => {
+            DOMElements.editMatchDateInput.value = match.match_date;
+            
+            const teamWhiteIDs = match.team_white_players || [];
+            const teamDarkIDs = match.team_dark_players || [];
+            const matchPlayerIDs = new Set([...teamWhiteIDs, ...teamDarkIDs]);
+
+            DOMElements.editTeamClarosDiv.innerHTML = '';
+            DOMElements.editTeamOscurosDiv.innerHTML = '';
+            DOMElements.editMatchAvailablePlayersDiv.innerHTML = '';
+
+            AppState.players.forEach(player => {
+                if (player.status !== 'Activo') return;
+
+                const playerEl = createDraggablePlayer(player);
+                if (teamWhiteIDs.includes(player.id)) {
+                    DOMElements.editTeamClarosDiv.appendChild(playerEl);
+                } else if (teamDarkIDs.includes(player.id)) {
+                    DOMElements.editTeamOscurosDiv.appendChild(playerEl);
+                } else {
+                    DOMElements.editMatchAvailablePlayersDiv.appendChild(playerEl);
+                }
+            });
+        };
+
+        const handleUpdateMatch = async () => {
+            const matchId = AppState.selectedMatchIds.edit;
+            if (!matchId) {
+                showToast('No hay un partido seleccionado para actualizar.', 'error');
+                return;
+            }
+
+            const newDate = DOMElements.editMatchDateInput.value;
+            const newTeamWhite = Array.from(DOMElements.editTeamClarosDiv.children).map(el => el.dataset.id);
+            const newTeamDark = Array.from(DOMElements.editTeamOscurosDiv.children).map(el => el.dataset.id);
+
+            if (!newDate) {
+                showToast('La fecha del partido no puede estar vacía.', 'warning');
+                return;
+            }
+
+            try {
+                const { error } = await supabase.from('matches').update({
+                    match_date: newDate,
+                    team_white_players: newTeamWhite,
+                    team_dark_players: newTeamDark
+                }).eq('id', matchId);
+
+                if (error) throw error;
+
+                showToast('Partido actualizado exitosamente.', 'success');
+                DOMElements.editMatchPanel.classList.add('hidden');
+                AppState.selectedMatchIds.edit = null;
+                await refreshDataAndRender();
+
+            } catch (error) {
+                console.error('Error al actualizar el partido:', error);
+                showToast(`Error al actualizar el partido: ${error.message}`, 'error');
+            }
+        };
+
 
         // --- MANEJO DE UI GENERAL Y EVENTOS ---
         const setupEventListeners = () => {
@@ -1400,12 +1608,14 @@
             DOMElements.darkModeToggle.addEventListener('click', toggleTheme);
             DOMElements.tabButtons.forEach(button => button.addEventListener('click', handleTabButtonClick));
 
-            DOMElements.teamMatchDateWrapper.addEventListener('click', () => {
-                try {
-                    DOMElements.teamMatchDateInput.showPicker();
-                } catch (error) {
-                    console.log("showPicker() no es soportado en este navegador, el comportamiento por defecto funcionará.");
-                }
+            [DOMElements.teamMatchDateWrapper, DOMElements.editMatchDateWrapper].forEach(wrapper => {
+                wrapper.addEventListener('click', () => {
+                    try {
+                        wrapper.querySelector('input[type="date"]').showPicker();
+                    } catch (error) {
+                        console.log("showPicker() no es soportado en este navegador.");
+                    }
+                });
             });
 
             // ABM Jugadores
@@ -1416,8 +1626,13 @@
                 el.addEventListener('input', renderPlayersListAdmin);
             });
 
-            // Armado de equipos
-            [DOMElements.titularesPlayersDiv, DOMElements.suplentesPlayersDiv, DOMElements.teamClarosDiv, DOMElements.teamOscurosDiv].forEach(zone => {
+            // Drag & Drop
+            const dropZones = [
+                DOMElements.titularesPlayersDiv, DOMElements.suplentesPlayersDiv, 
+                DOMElements.teamClarosDiv, DOMElements.teamOscurosDiv,
+                DOMElements.editMatchAvailablePlayersDiv, DOMElements.editTeamClarosDiv, DOMElements.editTeamOscurosDiv
+            ];
+            dropZones.forEach(zone => {
                 zone.addEventListener('dragover', (e) => e.preventDefault());
                 zone.addEventListener('drop', handleDrop);
             });
@@ -1433,6 +1648,7 @@
             DOMElements.deleteMatchButton.addEventListener('click', handleDeleteMatch);
             DOMElements.registerChamigoButton.addEventListener('click', handleRegisterChamigo);
             DOMElements.registerTtButton.addEventListener('click', handleRegisterTt);
+            DOMElements.updateMatchButton.addEventListener('click', handleUpdateMatch);
         };
         
         const handleTabButtonClick = (event) => {
@@ -1520,7 +1736,7 @@
             });
             dragged.classList.remove('dragging-touch');
 
-            const dropZone = dropTarget ? dropTarget.closest('#titulares-players, #suplentes-players, #team-claros, #team-oscuros') : null;
+            const dropZone = dropTarget ? dropTarget.closest('.player-drop-zone') : null;
             if (dropZone) {
                 handleDropLogic(dragged, dropZone);
             } else {
@@ -1538,20 +1754,22 @@
             const targetId = dropZone.id;
             if (sourceId === targetId) return;
 
-            // Evitar mover entre titulares y suplentes
-            if ((sourceId === 'titulares-players' && targetId === 'suplentes-players') || (sourceId === 'suplentes-players' && targetId === 'titulares-players')) {
-                return;
+            // Lógica para Armar Equipos
+            if (targetId.startsWith('team-')) {
+                if ((targetId === 'team-claros' || targetId === 'team-oscuros') && dropZone.children.length >= 5) {
+                    showToast(`El equipo ya tiene 5 jugadores.`, 'warning');
+                    return;
+                }
+            }
+            // Lógica para Editar Partido
+            if (targetId.startsWith('edit-team-')) {
+                const totalPlayers = DOMElements.editTeamClarosDiv.children.length + DOMElements.editTeamOscurosDiv.children.length;
+                if (totalPlayers >= 10 && !targetId.includes(sourceId)) {
+                     showToast(`Ya hay 10 jugadores en el partido.`, 'warning');
+                     return;
+                }
             }
 
-            // Validar límite de 5 jugadores por equipo
-            if ((targetId === 'team-claros' || targetId === 'team-oscuros') && dropZone.children.length >= 5 && sourceId !== targetId) {
-                showToast(`El equipo ya tiene 5 jugadores.`, 'warning');
-                // Si es táctil, el elemento se queda "flotando", hay que devolverlo
-                if (AppState.originalParentOfDraggedPlayer) {
-                    AppState.originalParentOfDraggedPlayer.appendChild(draggedElement);
-                }
-                return;
-            }
             dropZone.appendChild(draggedElement);
             updateTeamCounts();
         };
@@ -1568,7 +1786,6 @@
         };
 
         const showToast = (message, type = 'info') => {
-            // Implementación simple de un toast. Podría reemplazarse por una librería.
             const toast = document.createElement('div');
             const colors = {
                 success: 'bg-green-500',
