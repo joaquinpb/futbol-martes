@@ -712,7 +712,7 @@
             selectedMatchId: null,
             currentDraggedPlayer: null,
             originalParentOfDraggedPlayer: null,
-            isInitializing: false, // CORRECCIÓN: Flag para evitar inicialización múltiple
+            isInitializing: false, 
         };
 
         // --- SELECTORES DEL DOM (CACHEADOS) ---
@@ -797,38 +797,45 @@
         };
 
         const handleSignout = async () => {
-            // CORRECCIÓN: UI optimista para mejorar la sensación de respuesta
-            DOMElements.adminContent.classList.add('hidden');
-            DOMElements.loadingContainer.classList.remove('hidden');
-
             const { error } = await supabase.auth.signOut();
-
             if (error) {
                 console.error("Signout error:", error);
                 showToast("Error al cerrar sesión.", "error");
-                // Revertir UI si falla el cierre de sesión
-                DOMElements.adminContent.classList.remove('hidden');
-                DOMElements.loadingContainer.classList.add('hidden');
             }
-            // onAuthStateChange se encargará de mostrar la pantalla de login y limpiar el estado.
+            // onAuthStateChange se encargará de la transición de la UI y de limpiar el estado.
         };
 
         const handleAuthStateChange = async (event, session) => {
-            DOMElements.loadingContainer.classList.add('hidden');
+            // CORRECCIÓN: Lógica de transición de vistas centralizada y robusta.
             if (session) {
+                // Estado: Usuario logueado.
+                // 1. Ocultar todo menos el loader principal.
                 DOMElements.authContainer.classList.add('hidden');
+                DOMElements.adminContent.classList.add('hidden');
+                DOMElements.loadingContainer.classList.remove('hidden');
+
+                // 2. Cargar todos los datos necesarios.
+                await initializeAppData();
+
+                // 3. Una vez cargados los datos, mostrar el panel de admin.
+                DOMElements.loadingContainer.classList.add('hidden');
                 DOMElements.adminContent.classList.remove('hidden');
                 updateUIForAuth();
-                await initializeAppData();
             } else {
+                // Estado: Usuario no logueado.
+                // 1. Mostrar solo el formulario de login.
+                DOMElements.loadingContainer.classList.add('hidden');
                 DOMElements.authContainer.classList.remove('hidden');
                 DOMElements.adminContent.classList.add('hidden');
+                
+                // 2. Ocultar y resetear elementos del panel de admin.
                 DOMElements.sideMenu.classList.add('hidden-truly');
                 DOMElements.sideMenu.classList.remove('open');
                 DOMElements.hamburgerButton.classList.add('hidden');
                 DOMElements.overlay.classList.remove('open');
                 document.body.classList.remove('overflow-hidden');
-                // CORRECCIÓN: Resetear el estado de la app al cerrar sesión
+                
+                // 3. Limpiar el estado de la aplicación.
                 AppState.players = [];
                 AppState.matches = [];
                 AppState.isInitializing = false;
@@ -849,10 +856,9 @@
         };
         
         const initializeAppData = async () => {
-            if (AppState.isInitializing) return; // CORRECCIÓN: Guarda para evitar re-entradas
+            if (AppState.isInitializing) return;
             AppState.isInitializing = true;
 
-            // CORRECCIÓN: Envolver la inicialización en un try/catch para manejar errores fatales
             try {
                 const [players, matches] = await Promise.all([
                     fetchData('players', { column: 'id', ascending: true }),
@@ -871,6 +877,7 @@
         };
 
         const refreshDataAndRender = async () => {
+            // Esta función ahora es un alias más legible para la inicialización.
             await initializeAppData();
         };
 
@@ -880,14 +887,18 @@
             setInitialDateFilters();
             populateFilteredMatchLists();
 
-            const activeTab = document.querySelector('.tab-button.active')?.dataset.tab;
-            if (activeTab) {
-                renderTabContent(activeTab);
-            } else {
+            // CORRECCIÓN: Lógica simplificada para activar la primera pestaña.
+            let activeTab = document.querySelector('.tab-button.active')?.dataset.tab;
+            if (!activeTab) {
                 const firstTabButton = DOMElements.tabButtons[0];
-                if(firstTabButton) {
-                    firstTabButton.click();
+                if (firstTabButton) {
+                    firstTabButton.classList.add('active');
+                    document.getElementById(firstTabButton.dataset.tab).classList.remove('hidden');
+                    activeTab = firstTabButton.dataset.tab;
                 }
+            }
+            if(activeTab) {
+                renderTabContent(activeTab);
             }
         };
 
