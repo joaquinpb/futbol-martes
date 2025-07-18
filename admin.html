@@ -83,8 +83,11 @@
         #players-list-admin tbody tr.selected, #user-list-admin tbody tr.selected {
             background-color: #e0e7ff;
         }
-        #players-list-admin tbody td, #user-list-admin tbody td {
+        #players-list-admin tbody td, #user-list-admin tbody td,
+        #players-list-admin thead th, #user-list-admin thead th {
             color: #4b5563;
+            padding: 0.5rem; /* CAMBIO: Menos padding */
+            font-size: 0.75rem; /* CAMBIO: Texto más pequeño */
         }
         #custom-confirm-modal .bg-white {
             background-color: #ffffff;
@@ -161,7 +164,8 @@
         html.dark #players-list-admin tbody tr.selected, html.dark #user-list-admin tbody tr.selected {
             background-color: #3730a3;
         }
-        html.dark #players-list-admin tbody td, html.dark #user-list-admin tbody td {
+        html.dark #players-list-admin tbody td, html.dark #user-list-admin tbody td,
+        html.dark #players-list-admin thead th, html.dark #user-list-admin thead th {
             color: #d1d5db;
         }
         html.dark #titulares-players, html.dark #suplentes-players, html.dark #edit-titulares-players, html.dark #edit-suplentes-players {
@@ -268,7 +272,7 @@
             padding-left: 2.5rem; /* Indentación para sub-items */
         }
         #side-menu .tab-button.active {
-            background-color: #4338ca;
+            background-color: #4f46e5; /* CAMBIO: Color más claro para el activo */
         }
         #side-menu .tab-button:hover, #side-menu .sidebar-link:hover {
             background-color: #4f46e5;
@@ -326,7 +330,7 @@
             justify-content: space-between;
             align-items: center;
             font-weight: 600;
-            background-color: #4338ca;
+            background-color: #3730a3; /* CAMBIO: Color base más oscuro */
             margin-bottom: 0.25rem;
         }
         .accordion-content {
@@ -2185,6 +2189,14 @@
             const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             applyTheme(savedTheme);
             setupEventListeners();
+            
+            // Abrir la primera sección del acordeón por defecto
+            const firstAccordionHeader = DOMElements.accordionHeaders[0];
+            if (firstAccordionHeader) {
+                firstAccordionHeader.classList.add('active');
+                const content = firstAccordionHeader.nextElementSibling;
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
             
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === 'INITIAL_SESSION') {
