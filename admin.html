@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://css.gg/css?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- CAMBIO: Favicon de pelota de fútbol -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='white' stroke='black' stroke-width='4'/%3E%3Cpath d='M50,2 L50,20 M15.5,25 L30,35 M84.5,25 L70,35 M15.5,75 L30,65 M84.5,75 L70,65 M50,98 L50,80' stroke='black' stroke-width='4'/%3E%3Cpolygon points='50,20 30,35 30,65 50,80 70,65 70,35' fill='black'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E⚽%3C/text%3E%3C/svg%3E">
     <style>
         html, body {
             height: 100%;
@@ -771,7 +771,7 @@
                 <div class="mb-6 p-4 border rounded-lg shadow-sm">
                     <div id="edit-match-panel" class="hidden">
                         <h3 class="text-xl font-medium mb-3">Editando Partido</h3>
-                        <p class="text-gray-500 mb-4">Arrastra jugadores para modificar los equipos.</p>
+                        <p class="text-gray-500 mb-4">Arrastra jugadores para modificar los equipos o haz clic en un jugador del equipo para devolverlo a la lista.</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <h3 class="text-xl font-medium mb-3">Jugadores Disponibles</h3>
@@ -780,7 +780,7 @@
                                 <div id="edit-suplentes-players" class="player-drop-zone border border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-wrap gap-1 min-h-[120px]"></div>
                             </div>
                             <div>
-                                <h3 class="text-xl font-medium mb-3">Equipos del Partido (<span id="edit-total-selected-players">0</span>/10)</h3>
+                                <h3 class="text-xl font-medium mb-3">Equipos del Partido (<span id="edit-total-selected-players">0</span>)</h3>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <h4 class="font-semibold mb-2">Claros (<span id="edit-claros-count">0</span>)</h4>
@@ -1227,7 +1227,7 @@
             el.draggable = true;
             el.dataset.id = player.id;
             el.dataset.name = player.name;
-            el.dataset.role = player.role; // CAMBIO: Guardar el rol para el drag-drop
+            el.dataset.role = player.role;
             el.textContent = player.name;
             el.addEventListener('dragstart', handleDragStart);
             el.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -1494,7 +1494,7 @@
                 });
 
                 playerDiv.querySelector('.subtract-vote').addEventListener('click', (e) => {
-                    e.stopPropagation(); // Evitar que el click se propague al div principal
+                    e.stopPropagation();
                     let currentVotes = AppState.chamigoCurrentVotes[id] || 0;
                     currentVotes = Math.max(0, currentVotes - 1);
                     AppState.chamigoCurrentVotes[id] = currentVotes;
@@ -1588,15 +1588,21 @@
             const teamWhiteIDs = match.team_white_players || [];
             const teamDarkIDs = match.team_dark_players || [];
 
-            DOMElements.editTeamClarosDiv.innerHTML = '';
-            DOMElements.editTeamOscurosDiv.innerHTML = '';
-            DOMElements.editTitularesPlayersDiv.innerHTML = '';
-            DOMElements.editSuplentesPlayersDiv.innerHTML = '';
+            [DOMElements.editTeamClarosDiv, DOMElements.editTeamOscurosDiv, DOMElements.editTitularesPlayersDiv, DOMElements.editSuplentesPlayersDiv].forEach(el => el.innerHTML = '');
 
             AppState.players.forEach(player => {
                 if (player.status !== 'Activo') return;
 
                 const playerEl = createDraggablePlayer(player);
+                
+                // CAMBIO: Agregar click listener para devolver jugador
+                playerEl.addEventListener('click', (e) => {
+                    const clickedPlayer = e.currentTarget;
+                    const destination = clickedPlayer.dataset.role === 'Titular' ? DOMElements.editTitularesPlayersDiv : DOMElements.editSuplentesPlayersDiv;
+                    destination.appendChild(clickedPlayer);
+                    updateEditTeamCounts();
+                });
+
                 if (teamWhiteIDs.includes(player.id)) {
                     DOMElements.editTeamClarosDiv.appendChild(playerEl);
                 } else if (teamDarkIDs.includes(player.id)) {
@@ -1618,7 +1624,7 @@
             DOMElements.editClarosCountSpan.textContent = clarosCount;
             DOMElements.editOscurosCountSpan.textContent = oscurosCount;
             DOMElements.editTotalSelectedPlayersSpan.textContent = clarosCount + oscurosCount;
-            DOMElements.updateMatchButton.disabled = !(clarosCount + oscurosCount === 10);
+            DOMElements.updateMatchButton.disabled = (clarosCount + oscurosCount) !== 10;
         };
 
         const handleUpdateMatch = async () => {
@@ -1820,20 +1826,16 @@
 
             // Lógica para Armar Equipos
             if (targetId.startsWith('team-')) {
-                const isTitular = draggedElement.dataset.role === 'Titular';
-                const targetAvailableZone = isTitular ? DOMElements.titularesPlayersDiv : DOMElements.suplentesPlayersDiv;
-                if (targetId === targetAvailableZone.id) {
-                    // No hacer nada si se arrastra a su propia lista de origen
+                if (dropZone.children.length >= 5) {
+                    showToast(`El equipo ya tiene 5 jugadores.`, 'warning');
                     return;
                 }
             }
-            
             // Lógica para Editar Partido
-            if (targetId.startsWith('edit-')) {
-                const isTitular = draggedElement.dataset.role === 'Titular';
-                const targetAvailableZone = isTitular ? DOMElements.editTitularesPlayersDiv : DOMElements.editSuplentesPlayersDiv;
-                if (targetId === targetAvailableZone.id) {
-                     return;
+            if (targetId.startsWith('edit-team-')) {
+                 if (dropZone.children.length >= 5) {
+                    showToast(`El equipo ya tiene 5 jugadores.`, 'warning');
+                    return;
                 }
             }
 
