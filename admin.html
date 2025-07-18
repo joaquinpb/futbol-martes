@@ -11,7 +11,9 @@
     <!-- Carga de la fuente Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://css.gg/css?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CORRECCIÓN: Evita el error 404 de favicon.ico -->
+    <link rel="icon" href="data:,">
     <style>
         html, body {
             height: 100%;
@@ -407,19 +409,22 @@
         <div id="auth-container" class="max-w-md mx-auto hidden">
             <div class="p-8 border rounded-lg shadow-sm bg-white dark:bg-gray-800 dark:border-gray-700">
                 <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label for="email" class="block text-sm font-medium mb-1">Email</label>
-                        <input type="email" id="email" class="w-full p-2 border rounded-md" placeholder="tu@email.com">
+                <!-- CORRECCIÓN: Envuelve los campos en un <form> para mejorar la semántica -->
+                <form id="login-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                            <input type="email" id="email" class="w-full p-2 border rounded-md" placeholder="tu@email.com" autocomplete="email">
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
+                            <input type="password" id="password" class="w-full p-2 border rounded-md" placeholder="••••••••" autocomplete="current-password">
+                        </div>
+                        <button id="login-button" type="submit" class="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
+                            Entrar
+                        </button>
                     </div>
-                    <div>
-                        <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
-                        <input type="password" id="password" class="w-full p-2 border rounded-md" placeholder="••••••••">
-                    </div>
-                    <button id="login-button" class="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
-                        Entrar
-                    </button>
-                </div>
+                </form>
                 <p id="auth-status" class="text-center text-red-500 mt-4 h-4"></p>
             </div>
         </div>
@@ -708,7 +713,6 @@
             selectedMatchId: null,
             currentDraggedPlayer: null,
             originalParentOfDraggedPlayer: null,
-            isFetching: false,
         };
 
         // --- SELECTORES DEL DOM (CACHEADOS) ---
@@ -716,6 +720,7 @@
             authContainer: document.getElementById('auth-container'),
             adminContent: document.getElementById('admin-content'),
             loadingContainer: document.getElementById('loading-container'),
+            loginForm: document.getElementById('login-form'), // CORRECCIÓN
             sideMenu: document.getElementById('side-menu'),
             hamburgerButton: document.getElementById('hamburger-button'),
             overlay: document.getElementById('overlay'),
@@ -768,7 +773,8 @@
         };
 
         // --- MANEJO DE AUTENTICACIÓN ---
-        const handleLogin = async () => {
+        const handleLogin = async (event) => {
+            event.preventDefault(); // CORRECCIÓN: Previene el envío del formulario
             DOMElements.loginButton.disabled = true;
             DOMElements.loginButton.textContent = "Entrando...";
             const email = DOMElements.emailInput.value.trim();
@@ -815,8 +821,7 @@
 
         // --- LÓGICA DE DATOS (SUPABASE) ---
         const fetchData = async (tableName, orderOptions) => {
-            if (AppState.isFetching) return;
-            AppState.isFetching = true;
+            // CORRECCIÓN: Se elimina el flag isFetching que causaba la race condition
             try {
                 const { data, error } = await supabase.from(tableName).select('*').order(orderOptions.column, { ascending: orderOptions.ascending });
                 if (error) throw error;
@@ -824,9 +829,7 @@
             } catch (error) {
                 console.error(`Error cargando ${tableName}:`, error);
                 showToast(`Error al cargar ${tableName}. Revisa la consola.`, 'error');
-                return [];
-            } finally {
-                AppState.isFetching = false;
+                return []; // Devuelve un array vacío en caso de error para evitar fallos posteriores
             }
         };
         
@@ -835,8 +838,8 @@
                 fetchData('players', { column: 'id', ascending: true }),
                 fetchData('matches', { column: 'match_date', ascending: false })
             ]);
-            AppState.players = players;
-            AppState.matches = matches;
+            AppState.players = players || []; // Aseguramos que sea un array
+            AppState.matches = matches || []; // Aseguramos que sea un array
             
             // Una vez cargados los datos, renderizamos todo
             renderAllContent();
@@ -848,6 +851,11 @@
 
         // --- LÓGICA DE RENDERIZADO ---
         const renderAllContent = () => {
+            // Poblar selects de año/mes primero, ya que son necesarios para los filtros
+            populateMatchYearSelects();
+            setInitialDateFilters();
+            populateFilteredMatchLists();
+
             // Renderizar contenido de la pestaña activa
             const activeTab = document.querySelector('.tab-button.active')?.dataset.tab;
             if (activeTab) {
@@ -859,11 +867,6 @@
                     firstTabButton.click();
                 }
             }
-
-            // Poblar selects de año/mes
-            populateMatchYearSelects();
-            setInitialDateFilters();
-            populateFilteredMatchLists();
         };
 
         const renderTabContent = (tabId) => {
@@ -874,6 +877,7 @@
                 case 'team-formation':
                     renderAvailablePlayersForTeams();
                     break;
+                // Los casos de partidos ya se actualizan con populateFilteredMatchLists
                 case 'match-results':
                 case 'chamigo-management':
                 case 'tt-attendance':
@@ -1316,8 +1320,7 @@
         // --- MANEJO DE UI GENERAL Y EVENTOS ---
         const setupEventListeners = () => {
             // Autenticación
-            DOMElements.loginButton.addEventListener('click', handleLogin);
-            DOMElements.passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
+            DOMElements.loginForm.addEventListener('submit', handleLogin); // CORRECCIÓN
             DOMElements.signoutButton.addEventListener('click', handleSignout);
             supabase.auth.onAuthStateChange(handleAuthStateChange);
 
