@@ -221,15 +221,18 @@
             background-color: #312e81;
             color: white;
             transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.3s ease-in-out, visibility 0.3s;
             z-index: 40;
             display: flex;
             flex-direction: column;
+            visibility: hidden; /* CORRECCIÓN: Oculto por defecto */
+        }
+        #side-menu.is-visible {
+             visibility: visible; /* CORRECCIÓN: Se hace visible solo cuando el usuario está logueado */
         }
         #side-menu.open {
             transform: translateX(0);
         }
-        /* CORRECCIÓN: Se elimina la regla #side-menu.hidden-truly para que el menú siempre esté en el DOM */
         #overlay {
             position: fixed;
             inset: 0;
@@ -1078,6 +1081,7 @@
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
             DOMElements.adminContent.classList.add('hidden');
+            DOMElements.sideMenu.classList.remove('is-visible'); // CORRECCIÓN: Ocultar menú
             DOMElements.sideMenu.classList.remove('open');
             DOMElements.hamburgerButton.classList.add('hidden');
             DOMElements.overlay.classList.remove('open');
@@ -1093,6 +1097,7 @@
             if (AppState.isInitializing) return;
             AppState.isInitializing = true;
             
+            DOMElements.sideMenu.classList.add('is-visible'); // CORRECCIÓN: Mostrar menú
             DOMElements.authContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
             DOMElements.loadingContainer.classList.remove('hidden');
@@ -1980,7 +1985,6 @@
             DOMElements.registerTtButton.addEventListener('click', handleRegisterTt);
             DOMElements.updateMatchButton.addEventListener('click', handleUpdateMatch);
 
-            // CORRECCIÓN: Listener para corregir estado de la UI al volver a la pestaña/app
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible' && window.innerWidth < 768) {
                     const isMenuOpen = DOMElements.sideMenu.classList.contains('open');
@@ -2017,7 +2021,7 @@
             });
 
             if (window.innerWidth >= 768) {
-                DOMElements.sideMenu.classList.remove('open'); // Asegurarse que no esté open
+                DOMElements.sideMenu.classList.remove('open'); 
                 DOMElements.hamburgerButton.classList.add('hidden');
             } else {
                 DOMElements.sideMenu.classList.remove('open');
