@@ -113,14 +113,17 @@
             z-index: 10;
         }
 
-        /* --- ESTILOS PARA COLUMNAS FIJAS (SOLO MOBILE) --- */
+        /* --- ESTILOS PARA COLUMNAS FIJAS Y SCROLL HORIZONTAL (SOLO MOBILE) --- */
         @media (max-width: 767px) {
+            #estadisticas-table, #individual-stats-table {
+                min-width: 800px; /* Fuerza el overflow horizontal */
+            }
+
             .sticky-col {
                 position: sticky;
                 z-index: 5;
             }
-
-            /* --- Tabla Estadísticas --- */
+            
             #estadisticas-table .sticky-col-1 {
                 left: 0;
                 width: 45px;
@@ -130,7 +133,6 @@
                 left: 45px; /* Coincide con el ancho de la col 1 */
             }
 
-            /* --- Tabla Histórico --- */
             #individual-stats-table .sticky-col-1 {
                 left: 0;
                 width: 90px;
@@ -140,7 +142,6 @@
                 left: 90px; /* Coincide con el ancho de la col 1 */
             }
             
-            /* Fondos para celdas fijas para evitar transparencias */
             #estadisticas-table thead th.sticky-col,
             #individual-stats-table thead th.sticky-col {
                 background-color: var(--bg-table-header) !important;
@@ -154,7 +155,6 @@
             #individual-stats-table tbody tr:nth-child(odd) td.sticky-col {
                 background-color: var(--bg-table-row-odd);
             }
-            /* Clases específicas para Histórico por su complejidad */
             #individual-stats-table tr.bg-blue-200 td.sticky-col { background-color: var(--bg-blue-200) !important; }
             #individual-stats-table tr.bg-gray-200 td.sticky-col { background-color: #e5e7eb !important; }
             body.dark-mode #individual-stats-table tr.bg-gray-200 td.sticky-col { background-color: #4a5568 !important; }
@@ -165,7 +165,7 @@
             top: 0;
             left: 0;
             height: 100vh;
-            width: 256px; /* w-64 */
+            width: 256px;
             background-color: var(--bg-indigo-800);
             color: var(--text-table-header);
             transform: translateX(-100%);
@@ -1637,7 +1637,7 @@
             table.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando historial...`;
-            tableBody.innerHTML = '';
+            tableBody.innerHTML = ''; // Limpiar la tabla antes de renderizar
             
             if(!selectedPlayerId) {
                 loadingMessage.textContent = 'Selecciona un jugador para ver sus estadísticas.';
@@ -1653,7 +1653,9 @@
 
             if (!playerStats) { loadingMessage.textContent = 'No se pudieron calcular las estadísticas.'; return; }
             
-            tableBody.innerHTML += `
+            let tableHtml = ''; // Construir todo el HTML en una variable
+
+            tableHtml += `
                 <tr class="bg-blue-200 font-bold text-indigo-800">
                     <td class="py-3 px-3 text-left pl-4 sticky-col sticky-col-1"><b>TOTAL</b></td>
                     <td class="py-3 px-3 text-center sticky-col sticky-col-2"></td>
@@ -1672,7 +1674,7 @@
             Object.keys(playerStats.years).sort((a,b) => b-a).forEach(year => {
                 const yearData = playerStats.years[year];
                 if(yearData.total.pj > 0) {
-                    tableBody.innerHTML += `
+                    tableHtml += `
                         <tr class="year-total-row bg-gray-200 font-semibold text-gray-700 cursor-pointer" data-year="${year}">
                             <td class="py-3 px-3 text-left pl-4 sticky-col sticky-col-1"><i class="fas fa-plus-circle toggle-details mr-2 text-indigo-600 dark:text-blue-300"></i><b>${year}</b></td>
                             <td class="py-3 px-3 text-center sticky-col sticky-col-2"><b>TOTAL AÑO</b></td>
@@ -1715,7 +1717,8 @@
                     `;
                 }
             });
-
+            
+            tableBody.innerHTML = tableHtml; // Asignar el HTML construido una sola vez
             loadingMessage.classList.add('hidden');
             table.classList.remove('hidden');
         }
