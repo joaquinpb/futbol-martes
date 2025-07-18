@@ -335,6 +335,40 @@
         .hidden {
             display: none !important;
         }
+        
+        /* --- NUEVOS ESTILOS --- */
+        .date-input-wrapper {
+            cursor: pointer;
+        }
+        .tt-player-item {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+            text-align: center;
+            font-weight: 500;
+        }
+        .tt-player-item:hover {
+            background-color: #f3f4f6;
+        }
+        .tt-player-item.selected {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+            color: white;
+        }
+        html.dark .tt-player-item {
+            background-color: #374151;
+            border-color: #4b5563;
+        }
+        html.dark .tt-player-item:hover {
+            background-color: #4b5563;
+        }
+        html.dark .tt-player-item.selected {
+            background-color: #6366f1;
+            border-color: #6366f1;
+            color: white;
+        }
     </style>
 </head>
 <body class="flex flex-col md:flex-row">
@@ -433,9 +467,12 @@
             <!-- Tab contents go here -->
             <div id="team-formation" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold mb-4">Armar Equipos</h2>
+                <!-- CAMBIO: Contenedor para el selector de fecha -->
                 <div class="mb-4">
                     <label for="team-match-date" class="block text-sm font-medium">Fecha del Partido:</label>
-                    <input type="date" id="team-match-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    <div id="team-match-date-wrapper" class="date-input-wrapper mt-1">
+                        <input type="date" id="team-match-date" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
                 </div>
                 <p class="text-gray-500 mb-4">Arrastra 10 jugadores para formar los equipos Claros y Oscuros.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -651,8 +688,9 @@
                  <h2 class="text-2xl font-semibold mb-4">TT</h2>
                  <div class="p-4 border rounded-lg shadow-sm">
                      <h3 class="text-xl font-medium mb-3">Registrar Asistencia TT</h3>
+                     <!-- CAMBIO: Contenedor para la nueva lista de jugadores -->
                      <div id="tt-attendance-players" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                         <p class="text-gray-500">Selecciona un partido para cargar los jugadores.</p>
+                         <p class="text-gray-500 col-span-full">Selecciona un partido para cargar los jugadores.</p>
                      </div>
                      <button id="register-tt-button" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-300 w-full">
                          Registrar Asistencia TT
@@ -705,7 +743,6 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Estado centralizado de la aplicación
         const AppState = {
             players: [],
             matches: [],
@@ -715,7 +752,6 @@
             isInitializing: false, 
         };
 
-        // --- SELECTORES DEL DOM (CACHEADOS) ---
         const DOMElements = {
             authContainer: document.getElementById('auth-container'),
             adminContent: document.getElementById('admin-content'),
@@ -749,6 +785,7 @@
             playerListStatusFilter: document.getElementById('player-list-status-filter'),
             playerListRoleFilter: document.getElementById('player-list-role-filter'),
             teamMatchDateInput: document.getElementById('team-match-date'),
+            teamMatchDateWrapper: document.getElementById('team-match-date-wrapper'), // CAMBIO
             titularesPlayersDiv: document.getElementById('titulares-players'),
             suplentesPlayersDiv: document.getElementById('suplentes-players'),
             teamClarosDiv: document.getElementById('team-claros'),
@@ -778,13 +815,11 @@
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
             DOMElements.adminContent.classList.add('hidden');
-            
             DOMElements.sideMenu.classList.add('hidden-truly');
             DOMElements.sideMenu.classList.remove('open');
             DOMElements.hamburgerButton.classList.add('hidden');
             DOMElements.overlay.classList.remove('open');
             document.body.classList.remove('overflow-hidden');
-            
             AppState.players = [];
             AppState.matches = [];
             AppState.isInitializing = false;
@@ -815,7 +850,7 @@
             } catch (error) {
                 console.error("Error fatal durante la inicialización del panel:", error);
                 showToast("Error al cargar datos. Intente refrescar.", "error");
-                showLoginScreen(); // Si falla la carga, volvemos al login.
+                showLoginScreen();
             } finally {
                 AppState.isInitializing = false;
             }
@@ -840,7 +875,6 @@
             if (error) {
                 DOMElements.authStatus.textContent = 'Email o contraseña incorrectos.';
             }
-            // onAuthStateChange se encargará de llamar a loadAdminPanel
             DOMElements.loginButton.disabled = false;
             DOMElements.loginButton.textContent = "Entrar";
         };
@@ -851,7 +885,6 @@
                 console.error("Signout error:", error);
                 showToast("Error al cerrar sesión.", "error");
             }
-            // onAuthStateChange se encargará de llamar a showLoginScreen
         };
 
         // --- LÓGICA DE DATOS (SUPABASE) ---
@@ -1306,29 +1339,42 @@
             }
         };
 
+        // CAMBIO: Función de renderizado para asistencia de TT
         const renderTtAttendancePlayers = (match) => {
             const container = DOMElements.ttAttendancePlayersDiv;
             container.innerHTML = '';
             const activePlayers = AppState.players.filter(p => p.status === 'Activo');
             const existingAttendees = match.tt_attendees || [];
             
+            if (activePlayers.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 col-span-full">No hay jugadores activos.</p>';
+                return;
+            }
+
             activePlayers.forEach(player => {
                 const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex items-center space-x-2';
-                playerDiv.innerHTML = `
-                    <input type="checkbox" id="tt-player-${player.id}" data-id="${player.id}" class="tt-checkbox h-4 w-4 rounded" ${existingAttendees.includes(player.id) ? 'checked' : ''}>
-                    <label for="tt-player-${player.id}" class="text-sm font-medium">${player.name}</label>
-                `;
+                playerDiv.className = 'tt-player-item';
+                if (existingAttendees.includes(player.id)) {
+                    playerDiv.classList.add('selected');
+                }
+                playerDiv.dataset.id = player.id;
+                playerDiv.textContent = player.name;
+                
+                playerDiv.addEventListener('click', (e) => {
+                    e.currentTarget.classList.toggle('selected');
+                });
+
                 container.appendChild(playerDiv);
             });
         };
 
+        // CAMBIO: Función de guardado para asistencia de TT
         const handleRegisterTt = async () => {
             if (!AppState.selectedMatchId) {
                 showToast('Por favor, selecciona un partido.', 'warning');
                 return;
             }
-            const attendees = Array.from(document.querySelectorAll('.tt-checkbox:checked')).map(cb => cb.dataset.id);
+            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .tt-player-item.selected')).map(el => el.dataset.id);
 
             try {
                 const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
@@ -1353,6 +1399,15 @@
             window.addEventListener('resize', handleResize);
             DOMElements.darkModeToggle.addEventListener('click', toggleTheme);
             DOMElements.tabButtons.forEach(button => button.addEventListener('click', handleTabButtonClick));
+
+            // CAMBIO: Event listener para el selector de fecha
+            DOMElements.teamMatchDateWrapper.addEventListener('click', () => {
+                try {
+                    DOMElements.teamMatchDateInput.showPicker();
+                } catch (error) {
+                    console.log("showPicker() no es soportado en este navegador, el comportamiento por defecto funcionará.");
+                }
+            });
 
             // ABM Jugadores
             DOMElements.savePlayerButton.addEventListener('click', handleSavePlayer);
@@ -1584,9 +1639,14 @@
             applyTheme(savedTheme);
             setupEventListeners();
             
-            // CORRECCIÓN: El listener ahora solo se encarga de los CAMBIOS de estado.
             supabase.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                if (event === 'INITIAL_SESSION') {
+                    if (session) {
+                        loadAdminPanel();
+                    } else {
+                        showLoginScreen();
+                    }
+                } else if (event === 'SIGNED_IN') {
                     loadAdminPanel();
                 } else if (event === 'SIGNED_OUT') {
                     showLoginScreen();
