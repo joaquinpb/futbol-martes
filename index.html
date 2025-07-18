@@ -1360,16 +1360,12 @@
                 // Una vez cargados los datos, configurar la navegación y renderizar la primera pestaña
                 setupTabNavigation();
 
-                // Ocultar todos los mensajes de carga y mostrar tablas
-                document.querySelectorAll('.loading-message').forEach(el => el.classList.add('hidden'));
-                document.querySelectorAll('table, #equipos-stats-display, #fixture-matches-cards-container').forEach(el => el.classList.remove('hidden'));
-
             } catch (error) {
                 console.error("Error fatal durante la inicialización:", error);
                 const errorMessageText = `Error al cargar datos: ${error.message}. Asegúrate de que las credenciales de Supabase sean correctas y las tablas existan.`;
                 // Mostrar el error en todas las secciones
                 document.querySelectorAll('.loading-message').forEach(el => {
-                    el.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500"></i> ${errorMessageText}`;
+                    el.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> ${errorMessageText}`;
                     el.classList.remove('hidden');
                 });
             }
@@ -1424,7 +1420,10 @@
             if (targetButton) {
                 targetButton.classList.add('active');
             }
-            document.getElementById(tabId).classList.remove('hidden');
+            const targetContent = document.getElementById(tabId);
+            if(targetContent) {
+                 targetContent.classList.remove('hidden');
+            }
 
             if (tabId === 'leaderboard-content') renderLeaderboard();
             else if (tabId === 'chamigo-content') renderChamigoTable();
@@ -1560,10 +1559,10 @@
                 // Actualizar estadísticas del jugador
                 allPlayersInMatch.forEach(pId => {
                     if (playerStats[pId]) {
-                        if (result === 'Claros' && clarosPlayers.includes(pId)) {
+                        if (result === 'Claros' && (clarosPlayers || []).includes(pId)) {
                             playerStats[pId].points += 3;
                             playerStats[pId].pg += 1;
-                        } else if (result === 'Oscuros' && oscurosPlayers.includes(pId)) {
+                        } else if (result === 'Oscuros' && (oscurosPlayers || []).includes(pId)) {
                             playerStats[pId].points += 3;
                             playerStats[pId].pg += 1;
                         } else if (result === 'Empate' && allPlayersInMatch.includes(pId)) {
@@ -1586,13 +1585,15 @@
                 if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
                      // Convertir el objeto a un array como el que esperaba la lógica anterior
                     const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
-                    const maxVotes = Math.max(...votosArray.map(v => v.votos));
-                    const chamigosDelPartido = votosArray.filter(v => v.votos === maxVotes);
-                    chamigosDelPartido.forEach(chamigo => {
-                        if (playerStats[chamigo.id]) {
-                            playerStats[chamigo.id].chamigos += 1;
-                        }
-                    });
+                    if (votosArray.length > 0) {
+                        const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                        const chamigosDelPartido = votosArray.filter(v => v.votos === maxVotes);
+                        chamigosDelPartido.forEach(chamigo => {
+                            if (playerStats[chamigo.id]) {
+                                playerStats[chamigo.id].chamigos += 1;
+                            }
+                        });
+                    }
                 }
 
                 // Conteo de TT
@@ -1617,7 +1618,7 @@
                         ? (currentEfectividad * participationRatio).toFixed(2)
                         : currentEfectividad.toFixed(2);
                 } else {
-                    player.efectividad = 0;
+                    player.efectividad = "0.00";
                 }
                 
                 player.ausentes = Math.max(0, totalPJMatches - player.pj);
@@ -1632,8 +1633,13 @@
 
         // --- Renderizar Tabla de Posiciones ---
         function renderLeaderboard() {
-            const tableBody = document.getElementById('leaderboard-table').querySelector('tbody');
+            const table = document.getElementById('leaderboard-table');
+            const tableBody = table.querySelector('tbody');
             const loadingMessage = document.getElementById('leaderboard-loading-message');
+
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de posiciones...`;
             tableBody.innerHTML = '';
 
             const { players: rawRankedPlayers } = calculateStatsForPeriod('leaderboard-year-select', 'leaderboard-period-select');
@@ -1652,12 +1658,19 @@
                     <td class="py-3 px-3 text-center">${player.efectividad}%</td>
                 </tr>`;
             });
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
         }
 
         // --- Renderizar Tabla de Chamigo ---
         function renderChamigoTable() {
-            const tableBody = document.getElementById('chamigo-table').querySelector('tbody');
+            const table = document.getElementById('chamigo-table');
+            const tableBody = table.querySelector('tbody');
             const loadingMessage = document.getElementById('chamigo-loading-message');
+            
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Chamigos...`;
             tableBody.innerHTML = '';
 
             const { players: rawPlayers } = calculateStatsForPeriod('chamigo-year-select', 'chamigo-period-select');
@@ -1675,12 +1688,19 @@
                     <td class="py-3 px-3 text-center">${player.chamigos}</td>
                 </tr>`;
             });
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
         }
 
         // --- Renderizar Tabla de TT ---
         function renderTTTable() {
-            const tableBody = document.getElementById('tt-table').querySelector('tbody');
-             const loadingMessage = document.getElementById('tt-loading-message');
+            const table = document.getElementById('tt-table');
+            const tableBody = table.querySelector('tbody');
+            const loadingMessage = document.getElementById('tt-loading-message');
+
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Asistencia TT...`;
             tableBody.innerHTML = '';
             
             const { players: rawPlayers } = calculateStatsForPeriod('tt-year-select', 'tt-period-select');
@@ -1698,12 +1718,19 @@
                     <td class="py-3 px-3 text-center">${player.tt}</td>
                 </tr>`;
             });
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
         }
 
         // --- Renderizar Tabla de Presentismo ---
         function renderPresentismoTable() {
-            const tableBody = document.getElementById('presentismo-table').querySelector('tbody');
+            const table = document.getElementById('presentismo-table');
+            const tableBody = table.querySelector('tbody');
             const loadingMessage = document.getElementById('presentismo-loading-message');
+
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Presentismo...`;
             tableBody.innerHTML = '';
 
             const { players: rawPlayers } = calculateStatsForPeriod('presentismo-year-select', 'presentismo-period-select');
@@ -1721,12 +1748,19 @@
                     <td class="py-3 px-3 text-center">${player.pj}</td>
                 </tr>`;
             });
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
         }
 
         // --- Renderizar Tabla de Ausentismo ---
         function renderAusentismoTable() {
-            const tableBody = document.getElementById('ausentismo-table').querySelector('tbody');
+            const table = document.getElementById('ausentismo-table');
+            const tableBody = table.querySelector('tbody');
             const loadingMessage = document.getElementById('ausentismo-loading-message');
+
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando tabla de Ausentismo...`;
             tableBody.innerHTML = '';
             
             const { players: rawPlayers } = calculateStatsForPeriod('ausentismo-year-select', 'ausentismo-period-select');
@@ -1744,12 +1778,19 @@
                     <td class="py-3 px-3 text-center">${player.ausentes}</td>
                 </tr>`;
             });
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
         }
 
         // --- Renderizar Tabla de Estadísticas ---
         function renderEstadisticasTable() {
-            const tableBody = document.getElementById('estadisticas-table').querySelector('tbody');
+            const table = document.getElementById('estadisticas-table');
+            const tableBody = table.querySelector('tbody');
             const loadingMessage = document.getElementById('estadisticas-loading-message');
+            
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando estadísticas...`;
             tableBody.innerHTML = '';
 
             const sortCriterion = document.getElementById('estadisticas-sort-criterion').value;
@@ -1788,11 +1829,18 @@
                     <td class="py-3 px-3 text-center">${player.ausentes}</td>
                 </tr>`;
             });
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
         }
 
         // --- Renderizar Estadísticas de Equipos ---
         function renderEquiposStats() {
             const statsDisplay = document.getElementById('equipos-stats-display');
+            const loadingMessage = document.getElementById('equipos-loading-message');
+
+            statsDisplay.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando estadísticas de equipos...`;
             statsDisplay.innerHTML = '';
 
             const { teamStats } = calculateStatsForPeriod('equipos-year-select', 'equipos-period-select');
@@ -1814,12 +1862,18 @@
                     <span class="text-3xl font-bold">${teamStats.totalPJMatches}</span><span class="text-sm uppercase">Partidos Jugados</span>
                 </div>
             `;
+            loadingMessage.classList.add('hidden');
+            statsDisplay.classList.remove('hidden');
         }
 
         // --- Funciones de Fixture ---
         function renderFixtureMatchCards() {
             const cardsContainer = document.getElementById('fixture-matches-cards-container');
             const loadingMessage = document.getElementById('fixture-loading-message');
+            
+            cardsContainer.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
             cardsContainer.innerHTML = ''; 
 
             const filteredMatches = getFilteredMatches('fixture-year-select', 'fixture-month-select', true);
@@ -1858,6 +1912,8 @@
                     renderFixtureDetails(event.currentTarget.dataset.matchId);
                 });
             });
+            loadingMessage.classList.add('hidden');
+            cardsContainer.classList.remove('hidden');
         }
 
         function renderFixtureDetails(matchId) {
@@ -1889,8 +1945,10 @@
             let chamigosIds = [];
             if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
                 const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
-                const maxVotes = Math.max(...votosArray.map(v => v.votos));
-                chamigosIds = votosArray.filter(v => v.votos === maxVotes).map(c => c.id);
+                if (votosArray.length > 0) {
+                    const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                    chamigosIds = votosArray.filter(v => v.votos === maxVotes).map(c => c.id);
+                }
             }
             
             const isHorizontalField = window.innerWidth >= 768;
@@ -1912,6 +1970,7 @@
             const createPlayerMarker = (playerId, team, index) => {
                 const playerWrapper = document.createElement('div');
                 playerWrapper.className = `player-wrapper ${team}`;
+                if(isHorizontalField) playerWrapper.classList.add('horizontal-layout');
                 playerWrapper.style.top = `${currentPos[team][index].y * 100}%`;
                 playerWrapper.style.left = `${currentPos[team][index].x * 100}%`;
                 
@@ -1930,6 +1989,7 @@
             if (winnerTeam && winnerTeam !== 'Empate' && winnerTeam !== 'Suspendido') {
                  const trophyDiv = document.createElement('div');
                  trophyDiv.className = 'winner-trophy';
+                 if(isHorizontalField) trophyDiv.classList.add('horizontal-layout');
                  trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
                  const trophyPos = {
                     h: { Claros: { top: '95%', left: '94%'}, Oscuros: { top: '95%', left: '6%'} },
@@ -1946,12 +2006,14 @@
         // --- Utilidades ---
         function parseDate(dateString) { // ADAPTADO para YYYY-MM-DD
             if (!dateString) return new Date();
-            const [year, month, day] = dateString.split('-').map(Number);
-            return new Date(year, month - 1, day);
+            // Asegura que la fecha se interprete como UTC para evitar problemas de zona horaria
+            const date = new Date(dateString + 'T00:00:00');
+            return date;
         }
 
         function populateYearSelects(selectId) {
             const yearSelect = document.getElementById(selectId);
+            if (!yearSelect) return;
             const years = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
             
             yearSelect.innerHTML = '<option value="all">Todos los Años</option>';
@@ -1965,6 +2027,7 @@
 
         function populateMonthSelects(selectId) {
             const monthSelect = document.getElementById(selectId);
+            if (!monthSelect) return;
             const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             
             monthSelect.innerHTML = '<option value="all">Todos los Meses</option>';
@@ -1978,23 +2041,24 @@
         function populateAndSetCurrentPeriod(yearSelectId, periodSelectId) {
             populateYearSelects(yearSelectId);
             const periodSelect = document.getElementById(periodSelectId);
+            if (!periodSelect) return;
             const currentMonth = new Date().getMonth();
             periodSelect.value = (currentMonth <= 5) ? 'apertura' : 'clausura';
         }
 
-        // --- Funciones de Estadísticas Individuales (Adaptadas) ---
+        // --- Funciones de Estadísticas Individuales (CORREGIDAS) ---
         function calculateIndividualPlayerStats(playerId) {
             const playerInfo = allPlayersData.find(p => p.id === playerId);
             if (!playerInfo) return null;
 
-            const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: 0, chamigos: 0, tt: 0, ausentes: 0 }};
-            const allYearsInMatches = [...new Set(allMatchesData.map(m => parseDate(m.match_date).getFullYear()))];
+            const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }};
+            const allYearsInMatches = [...new Set(allMatchesData.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
 
             allYearsInMatches.forEach(year => {
                 playerStats.years[year] = {
-                    apertura: { name: 'Apertura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: 0, chamigos: 0, tt: 0, ausentes: 0 },
-                    clausura: { name: 'Clausura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: 0, chamigos: 0, tt: 0, ausentes: 0 },
-                    total: { name: year, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: 0, chamigos: 0, tt: 0, ausentes: 0 }
+                    apertura: { name: 'Apertura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
+                    clausura: { name: 'Clausura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
+                    total: { name: year, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }
                 };
             });
             
@@ -2011,46 +2075,68 @@
                  const allPlayersInMatch = [...new Set([...(team_white_players || []), ...(team_dark_players || [])])];
                  if (!allPlayersInMatch.includes(playerId)) return;
                  
-                 const stats = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
+                 const statsToUpdate = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
                  
                  if (result !== 'Suspendido') {
-                    stats.forEach(s => s.pj++);
-                    if (result === 'Claros' && team_white_players.includes(playerId)) stats.forEach(s => { s.points += 3; s.pg++; });
-                    else if (result === 'Oscuros' && team_dark_players.includes(playerId)) stats.forEach(s => { s.points += 3; s.pg++; });
-                    else if (result === 'Empate') stats.forEach(s => { s.points += 1; s.pe++; });
-                    else stats.forEach(s => s.pp++);
+                    statsToUpdate.forEach(s => s.pj++);
+                    if (result === 'Claros' && (team_white_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                    else if (result === 'Oscuros' && (team_dark_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                    else if (result === 'Empate') statsToUpdate.forEach(s => { s.points += 1; s.pe++; });
+                    else statsToUpdate.forEach(s => s.pp++);
                  }
 
                  if (chamigo_votes) {
                     const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
-                    const maxVotes = Math.max(...votosArray.map(v => v.votos));
-                    if (votosArray.some(v => v.id === playerId && v.votos === maxVotes)) {
-                        stats.forEach(s => s.chamigos++);
+                    if (votosArray.length > 0) {
+                        const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                        if (votosArray.some(v => v.id === playerId && v.votos === maxVotes)) {
+                            statsToUpdate.forEach(s => s.chamigos++);
+                        }
                     }
                  }
                  if (tt_attendees && tt_attendees.includes(playerId)) {
-                    stats.forEach(s => s.tt++);
+                    statsToUpdate.forEach(s => s.tt++);
                  }
             });
 
             // Post-cálculo de efectividad y ausentismo
-            Object.values(playerStats.years).forEach(yearData => {
-                 ['apertura', 'clausura', 'total'].forEach(periodType => {
-                     const stats = yearData[periodType];
-                     const maxPoints = stats.pj * 3;
-                     stats.efectividad = maxPoints > 0 ? ((stats.points / maxPoints) * 100).toFixed(2) : 0;
-                 });
+            allYearsInMatches.forEach(year => {
+                const yearData = playerStats.years[year];
+                ['apertura', 'clausura', 'total'].forEach(periodType => {
+                    const stats = yearData[periodType];
+                    const totalMatchesInPeriod = allMatchesData.filter(m => {
+                        if (!m.match_date) return false;
+                        const d = parseDate(m.match_date);
+                        const p = d.getMonth() <= 5 ? 'apertura' : 'clausura';
+                        const y = d.getFullYear();
+                        if (periodType === 'total') return y === year && m.result !== 'Suspendido';
+                        return y === year && p === periodType && m.result !== 'Suspendido';
+                    }).length;
+
+                    const maxPoints = stats.pj * 3;
+                    stats.efectividad = maxPoints > 0 ? ((stats.points / maxPoints) * 100).toFixed(2) : "0.00";
+                    stats.ausentes = Math.max(0, totalMatchesInPeriod - stats.pj);
+                });
             });
-             const maxTotalPoints = playerStats.overallTotal.pj * 3;
-             playerStats.overallTotal.efectividad = maxTotalPoints > 0 ? ((playerStats.overallTotal.points / maxTotalPoints) * 100).toFixed(2) : 0;
+
+            const totalNonSuspendedMatches = allMatchesData.filter(m => m.result !== 'Suspendido').length;
+            const overall = playerStats.overallTotal;
+            const maxTotalPoints = overall.pj * 3;
+            overall.efectividad = maxTotalPoints > 0 ? ((overall.points / maxTotalPoints) * 100).toFixed(2) : "0.00";
+            overall.ausentes = Math.max(0, totalNonSuspendedMatches - overall.pj);
 
             return { playerName: playerInfo.name, stats: playerStats };
         }
 
         function renderIndividualStatsTable() {
             const selectedPlayerId = document.getElementById('selected-player-id').value;
-            const tableBody = document.getElementById('individual-stats-table').querySelector('tbody');
+            const table = document.getElementById('individual-stats-table');
+            const tableBody = table.querySelector('tbody');
             const loadingMessage = document.getElementById('individual-stats-loading-message');
+
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando estadísticas individuales...`;
             tableBody.innerHTML = '';
             
             if (!selectedPlayerId) {
@@ -2067,7 +2153,7 @@
             }
 
             const createRow = (stats, classes = '') => {
-                return `<tr class="${classes}">
+                 return `<tr class="${classes}">
                     <td class="py-3 px-3 text-center">${stats.name.toString().includes('TOTAL') ? '<b>TOTAL</b>' : (stats.name.toString().includes('Apertura') || stats.name.toString().includes('Clausura') ? '' : `<b>${stats.name}</b>`)}</td>
                     <td class="py-3 px-3 text-center">${(stats.name === 'Apertura' || stats.name === 'Clausura') ? stats.name : ''}</td>
                     <td class="py-3 px-3 text-center">${stats.points}</td> <td class="py-3 px-3 text-center">${stats.pg}</td>
@@ -2088,6 +2174,8 @@
                     if (yearData.apertura.pj > 0) tableBody.innerHTML += createRow(yearData.apertura, 'border-b border-gray-200 hover:bg-gray-100');
                 }
             });
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
         }
         
         // --- Búsqueda de Jugador (Adaptada) ---
@@ -2130,15 +2218,17 @@
             clearButton.addEventListener('click', () => {
                 searchInput.value = '';
                 selectedIdInput.value = '';
-                tableBody.innerHTML = '';
-                loadingMessage.textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                document.getElementById('individual-stats-table').querySelector('tbody').innerHTML = '';
+                document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
                 searchInput.focus();
             });
              // Lógica para pre-seleccionar un jugador al cargar
-            const defaultPlayer = allPlayersData.find(p => p.id === 'J001') || allPlayersData[0];
-            if (defaultPlayer) {
-                searchInput.value = defaultPlayer.name;
-                selectedIdInput.value = defaultPlayer.id;
+            if(allPlayersData.length > 0) {
+                const defaultPlayer = allPlayersData.find(p => p.id === 'J001') || allPlayersData[0];
+                if (defaultPlayer) {
+                    searchInput.value = defaultPlayer.name;
+                    selectedIdInput.value = defaultPlayer.id;
+                }
             }
         }
         
@@ -2159,21 +2249,27 @@
                 toggleButton.classList.toggle('hidden-content');
                 toggleButton.classList.toggle('visible-content');
                 const icon = toggleButton.querySelector('.toggle-icon');
-                icon.classList.toggle('fa-chevron-down');
-                icon.classList.toggle('fa-chevron-up');
+                if (icon) {
+                    icon.classList.toggle('fa-chevron-down');
+                    icon.classList.toggle('fa-chevron-up');
+                }
              });
         };
-        ['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'estadisticas', 'equipos', 'fixture'].forEach(prefix => {
-            setupCollapsibleToggle(`${prefix}-filter-toggle`, `${prefix}-filters-collapsible` || `${prefix}-collapsible-content`);
+        ['leaderboard-filter-toggle', 'chamigo-filter-toggle', 'tt-filter-toggle', 'presentismo-filter-toggle', 'ausentismo-filter-toggle', 'estadisticas-filter-toggle', 'equipos-filter-toggle'].forEach(id => {
+            setupCollapsibleToggle(id, id.replace('toggle', 'collapsible'));
         });
+        setupCollapsibleToggle('fixture-filter-toggle', 'fixture-collapsible-content');
+
 
         // --- Lógica de Toggle de Modo Oscuro (sin cambios) ---
          const darkModeToggle = document.getElementById('dark-mode-toggle');
          const darkModeIcon = document.getElementById('dark-mode-icon');
          function applyTheme(theme) {
              document.body.classList.toggle('dark-mode', theme === 'dark');
-             darkModeIcon.classList.toggle('fa-sun', theme === 'dark');
-             darkModeIcon.classList.toggle('fa-moon', theme !== 'dark');
+             if (darkModeIcon) {
+                darkModeIcon.classList.toggle('fa-sun', theme === 'dark');
+                darkModeIcon.classList.toggle('fa-moon', theme !== 'dark');
+             }
              localStorage.setItem('theme', theme);
          }
          darkModeToggle.addEventListener('click', () => {
@@ -2188,14 +2284,16 @@
              const yearSelect = document.getElementById(`${sectionPrefix}-year-select`);
              const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${sectionPrefix}-month-select`) : document.getElementById(`${sectionPrefix}-period-select`);
              
-             yearSelect.value = today.getFullYear();
-             if (isMonthFilter) {
-                periodOrMonthSelect.value = today.getMonth() + 1;
-             } else {
-                periodOrMonthSelect.value = today.getMonth() <= 5 ? 'apertura' : 'clausura';
+             if(yearSelect) yearSelect.value = today.getFullYear();
+             if(periodOrMonthSelect) {
+                 if (isMonthFilter) {
+                    periodOrMonthSelect.value = today.getMonth() + 1;
+                 } else {
+                    periodOrMonthSelect.value = today.getMonth() <= 5 ? 'apertura' : 'clausura';
+                 }
              }
              // Disparar evento para actualizar la tabla
-             yearSelect.dispatchEvent(new Event('change', { bubbles: true }));
+             if(yearSelect) yearSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
         
         // --- Listeners para filtros y redimensionamiento ---
@@ -2220,10 +2318,12 @@
         
         function applyInitialResponsiveStyles() {
             const isMobile = window.innerWidth < 768;
-            hamburgerButton.classList.toggle('hidden', !isMobile);
+            if (hamburgerButton) {
+                hamburgerButton.classList.toggle('hidden', !isMobile);
+            }
             if (!isMobile) {
-                sideMenu.classList.remove('open');
-                overlay.classList.remove('open');
+                if (sideMenu) sideMenu.classList.remove('open');
+                if (overlay) overlay.classList.remove('open');
                 document.body.classList.remove('overflow-hidden');
             }
         }
