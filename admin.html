@@ -454,7 +454,6 @@
         </div>
         
         <div id="sidebar-button-container">
-            <!-- CAMBIO: Estructura de menú acordeón -->
             <div>
                 <div class="accordion-header">
                     <span>Partidos</span>
@@ -882,6 +881,10 @@
                             <input type="text" id="user-id" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2 bg-gray-100 dark:bg-gray-600" readonly>
                         </div>
                         <div>
+                            <label for="user-name" class="block text-sm font-medium">Nombre:</label>
+                            <input type="text" id="user-name" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2 bg-gray-100 dark:bg-gray-600" readonly>
+                        </div>
+                        <div class="md:col-span-2">
                             <label for="user-email" class="block text-sm font-medium">Email:</label>
                             <input type="email" id="user-email" class="mt-1 block w-full rounded-md shadow-sm sm:text-sm p-2 bg-gray-100 dark:bg-gray-600" readonly>
                         </div>
@@ -925,6 +928,7 @@
                     <table class="min-w-full rounded-lg shadow hidden">
                         <thead>
                             <tr class="uppercase text-sm leading-normal">
+                                <th class="py-3 px-6 text-left">Nombre</th>
                                 <th class="py-3 px-6 text-left">Email</th>
                                 <th class="py-3 px-6 text-left">Rol</th>
                                 <th class="py-3 px-6 text-center">Acciones</th>
@@ -965,7 +969,7 @@
         const AppState = {
             players: [],
             matches: [],
-            users: [], // Para ABM Usuarios
+            users: [],
             userRole: null,
             selectedMatchIds: {
                 results: null,
@@ -1052,6 +1056,7 @@
             accordionHeaders: document.querySelectorAll('.accordion-header'),
             // ABM Usuarios
             userIdInput: document.getElementById('user-id'),
+            userNameInput: document.getElementById('user-name'),
             userEmailInput: document.getElementById('user-email'),
             userRoleSelect: document.getElementById('user-role'),
             saveUserButton: document.getElementById('save-user-button'),
@@ -1099,14 +1104,15 @@
                 ];
 
                 if (AppState.userRole === 'Admin') {
-                    dataPromises.push(fetchData('profiles', { column: 'id', ascending: true }));
+                    // CAMBIO: Llamar a la función RPC en lugar de a la tabla
+                    dataPromises.push(supabase.rpc('get_all_users_with_roles'));
                 }
 
-                const [players, matches, users] = await Promise.all(dataPromises);
+                const [players, matches, usersResponse] = await Promise.all(dataPromises);
                 
                 AppState.players = players || [];
                 AppState.matches = matches || [];
-                AppState.users = users || [];
+                AppState.users = usersResponse ? usersResponse.data : []; // El resultado de RPC está en .data
                 
                 renderAllContent();
                 
@@ -1117,7 +1123,7 @@
             } catch (error) {
                 console.error("Error fatal durante la inicialización del panel:", error);
                 showToast("Error al cargar datos. Intente refrescar.", "error");
-                await supabase.auth.signOut(); // Forzar cierre de sesión si falla la carga de perfil
+                await supabase.auth.signOut();
             } finally {
                 AppState.isInitializing = false;
             }
@@ -1368,7 +1374,7 @@
             const roleFilter = DOMElements.userListRoleFilter.value;
 
             const filteredUsers = AppState.users.filter(user => {
-                const email = user.email || ''; // Handle cases where email might be null
+                const email = user.email || '';
                 const role = user.role || 'Sin Rol';
                 return (emailFilter === '' || email.toLowerCase().includes(emailFilter)) &&
                        (roleFilter === 'Todos' || role === roleFilter);
@@ -1386,6 +1392,7 @@
                 const row = document.createElement('tr');
                 row.className = 'border-b hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700';
                 row.innerHTML = `
+                    <td class="py-3 px-6 text-left">${user.name || 'N/A'}</td>
                     <td class="py-3 px-6 text-left">${user.email || 'N/A'}</td>
                     <td class="py-3 px-6 text-left">${user.role || 'Sin Rol'}</td>
                     <td class="py-3 px-6 text-center">
@@ -1399,12 +1406,14 @@
 
         const populateUserForm = (user) => {
             DOMElements.userIdInput.value = user.id;
+            DOMElements.userNameInput.value = user.name || '';
             DOMElements.userEmailInput.value = user.email || '';
             DOMElements.userRoleSelect.value = user.role || 'Operador';
         };
 
         const clearUserForm = () => {
             DOMElements.userIdInput.value = '';
+            DOMElements.userNameInput.value = '';
             DOMElements.userEmailInput.value = '';
             DOMElements.userRoleSelect.value = 'Operador';
         };
