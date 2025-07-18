@@ -1329,6 +1329,7 @@
         // --- Funciones de Utilidad (Poblar Filtros) ---
         function parseDate(dateString) { 
             if (!dateString) return new Date();
+            // Interpretar como UTC para evitar problemas de zona horaria con fechas YYYY-MM-DD
             return new Date(dateString + 'T00:00:00'); 
         }
 
@@ -1718,7 +1719,7 @@
             statsDisplay.classList.remove('hidden');
         }
         
-        // --- FIXTURE SECTION (RECONSTRUIDO) ---
+        // --- FIXTURE SECTION (RECONSTRUIDO Y CORREGIDO) ---
         async function renderFixture() {
             const cardsContainer = document.getElementById('fixture-matches-cards-container');
             const loadingMessage = document.getElementById('fixture-loading-message');
@@ -1733,7 +1734,7 @@
             let query = supabaseClient.from('matches').select('*');
             if (year !== 'all' && month !== 'all') {
                 const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-                const endDate = new Date(year, month, 0).getDate(); // Último día del mes
+                const endDate = new Date(year, month, 0).getDate();
                 query = query.gte('match_date', startDate).lte('match_date', `${year}-${String(month).padStart(2, '0')}-${endDate}`);
             } else if (year !== 'all') {
                 query = query.gte('match_date', `${year}-01-01`).lte('match_date', `${year}-12-31`);
@@ -1864,6 +1865,7 @@
             collapsibleContent.classList.add('hidden');
         }
         
+        // --- HISTÓRICO SECTION (RECONSTRUIDO Y CORREGIDO) ---
         async function renderIndividualStatsTable() {
             const selectedPlayerId = document.getElementById('selected-player-id').value;
             const table = document.getElementById('individual-stats-table');
