@@ -75,9 +75,13 @@
         }
         #players-list-admin tbody tr, #user-list-admin tbody tr {
             border-color: #e5e7eb;
+            cursor: pointer;
         }
         #players-list-admin tbody tr:hover, #user-list-admin tbody tr:hover {
             background-color: #f9fafb;
+        }
+        #players-list-admin tbody tr.selected, #user-list-admin tbody tr.selected {
+            background-color: #e0e7ff;
         }
         #players-list-admin tbody td, #user-list-admin tbody td {
             color: #4b5563;
@@ -153,6 +157,9 @@
         }
         html.dark #players-list-admin tbody tr:hover, html.dark #user-list-admin tbody tr:hover {
             background-color: #374151;
+        }
+        html.dark #players-list-admin tbody tr.selected, html.dark #user-list-admin tbody tr.selected {
+            background-color: #3730a3;
         }
         html.dark #players-list-admin tbody td, html.dark #user-list-admin tbody td {
             color: #d1d5db;
@@ -668,7 +675,6 @@
                                 <th class="py-3 px-6 text-left">Nombre</th>
                                 <th class="py-3 px-6 text-left">Estado</th>
                                 <th class="py-3 px-6 text-left">Rol</th>
-                                <th class="py-3 px-6 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="text-sm font-light">
@@ -870,7 +876,6 @@
                 </div>
             </div>
 
-            <!-- CAMBIO: Nueva sección ABM Usuarios -->
             <div id="user-management" class="tab-content hidden">
                 <h2 class="text-2xl font-semibold mb-4">Gestionar Usuarios</h2>
                 <div class="mb-6 p-4 border rounded-lg shadow-sm">
@@ -931,7 +936,6 @@
                                 <th class="py-3 px-6 text-left">Nombre</th>
                                 <th class="py-3 px-6 text-left">Email</th>
                                 <th class="py-3 px-6 text-left">Rol</th>
-                                <th class="py-3 px-6 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="text-sm font-light">
@@ -1160,25 +1164,19 @@
         };
 
         // --- LÓGICA DE DATOS (SUPABASE) ---
-        const fetchData = async (tableName, orderOptions, userId = null) => {
+        const fetchData = async (tableName, orderOptions) => {
             try {
                 let query = supabase.from(tableName).select('*');
-                if (userId) {
-                    query = query.eq('id', userId).single();
-                } else if (orderOptions) {
+                if (orderOptions) {
                     query = query.order(orderOptions.column, { ascending: orderOptions.ascending });
                 }
                 const { data, error } = await query;
                 if (error) throw error;
                 return data;
             } catch (error) {
-                if (error.code === 'PGRST116' && tableName === 'profiles') {
-                    console.warn("El usuario no tiene un perfil de rol definido.");
-                    return null;
-                }
                 console.error(`Error cargando ${tableName}:`, error);
                 showToast(`Error al cargar ${tableName}. Revisa la consola.`, 'error');
-                return userId ? null : [];
+                return [];
             }
         };
         
@@ -1272,11 +1270,12 @@
                     <td class="py-3 px-6 text-left">${player.name}</td>
                     <td class="py-3 px-6 text-left">${player.status}</td>
                     <td class="py-3 px-6 text-left">${player.role}</td>
-                    <td class="py-3 px-6 text-center">
-                        <button class="edit-player-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs">Editar</button>
-                    </td>
                 `;
-                row.querySelector('.edit-player-button').addEventListener('click', () => populatePlayerForm(player));
+                row.addEventListener('click', () => {
+                    document.querySelectorAll('#players-list-admin tbody tr').forEach(r => r.classList.remove('selected', 'dark:bg-indigo-900'));
+                    row.classList.add('selected', 'dark:bg-indigo-900');
+                    populatePlayerForm(player)
+                });
                 tableBody.appendChild(row);
             });
         };
@@ -1293,6 +1292,7 @@
             DOMElements.playerNameInput.value = '';
             DOMElements.playerStatusSelect.value = 'Activo';
             DOMElements.playerRoleSelect.value = 'Titular';
+            document.querySelectorAll('#players-list-admin tbody tr').forEach(r => r.classList.remove('selected', 'dark:bg-indigo-900'));
         };
 
         const handleSavePlayer = async () => {
@@ -1394,11 +1394,12 @@
                     <td class="py-3 px-6 text-left">${user.name || 'N/A'}</td>
                     <td class="py-3 px-6 text-left">${user.email || 'N/A'}</td>
                     <td class="py-3 px-6 text-left">${user.role || 'Sin Rol'}</td>
-                    <td class="py-3 px-6 text-center">
-                        <button class="edit-user-button px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-300 text-xs">Editar</button>
-                    </td>
                 `;
-                row.querySelector('.edit-user-button').addEventListener('click', () => populateUserForm(user));
+                row.addEventListener('click', () => {
+                    document.querySelectorAll('#user-list-admin tbody tr').forEach(r => r.classList.remove('selected', 'dark:bg-indigo-900'));
+                    row.classList.add('selected', 'dark:bg-indigo-900');
+                    populateUserForm(user)
+                });
                 tableBody.appendChild(row);
             });
         };
@@ -1415,6 +1416,7 @@
             DOMElements.userNameInput.value = '';
             DOMElements.userEmailInput.value = '';
             DOMElements.userRoleSelect.value = 'Operador';
+            document.querySelectorAll('#user-list-admin tbody tr').forEach(r => r.classList.remove('selected', 'dark:bg-indigo-900'));
         };
 
         const handleSaveUser = async () => {
