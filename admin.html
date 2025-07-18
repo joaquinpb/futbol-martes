@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://css.gg/css?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- CAMBIO: Favicon de pelota de fútbol -->
+    <!-- Favicon de pelota de fútbol -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E⚽%3C/text%3E%3C/svg%3E">
     <style>
         html, body {
@@ -448,11 +448,12 @@
                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-beer"><path d="M18 19V2h-1M6 19V2h1M2 19h20v3H2zM12 19V2a4 4 0 0 0-4 4v13" /></svg>
                 TT
             </button>
-            <button class="tab-button" data-tab="players-management">
+            <!-- CAMBIO: Se añade data-role="Admin" para el control de visibilidad -->
+            <button class="tab-button" data-tab="players-management" data-role="Admin">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
                 ABM Jugadores
             </button>
-            <button class="tab-button" data-tab="edit-match">
+            <button class="tab-button" data-tab="edit-match" data-role="Admin">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
                 Editar Partido
             </button>
@@ -855,6 +856,7 @@
         const AppState = {
             players: [],
             matches: [],
+            userRole: null, // CAMBIO: Para guardar el rol del usuario
             selectedMatchIds: {
                 results: null,
                 chamigo: null,
@@ -952,10 +954,11 @@
             document.body.classList.remove('overflow-hidden');
             AppState.players = [];
             AppState.matches = [];
+            AppState.userRole = null;
             AppState.isInitializing = false;
         };
 
-        const loadAdminPanel = async () => {
+        const loadAdminPanel = async (session) => {
             if (AppState.isInitializing) return;
             AppState.isInitializing = true;
             
@@ -964,12 +967,14 @@
             DOMElements.loadingContainer.classList.remove('hidden');
 
             try {
-                const [players, matches] = await Promise.all([
+                const [players, matches, profile] = await Promise.all([
                     fetchData('players', { column: 'id', ascending: true }),
-                    fetchData('matches', { column: 'match_date', ascending: false })
+                    fetchData('matches', { column: 'match_date', ascending: false }),
+                    fetchData('profiles', { column: 'id', ascending: true }, session.user.id) // Fetch user role
                 ]);
                 AppState.players = players || [];
                 AppState.matches = matches || [];
+                AppState.userRole = profile ? profile.role : null;
                 
                 renderAllContent();
                 
@@ -1018,20 +1023,34 @@
         };
 
         // --- LÓGICA DE DATOS (SUPABASE) ---
-        const fetchData = async (tableName, orderOptions) => {
+        const fetchData = async (tableName, orderOptions, userId = null) => {
             try {
-                const { data, error } = await supabase.from(tableName).select('*').order(orderOptions.column, { ascending: orderOptions.ascending });
+                let query = supabase.from(tableName).select('*');
+                if (userId) {
+                    query = query.eq('id', userId).single();
+                } else {
+                    query = query.order(orderOptions.column, { ascending: orderOptions.ascending });
+                }
+                const { data, error } = await query;
                 if (error) throw error;
                 return data;
             } catch (error) {
+                // Silenciar el error si es porque el perfil no existe, es un caso esperado.
+                if (error.code === 'PGRST116' && tableName === 'profiles') {
+                    console.warn("El usuario no tiene un perfil de rol definido.");
+                    return null;
+                }
                 console.error(`Error cargando ${tableName}:`, error);
                 showToast(`Error al cargar ${tableName}. Revisa la consola.`, 'error');
-                return [];
+                return userId ? null : [];
             }
         };
         
         const refreshDataAndRender = async () => {
-            await loadAdminPanel();
+            const { data: { session } } = await supabase.auth.getSession();
+            if(session) {
+                await loadAdminPanel(session);
+            }
         };
 
         // --- LÓGICA DE RENDERIZADO ---
@@ -1041,7 +1060,7 @@
             populateFilteredMatchLists();
 
             let activeTab = document.querySelector('.tab-button.active')?.dataset.tab;
-            if (!activeTab) {
+            if (!activeTab || (AppState.userRole !== 'Admin' && document.querySelector('.tab-button.active')?.dataset.role === 'Admin')) {
                 const firstTabButton = DOMElements.tabButtons[0];
                 if (firstTabButton) {
                     DOMElements.tabButtons.forEach(btn => btn.classList.remove('active'));
@@ -1596,7 +1615,6 @@
 
                 const playerEl = createDraggablePlayer(player);
                 
-                // CAMBIO: Agregar click listener para devolver jugador
                 playerEl.addEventListener('click', (e) => {
                     const clickedPlayer = e.currentTarget;
                     const destination = clickedPlayer.dataset.role === 'Titular' ? DOMElements.editTitularesPlayersDiv : DOMElements.editSuplentesPlayersDiv;
@@ -1738,6 +1756,17 @@
         };
         
         const updateUIForAuth = () => {
+            // Control de visibilidad de menú por rol
+            const userRole = AppState.userRole;
+            DOMElements.tabButtons.forEach(button => {
+                const requiredRole = button.dataset.role;
+                if (requiredRole && requiredRole !== userRole) {
+                    button.classList.add('hidden');
+                } else {
+                    button.classList.remove('hidden');
+                }
+            });
+
             if (window.innerWidth >= 768) {
                 DOMElements.sideMenu.classList.remove('hidden-truly');
                 DOMElements.sideMenu.classList.add('open');
@@ -1811,7 +1840,7 @@
             if (dropZone) {
                 handleDropLogic(dragged, dropZone);
             } else {
-                AppState.originalParentOfDraggedPlayer.appendChild(dragged); // Return to original spot
+                AppState.originalParentOfDraggedPlayer.appendChild(dragged);
             }
             
             document.removeEventListener('touchmove', handleTouchMove);
@@ -1825,21 +1854,13 @@
             const targetId = dropZone.id;
             if (sourceId === targetId) return;
 
-            // Lógica para Armar Equipos
-            if (targetId.startsWith('team-')) {
+            if (targetId.includes('team-')) {
                 if (dropZone.children.length >= 5) {
                     showToast(`El equipo ya tiene 5 jugadores.`, 'warning');
                     return;
                 }
             }
-            // Lógica para Editar Partido
-            if (targetId.startsWith('edit-team-')) {
-                 if (dropZone.children.length >= 5) {
-                    showToast(`El equipo ya tiene 5 jugadores.`, 'warning');
-                    return;
-                }
-            }
-
+            
             dropZone.appendChild(draggedElement);
             updateTeamCounts();
             updateEditTeamCounts();
@@ -1929,12 +1950,12 @@
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === 'INITIAL_SESSION') {
                     if (session) {
-                        loadAdminPanel();
+                        loadAdminPanel(session);
                     } else {
                         showLoginScreen();
                     }
                 } else if (event === 'SIGNED_IN') {
-                    loadAdminPanel();
+                    loadAdminPanel(session);
                 } else if (event === 'SIGNED_OUT') {
                     showLoginScreen();
                 }
