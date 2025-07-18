@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://css.gg/css?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- CORRECCIÓN: Evita el error 404 de favicon.ico -->
+    <!-- Evita el error 404 de favicon.ico -->
     <link rel="icon" href="data:,">
     <style>
         html, body {
@@ -409,7 +409,6 @@
         <div id="auth-container" class="max-w-md mx-auto hidden">
             <div class="p-8 border rounded-lg shadow-sm bg-white dark:bg-gray-800 dark:border-gray-700">
                 <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
-                <!-- CORRECCIÓN: Envuelve los campos en un <form> para mejorar la semántica -->
                 <form id="login-form">
                     <div class="space-y-4">
                         <div>
@@ -713,6 +712,7 @@
             selectedMatchId: null,
             currentDraggedPlayer: null,
             originalParentOfDraggedPlayer: null,
+            isInitializing: false, // CORRECCIÓN: Flag para evitar inicialización múltiple
         };
 
         // --- SELECTORES DEL DOM (CACHEADOS) ---
@@ -720,7 +720,7 @@
             authContainer: document.getElementById('auth-container'),
             adminContent: document.getElementById('admin-content'),
             loadingContainer: document.getElementById('loading-container'),
-            loginForm: document.getElementById('login-form'), // CORRECCIÓN
+            loginForm: document.getElementById('login-form'),
             sideMenu: document.getElementById('side-menu'),
             hamburgerButton: document.getElementById('hamburger-button'),
             overlay: document.getElementById('overlay'),
@@ -774,7 +774,7 @@
 
         // --- MANEJO DE AUTENTICACIÓN ---
         const handleLogin = async (event) => {
-            event.preventDefault(); // CORRECCIÓN: Previene el envío del formulario
+            event.preventDefault();
             DOMElements.loginButton.disabled = true;
             DOMElements.loginButton.textContent = "Entrando...";
             const email = DOMElements.emailInput.value.trim();
@@ -792,13 +792,25 @@
             if (error) {
                 DOMElements.authStatus.textContent = 'Email o contraseña incorrectos.';
             }
-            // onAuthStateChange se encargará del resto
             DOMElements.loginButton.disabled = false;
             DOMElements.loginButton.textContent = "Entrar";
         };
 
         const handleSignout = async () => {
-            await supabase.auth.signOut();
+            // CORRECCIÓN: UI optimista para mejorar la sensación de respuesta
+            DOMElements.adminContent.classList.add('hidden');
+            DOMElements.loadingContainer.classList.remove('hidden');
+
+            const { error } = await supabase.auth.signOut();
+
+            if (error) {
+                console.error("Signout error:", error);
+                showToast("Error al cerrar sesión.", "error");
+                // Revertir UI si falla el cierre de sesión
+                DOMElements.adminContent.classList.remove('hidden');
+                DOMElements.loadingContainer.classList.add('hidden');
+            }
+            // onAuthStateChange se encargará de mostrar la pantalla de login y limpiar el estado.
         };
 
         const handleAuthStateChange = async (event, session) => {
@@ -816,12 +828,15 @@
                 DOMElements.hamburgerButton.classList.add('hidden');
                 DOMElements.overlay.classList.remove('open');
                 document.body.classList.remove('overflow-hidden');
+                // CORRECCIÓN: Resetear el estado de la app al cerrar sesión
+                AppState.players = [];
+                AppState.matches = [];
+                AppState.isInitializing = false;
             }
         };
 
         // --- LÓGICA DE DATOS (SUPABASE) ---
         const fetchData = async (tableName, orderOptions) => {
-            // CORRECCIÓN: Se elimina el flag isFetching que causaba la race condition
             try {
                 const { data, error } = await supabase.from(tableName).select('*').order(orderOptions.column, { ascending: orderOptions.ascending });
                 if (error) throw error;
@@ -829,20 +844,30 @@
             } catch (error) {
                 console.error(`Error cargando ${tableName}:`, error);
                 showToast(`Error al cargar ${tableName}. Revisa la consola.`, 'error');
-                return []; // Devuelve un array vacío en caso de error para evitar fallos posteriores
+                return [];
             }
         };
         
         const initializeAppData = async () => {
-            const [players, matches] = await Promise.all([
-                fetchData('players', { column: 'id', ascending: true }),
-                fetchData('matches', { column: 'match_date', ascending: false })
-            ]);
-            AppState.players = players || []; // Aseguramos que sea un array
-            AppState.matches = matches || []; // Aseguramos que sea un array
-            
-            // Una vez cargados los datos, renderizamos todo
-            renderAllContent();
+            if (AppState.isInitializing) return; // CORRECCIÓN: Guarda para evitar re-entradas
+            AppState.isInitializing = true;
+
+            // CORRECCIÓN: Envolver la inicialización en un try/catch para manejar errores fatales
+            try {
+                const [players, matches] = await Promise.all([
+                    fetchData('players', { column: 'id', ascending: true }),
+                    fetchData('matches', { column: 'match_date', ascending: false })
+                ]);
+                AppState.players = players || [];
+                AppState.matches = matches || [];
+                
+                renderAllContent();
+            } catch (error) {
+                console.error("Error fatal durante la inicialización de la app:", error);
+                showToast("Error al cargar datos. Intente refrescar.", "error");
+            } finally {
+                AppState.isInitializing = false;
+            }
         };
 
         const refreshDataAndRender = async () => {
@@ -851,17 +876,14 @@
 
         // --- LÓGICA DE RENDERIZADO ---
         const renderAllContent = () => {
-            // Poblar selects de año/mes primero, ya que son necesarios para los filtros
             populateMatchYearSelects();
             setInitialDateFilters();
             populateFilteredMatchLists();
 
-            // Renderizar contenido de la pestaña activa
             const activeTab = document.querySelector('.tab-button.active')?.dataset.tab;
             if (activeTab) {
                 renderTabContent(activeTab);
             } else {
-                 // Si no hay ninguna activa, activar la primera por defecto
                 const firstTabButton = DOMElements.tabButtons[0];
                 if(firstTabButton) {
                     firstTabButton.click();
@@ -877,7 +899,6 @@
                 case 'team-formation':
                     renderAvailablePlayersForTeams();
                     break;
-                // Los casos de partidos ya se actualizan con populateFilteredMatchLists
                 case 'match-results':
                 case 'chamigo-management':
                 case 'tt-attendance':
@@ -1320,7 +1341,7 @@
         // --- MANEJO DE UI GENERAL Y EVENTOS ---
         const setupEventListeners = () => {
             // Autenticación
-            DOMElements.loginForm.addEventListener('submit', handleLogin); // CORRECCIÓN
+            DOMElements.loginForm.addEventListener('submit', handleLogin);
             DOMElements.signoutButton.addEventListener('click', handleSignout);
             supabase.auth.onAuthStateChange(handleAuthStateChange);
 
