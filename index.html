@@ -1326,10 +1326,9 @@
             "#individual-stats": "individual-stats-content"
         };
         
-        // --- Funciones de Utilidad (Poblar Filtros) - CORRECCIÓN: AÑADIDAS DE VUELTA ---
+        // --- Funciones de Utilidad (Poblar Filtros) ---
         function parseDate(dateString) { 
             if (!dateString) return new Date();
-            // Interpretar como UTC para evitar problemas de zona horaria con fechas YYYY-MM-DD
             return new Date(dateString + 'T00:00:00'); 
         }
 
@@ -1719,8 +1718,8 @@
             statsDisplay.classList.remove('hidden');
         }
         
+        // --- FIXTURE SECTION (RECONSTRUIDO) ---
         async function renderFixture() {
-            // Esta función combina la lógica de renderFixtureMatchCards y la auto-selección
             const cardsContainer = document.getElementById('fixture-matches-cards-container');
             const loadingMessage = document.getElementById('fixture-loading-message');
             const year = document.getElementById('fixture-year-select').value;
@@ -1734,8 +1733,8 @@
             let query = supabaseClient.from('matches').select('*');
             if (year !== 'all' && month !== 'all') {
                 const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-                const endDate = new Date(year, month, 0);
-                query = query.gte('match_date', startDate).lte('match_date', `${year}-${String(month).padStart(2, '0')}-${endDate.getDate()}`);
+                const endDate = new Date(year, month, 0).getDate(); // Último día del mes
+                query = query.gte('match_date', startDate).lte('match_date', `${year}-${String(month).padStart(2, '0')}-${endDate}`);
             } else if (year !== 'all') {
                 query = query.gte('match_date', `${year}-01-01`).lte('match_date', `${year}-12-31`);
             }
@@ -1772,98 +1771,100 @@
             loadingMessage.classList.add('hidden');
             cardsContainer.classList.remove('hidden');
 
-            // Auto-seleccionar el partido más reciente
             setTimeout(() => {
                 const currentMatchCard = document.querySelector('#fixture-matches-cards-container .current-match-card');
-                if (currentMatchCard) {
-                    currentMatchCard.click(); 
-                } else {
-                    const latestMatchCard = document.querySelector('#fixture-matches-cards-container [data-match-id]');
-                    if (latestMatchCard) latestMatchCard.click(); 
-                }
+                const firstCard = document.querySelector('#fixture-matches-cards-container [data-match-id]');
+                if (currentMatchCard) currentMatchCard.click(); 
+                else if (firstCard) firstCard.click();
             }, 100);
         }
 
         async function renderFixtureDetails(matchId) {
-            const { data: selectedMatch, error } = await supabaseClient.from('matches').select('*').eq('id', matchId).single();
-            if (error || !selectedMatch) return;
+            const { data: match, error } = await supabaseClient.from('matches').select('*').eq('id', matchId).single();
+            if (error || !match) {
+                console.error("Error fetching match details:", error);
+                return;
+            }
             
             lastSelectedFixtureMatchId = matchId;
             
-            const fixtureVisualDetailsContainer = document.getElementById('fixture-visual-details-container');
+            const visualDetailsContainer = document.getElementById('fixture-visual-details-container');
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
-            const fixtureCollapsibleContent = document.getElementById('fixture-collapsible-content');
+            const collapsibleContent = document.getElementById('fixture-collapsible-content');
             
             soccerFieldContainer.querySelectorAll('.player-wrapper, .winner-trophy').forEach(el => el.remove());
             ttAttendeesTableBody.innerHTML = '';
 
-            const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = selectedMatch;
+            const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
             const getPlayerName = id => (allPlayersData.find(p => p.id === id) || {name: 'N/A'}).name;
             
             ttAttendeesTableBody.innerHTML = (tt_attendees && tt_attendees.length > 0)
                 ? tt_attendees.map(id => `<tr><td class="py-3 px-3 text-center">${getPlayerName(id)}</td></tr>`).join('')
                 : `<tr><td class="py-3 px-3 text-center" colspan="1">No hay asistentes al TT.</td></tr>`;
 
-            // Aquí iría la lógica completa para renderizar el campo de fútbol
-            // (Es larga y no ha cambiado, se omite por brevedad)
-            
-            fixtureVisualDetailsContainer.classList.remove('hidden');
-            fixtureCollapsibleContent.classList.add('hidden');
-        }
-        
-        // El resto de las funciones de UI y helpers no necesitan cambios drásticos
-        // ... (código de setupPlayerSearch, toggleSideMenu, etc.) ...
-        function setupPlayerSearch() {
-            const searchInput = document.getElementById('individual-player-search');
-            const resultsDiv = document.getElementById('individual-player-results');
-            const selectedIdInput = document.getElementById('selected-player-id');
-            const clearButton = document.getElementById('clear-player-search');
+            const isHorizontalField = window.innerWidth >= 768;
+            soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
+            soccerFieldContainer.querySelectorAll('.goal, .penalty-area, .goal-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
 
-            const filterAndDisplay = () => {
-                const searchTerm = searchInput.value.toLowerCase();
-                const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm)).sort((a, b) => a.name.localeCompare(b.name));
-                
-                resultsDiv.innerHTML = filtered.map(player => `<div class="p-2 cursor-pointer hover:bg-gray-100" data-player-id="${player.id}">${player.name}</div>`).join('');
-                resultsDiv.classList.toggle('hidden', filtered.length === 0);
+            const pos = {
+                v: {
+                    claros: [{ x: 0.5, y: 0.93 }, { x: 0.3, y: 0.79 }, { x: 0.7, y: 0.79 }, { x: 0.35, y: 0.63 }, { x: 0.65, y: 0.58 }],
+                    oscuros: [{ x: 0.5, y: 0.07 }, { x: 0.3, y: 0.21 }, { x: 0.7, y: 0.21 }, { x: 0.35, y: 0.42 }, { x: 0.65, y: 0.37 }]
+                },
+                h: {
+                    claros: [{ x: 0.92, y: 0.50 }, { x: 0.79, y: 0.20 }, { x: 0.79, y: 0.80 }, { x: 0.60, y: 0.32 }, { x: 0.64, y: 0.68 }],
+                    oscuros: [{ x: 0.08, y: 0.50 }, { x: 0.21, y: 0.20 }, { x: 0.21, y: 0.80 }, { x: 0.42, y: 0.32 }, { x: 0.38, y: 0.68 }]
+                }
             };
-
-            resultsDiv.addEventListener('mousedown', (e) => {
-                if (e.target.dataset.playerId) {
-                    const player = allPlayersData.find(p => p.id === e.target.dataset.playerId);
-                    searchInput.value = player.name;
-                    selectedIdInput.value = player.id;
-                    resultsDiv.classList.add('hidden');
-                    renderIndividualStatsTable();
-                }
-            });
-
-            searchInput.addEventListener('input', filterAndDisplay);
-            searchInput.addEventListener('focus', filterAndDisplay);
-            document.addEventListener('click', (e) => {
-                if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
-                    resultsDiv.classList.add('hidden');
-                }
-            });
-            clearButton.addEventListener('click', () => {
-                searchInput.value = '';
-                selectedIdInput.value = '';
-                document.getElementById('individual-stats-table').querySelector('tbody').innerHTML = '';
-                document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
-                searchInput.focus();
-            });
+            const currentPos = isHorizontalField ? pos.h : pos.v;
             
-            if(allPlayersData.length > 0) {
-                const defaultPlayer = allPlayersData.find(p => p.id === 'J001') || allPlayersData[0];
-                if (defaultPlayer) {
-                    searchInput.value = defaultPlayer.name;
-                    selectedIdInput.value = defaultPlayer.id;
+            let chamigosIds = [];
+            if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
+                const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
+                if (votosArray.length > 0) {
+                    const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                    chamigosIds = votosArray.filter(v => v.votos === maxVotes).map(c => c.id);
                 }
             }
+
+            const createPlayerMarker = (playerId, team, index) => {
+                const playerWrapper = document.createElement('div');
+                playerWrapper.className = `player-wrapper ${team}`;
+                if(isHorizontalField) playerWrapper.classList.add('horizontal-layout');
+                playerWrapper.style.top = `${currentPos[team][index].y * 100}%`;
+                playerWrapper.style.left = `${currentPos[team][index].x * 100}%`;
+                
+                let markerHTML = `<div class="player-marker ${team}">${parseInt(playerId.replace('J', ''))}`;
+                if (chamigosIds.includes(playerId)) {
+                    markerHTML += `<i class="fas fa-star text-yellow-400"></i>`;
+                }
+                markerHTML += `</div><div class="player-name-label">${getPlayerName(playerId)}</div>`;
+                playerWrapper.innerHTML = markerHTML;
+                soccerFieldContainer.appendChild(playerWrapper);
+            };
+
+            (team_white_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'claros', i));
+            (team_dark_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'oscuros', i));
+            
+            if (result && result !== 'Empate' && result !== 'Suspendido') {
+                 const trophyDiv = document.createElement('div');
+                 trophyDiv.className = 'winner-trophy';
+                 if(isHorizontalField) trophyDiv.classList.add('horizontal-layout');
+                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
+                 const trophyPos = {
+                    h: { Claros: { top: '95%', left: '94%'}, Oscuros: { top: '95%', left: '6%'} },
+                    v: { Claros: { top: '96%', left: '94%'}, Oscuros: { top: '6%', left: '94%'} }
+                 };
+                 Object.assign(trophyDiv.style, (isHorizontalField ? trophyPos.h : trophyPos.v)[result]);
+                 soccerFieldContainer.appendChild(trophyDiv);
+            }
+            
+            visualDetailsContainer.classList.remove('hidden');
+            collapsibleContent.classList.add('hidden');
         }
         
         async function renderIndividualStatsTable() {
-            // Esta función ahora está completa y es funcional
             const selectedPlayerId = document.getElementById('selected-player-id').value;
             const table = document.getElementById('individual-stats-table');
             const tableBody = table.querySelector('tbody');
@@ -1871,6 +1872,7 @@
             
             table.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando historial...`;
             tableBody.innerHTML = '';
             
             if(!selectedPlayerId) {
@@ -1880,21 +1882,12 @@
 
             const { data: matches, error } = await supabaseClient.from('matches').select('*').or(`team_white_players.cs.{${selectedPlayerId}},team_dark_players.cs.{${selectedPlayerId}}`);
 
-            if(error) {
-                loadingMessage.textContent = 'Error al cargar el historial del jugador.';
-                return;
-            }
-            if (!matches || matches.length === 0) {
-                loadingMessage.textContent = 'Este jugador no tiene partidos registrados.';
-                return;
-            }
+            if(error) { loadingMessage.textContent = 'Error al cargar el historial del jugador.'; return; }
+            if (!matches || matches.length === 0) { loadingMessage.textContent = 'Este jugador no tiene partidos registrados.'; return; }
 
             const playerStats = calculateIndividualPlayerStats(selectedPlayerId, matches);
 
-            if (!playerStats) {
-                loadingMessage.textContent = 'No se pudieron calcular las estadísticas.';
-                return;
-            }
+            if (!playerStats) { loadingMessage.textContent = 'No se pudieron calcular las estadísticas.'; return; }
             
             const createRow = (stats, classes = '') => `
                 <tr class="${classes}">
@@ -1993,6 +1986,54 @@
             overall.ausentes = Math.max(0, totalNonSuspendedMatches - overall.pj);
 
             return playerStats;
+        }
+
+        function setupPlayerSearch() {
+            const searchInput = document.getElementById('individual-player-search');
+            const resultsDiv = document.getElementById('individual-player-results');
+            const selectedIdInput = document.getElementById('selected-player-id');
+            const clearButton = document.getElementById('clear-player-search');
+
+            const filterAndDisplay = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm)).sort((a, b) => a.name.localeCompare(b.name));
+                
+                resultsDiv.innerHTML = filtered.map(player => `<div class="p-2 cursor-pointer hover:bg-gray-100" data-player-id="${player.id}">${player.name}</div>`).join('');
+                resultsDiv.classList.toggle('hidden', filtered.length === 0);
+            };
+
+            resultsDiv.addEventListener('mousedown', (e) => {
+                if (e.target.dataset.playerId) {
+                    const player = allPlayersData.find(p => p.id === e.target.dataset.playerId);
+                    searchInput.value = player.name;
+                    selectedIdInput.value = player.id;
+                    resultsDiv.classList.add('hidden');
+                    renderIndividualStatsTable();
+                }
+            });
+
+            searchInput.addEventListener('input', filterAndDisplay);
+            searchInput.addEventListener('focus', filterAndDisplay);
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                    resultsDiv.classList.add('hidden');
+                }
+            });
+            clearButton.addEventListener('click', () => {
+                searchInput.value = '';
+                selectedIdInput.value = '';
+                document.getElementById('individual-stats-table').querySelector('tbody').innerHTML = '';
+                document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                searchInput.focus();
+            });
+            
+            if(allPlayersData.length > 0) {
+                const defaultPlayer = allPlayersData.find(p => p.id === 'J001') || allPlayersData[0];
+                if (defaultPlayer) {
+                    searchInput.value = defaultPlayer.name;
+                    selectedIdInput.value = defaultPlayer.id;
+                }
+            }
         }
 
         // --- Event Listeners e Inicialización General ---
