@@ -975,7 +975,7 @@
                 <table id="individual-stats-table" class="bg-white rounded-lg shadow hidden">
                     <thead>
                         <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-center">Año</th>
+                            <th class="py-3 px-3 text-left pl-4">Año</th>
                             <th class="py-3 px-3 text-center">Torneo</th>
                             <th class="py-3 px-3 text-center">Puntos</th>
                             <th class="py-3 px-3 text-center">PG</th>
@@ -1593,24 +1593,65 @@
 
             if (!playerStats) { loadingMessage.textContent = 'No se pudieron calcular las estadísticas.'; return; }
             
-            const createRow = (stats, classes = '') => `
-                <tr class="${classes}">
-                    <td class="py-3 px-3 text-center"><b>${stats.name === 'TOTAL' ? 'TOTAL' : stats.name}</b></td>
-                    <td class="py-3 px-3 text-center">${(stats.name === 'Apertura' || stats.name === 'Clausura') ? stats.name : ''}</td>
-                    <td class="py-3 px-3 text-center">${stats.points}</td><td class="py-3 px-3 text-center">${stats.pg}</td>
-                    <td class="py-3 px-3 text-center">${stats.pe}</td><td class="py-3 px-3 text-center">${stats.pp}</td>
-                    <td class="py-3 px-3 text-center">${stats.pj}</td><td class="py-3 px-3 text-center">${stats.efectividad}%</td>
-                    <td class="py-3 px-3 text-center">${stats.chamigos}</td><td class="py-3 px-3 text-center">${stats.tt}</td>
-                    <td class="py-3 px-3 text-center">${stats.ausentes}</td>
-                </tr>`;
+            // Render TOTAL row
+            tableBody.innerHTML += `
+                <tr class="bg-blue-200 font-bold text-indigo-800">
+                    <td class="py-3 px-3 text-left pl-4" colspan="2"><b>TOTAL</b></td>
+                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.points}</td>
+                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.pg}</td>
+                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.pe}</td>
+                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.pp}</td>
+                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.pj}</td>
+                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.efectividad}%</td>
+                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.chamigos}</td>
+                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.tt}</td>
+                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.ausentes}</td>
+                </tr>
+            `;
 
-            tableBody.innerHTML += createRow(playerStats.overallTotal, 'bg-blue-200 font-bold text-indigo-800');
+            // Render year and period rows
             Object.keys(playerStats.years).sort((a,b) => b-a).forEach(year => {
                 const yearData = playerStats.years[year];
                 if(yearData.total.pj > 0) {
-                    tableBody.innerHTML += createRow(yearData.total, 'bg-gray-300 font-semibold text-gray-700');
-                    if (yearData.clausura.pj > 0) tableBody.innerHTML += createRow(yearData.clausura, 'border-b border-gray-200 hover:bg-gray-100');
-                    if (yearData.apertura.pj > 0) tableBody.innerHTML += createRow(yearData.apertura, 'border-b border-gray-200 hover:bg-gray-100');
+                    tableBody.innerHTML += `
+                        <tr class="year-total-row bg-gray-200 font-semibold text-gray-700 cursor-pointer" data-year="${year}">
+                            <td class="py-3 px-3 text-left pl-4"><i class="fas fa-plus-circle toggle-details mr-2 text-indigo-600"></i><b>${year}</b></td>
+                            <td class="py-3 px-3 text-center"><b>TOTAL AÑO</b></td>
+                            <td class="py-3 px-3 text-center">${yearData.total.points}</td>
+                            <td class="py-3 px-3 text-center">${yearData.total.pg}</td>
+                            <td class="py-3 px-3 text-center">${yearData.total.pe}</td>
+                            <td class="py-3 px-3 text-center">${yearData.total.pp}</td>
+                            <td class="py-3 px-3 text-center">${yearData.total.pj}</td>
+                            <td class="py-3 px-3 text-center">${yearData.total.efectividad}%</td>
+                            <td class="py-3 px-3 text-center">${yearData.total.chamigos}</td>
+                            <td class="py-3 px-3 text-center">${yearData.total.tt}</td>
+                            <td class="py-3 px-3 text-center">${yearData.total.ausentes}</td>
+                        </tr>
+                        <tr class="period-details-row hidden" data-year-parent="${year}">
+                            <td class="py-3 px-3 text-left pl-12" colspan="2">Clausura</td>
+                            <td class="py-3 px-3 text-center">${yearData.clausura.points}</td>
+                            <td class="py-3 px-3 text-center">${yearData.clausura.pg}</td>
+                            <td class="py-3 px-3 text-center">${yearData.clausura.pe}</td>
+                            <td class="py-3 px-3 text-center">${yearData.clausura.pp}</td>
+                            <td class="py-3 px-3 text-center">${yearData.clausura.pj}</td>
+                            <td class="py-3 px-3 text-center">${yearData.clausura.efectividad}%</td>
+                            <td class="py-3 px-3 text-center">${yearData.clausura.chamigos}</td>
+                            <td class="py-3 px-3 text-center">${yearData.clausura.tt}</td>
+                            <td class="py-3 px-3 text-center">${yearData.clausura.ausentes}</td>
+                        </tr>
+                        <tr class="period-details-row hidden" data-year-parent="${year}">
+                            <td class="py-3 px-3 text-left pl-12" colspan="2">Apertura</td>
+                            <td class="py-3 px-3 text-center">${yearData.apertura.points}</td>
+                            <td class="py-3 px-3 text-center">${yearData.apertura.pg}</td>
+                            <td class="py-3 px-3 text-center">${yearData.apertura.pe}</td>
+                            <td class="py-3 px-3 text-center">${yearData.apertura.pp}</td>
+                            <td class="py-3 px-3 text-center">${yearData.apertura.pj}</td>
+                            <td class="py-3 px-3 text-center">${yearData.apertura.efectividad}%</td>
+                            <td class="py-3 px-3 text-center">${yearData.apertura.chamigos}</td>
+                            <td class="py-3 px-3 text-center">${yearData.apertura.tt}</td>
+                            <td class="py-3 px-3 text-center">${yearData.apertura.ausentes}</td>
+                        </tr>
+                    `;
                 }
             });
 
@@ -1752,6 +1793,26 @@
             overlay.addEventListener('click', toggleSideMenu);
             applyInitialResponsiveStyles();
             initializeApp();
+
+            // Event listener for collapsible rows in individual stats table
+            const individualStatsTableBody = document.querySelector('#individual-stats-table tbody');
+            if (individualStatsTableBody) {
+                individualStatsTableBody.addEventListener('click', (e) => {
+                    const yearRow = e.target.closest('.year-total-row');
+                    if (yearRow) {
+                        const year = yearRow.dataset.year;
+                        const toggleIcon = yearRow.querySelector('.toggle-details');
+                        if (year && toggleIcon) {
+                            const periodRows = document.querySelectorAll(`.period-details-row[data-year-parent="${year}"]`);
+                            periodRows.forEach(row => {
+                                row.classList.toggle('hidden');
+                            });
+                            toggleIcon.classList.toggle('fa-plus-circle');
+                            toggleIcon.classList.toggle('fa-minus-circle');
+                        }
+                    }
+                });
+            }
         });
         
         // --- Lógica UI ---
