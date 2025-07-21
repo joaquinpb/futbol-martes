@@ -74,8 +74,17 @@
         }
         
         html.dark input, html.dark select {
-             background-color: var(--bg-muted); /* FIX: Consistent dark input */
+             background-color: var(--bg-muted);
              color: var(--text-primary);
+        }
+        
+        /* Fix for browser autofill styles in dark mode */
+        html.dark input:-webkit-autofill,
+        html.dark input:-webkit-autofill:hover, 
+        html.dark input:-webkit-autofill:focus, 
+        html.dark input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px var(--bg-muted) inset !important;
+            -webkit-text-fill-color: var(--text-primary) !important;
         }
 
         input[readonly] {
@@ -278,11 +287,15 @@
             <div class="text-center mb-8">
                 <h1 class="text-2xl font-bold text-text-secondary">Panel de Administración</h1>
                 <h2 class="text-4xl font-extrabold text-text-primary mt-2 flex items-center justify-center gap-3">
-                    <span class="text-4xl">⚽</span>
-                    <span>LA CLANDE</span>
+                    <span>LA CLANDE ⚽</span>
                 </h2>
             </div>
-            <div class="card rounded-xl shadow-lg p-8">
+            <div class="card rounded-xl shadow-lg p-8 relative">
+                <div class="absolute top-4 right-4">
+                    <button id="login-dark-mode-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                        <i class="fas fa-moon text-lg text-text-secondary"></i>
+                    </button>
+                </div>
                 <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
                 <form id="login-form" class="space-y-4">
                     <div>
@@ -298,11 +311,6 @@
                     </button>
                     <p id="auth-status" class="text-center text-danger-color mt-4 h-5"></p>
                 </form>
-            </div>
-            <div class="text-center mt-6">
-                <button id="login-dark-mode-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-                    <i class="fas fa-moon text-lg text-text-secondary"></i>
-                </button>
             </div>
         </div>
     </div>
@@ -567,6 +575,7 @@
         }
         
         function setupMobileMenu() {
+            // FIX: Ensure correct text/bg colors for light/dark mode
             const adminItemsHtml = AppState.userRole === 'Admin' ? NAV_ITEMS.admin.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">${item.name}</a></li>`).join('') : '';
 
             const menuHtml = `
@@ -700,7 +709,9 @@
         // --- RENDER FUNCTIONS FOR TABS ---
         const tabContentTemplate = (title, content) => `
             <div class="space-y-6">
-                <h1 class="text-3xl font-bold tracking-tight">${title}</h1>
+                <div class="p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 text-white shadow-lg">
+                    <h1 class="text-2xl font-bold tracking-tight uppercase text-center">${title}</h1>
+                </div>
                 ${content}
             </div>`;
 
