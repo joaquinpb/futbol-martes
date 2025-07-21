@@ -77,6 +77,12 @@
              background-color: var(--bg-primary);
         }
 
+        input[readonly] {
+            background-color: var(--bg-muted) !important;
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
         /* Custom scrollbar for webkit browsers */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -204,7 +210,7 @@
 </head>
 <body class="antialiased">
 
-    <div class="flex h-screen">
+    <div id="app-container" class="flex h-screen">
         <!-- Sidebar -->
         <aside id="sidebar" class="w-64 bg-sidebar-bg text-sidebar-text flex-col fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-40 flex">
             <div class="px-6 py-4 flex items-center justify-between">
@@ -336,6 +342,7 @@
         // --- DOM ELEMENTS ---
         const DOMElements = {
             body: document.body,
+            appContainer: document.getElementById('app-container'),
             sidebar: document.getElementById('sidebar'),
             sidebarToggle: document.getElementById('sidebar-toggle'),
             sidebarOverlay: document.getElementById('sidebar-overlay'),
@@ -376,6 +383,7 @@
             if (AppState.isInitializing) return;
             AppState.isInitializing = true;
             DOMElements.body.classList.remove('logged-out');
+            DOMElements.appContainer.classList.remove('hidden');
             
             DOMElements.authContainer.classList.add('hidden');
             DOMElements.loadingContainer.classList.remove('hidden');
@@ -432,11 +440,10 @@
         function showLoginScreen() {
             AppState.isInitialized = false;
             DOMElements.body.classList.add('logged-out');
+            DOMElements.appContainer.classList.add('hidden');
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
-            DOMElements.sidebar.classList.add('-translate-x-full');
-            DOMElements.sidebar.classList.remove('md:relative');
         }
 
         // --- UI & THEME ---
@@ -635,7 +642,7 @@
                 <div class="space-y-4">
                      <div>
                         <label class="block text-sm font-medium mb-1">Fecha del Partido</label>
-                        <input type="date" id="match-date" class="w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-800" readonly>
+                        <input type="date" id="match-date" class="w-full p-2 border rounded-md" readonly>
                      </div>
                      <div>
                         <label for="match-result" class="block text-sm font-medium mb-1">Resultado</label>
@@ -781,7 +788,7 @@
                             <input type="hidden" id="user-id">
                             <div>
                                 <label for="user-email" class="block text-sm font-medium mb-1">Email</label>
-                                <input type="email" id="user-email" class="w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-800" readonly>
+                                <input type="email" id="user-email" class="w-full p-2 border rounded-md" readonly>
                             </div>
                             <div>
                                 <label for="user-name" class="block text-sm font-medium mb-1">Nombre</label>
@@ -902,9 +909,10 @@
             const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             monthSelect.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
             
-            const today = new Date();
-            if (years.includes(today.getFullYear())) yearSelect.value = today.getFullYear();
-            monthSelect.value = today.getMonth();
+            const mostRecentMatchDate = AppState.matches.length > 0 ? new Date(AppState.matches[0].match_date) : new Date();
+            
+            if (years.includes(mostRecentMatchDate.getFullYear())) yearSelect.value = mostRecentMatchDate.getFullYear();
+            monthSelect.value = mostRecentMatchDate.getMonth();
 
             const renderList = () => {
                 const listContainer = document.getElementById(`${prefix}-list`);
