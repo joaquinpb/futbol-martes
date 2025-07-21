@@ -44,11 +44,6 @@
             --bg-primary: #030712;
             --bg-secondary: #1f2937;
             --bg-muted: #111827;
-            --sidebar-bg: #111827;
-            --sidebar-text: #e5e7eb;
-            --sidebar-active-bg: #4f46e5;
-            --sidebar-active-text: #ffffff;
-            --sidebar-hover-bg: #374151;
             --text-primary: #f9fafb;
             --text-secondary: #d1d5db;
             --border-color: #374151;
@@ -82,7 +77,6 @@
              color: var(--text-primary);
         }
         
-        /* Fix for browser autofill styles in dark mode */
         html.dark input:-webkit-autofill,
         html.dark input:-webkit-autofill:hover, 
         html.dark input:-webkit-autofill:focus, 
@@ -97,7 +91,6 @@
             cursor: not-allowed;
         }
 
-        /* Custom scrollbar for webkit browsers */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
@@ -105,25 +98,26 @@
         html.dark ::-webkit-scrollbar-thumb { background: #555; }
         html.dark ::-webkit-scrollbar-thumb:hover { background: #888; }
 
-        /* Sidebar active link text color */
         .nav-link.active {
             background-color: var(--sidebar-active-bg);
             color: var(--sidebar-active-text) !important;
         }
 
-        /* Player Draggable Styles */
-        .player-draggable {
-            background-color: #374151; /* dark gray */
-            color: #ffffff; /* white */
+        .player-element {
+            background-color: #374151;
+            color: #ffffff;
             transition: all 0.2s ease;
-            cursor: grab;
+            cursor: pointer;
             white-space: nowrap; 
             width: auto; 
             display: inline-flex;
             align-items: center;
             flex-grow: 0;
         }
-        .player-draggable:active {
+        .player-element.draggable {
+            cursor: grab;
+        }
+        .player-element.draggable:active {
             cursor: grabbing;
             transform: scale(1.05);
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -143,9 +137,6 @@
             background-color: rgba(99, 102, 241, 0.1);
         }
         
-        .match-item {
-            background-color: var(--bg-secondary);
-        }
         .match-item.no-result { border-left-color: var(--danger-color); }
         .match-item.has-result { border-left-color: var(--success-color); }
         html.dark .match-item.no-result { background-color: rgba(239, 68, 68, 0.1); }
@@ -155,23 +146,11 @@
             box-shadow: 0 0 0 2px var(--accent-color);
         }
         
-        /* Table row hover style */
-        .selectable-row:hover {
-            background-color: #f9fafb !important; /* gray-50 */
-        }
-        html.dark .selectable-row:hover {
-            background-color: #1f2937 !important; /* gray-800 */
-        }
+        .selectable-row:hover { background-color: #f9fafb !important; }
+        html.dark .selectable-row:hover { background-color: #1f2937 !important; }
+        .selectable-row.selected { background-color: #eef2ff !important; }
+        html.dark .selectable-row.selected { background-color: #3730a3 !important; }
         
-        /* Table row selection style */
-        .selectable-row.selected {
-            background-color: #eef2ff !important; /* indigo-50 */
-        }
-        html.dark .selectable-row.selected {
-             background-color: #3730a3 !important; /* indigo-800 */
-        }
-        
-        /* TT Player Item Style */
         .tt-player-item.selected {
             background-color: var(--accent-color);
             color: var(--sidebar-active-text);
@@ -181,15 +160,9 @@
             color: var(--sidebar-active-text);
         }
         
-        /* Table Header fix */
-        thead th {
-            color: var(--text-secondary);
-        }
-        html.dark thead th {
-            color: var(--sidebar-text);
-        }
+        thead th { color: var(--text-secondary); }
+        html.dark thead th { color: var(--sidebar-text); }
         
-        /* Button text color fix */
         .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
         .button-primary:hover { background-color: var(--accent-color-hover); }
         .button-success { background-color: var(--success-color); color: var(--button-text-color); }
@@ -199,25 +172,14 @@
         .button-purple { background-color: #9333ea; color: var(--button-text-color); }
         .button-purple:hover { background-color: #7e22ce; }
 
-        /* Hide sidebar on logged-out state */
-        body.logged-out #app-container {
-            display: none;
-        }
+        body.logged-out #app-container { display: none; }
+        .login-bg { background: #f0f2f5; }
+        html.dark .login-bg { background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%); }
         
-        /* Login screen background */
-        .login-bg {
-            background: #f0f2f5;
-        }
-        html.dark .login-bg {
-            background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%);
-        }
-        
-        /* Mobile Menu Dropdown Style Fix */
         #mobile-menu {
             background-color: var(--bg-secondary);
             border-color: var(--border-color);
         }
-
     </style>
 </head>
 <body class="antialiased">
@@ -291,8 +253,7 @@
     <!-- Mobile Menu Overlay -->
     <div id="mobile-menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
-    <!-- Authentication Container (outside main app) -->
-    <!-- CHANGE: Added fixed positioning and z-index to ensure it covers the viewport and prevents scrolling -->
+    <!-- Authentication Container -->
     <div id="auth-container" class="hidden fixed inset-0 z-50 flex items-center justify-center login-bg">
         <div class="w-full max-w-md p-4">
             <div class="text-center mb-8">
@@ -334,7 +295,7 @@
     <!-- Toast Notification -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50"></div>
 
-    <!-- Modal -->
+    <!-- Main Confirmation Modal -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
         <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
             <h3 class="text-lg font-semibold mb-2" id="modal-title">Confirmar Acción</h3>
@@ -342,6 +303,19 @@
             <div class="flex justify-end space-x-3">
                 <button id="modal-cancel-button" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition">Cancelar</button>
                 <button id="modal-confirm-button" class="px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Assignment Modal -->
+    <div id="player-assignment-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
+        <div class="card rounded-lg shadow-xl max-w-xs w-full p-6 text-center">
+            <h3 class="text-lg font-semibold mb-2" id="assign-modal-title">Asignar Jugador</h3>
+            <p class="text-secondary mb-6" id="assign-modal-player-name">Nombre del Jugador</p>
+            <div class="flex flex-col space-y-3">
+                <button id="assign-to-claros" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-100 text-black font-semibold rounded-md hover:opacity-90 transition">Mover a Claros</button>
+                <button id="assign-to-oscuros" class="w-full px-4 py-2 bg-gray-800 text-white font-semibold rounded-md hover:opacity-90 transition">Mover a Oscuros</button>
+                <button id="assign-modal-cancel" class="mt-4 text-sm text-secondary hover:underline">Cancelar</button>
             </div>
         </div>
     </div>
@@ -364,6 +338,7 @@
             userRole: null,
             selectedMatchId: null,
             isInitialized: false,
+            activePlayerElement: null, // For player assignment modal
         };
 
         const NAV_ITEMS = {
@@ -399,11 +374,18 @@
             loginDarkModeToggle: document.getElementById('login-dark-mode-toggle'),
             authStatus: document.getElementById('auth-status'),
             toastContainer: document.getElementById('toast-container'),
+            // Confirmation Modal
             modal: document.getElementById('custom-confirm-modal'),
             modalTitle: document.getElementById('modal-title'),
             modalMessage: document.getElementById('modal-message'),
             modalConfirm: document.getElementById('modal-confirm-button'),
             modalCancel: document.getElementById('modal-cancel-button'),
+            // Player Assignment Modal
+            playerAssignmentModal: document.getElementById('player-assignment-modal'),
+            assignModalPlayerName: document.getElementById('assign-modal-player-name'),
+            assignToClarosBtn: document.getElementById('assign-to-claros'),
+            assignToOscurosBtn: document.getElementById('assign-to-oscuros'),
+            assignModalCancelBtn: document.getElementById('assign-modal-cancel'),
         };
 
         // --- INITIALIZATION ---
@@ -475,13 +457,12 @@
                 DOMElements.adminContent.classList.remove('hidden');
                 AppState.isInitializing = false;
                 AppState.isInitialized = true;
-                window.scrollTo(0, 0); // Scroll to top after content loads
+                window.scrollTo(0, 0);
             }
         }
         
         function showLoginScreen() {
             AppState.isInitialized = false;
-            // CHANGE: Re-added 'overflow-hidden' to the body to prevent scrolling on the login screen
             DOMElements.body.classList.add('logged-out', 'overflow-hidden');
             DOMElements.appContainer.classList.add('hidden');
             DOMElements.loadingContainer.classList.add('hidden');
@@ -490,7 +471,6 @@
             DOMElements.mobileMenu.classList.add('hidden');
             DOMElements.mobileMenuOverlay.classList.add('hidden');
 
-            // Reset login form state to prevent loop
             const loginButton = document.getElementById('login-button');
             if (loginButton) {
                 loginButton.disabled = false;
@@ -693,14 +673,7 @@
             
             document.addEventListener('click', async (e) => {
                 if (e.target.closest('.signout-trigger')) {
-                    try {
-                        const { error } = await supabase.auth.signOut();
-                        if (error) {
-                           showToast(`Error al cerrar sesión: ${error.message}`, 'error');
-                        }
-                    } catch (err) {
-                        showToast(`Error inesperado: ${err.message}`, 'error');
-                    }
+                    await supabase.auth.signOut().catch(err => showToast(`Error: ${err.message}`, 'error'));
                 }
             });
 
@@ -710,11 +683,19 @@
                 passwordToggle.addEventListener('click', () => {
                     const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
                     passwordInput.setAttribute('type', type);
-                    const icon = passwordToggle.querySelector('i');
-                    icon.classList.toggle('fa-eye');
-                    icon.classList.toggle('fa-eye-slash');
+                    passwordToggle.querySelector('i').classList.toggle('fa-eye-slash');
                 });
             }
+
+            // Player Assignment Modal Listeners
+            DOMElements.assignToClarosBtn.addEventListener('click', () => movePlayerToTeam('team-claros'));
+            DOMElements.assignToOscurosBtn.addEventListener('click', () => movePlayerToTeam('team-oscuros'));
+            DOMElements.assignModalCancelBtn.addEventListener('click', hidePlayerAssignmentModal);
+            DOMElements.playerAssignmentModal.addEventListener('click', (e) => {
+                if (e.target.id === 'player-assignment-modal') {
+                    hidePlayerAssignmentModal();
+                }
+            });
         }
 
         async function handleLogin(e) {
@@ -746,7 +727,7 @@
 
         window.render_team_formation = () => {
             const content = `
-                <div id="team-formation" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div id="team-formation-container" class="flex flex-col lg:grid lg:grid-cols-2 gap-6">
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
                         <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
                         <div>
@@ -784,11 +765,12 @@
             const titularesDiv = document.getElementById('titulares-players');
             const suplentesDiv = document.getElementById('suplentes-players');
             AppState.players.filter(p => p.status === 'Activo').forEach(player => {
-                const playerEl = createDraggablePlayer(player);
+                const playerEl = createPlayerElement(player);
                 if (player.role === 'Titular') titularesDiv.appendChild(playerEl);
                 else suplentesDiv.appendChild(playerEl);
             });
-            setupDragAndDrop();
+
+            setupPlayerInteractions();
             document.getElementById('team-match-date').addEventListener('change', updateTeamCounts);
             document.getElementById('save-teams-button').addEventListener('click', handleSaveTeams);
         };
@@ -1003,37 +985,109 @@
             document.getElementById('clear-user-form-button').addEventListener('click', clearUserForm);
         };
 
-        // --- HELPERS & LOGIC ---
-        function createDraggablePlayer(player) {
+        // --- TEAM FORMATION LOGIC (NEW & IMPROVED) ---
+        function createPlayerElement(player) {
             const el = document.createElement('div');
-            el.className = 'player-draggable flex-grow-0 text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
-            el.draggable = true;
+            el.className = 'player-element flex-grow-0 text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
             el.dataset.id = player.id;
             el.textContent = player.name;
-            el.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('text/plain', player.id);
-                e.target.classList.add('opacity-50');
-            });
-            el.addEventListener('dragend', (e) => e.target.classList.remove('opacity-50'));
             return el;
         }
 
+        function setupPlayerInteractions() {
+            const container = document.getElementById('team-formation-container');
+            if (!container) return;
+
+            // Handle Clicks/Taps
+            container.addEventListener('click', (e) => {
+                const playerEl = e.target.closest('.player-element');
+                if (!playerEl) return;
+
+                const parentId = playerEl.parentElement.id;
+                
+                if (parentId === 'titulares-players' || parentId === 'suplentes-players') {
+                    showPlayerAssignmentModal(playerEl);
+                } else if (parentId === 'team-claros' || parentId === 'team-oscuros') {
+                    document.getElementById('titulares-players').appendChild(playerEl);
+                    updateTeamCounts();
+                }
+            });
+
+            // Handle Drag & Drop for Desktop
+            let isDesktop = window.innerWidth >= 1024;
+            if (isDesktop) {
+                setupDragAndDrop();
+            }
+
+            window.addEventListener('resize', () => {
+                const currentlyDesktop = window.innerWidth >= 1024;
+                if (currentlyDesktop !== isDesktop) {
+                    isDesktop = currentlyDesktop;
+                    // This is a simple way to re-init. More complex scenarios might need cleanup.
+                    navigateTo('team-formation'); 
+                }
+            });
+        }
+        
+        function showPlayerAssignmentModal(playerEl) {
+            AppState.activePlayerElement = playerEl;
+            DOMElements.assignModalPlayerName.textContent = playerEl.textContent;
+            DOMElements.playerAssignmentModal.classList.remove('hidden');
+        }
+
+        function hidePlayerAssignmentModal() {
+            AppState.activePlayerElement = null;
+            DOMElements.playerAssignmentModal.classList.add('hidden');
+        }
+        
+        function movePlayerToTeam(teamId) {
+            if (!AppState.activePlayerElement) return;
+            
+            const teamContainer = document.getElementById(teamId);
+            if (teamContainer.children.length >= 5) {
+                showToast(`El equipo ${teamId.includes('claros') ? 'Claros' : 'Oscuros'} ya está lleno.`, 'warning');
+                return;
+            }
+            
+            teamContainer.appendChild(AppState.activePlayerElement);
+            hidePlayerAssignmentModal();
+            updateTeamCounts();
+        }
+
         function setupDragAndDrop() {
+            document.querySelectorAll('.player-element').forEach(p => {
+                p.draggable = true;
+                p.classList.add('draggable');
+            });
+
             document.querySelectorAll('.player-drop-zone').forEach(zone => {
+                zone.addEventListener('dragstart', (e) => {
+                    if (e.target.classList.contains('player-element')) {
+                        e.dataTransfer.setData('text/plain', e.target.dataset.id);
+                        setTimeout(() => e.target.classList.add('opacity-50'), 0);
+                    }
+                });
+                zone.addEventListener('dragend', (e) => {
+                    if (e.target.classList.contains('player-element')) {
+                       e.target.classList.remove('opacity-50');
+                    }
+                });
                 zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
                 zone.addEventListener('dragleave', e => zone.classList.remove('drag-over'));
                 zone.addEventListener('drop', e => {
                     e.preventDefault();
                     zone.classList.remove('drag-over');
                     const playerId = e.dataTransfer.getData('text/plain');
-                    const playerEl = document.querySelector(`.player-draggable[data-id="${playerId}"]`);
-                    if (zone.id.startsWith('team-') && zone.children.length >= 5) {
+                    const playerEl = document.querySelector(`.player-element[data-id="${playerId}"]`);
+                    
+                    if (!playerEl) return;
+
+                    if (zone.id.startsWith('team-') && zone.children.length >= 5 && !zone.contains(playerEl)) {
                         showToast('El equipo ya tiene 5 jugadores.', 'warning');
                         return;
                     }
                     zone.appendChild(playerEl);
-                    if (zone.closest('#team-formation')) updateTeamCounts();
-                    if (zone.closest('#edit-match-content')) { /* Logic for edit match panel */ }
+                    updateTeamCounts();
                 });
             });
         }
@@ -1076,6 +1130,7 @@
             }
         }
         
+        // --- OTHER TAB LOGIC (UNCHANGED) ---
         function populateMatchFilters(prefix) {
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
@@ -1130,8 +1185,7 @@
                 
                 const firstItem = listContainer.querySelector('.match-item');
                 if (firstItem) {
-                    firstItem.classList.add('selected');
-                    handleMatchSelection(firstItem.dataset.matchId, prefix);
+                    firstItem.click();
                 }
             };
             
@@ -1416,18 +1470,18 @@
             const matchPlayerIds = new Set([...(match.team_white_players || []).map(String), ...(match.team_dark_players || []).map(String)]);
 
             AppState.players.filter(p => p.status === 'Activo' && !matchPlayerIds.has(String(p.id)))
-                .forEach(p => availablePlayersDiv.appendChild(createDraggablePlayer(p)));
+                .forEach(p => availablePlayersDiv.appendChild(createPlayerElement(p)));
 
             (match.team_white_players || []).forEach(id => {
                 const player = AppState.players.find(p => p.id == id);
-                if (player) teamClarosDiv.appendChild(createDraggablePlayer(player));
+                if (player) teamClarosDiv.appendChild(createPlayerElement(player));
             });
             (match.team_dark_players || []).forEach(id => {
                 const player = AppState.players.find(p => p.id == id);
-                if (player) teamOscurosDiv.appendChild(createDraggablePlayer(player));
+                if (player) teamOscurosDiv.appendChild(createPlayerElement(player));
             });
             
-            setupDragAndDrop();
+            setupDragAndDrop(); // This could be enhanced to use the new interaction model too
         }
 
         async function handleUpdateMatch() {
