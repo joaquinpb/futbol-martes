@@ -279,26 +279,58 @@
             DOMElements.adminContent.classList.add('hidden');
             
             try {
-                const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-                AppState.userRole = profile ? profile.role : null;
+                // Fetch profile first, as it determines other fetches
+                const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+                if (profileError) {
+                    console.error("Error fetching user profile:", profileError);
+                    showToast("No se pudo verificar el rol del usuario.", "warning");
+                    AppState.userRole = null;
+                } else {
+                    AppState.userRole = profile ? profile.role : null;
+                }
 
-                const [players, matches, usersResponse] = await Promise.all([
-                    supabase.from('players').select('*').order('id'),
+                // Fetch main data concurrently, but handle errors gracefully using Promise.allSettled
+                const [playersRes, matchesRes, usersRes] = await Promise.allSettled([
+                    supabase.from('players').select('*').order('id', { ascending: true }),
                     supabase.from('matches').select('*').order('match_date', { ascending: false }),
-                    AppState.userRole === 'Admin' ? supabase.rpc('get_all_users_with_roles') : Promise.resolve({ data: [] })
+                    AppState.userRole === 'Admin' ? supabase.rpc('get_all_users_with_roles') : Promise.resolve({ data: [], error: null })
                 ]);
-                
-                AppState.players = players.data || [];
-                AppState.matches = matches.data || [];
-                AppState.users = usersResponse.data || [];
 
+                if (playersRes.status === 'fulfilled' && !playersRes.value.error) {
+                    AppState.players = playersRes.value.data || [];
+                } else {
+                    console.error("Error fetching players:", playersRes.reason || playersRes.value.error);
+                    showToast("Error al cargar la lista de jugadores.", "error");
+                    AppState.players = [];
+                }
+
+                if (matchesRes.status === 'fulfilled' && !matchesRes.value.error) {
+                    AppState.matches = matchesRes.value.data || [];
+                } else {
+                    console.error("Error fetching matches:", matchesRes.reason || matchesRes.value.error);
+                    showToast("Error al cargar la lista de partidos.", "error");
+                    AppState.matches = [];
+                }
+                
+                if (AppState.userRole === 'Admin') {
+                    if (usersRes.status === 'fulfilled' && usersRes.value && !usersRes.value.error) {
+                        AppState.users = usersRes.value.data || [];
+                    } else {
+                        console.error("Error fetching users:", usersRes.reason || (usersRes.value ? usersRes.value.error : 'Unknown error'));
+                        showToast("Error al cargar la lista de usuarios (Admin).", "error");
+                        AppState.users = [];
+                    }
+                }
+
+                // After fetching, setup the UI
                 setupUI();
                 const initialTab = NAV_ITEMS.main[0].id;
                 navigateTo(initialTab);
 
             } catch (error) {
-                console.error("Error loading admin panel:", error);
-                showToast("Error al cargar datos. Intente refrescar.", "error");
+                // A catch-all for any unexpected synchronous errors during setup
+                console.error("Fatal error during admin panel setup:", error);
+                showToast("Ocurrió un error inesperado al cargar el panel.", "error");
                 await supabase.auth.signOut();
             } finally {
                 DOMElements.loadingContainer.classList.add('hidden');
