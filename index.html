@@ -808,7 +808,6 @@
                 });
 
                 return Object.values(stats).map(s => {
-                    // Correctly calculate losses after all games are processed
                     s.pp = s.pj - s.pg - s.pe;
                     return {
                         ...s,
@@ -818,7 +817,7 @@
                 });
             } catch (error) {
                 console.error("Error in getStatsForPeriod:", error);
-                return null; // Return null to indicate failure
+                return null; 
             }
         }
 
@@ -841,27 +840,28 @@
             periodSelect.addEventListener('change', renderFn);
         }
         
-        // Generic renderer to avoid code repetition
-        function renderStatTable(config) {
-            const { prefix, sortFn, filterFn, columns } = config;
+        function renderLeaderboard() {
+            setupFilterListeners('leaderboard', renderLeaderboardContent);
+            renderLeaderboardContent();
+        }
+        function renderLeaderboardContent() {
+            const prefix = 'leaderboard';
             const year = document.getElementById(`${prefix}-year-select`).value;
             const period = document.getElementById(`${prefix}-period-select`).value;
             const tableBody = document.querySelector(`#${prefix}-table tbody`);
             const loadingMsg = document.getElementById(`${prefix}-loading-message`);
             const table = document.getElementById(`${prefix}-table`);
-            
-            loadingMsg.classList.remove('hidden');
-            table.classList.add('hidden');
 
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
             const stats = getStatsForPeriod(year, period);
 
-            if (stats === null) { // Check for error from getStatsForPeriod
+            if (stats === null) {
                 loadingMsg.textContent = 'Error al procesar los datos.';
                 loadingMsg.style.color = 'var(--danger-color)';
                 return;
             }
-
-            const rankedPlayers = stats.filter(filterFn).sort(sortFn);
+            
+            const rankedPlayers = stats.filter(p => p.pj > 0).sort((a, b) => b.points - a.points || b.efectividad - a.efectividad);
 
             if (rankedPlayers.length === 0) {
                 loadingMsg.textContent = 'No hay datos para los filtros seleccionados.';
@@ -871,29 +871,12 @@
             tableBody.innerHTML = rankedPlayers.map((p, i) => `
                 <tr class="border-b border-border-color">
                     <td class="p-4 text-secondary">${i + 1}</td>
-                    ${columns.map(col => `<td class="p-4 ${col.classes}">${p[col.key]}</td>`).join('')}
-                </tr>
-            `).join('');
+                    <td class="p-4 font-medium">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.points}</td>
+                    <td class="p-4 text-center text-secondary">${p.efectividad}%</td>
+                </tr>`).join('');
 
-            loadingMsg.classList.add('hidden');
-            table.classList.remove('hidden');
-        }
-
-        function renderLeaderboard() {
-            setupFilterListeners('leaderboard', renderLeaderboardContent);
-            renderLeaderboardContent();
-        }
-        function renderLeaderboardContent() {
-            renderStatTable({
-                prefix: 'leaderboard',
-                filterFn: p => p.pj > 0,
-                sortFn: (a, b) => b.points - a.points || b.efectividad - a.efectividad,
-                columns: [
-                    { key: 'name', classes: 'font-medium' },
-                    { key: 'points', classes: 'text-center font-semibold' },
-                    { key: 'efectividad', classes: 'text-center text-secondary', suffix: '%' }
-                ]
-            });
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
         }
         
         function renderChamigo() {
@@ -901,15 +884,29 @@
             renderChamigoContent();
         }
         function renderChamigoContent() {
-             renderStatTable({
-                prefix: 'chamigo',
-                filterFn: p => p.chamigos > 0,
-                sortFn: (a, b) => b.chamigos - a.chamigos,
-                columns: [
-                    { key: 'name', classes: 'font-medium' },
-                    { key: 'chamigos', classes: 'text-center font-semibold' }
-                ]
-            });
+            const prefix = 'chamigo';
+            const year = document.getElementById(`${prefix}-year-select`).value;
+            const period = document.getElementById(`${prefix}-period-select`).value;
+            const tableBody = document.querySelector(`#${prefix}-table tbody`);
+            const loadingMsg = document.getElementById(`${prefix}-loading-message`);
+            const table = document.getElementById(`${prefix}-table`);
+
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
+            const stats = getStatsForPeriod(year, period);
+
+            if (stats === null) { loadingMsg.textContent = 'Error al procesar los datos.'; return; }
+            
+            const rankedPlayers = stats.filter(p => p.chamigos > 0).sort((a, b) => b.chamigos - a.chamigos);
+
+            if (rankedPlayers.length === 0) { loadingMsg.textContent = 'No hay datos.'; return; }
+
+            tableBody.innerHTML = rankedPlayers.map((p, i) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 text-secondary">${i + 1}</td>
+                    <td class="p-4 font-medium">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.chamigos}</td>
+                </tr>`).join('');
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
         }
         
         function renderTt() {
@@ -917,15 +914,29 @@
             renderTtContent();
         }
         function renderTtContent() {
-             renderStatTable({
-                prefix: 'tt',
-                filterFn: p => p.tt > 0,
-                sortFn: (a, b) => b.tt - a.tt,
-                columns: [
-                    { key: 'name', classes: 'font-medium' },
-                    { key: 'tt', classes: 'text-center font-semibold' }
-                ]
-            });
+            const prefix = 'tt';
+            const year = document.getElementById(`${prefix}-year-select`).value;
+            const period = document.getElementById(`${prefix}-period-select`).value;
+            const tableBody = document.querySelector(`#${prefix}-table tbody`);
+            const loadingMsg = document.getElementById(`${prefix}-loading-message`);
+            const table = document.getElementById(`${prefix}-table`);
+
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
+            const stats = getStatsForPeriod(year, period);
+
+            if (stats === null) { loadingMsg.textContent = 'Error al procesar los datos.'; return; }
+            
+            const rankedPlayers = stats.filter(p => p.tt > 0).sort((a, b) => b.tt - a.tt);
+
+            if (rankedPlayers.length === 0) { loadingMsg.textContent = 'No hay datos.'; return; }
+
+            tableBody.innerHTML = rankedPlayers.map((p, i) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 text-secondary">${i + 1}</td>
+                    <td class="p-4 font-medium">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.tt}</td>
+                </tr>`).join('');
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
         }
 
         function renderPresentismo() {
@@ -933,15 +944,29 @@
             renderPresentismoContent();
         }
         function renderPresentismoContent() {
-            renderStatTable({
-                prefix: 'presentismo',
-                filterFn: p => p.pj > 0,
-                sortFn: (a, b) => b.pj - a.pj,
-                columns: [
-                    { key: 'name', classes: 'font-medium' },
-                    { key: 'pj', classes: 'text-center font-semibold' }
-                ]
-            });
+            const prefix = 'presentismo';
+            const year = document.getElementById(`${prefix}-year-select`).value;
+            const period = document.getElementById(`${prefix}-period-select`).value;
+            const tableBody = document.querySelector(`#${prefix}-table tbody`);
+            const loadingMsg = document.getElementById(`${prefix}-loading-message`);
+            const table = document.getElementById(`${prefix}-table`);
+
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
+            const stats = getStatsForPeriod(year, period);
+
+            if (stats === null) { loadingMsg.textContent = 'Error al procesar los datos.'; return; }
+            
+            const rankedPlayers = stats.filter(p => p.pj > 0).sort((a, b) => b.pj - a.pj);
+            
+            if (rankedPlayers.length === 0) { loadingMsg.textContent = 'No hay datos.'; return; }
+
+            tableBody.innerHTML = rankedPlayers.map((p, i) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 text-secondary">${i + 1}</td>
+                    <td class="p-4 font-medium">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.pj}</td>
+                </tr>`).join('');
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
         }
         
         function renderAusentismo() {
@@ -949,15 +974,29 @@
             renderAusentismoContent();
         }
         function renderAusentismoContent() {
-            renderStatTable({
-                prefix: 'ausentismo',
-                filterFn: p => p.ausentes > 0,
-                sortFn: (a, b) => b.ausentes - a.ausentes,
-                columns: [
-                    { key: 'name', classes: 'font-medium' },
-                    { key: 'ausentes', classes: 'text-center font-semibold' }
-                ]
-            });
+            const prefix = 'ausentismo';
+            const year = document.getElementById(`${prefix}-year-select`).value;
+            const period = document.getElementById(`${prefix}-period-select`).value;
+            const tableBody = document.querySelector(`#${prefix}-table tbody`);
+            const loadingMsg = document.getElementById(`${prefix}-loading-message`);
+            const table = document.getElementById(`${prefix}-table`);
+
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
+            const stats = getStatsForPeriod(year, period);
+
+            if (stats === null) { loadingMsg.textContent = 'Error al procesar los datos.'; return; }
+            
+            const rankedPlayers = stats.filter(p => p.ausentes > 0).sort((a, b) => b.ausentes - a.ausentes);
+            
+            if (rankedPlayers.length === 0) { loadingMsg.textContent = 'No hay datos.'; return; }
+
+            tableBody.innerHTML = rankedPlayers.map((p, i) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 text-secondary">${i + 1}</td>
+                    <td class="p-4 font-medium">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.ausentes}</td>
+                </tr>`).join('');
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
         }
 
         function renderEstadisticas() {
