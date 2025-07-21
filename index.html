@@ -604,9 +604,9 @@
 
         // --- INITIALIZATION ---
         async function init() {
+            console.log("Iniciando aplicación...");
             setupTheme();
             setupNavigation();
-            // Wait for data before setting up the rest of the UI
             await loadInitialData(); 
             
             DOMElements.mobileMenuToggle.addEventListener('click', toggleMobileMenu);
@@ -615,23 +615,40 @@
 
         async function loadInitialData() {
             try {
+                console.log("1. Obteniendo datos de Supabase...");
                 const [playersRes, matchesRes] = await Promise.all([
                     supabase.from('players').select('*'),
                     supabase.from('matches').select('*').order('match_date', { ascending: false })
                 ]);
 
+                console.log("2. Respuesta de Supabase recibida.");
+
                 if (playersRes.error) throw playersRes.error;
                 if (matchesRes.error) throw matchesRes.error;
 
-                allPlayers = playersRes.data;
-                allMatches = matchesRes.data;
+                allPlayers = playersRes.data || [];
+                allMatches = matchesRes.data || [];
                 isDataLoaded = true;
                 
-                // Now that data is loaded, handle the initial view
+                console.log(`3. Datos cargados: ${allPlayers.length} jugadores, ${allMatches.length} partidos.`);
+
+                if (allPlayers.length === 0 || allMatches.length === 0) {
+                    console.warn("Advertencia: Una o ambas tablas (players, matches) están vacías o no se pudo acceder a ellas.");
+                     DOMElements.contentArea.innerHTML = `<div class="card p-6 text-center text-warning-color">
+                        <h3 class="text-lg font-bold mb-2">No se encontraron datos</h3>
+                        <p>Las tablas de jugadores o partidos parecen estar vacías. Si esto es un error, por favor verifica las Políticas de Seguridad (RLS) en tu panel de Supabase para asegurarte de que el rol 'anon' tenga permiso de LECTURA (SELECT) en ambas tablas.</p>
+                     </div>`;
+                    return;
+                }
+                
                 handleHashChange();
             } catch (error) {
-                console.error("Error loading initial data:", error);
-                DOMElements.contentArea.innerHTML = `<div class="card p-6 text-center text-red-500">Error al cargar los datos. Mensaje: ${error.message}. Por favor, recarga la página.</div>`;
+                console.error("Error al cargar datos de Supabase:", error);
+                DOMElements.contentArea.innerHTML = `<div class="card p-6 text-center text-danger-color">
+                    <h3 class="text-lg font-bold mb-2">Error de Conexión</h3>
+                    <p>No se pudieron cargar los datos desde Supabase. Revisa la consola para más detalles del error.</p>
+                    <p class="mt-2 text-xs">Mensaje: ${error.message}</p>
+                </div>`;
             }
         }
 
@@ -736,7 +753,6 @@
         // --- DATA CALCULATION ---
         function getStatsForPeriod(year, period) {
             const filteredMatches = allMatches.filter(match => {
-                // Supabase date format 'YYYY-MM-DD' is safe for this constructor
                 const matchDate = new Date(match.match_date);
                 const matchYear = matchDate.getUTCFullYear();
                 const matchMonth = matchDate.getUTCMonth(); // 0-11
@@ -761,7 +777,7 @@
                     if (!stats[pId]) return;
                     if (match.result !== 'Suspendido') {
                         stats[pId].pj++;
-                        const isWinner = (match.result === 'Claros' && match.team_white_players.includes(pId)) || (match.result === 'Oscuros' && match.team_dark_players.includes(pId));
+                        const isWinner = (match.result === 'Claros' && (match.team_white_players || []).includes(pId)) || (match.result === 'Oscuros' && (match.team_dark_players || []).includes(pId));
                         if (isWinner) {
                             stats[pId].points += 3;
                             stats[pId].pg++;
