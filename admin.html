@@ -218,9 +218,9 @@
         </aside>
 
         <!-- Main content -->
-        <div class="flex-1 flex flex-col overflow-hidden">
-            <!-- Header for Mobile -->
-            <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary md:hidden relative">
+        <div class="flex-1 flex flex-col h-screen">
+            <!-- Header for Mobile (Sticky) -->
+            <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary md:hidden sticky top-0 z-30">
                 <div class="w-10">
                      <button id="mobile-menu-toggle" class="p-2 rounded-md -ml-2">
                         <i class="fas fa-bars text-lg"></i>
@@ -240,7 +240,7 @@
                 </div>
             </header>
             
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-primary p-4 sm:p-6 lg:p-8 overscroll-y-auto">
+            <main class="flex-1 overflow-y-auto bg-primary p-4 sm:p-6 lg:p-8">
                 <div id="admin-content-area" class="max-w-7xl mx-auto">
                     <!-- Loading State -->
                     <div id="loading-container" class="flex items-center justify-center h-64">
@@ -780,7 +780,7 @@
                 else suplentesDiv.appendChild(playerEl);
             });
 
-            setupPlayerInteractions();
+            setupPlayerInteractions('team-formation-container');
             document.getElementById('team-match-date').addEventListener('change', updateTeamCounts);
             document.getElementById('save-teams-button').addEventListener('click', handleSaveTeams);
         };
@@ -861,10 +861,17 @@
 
         window.render_edit_match = () => {
             const panelContent = `
-                <div id="edit-match-content" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div id="edit-match-content" class="flex flex-col lg:grid lg:grid-cols-2 gap-6">
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
                         <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
-                        <div id="edit-available-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
+                        <div>
+                            <h4 class="font-medium mb-2 text-secondary">Titulares</h4>
+                            <div id="edit-titulares-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium mb-2 text-secondary">Suplentes</h4>
+                            <div id="edit-suplentes-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
+                        </div>
                     </div>
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
                         <h3 class="text-xl font-semibold">Equipos del Partido</h3>
@@ -995,7 +1002,7 @@
             document.getElementById('clear-user-form-button').addEventListener('click', clearUserForm);
         };
 
-        // --- TEAM FORMATION LOGIC ---
+        // --- TEAM FORMATION & EDIT MATCH LOGIC (REUSABLE) ---
         function createPlayerElement(player) {
             const el = document.createElement('div');
             el.className = 'player-element flex-grow-0 text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
@@ -1004,40 +1011,42 @@
             return el;
         }
 
-        function setupPlayerInteractions() {
-            const container = document.getElementById('team-formation-container');
+        function setupPlayerInteractions(containerId) {
+            const container = document.getElementById(containerId);
             if (!container) return;
+            
+            const returnPlayerToOrigin = (playerEl) => {
+                const playerId = playerEl.dataset.id;
+                const player = AppState.players.find(p => p.id == playerId);
+                const isEditMode = containerId === 'edit-match-content';
 
-            // Handle Clicks/Taps for non-drag actions
+                const suplentesList = document.getElementById(isEditMode ? 'edit-suplentes-players' : 'suplentes-players');
+                const titularesList = document.getElementById(isEditMode ? 'edit-titulares-players' : 'titulares-players');
+
+                if (player && player.role === 'Suplente') {
+                    suplentesList.appendChild(playerEl);
+                } else {
+                    titularesList.appendChild(playerEl);
+                }
+                if (!isEditMode) updateTeamCounts();
+            };
+
             container.addEventListener('click', (e) => {
                 const playerEl = e.target.closest('.player-element');
                 if (!playerEl || (e.type === 'click' && playerEl.classList.contains('dragging'))) return;
 
                 const parentId = playerEl.parentElement.id;
                 
-                if (parentId === 'titulares-players' || parentId === 'suplentes-players') {
+                if (parentId.includes('titulares-players') || parentId.includes('suplentes-players')) {
                     showPlayerAssignmentModal(playerEl);
-                } else if (parentId === 'team-claros' || parentId === 'team-oscuros') {
+                } else if (parentId.includes('team-claros') || parentId.includes('team-oscuros')) {
                     returnPlayerToOrigin(playerEl);
                 }
             });
 
-            // Handle Drag & Drop for both Desktop and Mobile
-            setupUniversalDragDrop();
+            setupUniversalDragDrop(containerId, returnPlayerToOrigin);
         }
         
-        function returnPlayerToOrigin(playerEl) {
-            const playerId = playerEl.dataset.id;
-            const player = AppState.players.find(p => p.id == playerId);
-
-            if (player && player.role === 'Suplente') {
-                document.getElementById('suplentes-players').appendChild(playerEl);
-            } else {
-                document.getElementById('titulares-players').appendChild(playerEl);
-            }
-            updateTeamCounts();
-        }
-
         function showPlayerAssignmentModal(playerEl) {
             AppState.activePlayerElement = playerEl;
             DOMElements.assignModalPlayerName.textContent = playerEl.textContent;
@@ -1054,7 +1063,10 @@
         function movePlayerToTeam(teamId) {
             if (!AppState.activePlayerElement) return;
             
-            const teamContainer = document.getElementById(teamId);
+            const isEditMode = AppState.activePlayerElement.closest('#edit-match-content');
+            const finalTeamId = isEditMode ? `edit-${teamId}` : teamId;
+            
+            const teamContainer = document.getElementById(finalTeamId);
             if (teamContainer.children.length >= 5) {
                 showToast(`El equipo ${teamId.includes('claros') ? 'Claros' : 'Oscuros'} ya está lleno.`, 'warning');
                 return;
@@ -1062,11 +1074,11 @@
             
             teamContainer.appendChild(AppState.activePlayerElement);
             hidePlayerAssignmentModal();
-            updateTeamCounts();
+            if (!isEditMode) updateTeamCounts();
         }
 
-        function setupUniversalDragDrop() {
-            const container = document.getElementById('team-formation-container');
+        function setupUniversalDragDrop(containerId, returnPlayerFn) {
+            const container = document.getElementById(containerId);
             let draggedElement = null;
             let ghostElement = null;
 
@@ -1077,10 +1089,10 @@
                 draggedElement = target;
                 draggedElement.classList.add('dragging');
 
-                if (e.type === 'dragstart') {
+                if (e.type === 'dragstart') { // Desktop
                     e.dataTransfer.setData('text/plain', draggedElement.dataset.id);
                     e.dataTransfer.effectAllowed = 'move';
-                } else { // Touch event
+                } else { // Mobile
                     ghostElement = draggedElement.cloneNode(true);
                     ghostElement.classList.add('ghost');
                     document.body.appendChild(ghostElement);
@@ -1096,18 +1108,14 @@
                 const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
                 const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
                 
-                if (ghostElement) {
-                    positionGhost(clientX, clientY);
-                }
+                if (ghostElement) positionGhost(clientX, clientY);
 
-                document.querySelectorAll('.player-drop-zone').forEach(zone => zone.classList.remove('drag-over'));
+                document.querySelectorAll(`#${containerId} .player-drop-zone`).forEach(zone => zone.classList.remove('drag-over'));
                 
                 const dropTarget = document.elementFromPoint(clientX, clientY);
-                const dropZone = dropTarget ? dropTarget.closest('.player-drop-zone') : null;
+                const dropZone = dropTarget ? dropTarget.closest(`#${containerId} .player-drop-zone`) : null;
 
-                if (dropZone) {
-                    dropZone.classList.add('drag-over');
-                }
+                if (dropZone) dropZone.classList.add('drag-over');
             };
 
             const handleDragEnd = (e) => {
@@ -1117,26 +1125,25 @@
                 const clientY = e.type === 'touchend' ? e.changedTouches[0].clientY : e.clientY;
                 
                 const dropTarget = document.elementFromPoint(clientX, clientY);
-                const dropZone = dropTarget ? dropTarget.closest('.player-drop-zone') : null;
+                const dropZone = dropTarget ? dropTarget.closest(`#${containerId} .player-drop-zone`) : null;
 
                 if (dropZone) {
-                    if (dropZone.id.startsWith('team-') && dropZone.children.length >= 5 && !dropZone.contains(draggedElement)) {
+                    if (dropZone.id.includes('team-') && dropZone.children.length >= 5 && !dropZone.contains(draggedElement)) {
                         showToast('El equipo ya tiene 5 jugadores.', 'warning');
-                    } else if (dropZone.id === 'titulares-players' || dropZone.id === 'suplentes-players') {
-                        returnPlayerToOrigin(draggedElement);
+                    } else if (dropZone.id.includes('titulares-players') || dropZone.id.includes('suplentes-players')) {
+                        returnPlayerFn(draggedElement);
                     } else {
                         dropZone.appendChild(draggedElement);
                     }
                 }
                 
-                document.querySelectorAll('.player-drop-zone').forEach(zone => zone.classList.remove('drag-over'));
+                document.querySelectorAll(`#${containerId} .player-drop-zone`).forEach(zone => zone.classList.remove('drag-over'));
                 draggedElement.classList.remove('dragging');
-                if (ghostElement) {
-                    ghostElement.remove();
-                }
+                if (ghostElement) ghostElement.remove();
+                
                 draggedElement = null;
                 ghostElement = null;
-                updateTeamCounts();
+                if (containerId === 'team-formation-container') updateTeamCounts();
             };
             
             const positionGhost = (x, y) => {
@@ -1147,7 +1154,7 @@
 
             // Attach listeners
             container.addEventListener('mousedown', handleDragStart);
-            container.addEventListener('touchstart', handleDragStart);
+            container.addEventListener('touchstart', handleDragStart, { passive: false });
 
             document.addEventListener('mousemove', handleDragMove);
             document.addEventListener('touchmove', handleDragMove, { passive: false });
@@ -1155,7 +1162,7 @@
             document.addEventListener('mouseup', handleDragEnd);
             document.addEventListener('touchend', handleDragEnd);
             
-            // For standard desktop drag
+            // For standard desktop drag compatibility
             container.addEventListener('dragstart', handleDragStart);
             container.addEventListener('dragover', (e) => e.preventDefault());
             container.addEventListener('drop', handleDragEnd);
@@ -1530,16 +1537,27 @@
         
         function renderEditMatchPlayers(match) {
             document.getElementById('edit-match-date').value = match.match_date;
-            const availablePlayersDiv = document.getElementById('edit-available-players');
+            const titularesDiv = document.getElementById('edit-titulares-players');
+            const suplentesDiv = document.getElementById('edit-suplentes-players');
             const teamClarosDiv = document.getElementById('edit-team-claros');
             const teamOscurosDiv = document.getElementById('edit-team-oscuros');
             
-            [availablePlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(div => div.innerHTML = '');
+            [titularesDiv, suplentesDiv, teamClarosDiv, teamOscurosDiv].forEach(div => div.innerHTML = '');
 
-            const matchPlayerIds = new Set([...(match.team_white_players || []).map(String), ...(match.team_dark_players || []).map(String)]);
+            const matchPlayerIds = new Set([
+                ...(match.team_white_players || []).map(String), 
+                ...(match.team_dark_players || []).map(String)
+            ]);
 
             AppState.players.filter(p => p.status === 'Activo' && !matchPlayerIds.has(String(p.id)))
-                .forEach(p => availablePlayersDiv.appendChild(createPlayerElement(p)));
+                .forEach(p => {
+                    const playerEl = createPlayerElement(p);
+                    if (p.role === 'Suplente') {
+                        suplentesDiv.appendChild(playerEl);
+                    } else {
+                        titularesDiv.appendChild(playerEl);
+                    }
+                });
 
             (match.team_white_players || []).forEach(id => {
                 const player = AppState.players.find(p => p.id == id);
@@ -1550,7 +1568,7 @@
                 if (player) teamOscurosDiv.appendChild(createPlayerElement(player));
             });
             
-            setupUniversalDragDrop();
+            setupPlayerInteractions('edit-match-content');
         }
 
         async function handleUpdateMatch() {
