@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LA CLANDE - Estadísticas de Fútbol</title>
-    
+    <title>LA CLANDE - Estadísticas</title>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -15,37 +15,56 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+    
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
-    
+
     <style>
+        /* --- ESTILOS GLOBALES Y VARIABLES DE TEMA (Inspirado en admin.html) --- */
         :root {
             --bg-primary: #f4f7fe;
             --bg-secondary: #ffffff;
-            --bg-nav: #ffffff;
+            --bg-muted: #f9fafb;
+            --sidebar-bg: #111827;
+            --sidebar-text: #e5e7eb;
+            --sidebar-active-bg: #4f46e5;
+            --sidebar-active-text: #ffffff;
+            --sidebar-hover-bg: #374151;
             --text-primary: #111827;
             --text-secondary: #4b5563;
             --border-color: #e5e7eb;
             --accent-color: #4f46e5;
             --accent-color-hover: #4338ca;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
             --table-header-bg: #f9fafb;
+            --table-row-odd-bg: #ffffff;
+            --table-row-even-bg: #f9fafb;
             --table-row-hover: #f0f2f5;
         }
 
         html.dark {
             --bg-primary: #111827;
             --bg-secondary: #1f2937;
-            --bg-nav: #1f2937;
+            --bg-muted: #111827;
+            --sidebar-bg: #111827;
+            --sidebar-text: #e5e7eb;
+            --sidebar-active-bg: #4f46e5;
+            --sidebar-active-text: #ffffff;
+            --sidebar-hover-bg: #374151;
             --text-primary: #f9fafb;
             --text-secondary: #d1d5db;
             --border-color: #374151;
             --accent-color: #6366f1;
             --accent-color-hover: #818cf8;
             --table-header-bg: #1f2937;
+            --table-row-odd-bg: #1f2937;
+            --table-row-even-bg: #111827;
             --table-row-hover: #374151;
         }
 
@@ -55,31 +74,66 @@
             color: var(--text-primary);
             transition: background-color 0.3s, color 0.3s;
         }
+        
+        body.overflow-hidden {
+            overflow: hidden;
+        }
 
+        /* --- COMPONENTES --- */
         .card {
             background-color: var(--bg-secondary);
             border: 1px solid var(--border-color);
         }
-
+        
+        input, select {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        html.dark input, html.dark select {
+             background-color: var(--bg-muted);
+             color: var(--text-primary);
+        }
+        
+        /* --- SIDEBAR Y NAVEGACIÓN --- */
+        .nav-link.active {
+            background-color: var(--sidebar-active-bg);
+            color: var(--sidebar-active-text) !important;
+        }
+        
+        /* --- TABLAS --- */
         .table-container {
-            max-height: 65vh;
+            max-height: 70vh;
             overflow-y: auto;
             border: 1px solid var(--border-color);
             border-radius: 0.75rem;
+            position: relative;
         }
 
         .table-container thead th {
             position: sticky;
             top: 0;
             background-color: var(--table-header-bg);
+            color: var(--text-secondary);
             z-index: 10;
         }
         
-        /* Sticky Columns Styling */
+        tbody tr {
+            border-bottom: 1px solid var(--border-color);
+        }
+        tbody tr:last-child {
+            border-bottom: 0;
+        }
+        tbody tr:nth-child(odd) { background-color: var(--table-row-odd-bg); }
+        tbody tr:nth-child(even) { background-color: var(--table-row-even-bg); }
+        tbody tr:hover { background-color: var(--table-row-hover); }
+        
+        /* --- COLUMNAS FIJAS (STICKY) --- */
         .sticky-col {
             position: sticky;
             z-index: 5;
-            background-color: var(--bg-secondary);
+            background-color: inherit; /* Hereda el color de la fila */
         }
         
         thead .sticky-col {
@@ -88,21 +142,22 @@
         }
 
         .sticky-col-1 { left: 0; }
-        .sticky-col-2 { left: 50px; } /* Adjust based on width of col 1 */
-
-        tbody tr:hover .sticky-col {
-            background-color: var(--table-row-hover);
+        .sticky-col-2 { left: 50px; } /* Ajustar según ancho de col 1 */
+        
+        /* --- ESTILOS ESPECÍFICOS DE SECCIONES --- */
+        
+        /* Títulos */
+        .section-title {
+            color: var(--text-primary);
         }
-
-        /* Player search input styling */
-        #individual-player-search {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' viewBox='0 0 20 20' fill='%239ca3af'%3E%3Cpath fill-rule='evenodd' d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z' clip-rule='evenodd' /%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: 0.75rem center;
-            padding-left: 2.5rem;
+        
+        /* Filtros */
+        .filter-container {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
         }
-
-        /* Soccer Field Styling */
+        
+        /* Campo de Fútbol */
         #soccer-field-container {
             background-color: #22c55e; /* Green-500 */
             background-image:
@@ -111,9 +166,9 @@
             background-size: 3rem 3rem;
             border: 2px solid #a3a3a3;
         }
-
         .player-marker {
             transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
         .player-marker.claros {
             background-color: #ffffff;
@@ -132,52 +187,97 @@
             background: var(--bg-secondary);
             border-radius: 50%;
             padding: 2px;
+            color: #facc15; /* yellow-400 */
         }
+        .player-name-label {
+            background-color: rgba(255, 255, 255, 0.8);
+            color: #111827;
+        }
+        html.dark .player-name-label {
+            background-color: rgba(17, 24, 39, 0.8);
+            color: #f9fafb;
+        }
+        
+        /* Búsqueda de jugador */
+        #individual-player-search {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' viewBox='0 0 20 20' fill='%239ca3af'%3E%3Cpath fill-rule='evenodd' d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z' clip-rule='evenodd' /%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 0.75rem center;
+            padding-left: 2.5rem;
+        }
+        html.dark #individual-player-search {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='h-5 w-5' viewBox='0 0 20 20' fill='%23d1d5db'%3E%3Cpath fill-rule='evenodd' d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z' clip-rule='evenodd' /%3E%3C/svg%3E");
+        }
+
     </style>
 </head>
 <body class="antialiased">
 
-    <!-- Header Navigation -->
-    <header class="bg-nav shadow-md sticky top-0 z-30 border-b border-border-color">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-4">
+    <div class="flex h-screen">
+        <!-- Sidebar para Desktop -->
+        <aside id="sidebar" class="w-64 bg-sidebar-bg text-sidebar-text flex-col hidden md:flex">
+            <div class="px-6 py-4 flex items-center">
+                <a href="#" class="text-xl font-bold flex items-center gap-2 text-white">
                     <span class="text-2xl">⚽</span>
-                    <h1 class="text-xl font-bold text-primary">LA CLANDE</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <nav id="desktop-nav" class="hidden md:flex space-x-2">
-                        <!-- Desktop navigation buttons will be injected here by JS -->
-                    </nav>
-                    <button id="dark-mode-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <i class="fas fa-moon text-lg text-secondary"></i>
-                    </button>
-                    <div class="md:hidden">
-                        <button id="mobile-menu-button" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <i class="fas fa-bars text-lg"></i>
-                        </button>
-                    </div>
-                </div>
+                    <span>LA CLANDE</span>
+                </a>
             </div>
-        </div>
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden border-t border-border-color">
-            <nav class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                 <!-- Mobile navigation buttons will be injected here by JS -->
+            
+            <nav id="main-nav" class="flex-1 px-4 space-y-2 overflow-y-auto">
+                <!-- Desktop nav items will be injected by JS -->
             </nav>
-        </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
-        
-        <!-- Tab: Tabla de Posiciones -->
-        <div id="leaderboard-content" class="tab-content">
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-                <h2 class="text-2xl font-bold tracking-tight">Tabla de Posiciones</h2>
+            <div class="px-4 py-4 mt-auto">
+                 <button id="desktop-dark-mode-toggle" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200">
+                    <i class="fas fa-moon w-5 text-center"></i>
+                    <span>Modo Oscuro</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header para Mobile -->
+            <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary md:hidden sticky top-0 z-20">
+                <div class="flex-1 text-center">
+                    <a href="#" class="text-xl font-bold flex items-center gap-2 justify-center">
+                        <span class="text-2xl">⚽</span>
+                        <span>LA CLANDE</span>
+                    </a>
+                </div>
+                <div class="w-10 text-right">
+                     <button id="mobile-menu-toggle" class="p-2 rounded-md -mr-2">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Mobile Dropdown Menu -->
+                <div id="mobile-menu" class="hidden absolute top-full left-0 mt-0 w-full bg-secondary shadow-xl border-t border-border-color z-50">
+                    <nav class="p-4 space-y-2">
+                         <!-- Mobile nav items will be injected by JS -->
+                    </nav>
+                </div>
+            </header>
+            
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-primary p-4 sm:p-6 lg:p-8">
+                <div id="stats-content-area" class="max-w-7xl mx-auto">
+                    <!-- Contenido de las pestañas se insertará aquí -->
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" class="fixed inset-0 bg-black/50 z-10 hidden md:hidden"></div>
+
+    <!-- TEMPLATES PARA EL CONTENIDO DE LAS PESTAÑAS -->
+    <template id="template-leaderboard-content">
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight section-title">Tabla de Posiciones</h2>
                 <div class="flex items-center gap-2 w-full md:w-auto">
-                    <select id="leaderboard-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm"></select>
-                    <select id="leaderboard-period-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm">
+                    <select id="leaderboard-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2"></select>
+                    <select id="leaderboard-period-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2">
                         <option value="apertura">Apertura</option>
                         <option value="clausura">Clausura</option>
                         <option value="total">Anual</option>
@@ -201,14 +301,139 @@
                 </div>
             </div>
         </div>
-
-        <!-- Tab: Estadísticas Generales -->
-        <div id="estadisticas-content" class="tab-content hidden">
-             <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-                <h2 class="text-2xl font-bold tracking-tight">Estadísticas Generales</h2>
+    </template>
+    
+    <template id="template-chamigo-content">
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight section-title">Chamigo</h2>
                 <div class="flex items-center gap-2 w-full md:w-auto">
-                    <select id="estadisticas-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm"></select>
-                    <select id="estadisticas-period-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm">
+                    <select id="chamigo-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2"></select>
+                    <select id="chamigo-period-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Anual</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card rounded-xl shadow-sm overflow-hidden">
+                <div class="table-container">
+                    <p id="chamigo-loading-message" class="p-6 text-center text-secondary">Cargando...</p>
+                    <table id="chamigo-table" class="w-full text-sm text-left hidden">
+                        <thead class="text-xs uppercase">
+                            <tr>
+                                <th scope="col" class="p-4">#</th>
+                                <th scope="col" class="p-4">Jugador</th>
+                                <th scope="col" class="p-4 text-center">Votos</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-tt-content">
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight section-title">Tercer Tiempo (TT)</h2>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <select id="tt-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2"></select>
+                    <select id="tt-period-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Anual</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card rounded-xl shadow-sm overflow-hidden">
+                <div class="table-container">
+                    <p id="tt-loading-message" class="p-6 text-center text-secondary">Cargando...</p>
+                    <table id="tt-table" class="w-full text-sm text-left hidden">
+                        <thead class="text-xs uppercase">
+                            <tr>
+                                <th scope="col" class="p-4">#</th>
+                                <th scope="col" class="p-4">Jugador</th>
+                                <th scope="col" class="p-4 text-center">Asistencias</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-presentismo-content">
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight section-title">Presentismo</h2>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <select id="presentismo-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2"></select>
+                    <select id="presentismo-period-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Anual</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card rounded-xl shadow-sm overflow-hidden">
+                <div class="table-container">
+                    <p id="presentismo-loading-message" class="p-6 text-center text-secondary">Cargando...</p>
+                    <table id="presentismo-table" class="w-full text-sm text-left hidden">
+                        <thead class="text-xs uppercase">
+                            <tr>
+                                <th scope="col" class="p-4">#</th>
+                                <th scope="col" class="p-4">Jugador</th>
+                                <th scope="col" class="p-4 text-center">Partidos Jugados</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-ausentismo-content">
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight section-title">Ausentismo</h2>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <select id="ausentismo-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2"></select>
+                    <select id="ausentismo-period-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Anual</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card rounded-xl shadow-sm overflow-hidden">
+                <div class="table-container">
+                    <p id="ausentismo-loading-message" class="p-6 text-center text-secondary">Cargando...</p>
+                    <table id="ausentismo-table" class="w-full text-sm text-left hidden">
+                        <thead class="text-xs uppercase">
+                            <tr>
+                                <th scope="col" class="p-4">#</th>
+                                <th scope="col" class="p-4">Jugador</th>
+                                <th scope="col" class="p-4 text-center">Ausencias</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-estadisticas-content">
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight section-title">Estadísticas Generales</h2>
+                <div class="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                    <select id="estadisticas-year-select" class="flex-grow md:flex-grow-0 bg-secondary border-border-color rounded-md shadow-sm p-2"></select>
+                    <select id="estadisticas-period-select" class="flex-grow md:flex-grow-0 bg-secondary border-border-color rounded-md shadow-sm p-2">
                         <option value="apertura">Apertura</option>
                         <option value="clausura">Clausura</option>
                         <option value="total">Anual</option>
@@ -239,21 +464,42 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Tab: Fixture -->
-        <div id="fixture-content" class="tab-content hidden">
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-                <h2 class="text-2xl font-bold tracking-tight">Fixture</h2>
+    </template>
+    
+    <template id="template-equipos-content">
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight section-title">Rendimiento de Equipos</h2>
                 <div class="flex items-center gap-2 w-full md:w-auto">
-                    <select id="fixture-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm"></select>
-                    <select id="fixture-month-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm"></select>
+                    <select id="equipos-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2"></select>
+                    <select id="equipos-period-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2">
+                        <option value="apertura">Apertura</option>
+                        <option value="clausura">Clausura</option>
+                        <option value="total">Anual</option>
+                    </select>
+                </div>
+            </div>
+            <p id="equipos-loading-message" class="p-6 text-center text-secondary">Cargando...</p>
+            <div id="equipos-stats-display" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 hidden">
+                <!-- Stats cards will be injected here -->
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-fixture-content">
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight section-title">Fixture</h2>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <select id="fixture-year-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2"></select>
+                    <select id="fixture-month-select" class="w-full md:w-auto bg-secondary border-border-color rounded-md shadow-sm p-2"></select>
                 </div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-1 card rounded-xl shadow-sm p-4 h-fit">
                     <h3 class="font-semibold mb-3">Partidos del Mes</h3>
                     <div id="fixture-matches-cards-container" class="space-y-2 max-h-[60vh] overflow-y-auto">
-                        <p id="fixture-loading-message" class="p-6 text-center text-secondary">Cargando...</p>
+                        <p id="fixture-loading-message" class="p-4 text-center text-secondary">Cargando...</p>
                     </div>
                 </div>
                 <div class="lg:col-span-2 card rounded-xl shadow-sm p-4">
@@ -261,7 +507,7 @@
                         <h3 id="fixture-date-header" class="text-lg font-bold text-center mb-4"></h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div id="soccer-field-container" class="relative w-full aspect-[3/4] rounded-lg overflow-hidden">
-                                <!-- Field markings will be CSS based -->
+                                <!-- Field markings and players will be injected here -->
                             </div>
                             <div class="space-y-4">
                                 <div>
@@ -281,14 +527,15 @@
                 </div>
             </div>
         </div>
-
-        <!-- Tab: Historial Individual -->
-        <div id="individual-stats-content" class="tab-content hidden">
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-                <h2 class="text-2xl font-bold tracking-tight">Historial Individual</h2>
+    </template>
+    
+    <template id="template-individual-stats-content">
+        <div class="space-y-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight section-title">Historial Individual</h2>
                 <div class="relative w-full md:w-72">
-                    <input type="text" id="individual-player-search" placeholder="Buscar jugador..." class="w-full bg-secondary border-border-color rounded-md shadow-sm">
-                    <div id="individual-player-results" class="absolute z-10 w-full bg-secondary border border-border-color rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                    <input type="text" id="individual-player-search" placeholder="Buscar jugador..." class="w-full p-2 bg-secondary border-border-color rounded-md shadow-sm">
+                    <div id="individual-player-results" class="absolute z-10 w-full card rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                 </div>
             </div>
              <div class="card rounded-xl shadow-sm overflow-hidden">
@@ -315,8 +562,7 @@
                 </div>
             </div>
         </div>
-
-    </main>
+    </template>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -327,27 +573,39 @@
 
         let allPlayers = [];
         let allMatches = [];
+        let isDataLoaded = false;
 
         const TABS = [
-            { id: 'leaderboard-content', name: 'Posiciones', icon: 'fa-trophy' },
-            { id: 'estadisticas-content', name: 'Estadísticas', icon: 'fa-chart-bar' },
-            { id: 'fixture-content', name: 'Fixture', icon: 'fa-calendar-alt' },
-            { id: 'individual-stats-content', name: 'Histórico', icon: 'fa-user' }
+            { id: 'leaderboard', name: 'Posiciones', icon: 'fa-trophy' },
+            { id: 'estadisticas', name: 'Estadísticas', icon: 'fa-chart-bar' },
+            { id: 'chamigo', name: 'Chamigo', icon: 'fa-star' },
+            { id: 'tt', name: 'Tercer Tiempo', icon: 'fa-beer' },
+            { id: 'presentismo', name: 'Presentismo', icon: 'fa-check-circle' },
+            { id: 'ausentismo', name: 'Ausentismo', icon: 'fa-times-circle' },
+            { id: 'equipos', name: 'Equipos', icon: 'fa-shield-alt' },
+            { id: 'fixture', name: 'Fixture', icon: 'fa-calendar-alt' },
+            { id: 'individual-stats', name: 'Histórico', icon: 'fa-user' }
         ];
 
         // --- DOM ELEMENTS ---
-        const darkModeToggle = document.getElementById('dark-mode-toggle');
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const desktopNav = document.getElementById('desktop-nav');
-        const mobileNavContainer = mobileMenu.querySelector('nav');
+        const DOMElements = {
+            desktopDarkModeToggle: document.getElementById('desktop-dark-mode-toggle'),
+            mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
+            mobileMenu: document.getElementById('mobile-menu'),
+            mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
+            mainNav: document.getElementById('main-nav'),
+            mobileNavContainer: document.getElementById('mobile-menu').querySelector('nav'),
+            contentArea: document.getElementById('stats-content-area'),
+        };
 
         // --- INITIALIZATION ---
         function init() {
             setupTheme();
             setupNavigation();
-            setupEventListeners();
             loadInitialData();
+            
+            DOMElements.mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+            DOMElements.mobileMenuOverlay.addEventListener('click', toggleMobileMenu);
         }
 
         async function loadInitialData() {
@@ -362,124 +620,117 @@
 
                 allPlayers = playersRes.data;
                 allMatches = matchesRes.data;
+                isDataLoaded = true;
                 
-                populateGlobalFilters();
                 handleHashChange(); // Load data for the initial or hashed tab
-
             } catch (error) {
                 console.error("Error loading initial data:", error);
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.querySelector('[id$="-loading-message"]').textContent = 'Error al cargar los datos. Intente recargar la página.';
-                });
+                DOMElements.contentArea.innerHTML = `<div class="card p-6 text-center text-danger-color">Error al cargar los datos. Por favor, recarga la página.</div>`;
             }
         }
 
         // --- UI & THEME ---
         function setupTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            applyTheme(savedTheme);
-            darkModeToggle.addEventListener('click', () => {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+            
+            DOMElements.desktopDarkModeToggle.addEventListener('click', () => {
                 const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
                 applyTheme(newTheme);
             });
+            // Mobile dark mode button will be created dynamically
         }
 
         function applyTheme(theme) {
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-                darkModeToggle.querySelector('i').classList.replace('fa-moon', 'fa-sun');
-            } else {
-                document.documentElement.classList.remove('dark');
-                darkModeToggle.querySelector('i').classList.replace('fa-sun', 'fa-moon');
-            }
+            document.documentElement.classList.toggle('dark', theme === 'dark');
             localStorage.setItem('theme', theme);
+            updateThemeToggleIcons();
+        }
+
+        function updateThemeToggleIcons() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const toggleButtons = [
+                DOMElements.desktopDarkModeToggle, 
+                document.getElementById('mobile-dark-mode-toggle') // This might not exist yet
+            ];
+
+            toggleButtons.forEach(btn => {
+                if (btn) {
+                    const icon = btn.querySelector('i');
+                    const text = btn.querySelector('span');
+                    icon.classList.toggle('fa-moon', !isDark);
+                    icon.classList.toggle('fa-sun', isDark);
+                    if(text) text.textContent = isDark ? 'Modo Claro' : 'Modo Oscuro';
+                }
+            });
         }
 
         function setupNavigation() {
             // Populate nav bars
-            desktopNav.innerHTML = TABS.map(tab => `
-                <a href="#${tab.id}" data-tab="${tab.id}" class="tab-button px-3 py-2 rounded-md text-sm font-medium">${tab.name}</a>
-            `).join('');
-            mobileNavContainer.innerHTML = TABS.map(tab => `
-                <a href="#${tab.id}" data-tab="${tab.id}" class="tab-button block px-3 py-2 rounded-md text-base font-medium"><i class="fas ${tab.icon} w-5 mr-2"></i>${tab.name}</a>
-            `).join('');
+            DOMElements.mainNav.innerHTML = TABS.map(tab => `
+                <a href="#${tab.id}" data-tab="${tab.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200">
+                    <i class="fas ${tab.icon} w-5 text-center"></i><span>${tab.name}</span>
+                </a>`).join('');
             
-            // Mobile menu toggle
-            mobileMenuButton.addEventListener('click', () => {
-                mobileMenu.classList.toggle('hidden');
+            DOMElements.mobileNavContainer.innerHTML = TABS.map(tab => `
+                <a href="#${tab.id}" data-tab="${tab.id}" class="nav-link block px-4 py-3 text-base font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas ${tab.icon} w-5 mr-3"></i>${tab.name}
+                </a>`).join('') + `
+                <div class="border-t border-border-color my-2"></div>
+                <button id="mobile-dark-mode-toggle" class="w-full text-left block px-4 py-3 text-base font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-moon w-5 mr-3"></i><span>Modo Oscuro</span>
+                </button>
+            `;
+            
+            document.getElementById('mobile-dark-mode-toggle').addEventListener('click', () => {
+                const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+                applyTheme(newTheme);
             });
-
-            // Tab switching logic
-            document.querySelectorAll('.tab-button').forEach(button => {
+            
+            document.querySelectorAll('.nav-link').forEach(button => {
                 button.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const tabId = e.currentTarget.dataset.tab;
-                    window.location.hash = '#' + tabId;
-                    if (!mobileMenu.classList.contains('hidden')) {
-                        mobileMenu.classList.add('hidden');
+                    window.location.hash = '#' + e.currentTarget.dataset.tab;
+                    if (!DOMElements.mobileMenu.classList.contains('hidden')) {
+                        toggleMobileMenu();
                     }
                 });
             });
             window.addEventListener('hashchange', handleHashChange);
+            updateThemeToggleIcons();
+        }
+        
+        function toggleMobileMenu() {
+            const isHidden = DOMElements.mobileMenu.classList.toggle('hidden');
+            DOMElements.mobileMenuOverlay.classList.toggle('hidden', isHidden);
+            document.body.classList.toggle('overflow-hidden', !isHidden);
         }
 
         function handleHashChange() {
+            if (!isDataLoaded) return;
             const hash = window.location.hash.substring(1) || TABS[0].id;
             
-            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.add('hidden'));
-            const activeContent = document.getElementById(hash);
-            if (activeContent) {
-                activeContent.classList.remove('hidden');
+            // Activate nav link
+            document.querySelectorAll('.nav-link').forEach(tb => {
+                tb.classList.toggle('active', tb.dataset.tab === hash);
+            });
+
+            // Render content
+            const template = document.getElementById(`template-${hash}-content`);
+            if (template) {
+                DOMElements.contentArea.innerHTML = '';
+                DOMElements.contentArea.appendChild(template.content.cloneNode(true));
+                
+                const renderFunction = window[`render${hash.charAt(0).toUpperCase() + hash.slice(1).replace(/-/g, '')}`];
+                if (typeof renderFunction === 'function') {
+                    renderFunction();
+                }
+            } else {
+                DOMElements.contentArea.innerHTML = `<div class="card p-6">Contenido para '${hash}' no encontrado.</div>`;
             }
-
-            document.querySelectorAll('.tab-button').forEach(tb => {
-                tb.classList.toggle('bg-gray-100', tb.dataset.tab === hash);
-                tb.classList.toggle('dark:bg-gray-700', tb.dataset.tab === hash);
-            });
-            
-            // Trigger data rendering for the active tab
-            const renderFunction = window[`render${hash.charAt(0).toUpperCase() + hash.slice(1).replace('-content', '')}`];
-            if (typeof renderFunction === 'function') {
-                renderFunction();
-            }
         }
-
-        // --- FILTERS & EVENT LISTENERS ---
-        function setupEventListeners() {
-            document.querySelectorAll('select[id$="-year-select"], select[id$="-period-select"], select[id$="-month-select"]').forEach(select => {
-                select.addEventListener('change', () => {
-                    const tabId = select.closest('.tab-content').id;
-                    const renderFunction = window[`render${tabId.charAt(0).toUpperCase() + tabId.slice(1).replace('-content', '')}`];
-                    if (typeof renderFunction === 'function') {
-                        renderFunction();
-                    }
-                });
-            });
-            setupPlayerSearch();
-        }
-
-        function populateGlobalFilters() {
-            const years = [...new Set(allMatches.map(m => new Date(m.match_date).getFullYear()))].sort((a, b) => b - a);
-            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            
-            document.querySelectorAll('select[id$="-year-select"]').forEach(select => {
-                select.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
-            });
-            
-            const fixtureMonthSelect = document.getElementById('fixture-month-select');
-            fixtureMonthSelect.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
-
-            // Set to current period by default
-            const today = new Date();
-            const currentYear = today.getFullYear();
-            const currentMonth = today.getMonth(); // 0-11
-            const currentPeriod = currentMonth < 6 ? 'apertura' : 'clausura';
-
-            document.querySelectorAll('select[id$="-year-select"]').forEach(s => { if(s.querySelector(`option[value="${currentYear}"]`)) s.value = currentYear; });
-            document.querySelectorAll('select[id$="-period-select"]').forEach(s => s.value = currentPeriod);
-            fixtureMonthSelect.value = currentMonth;
-        }
-
+        
         // --- DATA CALCULATION ---
         function getStatsForPeriod(year, period) {
             const filteredMatches = allMatches.filter(match => {
@@ -502,12 +753,13 @@
             const totalPlayedMatches = filteredMatches.filter(m => m.result !== 'Suspendido').length;
 
             filteredMatches.forEach(match => {
-                const playersInMatch = [...(match.team_white_players || []), ...(match.team_dark_players || [])];
+                const playersInMatch = [...new Set([...(match.team_white_players || []), ...(match.team_dark_players || [])])];
                 playersInMatch.forEach(pId => {
                     if (!stats[pId]) return;
                     if (match.result !== 'Suspendido') {
                         stats[pId].pj++;
-                        if ((match.result === 'Claros' && match.team_white_players.includes(pId)) || (match.result === 'Oscuros' && match.team_dark_players.includes(pId))) {
+                        const isWinner = (match.result === 'Claros' && match.team_white_players.includes(pId)) || (match.result === 'Oscuros' && match.team_dark_players.includes(pId));
+                        if (isWinner) {
                             stats[pId].points += 3;
                             stats[pId].pg++;
                         } else if (match.result === 'Empate') {
@@ -519,11 +771,13 @@
                     }
                 });
 
-                if (match.chamigo_votes) {
-                    const maxVotes = Math.max(...Object.values(match.chamigo_votes));
-                    Object.entries(match.chamigo_votes).forEach(([pId, votes]) => {
-                        if (votes === maxVotes && stats[pId]) stats[pId].chamigos++;
-                    });
+                if (match.chamigo_votes && Object.keys(match.chamigo_votes).length) {
+                    const maxVotes = Math.max(0, ...Object.values(match.chamigo_votes));
+                    if(maxVotes > 0) {
+                        Object.entries(match.chamigo_votes).forEach(([pId, votes]) => {
+                            if (votes === maxVotes && stats[pId]) stats[pId].chamigos++;
+                        });
+                    }
                 }
                 if (match.tt_attendees) {
                     match.tt_attendees.forEach(pId => { if(stats[pId]) stats[pId].tt++; });
@@ -533,12 +787,34 @@
             return Object.values(stats).map(s => ({
                 ...s,
                 efectividad: s.pj > 0 ? ((s.points / (s.pj * 3)) * 100).toFixed(2) : "0.00",
-                ausentes: totalPlayedMatches - s.pj
+                ausentes: Math.max(0, totalPlayedMatches - s.pj)
             }));
         }
 
-        // --- RENDER FUNCTIONS ---
+        // --- RENDER FUNCTIONS (one for each tab) ---
+        
+        function setupFilterListeners(prefix, renderFn) {
+            const yearSelect = document.getElementById(`${prefix}-year-select`);
+            const periodSelect = document.getElementById(`${prefix}-period-select`);
+            
+            const years = [...new Set(allMatches.map(m => new Date(m.match_date).getFullYear()))].sort((a, b) => b - a);
+            yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentPeriod = today.getMonth() < 6 ? 'apertura' : 'clausura';
+            if (years.includes(currentYear)) yearSelect.value = currentYear;
+            periodSelect.value = currentPeriod;
+            
+            yearSelect.addEventListener('change', renderFn);
+            periodSelect.addEventListener('change', renderFn);
+        }
+
         function renderLeaderboard() {
+            setupFilterListeners('leaderboard', renderLeaderboardContent);
+            renderLeaderboardContent();
+        }
+        function renderLeaderboardContent() {
             const year = document.getElementById('leaderboard-year-select').value;
             const period = document.getElementById('leaderboard-period-select').value;
             const tableBody = document.querySelector('#leaderboard-table tbody');
@@ -552,7 +828,7 @@
             const rankedPlayers = stats.filter(p => p.pj > 0).sort((a, b) => b.points - a.points || b.efectividad - a.efectividad);
 
             tableBody.innerHTML = rankedPlayers.map((p, i) => `
-                <tr class="border-b border-border-color hover:bg-table-row-hover">
+                <tr class="border-b border-border-color">
                     <td class="p-4 text-secondary">${i + 1}</td>
                     <td class="p-4 font-medium">${p.name}</td>
                     <td class="p-4 text-center font-semibold">${p.points}</td>
@@ -563,22 +839,116 @@
             loadingMsg.classList.add('hidden');
             table.classList.remove('hidden');
         }
+        
+        function renderChamigo() {
+            setupFilterListeners('chamigo', renderChamigoContent);
+            renderChamigoContent();
+        }
+        function renderChamigoContent() {
+            const year = document.getElementById('chamigo-year-select').value;
+            const period = document.getElementById('chamigo-period-select').value;
+            const tableBody = document.querySelector('#chamigo-table tbody');
+            const loadingMsg = document.getElementById('chamigo-loading-message');
+            const table = document.getElementById('chamigo-table');
+
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
+            const stats = getStatsForPeriod(year, period);
+            const rankedPlayers = stats.filter(p => p.chamigos > 0).sort((a, b) => b.chamigos - a.chamigos);
+            tableBody.innerHTML = rankedPlayers.map((p, i) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 text-secondary">${i + 1}</td>
+                    <td class="p-4 font-medium">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.chamigos}</td>
+                </tr>`).join('');
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
+        }
+        
+        function renderTt() {
+            setupFilterListeners('tt', renderTtContent);
+            renderTtContent();
+        }
+        function renderTtContent() {
+            const year = document.getElementById('tt-year-select').value;
+            const period = document.getElementById('tt-period-select').value;
+            const tableBody = document.querySelector('#tt-table tbody');
+            const loadingMsg = document.getElementById('tt-loading-message');
+            const table = document.getElementById('tt-table');
+
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
+            const stats = getStatsForPeriod(year, period);
+            const rankedPlayers = stats.filter(p => p.tt > 0).sort((a, b) => b.tt - a.tt);
+            tableBody.innerHTML = rankedPlayers.map((p, i) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 text-secondary">${i + 1}</td>
+                    <td class="p-4 font-medium">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.tt}</td>
+                </tr>`).join('');
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
+        }
+
+        function renderPresentismo() {
+            setupFilterListeners('presentismo', renderPresentismoContent);
+            renderPresentismoContent();
+        }
+        function renderPresentismoContent() {
+            const year = document.getElementById('presentismo-year-select').value;
+            const period = document.getElementById('presentismo-period-select').value;
+            const tableBody = document.querySelector('#presentismo-table tbody');
+            const loadingMsg = document.getElementById('presentismo-loading-message');
+            const table = document.getElementById('presentismo-table');
+
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
+            const stats = getStatsForPeriod(year, period);
+            const rankedPlayers = stats.filter(p => p.pj > 0).sort((a, b) => b.pj - a.pj);
+            tableBody.innerHTML = rankedPlayers.map((p, i) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 text-secondary">${i + 1}</td>
+                    <td class="p-4 font-medium">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.pj}</td>
+                </tr>`).join('');
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
+        }
+        
+        function renderAusentismo() {
+            setupFilterListeners('ausentismo', renderAusentismoContent);
+            renderAusentismoContent();
+        }
+        function renderAusentismoContent() {
+            const year = document.getElementById('ausentismo-year-select').value;
+            const period = document.getElementById('ausentismo-period-select').value;
+            const tableBody = document.querySelector('#ausentismo-table tbody');
+            const loadingMsg = document.getElementById('ausentismo-loading-message');
+            const table = document.getElementById('ausentismo-table');
+
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
+            const stats = getStatsForPeriod(year, period);
+            const rankedPlayers = stats.filter(p => p.ausentes > 0).sort((a, b) => b.ausentes - a.ausentes);
+            tableBody.innerHTML = rankedPlayers.map((p, i) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 text-secondary">${i + 1}</td>
+                    <td class="p-4 font-medium">${p.name}</td>
+                    <td class="p-4 text-center font-semibold">${p.ausentes}</td>
+                </tr>`).join('');
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
+        }
 
         function renderEstadisticas() {
+            setupFilterListeners('estadisticas', renderEstadisticasContent);
+            renderEstadisticasContent();
+        }
+        function renderEstadisticasContent() {
             const year = document.getElementById('estadisticas-year-select').value;
             const period = document.getElementById('estadisticas-period-select').value;
             const tableBody = document.querySelector('#estadisticas-table tbody');
             const loadingMsg = document.getElementById('estadisticas-loading-message');
             const table = document.getElementById('estadisticas-table');
 
-            loadingMsg.classList.remove('hidden');
-            table.classList.add('hidden');
-
+            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
             const stats = getStatsForPeriod(year, period);
             const rankedPlayers = stats.filter(p => p.pj > 0).sort((a, b) => b.points - a.points);
             
             tableBody.innerHTML = rankedPlayers.map((p, i) => `
-                <tr class="border-b border-border-color hover:bg-table-row-hover">
+                <tr class="border-b border-border-color">
                     <td class="p-4 text-secondary sticky-col sticky-col-1">${i + 1}</td>
                     <td class="p-4 font-medium sticky-col sticky-col-2">${p.name}</td>
                     <td class="p-4 text-center font-semibold">${p.points}</td>
@@ -590,14 +960,77 @@
                     <td class="p-4 text-center text-secondary">${p.chamigos}</td>
                     <td class="p-4 text-center text-secondary">${p.tt}</td>
                     <td class="p-4 text-center text-secondary">${p.ausentes}</td>
-                </tr>
-            `).join('');
+                </tr>`).join('');
+            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
+        }
 
-            loadingMsg.classList.add('hidden');
-            table.classList.remove('hidden');
+        function renderEquipos() {
+            setupFilterListeners('equipos', renderEquiposContent);
+            renderEquiposContent();
+        }
+        function renderEquiposContent() {
+            const year = document.getElementById('equipos-year-select').value;
+            const period = document.getElementById('equipos-period-select').value;
+            const display = document.getElementById('equipos-stats-display');
+            const loadingMsg = document.getElementById('equipos-loading-message');
+
+            loadingMsg.classList.remove('hidden'); display.classList.add('hidden');
+            
+            const filteredMatches = allMatches.filter(match => {
+                const matchDate = new Date(match.match_date);
+                const matchYear = matchDate.getFullYear();
+                const matchMonth = matchDate.getMonth();
+                if (matchYear != year) return false;
+                if (period === 'total') return true;
+                if (period === 'apertura') return matchMonth < 6;
+                if (period === 'clausura') return matchMonth >= 6;
+                return false;
+            });
+            
+            const teamStats = filteredMatches.reduce((acc, match) => {
+                if (match.result === 'Claros') acc.clarosWins++;
+                else if (match.result === 'Oscuros') acc.oscurosWins++;
+                else if (match.result === 'Empate') acc.empates++;
+                else if (match.result === 'Suspendido') acc.suspendidos++;
+                if (match.result !== 'Suspendido') acc.totalPJ++;
+                return acc;
+            }, { clarosWins: 0, oscurosWins: 0, empates: 0, suspendidos: 0, totalPJ: 0 });
+            
+            const statCard = (title, value, color) => `
+                <div class="card rounded-lg p-4 text-center shadow-sm">
+                    <div class="text-3xl font-bold" style="color:${color};">${value}</div>
+                    <div class="text-sm font-medium text-secondary uppercase mt-1">${title}</div>
+                </div>`;
+            
+            display.innerHTML = 
+                statCard('Victorias Claros', teamStats.clarosWins, 'var(--accent-color)') +
+                statCard('Victorias Oscuros', teamStats.oscurosWins, 'var(--accent-color)') +
+                statCard('Empates', teamStats.empates, 'var(--warning-color)') +
+                statCard('Suspendidos', teamStats.suspendidos, 'var(--danger-color)') +
+                statCard('Partidos Jugados', teamStats.totalPJ, 'var(--text-primary)');
+
+            loadingMsg.classList.add('hidden'); display.classList.remove('hidden');
         }
 
         function renderFixture() {
+            const yearSelect = document.getElementById('fixture-year-select');
+            const monthSelect = document.getElementById('fixture-month-select');
+            
+            const years = [...new Set(allMatches.map(m => new Date(m.match_date).getFullYear()))].sort((a, b) => b - a);
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            
+            yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+            monthSelect.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+            
+            const today = new Date();
+            if (years.includes(today.getFullYear())) yearSelect.value = today.getFullYear();
+            monthSelect.value = today.getMonth();
+
+            yearSelect.addEventListener('change', renderFixtureContent);
+            monthSelect.addEventListener('change', renderFixtureContent);
+            renderFixtureContent();
+        }
+        function renderFixtureContent() {
             const year = document.getElementById('fixture-year-select').value;
             const month = document.getElementById('fixture-month-select').value;
             const cardsContainer = document.getElementById('fixture-matches-cards-container');
@@ -621,22 +1054,14 @@
             cardsContainer.innerHTML = filteredMatches.map(match => {
                 const matchDate = new Date(match.match_date);
                 const formattedDate = matchDate.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
-                let resultText = '';
-                if (match.result === 'Suspendido') {
-                    resultText = `<span class="text-xs text-red-500">Suspendido</span>`;
-                } else if (match.result) {
-                    resultText = `<span class="text-xs font-bold">Ganó ${match.result}</span>`;
-                } else {
-                    resultText = `<span class="text-xs text-secondary">Pendiente</span>`;
-                }
+                let resultText = !match.result ? 'Pendiente' : (match.result === 'Suspendido' ? 'Suspendido' : `Ganó ${match.result}`);
                 return `
                     <div class="fixture-match-item p-3 rounded-lg border border-border-color hover:bg-table-row-hover cursor-pointer" data-match-id="${match.id}">
                         <div class="flex justify-between items-center">
                             <span class="font-semibold">${formattedDate}</span>
-                            ${resultText}
+                            <span class="text-xs text-secondary">${resultText}</span>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }).join('');
             
             cardsContainer.querySelectorAll('.fixture-match-item').forEach(card => {
@@ -649,7 +1074,6 @@
 
             loadingMsg.classList.add('hidden');
         }
-
         function renderFixtureDetails(matchId) {
             const match = allMatches.find(m => m.id == matchId);
             if (!match) return;
@@ -662,138 +1086,45 @@
             const matchDate = new Date(match.match_date).toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
             document.getElementById('fixture-date-header').textContent = matchDate;
 
-            // Render field
             const fieldContainer = document.getElementById('soccer-field-container');
-            fieldContainer.innerHTML = ''; // Clear previous
+            fieldContainer.innerHTML = '';
             const positions = [{x:'50%',y:'85%'},{x:'25%',y:'65%'},{x:'75%',y:'65%'},{x:'40%',y:'50%'},{x:'60%',y:'50%'}];
             
-            (match.team_white_players || []).forEach((pId, i) => {
+            const createPlayerMarker = (pId, team, index) => {
+                const isChamigo = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0 && Object.keys(match.chamigo_votes).includes(String(pId));
                 const playerEl = document.createElement('div');
                 playerEl.className = 'player-wrapper absolute flex flex-col items-center';
-                playerEl.style.left = positions[i].x;
-                playerEl.style.top = positions[i].y;
+                playerEl.style.left = positions[index].x;
+                playerEl.style.top = team === 'claros' ? positions[index].y : `${100 - parseInt(positions[index].y)}%`;
                 playerEl.style.transform = 'translate(-50%, -50%)';
                 playerEl.innerHTML = `
-                    <div class="player-marker claros w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-lg relative">
-                        ${pId.replace('J','')}
-                        ${(match.chamigo_votes && Object.keys(match.chamigo_votes).includes(pId)) ? '<i class="fas fa-star text-yellow-400"></i>' : ''}
+                    <div class="player-marker ${team} w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs relative">
+                        ${String(pId).replace('J','')}
+                        ${isChamigo ? '<i class="fas fa-star"></i>' : ''}
                     </div>
-                    <span class="text-xs mt-1 bg-white/80 dark:bg-black/80 px-1 rounded">${getPlayerName(pId)}</span>`;
+                    <span class="player-name-label text-xs mt-1 px-1 rounded">${getPlayerName(pId)}</span>`;
                 fieldContainer.appendChild(playerEl);
-            });
-            (match.team_dark_players || []).forEach((pId, i) => {
-                const playerEl = document.createElement('div');
-                playerEl.className = 'player-wrapper absolute flex flex-col items-center';
-                playerEl.style.left = positions[i].x;
-                playerEl.style.top = `${100 - parseInt(positions[i].y)}%`;
-                playerEl.style.transform = 'translate(-50%, -50%)';
-                playerEl.innerHTML = `
-                    <div class="player-marker oscuros w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-lg relative">
-                        ${pId.replace('J','')}
-                        ${(match.chamigo_votes && Object.keys(match.chamigo_votes).includes(pId)) ? '<i class="fas fa-star text-yellow-400"></i>' : ''}
-                    </div>
-                    <span class="text-xs mt-1 bg-white/80 dark:bg-black/80 px-1 rounded">${getPlayerName(pId)}</span>`;
-                fieldContainer.appendChild(playerEl);
-            });
+            };
 
-            // Render Chamigos & TT
+            (match.team_white_players || []).forEach((pId, i) => createPlayerMarker(pId, 'claros', i));
+            (match.team_dark_players || []).forEach((pId, i) => createPlayerMarker(pId, 'oscuros', i));
+
             const chamigosDiv = document.getElementById('chamigos-display');
             if (match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0) {
-                const maxVotes = Math.max(...Object.values(match.chamigo_votes));
-                const chamigos = Object.entries(match.chamigo_votes).filter(([, votes]) => votes === maxVotes).map(([pId]) => getPlayerName(pId));
+                const maxVotes = Math.max(0, ...Object.values(match.chamigo_votes));
+                const chamigos = Object.entries(match.chamigo_votes).filter(([, votes]) => votes === maxVotes).map(([pId]) => getPlayerName(parseInt(pId)));
                 chamigosDiv.innerHTML = `<p>${chamigos.join(', ')}</p>`;
-            } else {
-                chamigosDiv.innerHTML = `<p class="text-secondary">Sin votos registrados.</p>`;
-            }
+            } else { chamigosDiv.innerHTML = `<p class="text-secondary">Sin votos.</p>`; }
             
             const ttDiv = document.getElementById('tt-attendees-display');
             if (match.tt_attendees && match.tt_attendees.length > 0) {
                 ttDiv.innerHTML = `<p>${match.tt_attendees.map(pId => getPlayerName(pId)).join(', ')}</p>`;
-            } else {
-                ttDiv.innerHTML = `<p class="text-secondary">Sin asistentes registrados.</p>`;
-            }
+            } else { ttDiv.innerHTML = `<p class="text-secondary">Sin asistentes.</p>`; }
         }
 
-        function renderIndividualStats() {
-            const tableBody = document.querySelector('#individual-stats-table tbody');
-            const loadingMsg = document.getElementById('individual-stats-loading-message');
-            const table = document.getElementById('individual-stats-table');
-            const playerId = document.getElementById('individual-player-search').dataset.selectedId;
-
-            table.classList.add('hidden');
-            if (!playerId) {
-                loadingMsg.textContent = 'Busca y selecciona un jugador para ver su historial.';
-                loadingMsg.classList.remove('hidden');
-                return;
-            }
-            loadingMsg.classList.remove('hidden');
-            
-            const playerMatches = allMatches.filter(m => (m.team_white_players || []).includes(playerId) || (m.team_dark_players || []).includes(playerId));
-            
-            const statsByYear = {};
-            playerMatches.forEach(match => {
-                const year = new Date(match.match_date).getFullYear();
-                const period = new Date(match.match_date).getMonth() < 6 ? 'apertura' : 'clausura';
-                if (!statsByYear[year]) {
-                    statsByYear[year] = { 
-                        apertura: {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0},
-                        clausura: {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0}
-                    };
-                }
-                const periodStats = statsByYear[year][period];
-                // Simplified stat calculation for individual view
-                if(match.result !== 'Suspendido') {
-                    periodStats.pj++;
-                    if ((match.result === 'Claros' && match.team_white_players.includes(playerId)) || (match.result === 'Oscuros' && match.team_dark_players.includes(playerId))) {
-                        periodStats.points += 3; periodStats.pg++;
-                    } else if (match.result === 'Empate') {
-                        periodStats.points += 1; periodStats.pe++;
-                    } else {
-                        periodStats.pp++;
-                    }
-                }
-            });
-
-            let html = '';
-            Object.keys(statsByYear).sort((a,b) => b-a).forEach(year => {
-                const yearData = statsByYear[year];
-                // Render rows for apertura, clausura, and total for the year
-                // This part can be expanded to show full details
-                 html += `
-                    <tr class="border-b border-border-color hover:bg-table-row-hover">
-                        <td class="p-4 font-medium sticky-col sticky-col-1">${year}</td>
-                        <td class="p-4 sticky-col sticky-col-2">Apertura</td>
-                        <td class="p-4 text-center">${yearData.apertura.points}</td>
-                        <td class="p-4 text-center">${yearData.apertura.pg}</td>
-                        <td class="p-4 text-center">${yearData.apertura.pe}</td>
-                        <td class="p-4 text-center">${yearData.apertura.pp}</td>
-                        <td class="p-4 text-center">${yearData.apertura.pj}</td>
-                        <td class="p-4 text-center">...</td>
-                        <td class="p-4 text-center">...</td>
-                        <td class="p-4 text-center">...</td>
-                        <td class="p-4 text-center">...</td>
-                    </tr>
-                     <tr class="border-b border-border-color hover:bg-table-row-hover">
-                        <td class="p-4 font-medium sticky-col sticky-col-1">${year}</td>
-                        <td class="p-4 sticky-col sticky-col-2">Clausura</td>
-                        <td class="p-4 text-center">${yearData.clausura.points}</td>
-                        <td class="p-4 text-center">${yearData.clausura.pg}</td>
-                        <td class="p-4 text-center">${yearData.clausura.pe}</td>
-                        <td class="p-4 text-center">${yearData.clausura.pp}</td>
-                        <td class="p-4 text-center">${yearData.clausura.pj}</td>
-                        <td class="p-4 text-center">...</td>
-                        <td class="p-4 text-center">...</td>
-                        <td class="p-4 text-center">...</td>
-                        <td class="p-4 text-center">...</td>
-                    </tr>
-                 `;
-            });
-            
-            tableBody.innerHTML = html;
-            loadingMsg.classList.add('hidden');
-            table.classList.remove('hidden');
+        function renderIndividualstats() {
+            setupPlayerSearch();
         }
-
         function setupPlayerSearch() {
             const searchInput = document.getElementById('individual-player-search');
             const resultsDiv = document.getElementById('individual-player-results');
@@ -816,7 +1147,7 @@
                     searchInput.value = e.target.dataset.name;
                     searchInput.dataset.selectedId = e.target.dataset.id;
                     resultsDiv.classList.add('hidden');
-                    renderIndividualStats();
+                    renderIndividualStatsContent();
                 }
             });
             
@@ -825,6 +1156,63 @@
                     resultsDiv.classList.add('hidden');
                 }
             });
+        }
+        function renderIndividualStatsContent() {
+            const tableBody = document.querySelector('#individual-stats-table tbody');
+            const loadingMsg = document.getElementById('individual-stats-loading-message');
+            const table = document.getElementById('individual-stats-table');
+            const playerId = document.getElementById('individual-player-search').dataset.selectedId;
+
+            table.classList.add('hidden');
+            loadingMsg.classList.remove('hidden');
+            
+            const playerMatches = allMatches.filter(m => (m.team_white_players || []).includes(parseInt(playerId)) || (m.team_dark_players || []).includes(parseInt(playerId)));
+            
+            if (playerMatches.length === 0) {
+                loadingMsg.textContent = 'Este jugador no tiene partidos registrados.';
+                return;
+            }
+
+            const statsByYear = {};
+            playerMatches.forEach(match => {
+                const year = new Date(match.match_date).getFullYear();
+                if (!statsByYear[year]) {
+                    statsByYear[year] = { 
+                        apertura: {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0, ausentes:0},
+                        clausura: {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0, ausentes:0},
+                        total: {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0, ausentes:0}
+                    };
+                }
+            });
+            
+            Object.keys(statsByYear).forEach(year => {
+                statsByYear[year].apertura = getStatsForPeriod(year, 'apertura').find(p => p.id == playerId);
+                statsByYear[year].clausura = getStatsForPeriod(year, 'clausura').find(p => p.id == playerId);
+                statsByYear[year].total = getStatsForPeriod(year, 'total').find(p => p.id == playerId);
+            });
+            
+            let html = '';
+            const renderRow = (year, period, data) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 font-medium sticky-col sticky-col-1">${year}</td>
+                    <td class="p-4 sticky-col sticky-col-2">${period}</td>
+                    <td class="p-4 text-center font-semibold">${data.points}</td>
+                    <td class="p-4 text-center">${data.pg}</td><td class="p-4 text-center">${data.pe}</td>
+                    <td class="p-4 text-center">${data.pp}</td><td class="p-4 text-center">${data.pj}</td>
+                    <td class="p-4 text-center">${data.efectividad}%</td><td class="p-4 text-center">${data.chamigos}</td>
+                    <td class="p-4 text-center">${data.tt}</td><td class="p-4 text-center">${data.ausentes}</td>
+                </tr>`;
+
+            Object.keys(statsByYear).sort((a,b) => b-a).forEach(year => {
+                const yearData = statsByYear[year];
+                html += renderRow(year, 'Total Anual', yearData.total);
+                html += renderRow('', 'Apertura', yearData.apertura);
+                html += renderRow('', 'Clausura', yearData.clausura);
+            });
+            
+            tableBody.innerHTML = html;
+            loadingMsg.classList.add('hidden');
+            table.classList.remove('hidden');
         }
 
         // --- RUN APP ---
