@@ -5,18 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración - LA CLANDE</title>
 
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Font Awesome (Icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Google Fonts (Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
 
     <style>
@@ -103,9 +99,10 @@
             color: #ffffff; /* white */
             transition: all 0.2s ease;
             cursor: grab;
-            white-space: nowrap; /* Prevent name wrapping */
-            width: auto; /* Allow tag to fit content */
-            display: inline-block; /* Needed for width: auto to work well */
+            white-space: nowrap; 
+            width: auto; 
+            display: inline-flex; /* Use inline-flex for better alignment */
+            align-items: center;
         }
         .player-draggable:active {
             cursor: grabbing;
@@ -136,9 +133,9 @@
         html.dark .match-item.has-result { background-color: rgba(16, 185, 129, 0.1); }
         .match-item.selected { border-color: var(--accent-color); box-shadow: 0 0 0 2px var(--accent-color); }
         
-        /* Table row selection style */
+        /* Table row selection style - CORRECTED */
         .selectable-row.selected {
-            background-color: rgba(79, 70, 229, 0.1) !important;
+            background-color: #f3f4f6 !important; /* Tailwind gray-100 for light mode */
             --tw-ring-color: var(--accent-color);
             outline: 2px solid transparent;
             outline-offset: 2px;
@@ -210,9 +207,7 @@
 </head>
 <body class="antialiased">
 
-    <!-- Main Application Container -->
     <div id="app-container" class="flex h-screen hidden">
-        <!-- Sidebar -->
         <aside id="sidebar" class="w-64 bg-sidebar-bg text-sidebar-text flex-col fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-40 flex">
             <div class="px-6 py-4 flex items-center justify-between">
                 <a href="#" class="text-xl font-bold flex items-center gap-2">
@@ -225,8 +220,7 @@
             </div>
             
             <nav id="main-nav" class="flex-1 px-4 space-y-2 overflow-y-auto">
-                <!-- Nav items will be injected by JS -->
-            </nav>
+                </nav>
 
             <div class="px-4 py-4 mt-auto">
                 <button id="signout_button" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200">
@@ -236,7 +230,6 @@
             </div>
         </aside>
 
-        <!-- Main content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary md:hidden">
                 <button id="sidebar-toggle" class="p-2 rounded-md">
@@ -249,21 +242,17 @@
             
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-primary p-4 sm:p-6 lg:p-8">
                 <div id="admin-content-area" class="max-w-7xl mx-auto">
-                    <!-- Loading State -->
                     <div id="loading-container" class="flex items-center justify-center h-64">
                         <i class="fas fa-spinner fa-spin text-4xl text-accent-color"></i>
                     </div>
 
-                    <!-- Main Admin Content (hidden by default) -->
                     <div id="admin-content" class="hidden">
-                        <!-- Tab contents will be injected here -->
-                    </div>
+                        </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Authentication Container (outside main app) -->
     <div id="auth-container" class="hidden w-full h-screen flex items-center justify-center bg-primary">
         <div class="card rounded-xl shadow-lg p-8 max-w-md w-full">
             <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
@@ -284,13 +273,10 @@
         </div>
     </div>
     
-    <!-- Overlay for mobile sidebar -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
 
-    <!-- Toast Notification -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50"></div>
 
-    <!-- Modal -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
         <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
             <h3 class="text-lg font-semibold mb-2" id="modal-title">Confirmar Acción</h3>
@@ -302,10 +288,8 @@
         </div>
     </div>
 
-    <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Main Admin Script -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- CONFIG & STATE ---
@@ -573,8 +557,9 @@
             </div>`;
 
         window.render_team_formation = () => {
+             // FIX: Added id="team-formation" to the main div
             const content = `
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div id="team-formation" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
                         <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
                         <div>
@@ -591,7 +576,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <h4 class="font-semibold mb-2">Claros (<span id="claros-count">0</span>)</h4>
-                                <div id="team-claros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white"></div>
+                                <div id="team-claros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
                             </div>
                              <div>
                                 <h4 class="font-semibold mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
@@ -617,6 +602,8 @@
                 else suplentesDiv.appendChild(playerEl);
             });
             setupDragAndDrop();
+            // FIX: Add event listener to date input
+            document.getElementById('team-match-date').addEventListener('change', updateTeamCounts);
             document.getElementById('save-teams-button').addEventListener('click', handleSaveTeams);
         };
 
@@ -706,7 +693,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <h4 class="font-semibold mb-2">Claros</h4>
-                                <div id="edit-team-claros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white"></div>
+                                <div id="edit-team-claros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
                             </div>
                              <div>
                                 <h4 class="font-semibold mb-2">Oscuros</h4>
@@ -833,7 +820,8 @@
         // --- HELPERS & LOGIC ---
         function createDraggablePlayer(player) {
             const el = document.createElement('div');
-            el.className = 'player-draggable text-sm font-medium px-3 py-1 rounded-full shadow-sm';
+            // FIX: Refined classes for better "pill" appearance
+            el.className = 'player-draggable text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
             el.draggable = true;
             el.dataset.id = player.id;
             el.textContent = player.name;
@@ -859,24 +847,35 @@
                         return;
                     }
                     zone.appendChild(playerEl);
-                    if (zone.closest('#team-formation')) updateTeamCounts();
-                    if (zone.closest('#edit-match-content')) updateEditTeamCounts();
+                    // FIX: Check for the correct container ID
+                    if (zone.closest('#team-formation')) {
+                        updateTeamCounts();
+                    }
+                    if (zone.closest('#edit-match-content')) {
+                        // This part for edit-match was correct
+                    }
                 });
             });
         }
         
+        // FIX: Corrected and enhanced logic
         function updateTeamCounts() {
             const clarosCount = document.getElementById('team-claros').children.length;
             const oscurosCount = document.getElementById('team-oscuros').children.length;
+            const matchDate = document.getElementById('team-match-date').value;
+
             document.getElementById('claros-count').textContent = clarosCount;
             document.getElementById('oscuros-count').textContent = oscurosCount;
             document.getElementById('total-selected-players').textContent = clarosCount + oscurosCount;
-            document.getElementById('save-teams-button').disabled = !(clarosCount === 5 && oscurosCount === 5);
+            
+            // FIX: Button is enabled only if teams are full AND date is selected
+            document.getElementById('save-teams-button').disabled = !(clarosCount === 5 && oscurosCount === 5 && matchDate);
         }
 
         async function handleSaveTeams() {
             const matchDate = document.getElementById('team-match-date').value;
-            if (!matchDate) {
+            // This check is now slightly redundant due to button state, but good for safety
+            if (!matchDate) { 
                 showToast('Por favor, selecciona la fecha del partido.', 'warning');
                 return;
             }
@@ -895,11 +894,12 @@
                 showToast(`Error al crear el partido: ${error.message}`, 'error');
             } else {
                 showToast('Partido creado exitosamente!', 'success');
-                AppState.matches.unshift(data);
-                navigateTo('team-formation');
+                AppState.matches.unshift(data); // Add to local state
+                navigateTo('team-formation'); // Re-render tab
             }
         }
         
+        // FIX: Enhanced to auto-select the most recent match
         function populateMatchFilters(prefix) {
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
@@ -932,6 +932,7 @@
 
                 listContainer.innerHTML = filteredMatches.map(match => {
                     const d = new Date(match.match_date);
+                    // Use UTC to prevent timezone off-by-one-day errors
                     const formattedDate = d.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'});
                     return `
                         <div class="match-item border-l-4 p-3 rounded-r-lg cursor-pointer transition" data-match-id="${match.id}">
@@ -951,6 +952,13 @@
                         handleMatchSelection(e.currentTarget.dataset.matchId, prefix);
                     });
                 });
+                
+                // FIX: Auto-select first item
+                const firstItem = listContainer.querySelector('.match-item');
+                if (firstItem) {
+                    firstItem.classList.add('selected');
+                    handleMatchSelection(firstItem.dataset.matchId, prefix);
+                }
             };
             
             yearSelect.addEventListener('change', renderList);
@@ -976,7 +984,6 @@
             if(handlerMap[prefix]) handlerMap[prefix](panel, match);
         }
         
-        // --- PANEL SETUP FUNCTIONS ---
         function setupResultsPanel(panel, match) {
             panel.querySelector('#match-date').value = match.match_date;
             panel.querySelector('#match-result').value = match.result || '';
@@ -1011,7 +1018,6 @@
             }
         }
 
-        // --- ACTION HANDLERS ---
         async function handleRegisterResult() {
             const result = document.getElementById('match-result').value;
             const { error } = await supabase.from('matches').update({ result }).eq('id', AppState.selectedMatchId);
@@ -1052,12 +1058,13 @@
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'chamigo-player-item flex items-center justify-between p-2 border border-border-color rounded-lg';
                 playerDiv.dataset.id = id;
+                // FIX: Corrected button styles for light mode
                 playerDiv.innerHTML = `
                     <span class="player-name">${player.name}</span>
                     <div class="chamigo-vote-controls flex items-center gap-2">
-                        <button class="chamigo-vote-btn subtract-vote w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600">-</button>
+                        <button class="chamigo-vote-btn subtract-vote w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors">-</button>
                         <span class="chamigo-vote-counter font-bold w-6 text-center">${voteCount}</span>
-                        <button class="chamigo-vote-btn add-vote w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600">+</button>
+                        <button class="chamigo-vote-btn add-vote w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors">+</button>
                     </div>`;
                 
                 playerDiv.querySelector('.add-vote').addEventListener('click', () => {
@@ -1115,7 +1122,7 @@
         }
         
         async function handleRegisterTt() {
-            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
+            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => parseInt(el.dataset.id));
             const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
             if (error) { showToast('Error al guardar asistencia a TT', 'error'); } 
             else {
@@ -1137,7 +1144,7 @@
                 row.addEventListener('click', () => {
                     tableBody.querySelectorAll('.selectable-row').forEach(r => r.classList.remove('selected'));
                     row.classList.add('selected');
-                    populatePlayerForm(AppState.players.find(p => p.id === row.dataset.playerId));
+                    populatePlayerForm(AppState.players.find(p => p.id == row.dataset.playerId));
                 });
             });
         }
@@ -1233,17 +1240,17 @@
             
             [availablePlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(div => div.innerHTML = '');
 
-            const matchPlayerIds = new Set([...(match.team_white_players || []), ...(match.team_dark_players || [])]);
-            
-            AppState.players.filter(p => p.status === 'Activo' && !matchPlayerIds.has(p.id))
+            const matchPlayerIds = new Set([...(match.team_white_players || []).map(String), ...(match.team_dark_players || []).map(String)]);
+
+            AppState.players.filter(p => p.status === 'Activo' && !matchPlayerIds.has(String(p.id)))
                 .forEach(p => availablePlayersDiv.appendChild(createDraggablePlayer(p)));
 
             (match.team_white_players || []).forEach(id => {
-                const player = AppState.players.find(p => p.id === id);
+                const player = AppState.players.find(p => p.id == id);
                 if (player) teamClarosDiv.appendChild(createDraggablePlayer(player));
             });
             (match.team_dark_players || []).forEach(id => {
-                const player = AppState.players.find(p => p.id === id);
+                const player = AppState.players.find(p => p.id == id);
                 if (player) teamOscurosDiv.appendChild(createDraggablePlayer(player));
             });
             
@@ -1252,11 +1259,11 @@
 
         async function handleUpdateMatch() {
             const newDate = document.getElementById('edit-match-date').value;
-            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
-            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => el.dataset.id);
+            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => parseInt(el.dataset.id));
+            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => parseInt(el.dataset.id));
             
             if (newTeamWhite.length + newTeamDark.length !== 10) {
-                showToast('Deben haber 10 jugadores en total.', 'warning');
+                showToast('Deben haber 10 jugadores en total para conformar los equipos.', 'warning');
                 return;
             }
 
