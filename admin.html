@@ -440,6 +440,15 @@
             DOMElements.authContainer.classList.remove('hidden');
             DOMElements.mobileMenu.classList.add('hidden');
             DOMElements.mobileMenuOverlay.classList.add('hidden');
+
+            // FIX: Reset login form state
+            const loginButton = document.getElementById('login-button');
+            if (loginButton) {
+                loginButton.disabled = false;
+                loginButton.innerHTML = 'Entrar';
+            }
+            DOMElements.loginForm.reset();
+            DOMElements.authStatus.textContent = '';
         }
 
         // --- UI & THEME ---
@@ -618,10 +627,17 @@
             });
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             
-            // FIX: Unified signout listener
-            document.addEventListener('click', (e) => {
+            // FIX: Unified and robust signout listener
+            document.addEventListener('click', async (e) => {
                 if (e.target.closest('.signout-trigger')) {
-                    supabase.auth.signOut();
+                    try {
+                        const { error } = await supabase.auth.signOut();
+                        if (error) {
+                           showToast(`Error al cerrar sesión: ${error.message}`, 'error');
+                        }
+                    } catch (err) {
+                        showToast(`Error inesperado: ${err.message}`, 'error');
+                    }
                 }
             });
         }
