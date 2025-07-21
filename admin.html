@@ -1984,16 +1984,6 @@
             DOMElements.registerChamigoButton.addEventListener('click', handleRegisterChamigo);
             DOMElements.registerTtButton.addEventListener('click', handleRegisterTt);
             DOMElements.updateMatchButton.addEventListener('click', handleUpdateMatch);
-
-            // CORRECCIÓN: Listener para corregir estado de la UI al volver a la pestaña/app
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible' && window.innerWidth < 768) {
-                    const isMenuOpen = DOMElements.sideMenu.classList.contains('open');
-                    DOMElements.overlay.classList.toggle('open', isMenuOpen);
-                    DOMElements.hamburgerButton.classList.toggle('hidden', isMenuOpen);
-                    document.body.classList.toggle('overflow-hidden', isMenuOpen);
-                }
-            });
         };
         
         const handleTabButtonClick = (event) => {
@@ -2175,14 +2165,20 @@
         };
 
         const toggleSideMenu = () => {
-            if (window.innerWidth < 768) {
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) {
                 const isOpen = DOMElements.sideMenu.classList.toggle('open');
-                DOMElements.overlay.classList.toggle('open', isOpen);
-                DOMElements.hamburgerButton.classList.toggle('hidden', isOpen);
+                DOMElements.overlay.classList.toggle('open');
                 document.body.classList.toggle('overflow-hidden', isOpen);
+        
+                if (isOpen) {
+                    DOMElements.hamburgerButton.classList.add('hidden');
+                } else {
+                    DOMElements.hamburgerButton.classList.remove('hidden');
+                }
             }
         };
-
+        
         const handleResize = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
