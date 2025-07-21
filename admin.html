@@ -239,7 +239,7 @@
                 <div class="w-10"></div> <!-- Spacer -->
 
                 <!-- Mobile Dropdown Menu -->
-                <div id="mobile-menu" class="hidden absolute top-full left-4 mt-2 w-64 rounded-lg shadow-xl bg-secondary border border-border-color z-50">
+                <div id="mobile-menu" class="hidden absolute top-full left-4 mt-2 w-64 rounded-lg shadow-xl bg-white dark:bg-gray-800 border border-border-color z-50">
                     <!-- Mobile menu content injected here -->
                 </div>
             </header>
@@ -441,7 +441,7 @@
             DOMElements.mobileMenu.classList.add('hidden');
             DOMElements.mobileMenuOverlay.classList.add('hidden');
 
-            // FIX: Reset login form state
+            // FIX: Reset login form state to prevent loop
             const loginButton = document.getElementById('login-button');
             if (loginButton) {
                 loginButton.disabled = false;
@@ -453,8 +453,14 @@
 
         // --- UI & THEME ---
         function setupTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            applyTheme(savedTheme);
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else {
+                // If no theme saved, detect system preference
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(prefersDark ? 'dark' : 'light');
+            }
             DOMElements.desktopDarkModeToggle.addEventListener('click', toggleTheme);
         }
 
@@ -465,6 +471,8 @@
 
         function applyTheme(theme) {
             document.documentElement.classList.toggle('dark', theme === 'dark');
+            localStorage.setItem('theme', theme); // Save user's choice
+            
             const isDark = theme === 'dark';
             
             DOMElements.desktopDarkModeToggle.querySelector('i').classList.toggle('fa-moon', !isDark);
@@ -627,7 +635,6 @@
             });
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             
-            // FIX: Unified and robust signout listener
             document.addEventListener('click', async (e) => {
                 if (e.target.closest('.signout-trigger')) {
                     try {
