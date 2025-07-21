@@ -74,7 +74,8 @@
         }
         
         html.dark input, html.dark select {
-             background-color: var(--bg-primary);
+             background-color: var(--bg-muted); /* FIX: Consistent dark input */
+             color: var(--text-primary);
         }
 
         input[readonly] {
@@ -189,6 +190,14 @@
         body.logged-out #app-container {
             display: none;
         }
+        
+        /* Login screen background */
+        .login-bg {
+            background: #f0f2f5;
+        }
+        html.dark .login-bg {
+            background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%);
+        }
 
     </style>
 </head>
@@ -239,7 +248,7 @@
                 <div class="w-10"></div> <!-- Spacer -->
 
                 <!-- Mobile Dropdown Menu -->
-                <div id="mobile-menu" class="hidden absolute top-full left-4 mt-2 w-64 rounded-lg shadow-xl bg-white dark:bg-gray-800 border border-border-color z-50">
+                <div id="mobile-menu" class="hidden absolute top-full left-4 mt-2 w-64 rounded-lg shadow-xl bg-secondary border border-border-color z-50">
                     <!-- Mobile menu content injected here -->
                 </div>
             </header>
@@ -264,23 +273,37 @@
     <div id="mobile-menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
     <!-- Authentication Container (outside main app) -->
-    <div id="auth-container" class="hidden w-full h-screen flex items-center justify-center bg-primary">
-        <div class="card rounded-xl shadow-lg p-8 max-w-md w-full">
-            <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <label for="email" class="block text-sm font-medium mb-1">Email</label>
-                    <input type="email" id="email" class="w-full p-2 border rounded-md" required>
-                </div>
-                <div>
-                    <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
-                    <input type="password" id="password" class="w-full p-2 border rounded-md" required>
-                </div>
-                <button id="login-button" type="submit" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition duration-300">
-                    Entrar
+    <div id="auth-container" class="hidden w-full h-screen flex items-center justify-center login-bg">
+        <div class="w-full max-w-md p-4">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-text-secondary">Panel de Administración</h1>
+                <h2 class="text-4xl font-extrabold text-text-primary mt-2 flex items-center justify-center gap-3">
+                    <span class="text-4xl">⚽</span>
+                    <span>LA CLANDE</span>
+                </h2>
+            </div>
+            <div class="card rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                        <input type="email" id="email" class="w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
+                        <input type="password" id="password" class="w-full p-2 border rounded-md" required>
+                    </div>
+                    <button id="login-button" type="submit" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition duration-300">
+                        Entrar
+                    </button>
+                    <p id="auth-status" class="text-center text-danger-color mt-4 h-5"></p>
+                </form>
+            </div>
+            <div class="text-center mt-6">
+                <button id="login-dark-mode-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-moon text-lg text-text-secondary"></i>
                 </button>
-                <p id="auth-status" class="text-center text-danger-color mt-4 h-5"></p>
-            </form>
+            </div>
         </div>
     </div>
     
@@ -349,6 +372,7 @@
             loadingContainer: document.getElementById('loading-container'),
             loginForm: document.getElementById('login-form'),
             desktopDarkModeToggle: document.getElementById('desktop-dark-mode-toggle'),
+            loginDarkModeToggle: document.getElementById('login-dark-mode-toggle'),
             authStatus: document.getElementById('auth-status'),
             toastContainer: document.getElementById('toast-container'),
             modal: document.getElementById('custom-confirm-modal'),
@@ -462,6 +486,7 @@
                 applyTheme(prefersDark ? 'dark' : 'light');
             }
             DOMElements.desktopDarkModeToggle.addEventListener('click', toggleTheme);
+            DOMElements.loginDarkModeToggle.addEventListener('click', toggleTheme);
         }
 
         function toggleTheme() {
@@ -475,14 +500,19 @@
             
             const isDark = theme === 'dark';
             
-            DOMElements.desktopDarkModeToggle.querySelector('i').classList.toggle('fa-moon', !isDark);
-            DOMElements.desktopDarkModeToggle.querySelector('i').classList.toggle('fa-sun', isDark);
-            
-            const mobileToggle = document.getElementById('mobile-dark-mode-toggle');
-            if(mobileToggle) {
-                mobileToggle.querySelector('i').classList.toggle('fa-moon', !isDark);
-                mobileToggle.querySelector('i').classList.toggle('fa-sun', isDark);
-            }
+            const toggleButtons = [
+                DOMElements.desktopDarkModeToggle, 
+                DOMElements.loginDarkModeToggle,
+                document.getElementById('mobile-dark-mode-toggle')
+            ];
+
+            toggleButtons.forEach(btn => {
+                if (btn) {
+                    const icon = btn.querySelector('i');
+                    icon.classList.toggle('fa-moon', !isDark);
+                    icon.classList.toggle('fa-sun', isDark);
+                }
+            });
         }
 
         function setupUI() {
