@@ -23,6 +23,7 @@
         :root {
             --bg-primary: #f4f7fe;
             --bg-secondary: #ffffff;
+            --bg-muted: #f9fafb;
             --sidebar-bg: #111827;
             --sidebar-text: #e5e7eb;
             --sidebar-active-bg: #4f46e5;
@@ -41,6 +42,7 @@
         html.dark {
             --bg-primary: #030712;
             --bg-secondary: #1f2937;
+            --bg-muted: #111827;
             --sidebar-bg: #111827;
             --sidebar-text: #e5e7eb;
             --sidebar-active-bg: #4f46e5;
@@ -85,7 +87,7 @@
         /* Sidebar active link text color */
         .nav-link.active {
             background-color: var(--sidebar-active-bg);
-            color: var(--sidebar-active-text);
+            color: var(--sidebar-active-text) !important;
         }
 
         /* Player Draggable Styles */
@@ -98,6 +100,11 @@
             transform: scale(1.05);
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
+        
+        .player-list-container {
+             background-color: var(--bg-muted);
+        }
+
         .player-drop-zone.drag-over {
             border-style: dashed;
             border-color: var(--accent-color);
@@ -134,6 +141,9 @@
             background-color: var(--accent-color);
             color: var(--sidebar-active-text);
             border-color: var(--accent-color-hover);
+        }
+        .tt-player-item.selected span {
+            color: var(--sidebar-active-text);
         }
 
     </style>
@@ -226,7 +236,7 @@
             <p class="text-secondary mb-6" id="modal-message">¿Estás seguro?</p>
             <div class="flex justify-end space-x-3">
                 <button id="modal-cancel-button" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition">Cancelar</button>
-                <button id="modal-confirm-button" class="px-4 py-2 bg-danger-color text-white rounded-md hover:opacity-90 transition">Confirmar</button>
+                <button id="modal-confirm-button" class="px-4 py-2 bg-danger-color text-white font-semibold rounded-md hover:opacity-90 transition">Confirmar</button>
             </div>
         </div>
     </div>
@@ -249,7 +259,7 @@
             userRole: null,
             selectedMatchId: null,
             currentDraggedPlayerId: null,
-            isInitializing: false,
+            isInitialized: false, // Flag to check if initial data load is complete
         };
 
         const NAV_ITEMS = {
@@ -294,13 +304,20 @@
             setupTheme();
             setupEventListeners();
             supabase.auth.onAuthStateChange((event, session) => {
+                // This is the key event for a fresh login
                 if (event === 'SIGNED_IN') {
                     loadAdminPanel(session);
-                } else if (event === 'SIGNED_OUT') {
-                    showLoginScreen();
-                } else if (event === 'INITIAL_SESSION' && session) {
+                } 
+                // This handles when the page is loaded and the user is already logged in
+                else if (event === 'INITIAL_SESSION' && session) {
+                    // Prevent re-loading if data is already present (e.g., on tab refocus)
+                    if (AppState.isInitialized) {
+                        return; 
+                    }
                     loadAdminPanel(session);
-                } else {
+                } 
+                // This handles logout or no session found on initial load
+                else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
                     showLoginScreen();
                 }
             });
@@ -343,7 +360,6 @@
                 let initialTab = NAV_ITEMS.main[0].id;
 
                 if (isValidTab) {
-                    const navItem = allNavItems.find(item => item.id === savedTab);
                     const isAdminTab = NAV_ITEMS.admin.some(item => item.id === savedTab);
                     if (!isAdminTab || (isAdminTab && AppState.userRole === 'Admin')) {
                         initialTab = savedTab;
@@ -359,10 +375,12 @@
                 DOMElements.loadingContainer.classList.add('hidden');
                 DOMElements.adminContent.classList.remove('hidden');
                 AppState.isInitializing = false;
+                AppState.isInitialized = true; // Set flag to true after successful load
             }
         }
         
         function showLoginScreen() {
+            AppState.isInitialized = false; // Reset flag on logout
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
@@ -502,11 +520,11 @@
                         <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
                         <div>
                             <h4 class="font-medium mb-2 text-secondary">Titulares</h4>
-                            <div id="titulares-players" class="player-drop-zone border border-border-color rounded-lg p-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap gap-2 min-h-[120px]"></div>
+                            <div id="titulares-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                         </div>
                         <div>
                             <h4 class="font-medium mb-2 text-secondary">Suplentes</h4>
-                            <div id="suplentes-players" class="player-drop-zone border border-border-color rounded-lg p-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap gap-2 min-h-[120px]"></div>
+                            <div id="suplentes-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                         </div>
                     </div>
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
@@ -622,7 +640,7 @@
                 <div id="edit-match-content" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
                         <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
-                        <div id="edit-available-players" class="player-drop-zone border border-border-color rounded-lg p-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap gap-2 min-h-[120px]"></div>
+                        <div id="edit-available-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                     </div>
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
                         <h3 class="text-xl font-semibold">Equipos del Partido</h3>
@@ -1023,7 +1041,7 @@
                     playerDiv.classList.add('selected');
                 }
                 playerDiv.dataset.id = player.id;
-                playerDiv.innerHTML = `<i class="fas fa-check-circle text-white hidden"></i><span>${player.name}</span>`;
+                playerDiv.innerHTML = `<i class="fas fa-check-circle hidden"></i><span>${player.name}</span>`;
                 
                 const icon = playerDiv.querySelector('i');
                 icon.style.display = playerDiv.classList.contains('selected') ? 'inline' : 'none';
