@@ -211,6 +211,12 @@
         html.dark .login-bg {
             background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%);
         }
+        
+        /* Mobile Menu Dropdown Style Fix */
+        #mobile-menu {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+        }
 
     </style>
 </head>
@@ -261,7 +267,7 @@
                 <div class="w-10"></div> <!-- Spacer -->
 
                 <!-- Mobile Dropdown Menu -->
-                <div id="mobile-menu" class="hidden absolute top-full left-4 mt-2 w-64 rounded-lg shadow-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-50">
+                <div id="mobile-menu" class="hidden absolute top-full left-4 mt-2 w-64 rounded-lg shadow-xl border z-50">
                     <!-- Mobile menu content injected here -->
                 </div>
             </header>
@@ -474,7 +480,8 @@
         
         function showLoginScreen() {
             AppState.isInitialized = false;
-            DOMElements.body.classList.add('logged-out', 'overflow-hidden');
+            // FIX 2: Remove 'overflow-hidden' to allow proper vertical centering on mobile
+            DOMElements.body.classList.add('logged-out');
             DOMElements.appContainer.classList.add('hidden');
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
@@ -482,7 +489,7 @@
             DOMElements.mobileMenu.classList.add('hidden');
             DOMElements.mobileMenuOverlay.classList.add('hidden');
 
-            // FIX: Reset login form state to prevent loop
+            // Reset login form state to prevent loop
             const loginButton = document.getElementById('login-button');
             if (loginButton) {
                 loginButton.disabled = false;
@@ -498,7 +505,6 @@
             if (savedTheme) {
                 applyTheme(savedTheme);
             } else {
-                // If no theme saved, detect system preference
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 applyTheme(prefersDark ? 'dark' : 'light');
             }
@@ -511,16 +517,13 @@
             applyTheme(newTheme);
         }
 
-        function applyTheme(theme) {
-            document.documentElement.classList.toggle('dark', theme === 'dark');
-            localStorage.setItem('theme', theme); // Save user's choice
-            
-            const isDark = theme === 'dark';
-            
+        // FIX 1.1: Create a helper function to update icons
+        function updateThemeToggleIcons() {
+            const isDark = document.documentElement.classList.contains('dark');
             const toggleButtons = [
                 DOMElements.desktopDarkModeToggle, 
                 DOMElements.loginDarkModeToggle,
-                document.getElementById('mobile-dark-mode-toggle')
+                document.getElementById('mobile-dark-mode-toggle') // This might be null initially
             ];
 
             toggleButtons.forEach(btn => {
@@ -530,6 +533,13 @@
                     icon.classList.toggle('fa-sun', isDark);
                 }
             });
+        }
+
+        // FIX 1.2: Simplify applyTheme to call the new helper
+        function applyTheme(theme) {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            localStorage.setItem('theme', theme);
+            updateThemeToggleIcons();
         }
 
         function setupUI() {
@@ -584,22 +594,22 @@
         }
         
         function setupMobileMenu() {
-            const adminItemsHtml = AppState.userRole === 'Admin' ? NAV_ITEMS.admin.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">${item.name}</a></li>`).join('') : '';
+            const adminItemsHtml = AppState.userRole === 'Admin' ? NAV_ITEMS.admin.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-text-secondary hover:bg-bg-muted rounded-md">${item.name}</a></li>`).join('') : '';
 
             const menuHtml = `
                 <div class="p-2 space-y-1">
                     <div>
-                        <button id="mobile-main-trigger" class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <button id="mobile-main-trigger" class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold text-text-primary rounded-md hover:bg-bg-muted">
                             <span>Principal</span>
                             <i class="fas fa-chevron-down transform transition-transform"></i>
                         </button>
                         <ul id="mobile-main-content" class="collapsible-content mt-1 space-y-1 pl-4">
-                            ${NAV_ITEMS.main.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">${item.name}</a></li>`).join('')}
+                            ${NAV_ITEMS.main.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-text-secondary hover:bg-bg-muted rounded-md">${item.name}</a></li>`).join('')}
                         </ul>
                     </div>
                     ${AppState.userRole === 'Admin' ? `
                     <div>
-                        <button class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <button class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold text-text-primary rounded-md hover:bg-bg-muted">
                             <span>Administración</span>
                             <i class="fas fa-chevron-down transform transition-transform"></i>
                         </button>
@@ -609,17 +619,17 @@
                     </div>` : ''}
                     <div class="border-t border-border-color my-1"></div>
                     <div>
-                        <a href="${NAV_ITEMS.links[0].href}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center gap-3 px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <a href="${NAV_ITEMS.links[0].href}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center gap-3 px-2 py-2 text-left font-semibold text-text-primary rounded-md hover:bg-bg-muted">
                             <i class="fas ${NAV_ITEMS.links[0].icon} w-5 text-center"></i>
                             <span>${NAV_ITEMS.links[0].name}</span>
                         </a>
                     </div>
                     <div class="border-t border-border-color my-1"></div>
-                    <button id="mobile-dark-mode-toggle" class="w-full flex items-center gap-3 px-2 py-2 text-left text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <button id="mobile-dark-mode-toggle" class="w-full flex items-center gap-3 px-2 py-2 text-left text-text-secondary rounded-md hover:bg-bg-muted">
                         <i class="fas fa-moon w-5 text-center"></i>
                         <span>Modo Oscuro</span>
                     </button>
-                    <button class="signout-trigger w-full flex items-center gap-3 px-2 py-2 text-left text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <button class="signout-trigger w-full flex items-center gap-3 px-2 py-2 text-left text-text-secondary rounded-md hover:bg-bg-muted">
                         <i class="fas fa-sign-out-alt w-5 text-center"></i>
                         <span>Cerrar Sesión</span>
                     </button>
@@ -652,7 +662,9 @@
             });
             
             document.getElementById('mobile-dark-mode-toggle').addEventListener('click', toggleTheme);
-            applyTheme(localStorage.getItem('theme') || 'light');
+            
+            // FIX 1.3: Sync the icon after the menu is created, don't re-apply the whole theme
+            updateThemeToggleIcons();
         }
         
         function navigateTo(tabId) {
@@ -1286,7 +1298,7 @@
         }
         
         async function handleRegisterTt() {
-            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
+            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => parseInt(el.dataset.id));
             const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
             if (error) { showToast('Error al guardar asistencia a TT', 'error'); } 
             else {
@@ -1423,8 +1435,8 @@
 
         async function handleUpdateMatch() {
             const newDate = document.getElementById('edit-match-date').value;
-            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
-            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => el.dataset.id);
+            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => parseInt(el.dataset.id));
+            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => parseInt(el.dataset.id));
             
             if (newTeamWhite.length + newTeamDark.length !== 10) {
                 showToast('Deben haber 10 jugadores en total para conformar los equipos.', 'warning');
