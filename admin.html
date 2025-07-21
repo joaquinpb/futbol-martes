@@ -64,6 +64,16 @@
             background-color: var(--bg-secondary);
             border: 1px solid var(--border-color);
         }
+        
+        input, select {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        html.dark input, html.dark select {
+             background-color: var(--bg-primary);
+        }
 
         /* Custom scrollbar for webkit browsers */
         ::-webkit-scrollbar { width: 8px; }
@@ -93,8 +103,11 @@
         }
         
         /* Match list item styles */
-        .match-item.no-result { background-color: #fef2f2; border-left-color: var(--danger-color); }
-        .match-item.has-result { background-color: #ecfdf5; border-left-color: var(--success-color); }
+        .match-item {
+            background-color: var(--bg-secondary);
+        }
+        .match-item.no-result { border-left-color: var(--danger-color); }
+        .match-item.has-result { border-left-color: var(--success-color); }
         html.dark .match-item.no-result { background-color: rgba(239, 68, 68, 0.1); }
         html.dark .match-item.has-result { background-color: rgba(16, 185, 129, 0.1); }
         .match-item.selected { border-color: var(--accent-color); box-shadow: 0 0 0 2px var(--accent-color); }
@@ -123,7 +136,7 @@
                     <span class="text-2xl">⚽</span>
                     <span>LA CLANDE</span>
                 </a>
-                <button id="dark-mode-toggle" class="p-2 rounded-full hover:bg-sidebar-hover-bg md:hidden">
+                <button id="dark-mode-toggle" class="p-2 rounded-full hover:bg-sidebar-hover-bg">
                     <i class="fas fa-moon text-lg"></i>
                 </button>
             </div>
@@ -165,11 +178,11 @@
                             <form id="login-form" class="space-y-4">
                                 <div>
                                     <label for="email" class="block text-sm font-medium mb-1">Email</label>
-                                    <input type="email" id="email" class="w-full p-2 border border-border-color rounded-md bg-transparent" required>
+                                    <input type="email" id="email" class="w-full p-2 border rounded-md" required>
                                 </div>
                                 <div>
                                     <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
-                                    <input type="password" id="password" class="w-full p-2 border border-border-color rounded-md bg-transparent" required>
+                                    <input type="password" id="password" class="w-full p-2 border rounded-md" required>
                                 </div>
                                 <button id="login-button" type="submit" class="w-full px-6 py-3 bg-accent-color text-white font-semibold rounded-lg shadow-md hover:bg-accent-color-hover transition duration-300">
                                     Entrar
@@ -222,7 +235,7 @@
             matches: [],
             users: [],
             userRole: null,
-            selectedMatchId: null, // Unified selected match ID
+            selectedMatchId: null,
             currentDraggedPlayerId: null,
             isInitializing: false,
         };
@@ -290,7 +303,7 @@
             DOMElements.adminContent.classList.add('hidden');
             
             try {
-                const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
                 AppState.userRole = profile ? profile.role : null;
 
                 const [playersRes, matchesRes, usersRes] = await Promise.allSettled([
@@ -300,28 +313,18 @@
                 ]);
 
                 AppState.players = (playersRes.status === 'fulfilled' && !playersRes.value.error) ? (playersRes.value.data || []) : [];
-                if (playersRes.status === 'rejected' || (playersRes.value && playersRes.value.error)) {
-                    console.error("Error fetching players:", playersRes.reason || playersRes.value.error);
-                    showToast("Error al cargar la lista de jugadores.", "error");
-                }
+                if (playersRes.status === 'rejected' || (playersRes.value && playersRes.value.error)) showToast("Error al cargar jugadores.", "error");
 
                 AppState.matches = (matchesRes.status === 'fulfilled' && !matchesRes.value.error) ? (matchesRes.value.data || []) : [];
-                 if (matchesRes.status === 'rejected' || (matchesRes.value && matchesRes.value.error)) {
-                    console.error("Error fetching matches:", matchesRes.reason || matchesRes.value.error);
-                    showToast("Error al cargar la lista de partidos.", "error");
-                }
+                if (matchesRes.status === 'rejected' || (matchesRes.value && matchesRes.value.error)) showToast("Error al cargar partidos.", "error");
                 
                 if (AppState.userRole === 'Admin') {
                     AppState.users = (usersRes.status === 'fulfilled' && usersRes.value && !usersRes.value.error) ? (usersRes.value.data || []) : [];
-                    if (usersRes.status === 'rejected' || (usersRes.value && usersRes.value.error)) {
-                        console.error("Error fetching users:", usersRes.reason || (usersRes.value ? usersRes.value.error : 'Unknown error'));
-                        showToast("Error al cargar la lista de usuarios (Admin).", "error");
-                    }
+                    if (usersRes.status === 'rejected' || (usersRes.value && usersRes.value.error)) showToast("Error al cargar usuarios (Admin).", "error");
                 }
 
                 setupUI();
-                const initialTab = NAV_ITEMS.main[0].id;
-                navigateTo(initialTab);
+                navigateTo(NAV_ITEMS.main[0].id);
 
             } catch (error) {
                 console.error("Fatal error during admin panel setup:", error);
@@ -495,7 +498,7 @@
                         </div>
                         <div class="pt-4">
                             <label for="team-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
-                            <input type="date" id="team-match-date" class="w-full p-2 border border-border-color rounded-md bg-transparent">
+                            <input type="date" id="team-match-date" class="w-full p-2 border rounded-md">
                         </div>
                         <button id="save-teams-button" class="w-full px-6 py-3 bg-accent-color text-white font-semibold rounded-lg shadow-md hover:bg-accent-color-hover transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                             Guardar Partido
@@ -520,8 +523,8 @@
                 <div class="lg:col-span-1 card rounded-xl shadow-sm p-6">
                     <h3 class="text-xl font-semibold mb-4">Seleccionar Partido</h3>
                     <div class="flex gap-2 mb-4">
-                        <select id="${prefix}-year-select" class="w-full bg-transparent border-border-color rounded-md"></select>
-                        <select id="${prefix}-month-select" class="w-full bg-transparent border-border-color rounded-md"></select>
+                        <select id="${prefix}-year-select" class="w-full p-2 border rounded-md"></select>
+                        <select id="${prefix}-month-select" class="w-full p-2 border rounded-md"></select>
                     </div>
                     <div id="${prefix}-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
                        <p class="text-secondary">Cargando partidos...</p>
@@ -538,11 +541,11 @@
                 <div class="space-y-4">
                      <div>
                         <label class="block text-sm font-medium mb-1">Fecha del Partido</label>
-                        <input type="date" id="match-date" class="w-full p-2 border border-border-color rounded-md bg-gray-100 dark:bg-gray-800" readonly>
+                        <input type="date" id="match-date" class="w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-800" readonly>
                      </div>
                      <div>
                         <label for="match-result" class="block text-sm font-medium mb-1">Resultado</label>
-                        <select id="match-result" class="w-full p-2 border border-border-color rounded-md bg-transparent">
+                        <select id="match-result" class="w-full p-2 border rounded-md">
                              <option value="">Seleccionar resultado</option>
                              <option value="Claros">Claros</option>
                              <option value="Oscuros">Oscuros</option>
@@ -589,7 +592,38 @@
             populateMatchFilters('tt');
         };
 
-        window.render_edit_match = () => { DOMElements.adminContent.innerHTML = 'Edit Match'; };
+        window.render_edit_match = () => {
+            const panelContent = `
+                <div id="edit-match-content" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="card rounded-xl shadow-sm p-6 space-y-4">
+                        <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
+                        <div id="edit-available-players" class="player-drop-zone border border-border-color rounded-lg p-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap gap-2 min-h-[120px]"></div>
+                    </div>
+                    <div class="card rounded-xl shadow-sm p-6 space-y-4">
+                        <h3 class="text-xl font-semibold">Equipos del Partido</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-semibold mb-2">Claros</h4>
+                                <div id="edit-team-claros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white"></div>
+                            </div>
+                             <div>
+                                <h4 class="font-semibold mb-2">Oscuros</h4>
+                                <div id="edit-team-oscuros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-gray-800"></div>
+                            </div>
+                        </div>
+                        <div class="pt-4">
+                            <label for="edit-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
+                            <input type="date" id="edit-match-date" class="w-full p-2 border rounded-md">
+                        </div>
+                        <button id="update-match-button" class="w-full px-6 py-3 bg-accent-color text-white font-semibold rounded-lg shadow-md hover:bg-accent-color-hover transition">
+                            Actualizar Partido
+                        </button>
+                    </div>
+                </div>`;
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Editar Partido', renderMatchSelectionTemplate('edit', panelContent));
+            populateMatchFilters('edit');
+        };
+
         window.render_players_management = () => {
             const content = `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -599,18 +633,18 @@
                             <input type="hidden" id="player-id">
                             <div>
                                 <label for="player-name" class="block text-sm font-medium mb-1">Nombre</label>
-                                <input type="text" id="player-name" class="w-full p-2 border border-border-color rounded-md bg-transparent" required>
+                                <input type="text" id="player-name" class="w-full p-2 border rounded-md" required>
                             </div>
                             <div>
                                 <label for="player-status" class="block text-sm font-medium mb-1">Estado</label>
-                                <select id="player-status" class="w-full p-2 border border-border-color rounded-md bg-transparent">
+                                <select id="player-status" class="w-full p-2 border rounded-md">
                                     <option value="Activo">Activo</option>
                                     <option value="Inactivo">Inactivo</option>
                                 </select>
                             </div>
                             <div>
                                 <label for="player-role" class="block text-sm font-medium mb-1">Rol</label>
-                                <select id="player-role" class="w-full p-2 border border-border-color rounded-md bg-transparent">
+                                <select id="player-role" class="w-full p-2 border rounded-md">
                                     <option value="Titular">Titular</option>
                                     <option value="Suplente">Suplente</option>
                                 </select>
@@ -643,7 +677,56 @@
             document.getElementById('player-form').addEventListener('submit', handleSavePlayer);
             document.getElementById('clear-player-form-button').addEventListener('click', clearPlayerForm);
         };
-        window.render_user_management = () => { DOMElements.adminContent.innerHTML = 'User Management'; };
+        
+        window.render_user_management = () => {
+             const content = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1 card rounded-xl shadow-sm p-6">
+                        <h3 class="text-xl font-semibold mb-4">Editar Usuario</h3>
+                        <form id="user-form" class="space-y-4">
+                            <input type="hidden" id="user-id">
+                            <div>
+                                <label for="user-email" class="block text-sm font-medium mb-1">Email</label>
+                                <input type="email" id="user-email" class="w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-800" readonly>
+                            </div>
+                            <div>
+                                <label for="user-name" class="block text-sm font-medium mb-1">Nombre</label>
+                                <input type="text" id="user-name" class="w-full p-2 border rounded-md">
+                            </div>
+                            <div>
+                                <label for="user-role" class="block text-sm font-medium mb-1">Rol</label>
+                                <select id="user-role" class="w-full p-2 border rounded-md">
+                                    <option value="Operador">Operador</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-3 pt-2">
+                                <button type="submit" class="flex-1 px-4 py-2 bg-success-color text-white font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
+                                <button type="button" id="clear-user-form-button" class="flex-1 px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="lg:col-span-2 card rounded-xl shadow-sm p-6">
+                        <h3 class="text-xl font-semibold mb-4">Listado de Usuarios</h3>
+                        <div class="overflow-x-auto max-h-[60vh]">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-800">
+                                    <tr>
+                                        <th class="p-4">Email</th>
+                                        <th class="p-4">Nombre</th>
+                                        <th class="p-4">Rol</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-list-admin"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Usuarios', content);
+            renderUsersListAdmin();
+            document.getElementById('user-form').addEventListener('submit', handleSaveUser);
+            document.getElementById('clear-user-form-button').addEventListener('click', clearUserForm);
+        };
 
         // --- HELPERS & LOGIC ---
         function createDraggablePlayer(player) {
@@ -674,7 +757,8 @@
                         return;
                     }
                     zone.appendChild(playerEl);
-                    updateTeamCounts();
+                    if (window.updateTeamCounts) updateTeamCounts();
+                    if (window.updateEditTeamCounts) updateEditTeamCounts();
                 });
             });
         }
@@ -739,6 +823,7 @@
                 
                 if (filteredMatches.length === 0) {
                     listContainer.innerHTML = '<p class="text-secondary">No hay partidos para este mes.</p>';
+                    document.getElementById(`${prefix}-selection-panel`).classList.add('hidden');
                     return;
                 }
 
@@ -746,13 +831,17 @@
                     const d = new Date(match.match_date);
                     const formattedDate = d.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'});
                     return `
-                        <div class="match-item border-l-4 p-3 rounded-r-lg cursor-pointer transition ${match.result ? 'has-result' : 'no-result'}" data-match-id="${match.id}">
+                        <div class="match-item border-l-4 p-3 rounded-r-lg cursor-pointer transition" data-match-id="${match.id}">
                             <p class="font-semibold">${formattedDate}</p>
                             <p class="text-xs text-secondary">Resultado: ${match.result || 'Pendiente'}</p>
                         </div>`;
                 }).join('');
 
                 listContainer.querySelectorAll('.match-item').forEach(item => {
+                    const match = AppState.matches.find(m => m.id == item.dataset.matchId);
+                    item.classList.toggle('has-result', !!match.result);
+                    item.classList.toggle('no-result', !match.result);
+                    
                     item.addEventListener('click', (e) => {
                         listContainer.querySelectorAll('.match-item').forEach(i => i.classList.remove('selected'));
                         e.currentTarget.classList.add('selected');
@@ -774,35 +863,57 @@
             const panel = document.getElementById(`${prefix}-selection-panel`);
             panel.classList.remove('hidden');
 
-            if (prefix === 'results') {
-                panel.querySelector('#match-date').value = match.match_date;
-                panel.querySelector('#match-result').value = match.result || '';
-                if (!panel.dataset.listenersAdded) {
-                    panel.querySelector('#register-match-button').addEventListener('click', handleRegisterResult);
-                    panel.querySelector('#delete-match-button').addEventListener('click', handleDeleteMatch);
-                    panel.dataset.listenersAdded = 'true';
-                }
-            } else if (prefix === 'chamigo') {
-                renderChamigoVotingPlayers(match);
-                 if (!panel.dataset.listenersAdded) {
-                    panel.querySelector('#register-chamigo-button').addEventListener('click', handleRegisterChamigo);
-                    panel.dataset.listenersAdded = 'true';
-                }
-            } else if (prefix === 'tt') {
-                renderTtAttendancePlayers(match);
-                if (!panel.dataset.listenersAdded) {
-                    panel.querySelector('#register-tt-button').addEventListener('click', handleRegisterTt);
-                    panel.dataset.listenersAdded = 'true';
-                }
+            const handlerMap = {
+                'results': setupResultsPanel,
+                'chamigo': setupChamigoPanel,
+                'tt': setupTtPanel,
+                'edit': setupEditMatchPanel,
+            };
+
+            if(handlerMap[prefix]) handlerMap[prefix](panel, match);
+        }
+        
+        // --- PANEL SETUP FUNCTIONS ---
+        function setupResultsPanel(panel, match) {
+            panel.querySelector('#match-date').value = match.match_date;
+            panel.querySelector('#match-result').value = match.result || '';
+            if (!panel.dataset.listenersAdded) {
+                panel.querySelector('#register-match-button').addEventListener('click', handleRegisterResult);
+                panel.querySelector('#delete-match-button').addEventListener('click', handleDeleteMatch);
+                panel.dataset.listenersAdded = 'true';
             }
         }
 
+        function setupChamigoPanel(panel, match) {
+            renderChamigoVotingPlayers(match);
+            if (!panel.dataset.listenersAdded) {
+                panel.querySelector('#register-chamigo-button').addEventListener('click', handleRegisterChamigo);
+                panel.dataset.listenersAdded = 'true';
+            }
+        }
+
+        function setupTtPanel(panel, match) {
+            renderTtAttendancePlayers(match);
+            if (!panel.dataset.listenersAdded) {
+                panel.querySelector('#register-tt-button').addEventListener('click', handleRegisterTt);
+                panel.dataset.listenersAdded = 'true';
+            }
+        }
+        
+        function setupEditMatchPanel(panel, match) {
+            renderEditMatchPlayers(match);
+            if (!panel.dataset.listenersAdded) {
+                panel.querySelector('#update-match-button').addEventListener('click', handleUpdateMatch);
+                panel.dataset.listenersAdded = 'true';
+            }
+        }
+
+        // --- ACTION HANDLERS ---
         async function handleRegisterResult() {
             const result = document.getElementById('match-result').value;
             const { error } = await supabase.from('matches').update({ result }).eq('id', AppState.selectedMatchId);
-            if(error) {
-                showToast('Error al registrar resultado', 'error');
-            } else {
+            if(error) { showToast('Error al registrar resultado', 'error'); } 
+            else {
                  showToast('Resultado registrado!', 'success');
                  const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
                  if (matchInState) matchInState.result = result;
@@ -814,9 +925,8 @@
             const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
             if (confirmed) {
                 const { error } = await supabase.from('matches').delete().eq('id', AppState.selectedMatchId);
-                if(error) {
-                    showToast('Error al eliminar partido', 'error');
-                } else {
+                if(error) { showToast('Error al eliminar partido', 'error'); } 
+                else {
                     showToast('Partido eliminado.', 'success');
                     AppState.matches = AppState.matches.filter(m => m.id != AppState.selectedMatchId);
                     document.getElementById('results-selection-panel').classList.add('hidden');
@@ -836,9 +946,8 @@
                 if (!player) return;
                 
                 const voteCount = currentVotes[id] || 0;
-                
                 const playerDiv = document.createElement('div');
-                playerDiv.className = 'chamigo-player-item flex items-center justify-between p-2 border border-border-color rounded-lg';
+                playerDiv.className = 'chamigo-player-item flex items-center justify-between p-2 border rounded-lg';
                 playerDiv.dataset.id = id;
                 playerDiv.innerHTML = `
                     <span class="player-name">${player.name}</span>
@@ -863,15 +972,13 @@
         async function handleRegisterChamigo() {
             const votes = {};
             document.querySelectorAll('.chamigo-player-item').forEach(item => {
-                const id = item.dataset.id;
                 const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
-                if (count > 0) votes[id] = count;
+                if (count > 0) votes[item.dataset.id] = count;
             });
             
             const { error } = await supabase.from('matches').update({ chamigo_votes: votes }).eq('id', AppState.selectedMatchId);
-            if (error) {
-                showToast('Error al guardar votos de Chamigo', 'error');
-            } else {
+            if (error) { showToast('Error al guardar votos de Chamigo', 'error'); } 
+            else {
                 showToast('Votos de Chamigo guardados!', 'success');
                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
                 if (matchInState) matchInState.chamigo_votes = votes;
@@ -886,10 +993,8 @@
 
             activePlayers.forEach(player => {
                 const playerDiv = document.createElement('div');
-                playerDiv.className = 'tt-player-item p-2 border border-border-color rounded-lg cursor-pointer text-center';
-                if (existingAttendees.includes(player.id)) {
-                    playerDiv.classList.add('bg-accent-color', 'text-white');
-                }
+                playerDiv.className = 'tt-player-item p-2 border rounded-lg cursor-pointer text-center';
+                if (existingAttendees.includes(player.id)) playerDiv.classList.add('bg-accent-color', 'text-white');
                 playerDiv.dataset.id = player.id;
                 playerDiv.textContent = player.name;
                 playerDiv.addEventListener('click', () => {
@@ -903,12 +1008,10 @@
         async function handleRegisterTt() {
             const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .bg-accent-color')).map(el => el.dataset.id);
             const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
-
-            if (error) {
-                showToast('Error al guardar asistencia a TT', 'error');
-            } else {
+            if (error) { showToast('Error al guardar asistencia a TT', 'error'); } 
+            else {
                 showToast('Asistencia a TT guardada!', 'success');
-                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
+                const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
                 if (matchInState) matchInState.tt_attendees = attendees;
             }
         }
@@ -917,19 +1020,15 @@
             const tableBody = document.getElementById('players-list-admin');
             tableBody.innerHTML = AppState.players.map(p => `
                 <tr class="selectable-row border-b border-border-color hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" data-player-id="${p.id}">
-                    <td class="p-4">${p.id}</td>
-                    <td class="p-4">${p.name}</td>
-                    <td class="p-4">${p.status}</td>
-                    <td class="p-4">${p.role}</td>
-                </tr>
-            `).join('');
+                    <td class="p-4">${p.id}</td><td class="p-4">${p.name}</td>
+                    <td class="p-4">${p.status}</td><td class="p-4">${p.role}</td>
+                </tr>`).join('');
             
             tableBody.querySelectorAll('.selectable-row').forEach(row => {
                 row.addEventListener('click', () => {
                     tableBody.querySelectorAll('.selectable-row').forEach(r => r.classList.remove('selected'));
                     row.classList.add('selected');
-                    const player = AppState.players.find(p => p.id === row.dataset.playerId);
-                    populatePlayerForm(player);
+                    populatePlayerForm(AppState.players.find(p => p.id === row.dataset.playerId));
                 });
             });
         }
@@ -956,18 +1055,12 @@
                 role: document.getElementById('player-role').value,
             };
 
-            let response;
-            if (id) { // Update
-                response = await supabase.from('players').update(playerData).eq('id', id).select().single();
-            } else { // Insert
-                 const { data: lastPlayer } = await supabase.from('players').select('id').order('id', { ascending: false }).limit(1).single();
-                 const lastIdNum = lastPlayer ? parseInt(lastPlayer.id.replace('J', '')) : 0;
-                 playerData.id = 'J' + String(lastIdNum + 1).padStart(3, '0');
-                 response = await supabase.from('players').insert(playerData).select().single();
-            }
+            const { data, error } = id
+                ? await supabase.from('players').update(playerData).eq('id', id).select().single()
+                : await supabase.from('players').insert(playerData).select().single();
 
-            if (response.error) {
-                showToast(`Error al guardar jugador: ${response.error.message}`, 'error');
+            if (error) {
+                showToast(`Error al guardar jugador: ${error.message}`, 'error');
             } else {
                 showToast('Jugador guardado exitosamente.', 'success');
                 await refreshDataAndRender('players-management');
@@ -975,17 +1068,113 @@
             }
         }
 
+        function renderUsersListAdmin() {
+            const tableBody = document.getElementById('users-list-admin');
+            tableBody.innerHTML = AppState.users.map(u => `
+                <tr class="selectable-row border-b border-border-color hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" data-user-id="${u.id}">
+                    <td class="p-4">${u.email}</td>
+                    <td class="p-4">${u.name || 'N/A'}</td>
+                    <td class="p-4">${u.role || 'Sin Rol'}</td>
+                </tr>`).join('');
+            
+            tableBody.querySelectorAll('.selectable-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    tableBody.querySelectorAll('.selectable-row').forEach(r => r.classList.remove('selected'));
+                    row.classList.add('selected');
+                    populateUserForm(AppState.users.find(u => u.id === row.dataset.userId));
+                });
+            });
+        }
+
+        function populateUserForm(user) {
+            document.getElementById('user-id').value = user.id;
+            document.getElementById('user-email').value = user.email;
+            document.getElementById('user-name').value = user.name || '';
+            document.getElementById('user-role').value = user.role || 'Operador';
+        }
+
+        function clearUserForm() {
+            document.getElementById('user-form').reset();
+            document.getElementById('user-id').value = '';
+            document.querySelectorAll('#users-list-admin .selectable-row').forEach(r => r.classList.remove('selected'));
+        }
+
+        async function handleSaveUser(e) {
+            e.preventDefault();
+            const id = document.getElementById('user-id').value;
+            if (!id) { showToast('Selecciona un usuario de la lista.', 'warning'); return; }
+            const userData = {
+                name: document.getElementById('user-name').value,
+                role: document.getElementById('user-role').value,
+            };
+            const { error } = await supabase.from('profiles').update(userData).eq('id', id);
+            if (error) { showToast(`Error al guardar usuario: ${error.message}`, 'error'); }
+            else {
+                showToast('Usuario guardado.', 'success');
+                await refreshDataAndRender('user-management');
+                clearUserForm();
+            }
+        }
+        
+        function renderEditMatchPlayers(match) {
+            document.getElementById('edit-match-date').value = match.match_date;
+            const availablePlayersDiv = document.getElementById('edit-available-players');
+            const teamClarosDiv = document.getElementById('edit-team-claros');
+            const teamOscurosDiv = document.getElementById('edit-team-oscuros');
+            
+            [availablePlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(div => div.innerHTML = '');
+
+            const matchPlayerIds = new Set([...(match.team_white_players || []), ...(match.team_dark_players || [])]);
+            
+            AppState.players.filter(p => p.status === 'Activo' && !matchPlayerIds.has(p.id))
+                .forEach(p => availablePlayersDiv.appendChild(createDraggablePlayer(p)));
+
+            (match.team_white_players || []).forEach(id => teamClarosDiv.appendChild(createDraggablePlayer(AppState.players.find(p => p.id === id))));
+            (match.team_dark_players || []).forEach(id => teamOscurosDiv.appendChild(createDraggablePlayer(AppState.players.find(p => p.id === id))));
+            
+            setupDragAndDrop();
+        }
+
+        async function handleUpdateMatch() {
+            const newDate = document.getElementById('edit-match-date').value;
+            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
+            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => el.dataset.id);
+            
+            if (newTeamWhite.length + newTeamDark.length < 10) {
+                showToast('Deben haber 10 jugadores en total.', 'warning');
+                return;
+            }
+
+            const { error } = await supabase.from('matches').update({
+                match_date: newDate,
+                team_white_players: newTeamWhite,
+                team_dark_players: newTeamDark
+            }).eq('id', AppState.selectedMatchId);
+            
+            if (error) { showToast('Error al actualizar el partido.', 'error'); }
+            else {
+                showToast('Partido actualizado.', 'success');
+                await refreshDataAndRender('edit-match');
+            }
+        }
+
         async function refreshDataAndRender(tabToRender) {
-            const { data: players, error } = await supabase.from('players').select('*').order('id');
-            if (!error) AppState.players = players;
+            const { data: players, pError } = await supabase.from('players').select('*').order('id');
+            if (!pError) AppState.players = players;
+            
+            const { data: matches, mError } = await supabase.from('matches').select('*').order('match_date', { ascending: false });
+            if (!mError) AppState.matches = matches;
+
+            if(AppState.userRole === 'Admin') {
+                const { data: users, uError } = await supabase.rpc('get_all_users_with_roles');
+                if (!uError) AppState.users = users;
+            }
+            
             navigateTo(tabToRender);
         }
 
         function showToast(message, type = 'info') {
-            const colors = {
-                success: 'bg-success-color', error: 'bg-danger-color',
-                warning: 'bg-warning-color', info: 'bg-blue-500',
-            };
+            const colors = { success: 'bg-success-color', error: 'bg-danger-color', warning: 'bg-warning-color', info: 'bg-blue-500' };
             const toast = document.createElement('div');
             toast.className = `w-full max-w-sm p-4 rounded-lg shadow-lg text-white ${colors[type]} mb-2`;
             toast.textContent = message;
