@@ -606,11 +606,14 @@
         async function init() {
             console.log("Iniciando aplicación...");
             setupTheme();
-            setupNavigation();
             await loadInitialData(); 
             
-            DOMElements.mobileMenuToggle.addEventListener('click', toggleMobileMenu);
-            DOMElements.mobileMenuOverlay.addEventListener('click', toggleMobileMenu);
+            // Only setup the rest if data loading was successful
+            if (isDataLoaded) {
+                setupNavigation();
+                DOMElements.mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+                DOMElements.mobileMenuOverlay.addEventListener('click', toggleMobileMenu);
+            }
         }
 
         async function loadInitialData() {
@@ -638,10 +641,8 @@
                         <h3 class="text-lg font-bold mb-2">No se encontraron datos</h3>
                         <p>Las tablas de jugadores o partidos parecen estar vacías. Si esto es un error, por favor verifica las Políticas de Seguridad (RLS) en tu panel de Supabase para asegurarte de que el rol 'anon' tenga permiso de LECTURA (SELECT) en ambas tablas.</p>
                      </div>`;
-                    return;
+                    isDataLoaded = false; // Prevent further execution
                 }
-                
-                handleHashChange();
             } catch (error) {
                 console.error("Error al cargar datos de Supabase:", error);
                 DOMElements.contentArea.innerHTML = `<div class="card p-6 text-center text-danger-color">
@@ -649,6 +650,7 @@
                     <p>No se pudieron cargar los datos desde Supabase. Revisa la consola para más detalles del error.</p>
                     <p class="mt-2 text-xs">Mensaje: ${error.message}</p>
                 </div>`;
+                isDataLoaded = false; // Prevent further execution
             }
         }
 
@@ -720,6 +722,7 @@
             });
             window.addEventListener('hashchange', handleHashChange);
             updateThemeToggleIcons();
+            handleHashChange(); // Initial render
         }
         
         function toggleMobileMenu() {
@@ -754,7 +757,10 @@
         function getStatsForPeriod(year, period) {
             try {
                 const filteredMatches = allMatches.filter(match => {
+                    if (!match.match_date) return false;
                     const matchDate = new Date(match.match_date);
+                    if (isNaN(matchDate.getTime())) return false; // Invalid date check
+                    
                     const matchYear = matchDate.getUTCFullYear();
                     const matchMonth = matchDate.getUTCMonth(); // 0-11
                     
@@ -827,7 +833,21 @@
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const periodSelect = document.getElementById(`${prefix}-period-select`);
             
-            const years = [...new Set(allMatches.map(m => new Date(m.match_date).getUTCFullYear()))].sort((a, b) => b - a);
+            const years = [...new Set(allMatches
+                .map(m => {
+                    if (!m.match_date) return null;
+                    const date = new Date(m.match_date);
+                    return isNaN(date.getTime()) ? null : date.getUTCFullYear();
+                })
+                .filter(y => y !== null)
+            )].sort((a, b) => b - a);
+
+            if (years.length === 0) {
+                console.error("No valid years found in match data.");
+                yearSelect.innerHTML = `<option>Sin Años</option>`;
+                return;
+            }
+
             yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
 
             const today = new Date();
