@@ -113,6 +113,7 @@
             display: inline-flex;
             align-items: center;
             flex-grow: 0;
+            touch-action: none; /* Recommended for custom drag handling */
         }
         .player-element.draggable {
             cursor: grab;
@@ -627,6 +628,7 @@
                     navigateTo(e.currentTarget.dataset.tab);
                     DOMElements.mobileMenu.classList.add('hidden');
                     DOMElements.mobileMenuOverlay.classList.add('hidden');
+                    DOMElements.body.classList.remove('overflow-hidden');
                 });
             });
             
@@ -664,10 +666,12 @@
                 e.stopPropagation();
                 const isHidden = DOMElements.mobileMenu.classList.toggle('hidden');
                 DOMElements.mobileMenuOverlay.classList.toggle('hidden', isHidden);
+                DOMElements.body.classList.toggle('overflow-hidden', !isHidden);
             });
             DOMElements.mobileMenuOverlay.addEventListener('click', () => {
                 DOMElements.mobileMenu.classList.add('hidden');
                 DOMElements.mobileMenuOverlay.classList.add('hidden');
+                DOMElements.body.classList.remove('overflow-hidden');
             });
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             
@@ -985,7 +989,7 @@
             document.getElementById('clear-user-form-button').addEventListener('click', clearUserForm);
         };
 
-        // --- TEAM FORMATION LOGIC (NEW & IMPROVED) ---
+        // --- TEAM FORMATION LOGIC ---
         function createPlayerElement(player) {
             const el = document.createElement('div');
             el.className = 'player-element flex-grow-0 text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
@@ -1008,35 +1012,37 @@
                 if (parentId === 'titulares-players' || parentId === 'suplentes-players') {
                     showPlayerAssignmentModal(playerEl);
                 } else if (parentId === 'team-claros' || parentId === 'team-oscuros') {
-                    document.getElementById('titulares-players').appendChild(playerEl);
-                    updateTeamCounts();
+                    returnPlayerToOrigin(playerEl);
                 }
             });
 
-            // Handle Drag & Drop for Desktop
-            let isDesktop = window.innerWidth >= 1024;
-            if (isDesktop) {
-                setupDragAndDrop();
-            }
-
-            window.addEventListener('resize', () => {
-                const currentlyDesktop = window.innerWidth >= 1024;
-                if (currentlyDesktop !== isDesktop) {
-                    isDesktop = currentlyDesktop;
-                    // This is a simple way to re-init. More complex scenarios might need cleanup.
-                    navigateTo('team-formation'); 
-                }
-            });
+            // Handle Drag & Drop (now always enabled)
+            setupDragAndDrop();
         }
         
+        function returnPlayerToOrigin(playerEl) {
+            const playerId = playerEl.dataset.id;
+            const player = AppState.players.find(p => p.id == playerId);
+
+            if (player && player.role === 'Suplente') {
+                document.getElementById('suplentes-players').appendChild(playerEl);
+            } else {
+                // Default to Titular if role is not 'Suplente' or player not found
+                document.getElementById('titulares-players').appendChild(playerEl);
+            }
+            updateTeamCounts();
+        }
+
         function showPlayerAssignmentModal(playerEl) {
             AppState.activePlayerElement = playerEl;
             DOMElements.assignModalPlayerName.textContent = playerEl.textContent;
+            DOMElements.body.classList.add('overflow-hidden');
             DOMElements.playerAssignmentModal.classList.remove('hidden');
         }
 
         function hidePlayerAssignmentModal() {
             AppState.activePlayerElement = null;
+            DOMElements.body.classList.remove('overflow-hidden');
             DOMElements.playerAssignmentModal.classList.add('hidden');
         }
         
@@ -1130,7 +1136,7 @@
             }
         }
         
-        // --- OTHER TAB LOGIC (UNCHANGED) ---
+        // --- OTHER TAB LOGIC ---
         function populateMatchFilters(prefix) {
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
@@ -1481,7 +1487,7 @@
                 if (player) teamOscurosDiv.appendChild(createPlayerElement(player));
             });
             
-            setupDragAndDrop(); // This could be enhanced to use the new interaction model too
+            setupDragAndDrop();
         }
 
         async function handleUpdateMatch() {
@@ -1533,12 +1539,14 @@
 
         function showModal(title, message) {
             return new Promise(resolve => {
+                DOMElements.body.classList.add('overflow-hidden');
                 DOMElements.modalTitle.textContent = title;
                 DOMElements.modalMessage.textContent = message;
                 DOMElements.modal.classList.remove('hidden');
                 const confirmHandler = () => { cleanup(); resolve(true); };
                 const cancelHandler = () => { cleanup(); resolve(false); };
                 const cleanup = () => {
+                    DOMElements.body.classList.remove('overflow-hidden');
                     DOMElements.modal.classList.add('hidden');
                     DOMElements.modalConfirm.removeEventListener('click', confirmHandler);
                     DOMElements.modalCancel.removeEventListener('click', cancelHandler);
