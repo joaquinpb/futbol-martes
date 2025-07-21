@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración - LA CLANDE</title>
 
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Font Awesome (Icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Google Fonts (Inter) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
 
     <style>
@@ -101,8 +105,9 @@
             cursor: grab;
             white-space: nowrap; 
             width: auto; 
-            display: inline-flex; /* Use inline-flex for better alignment */
+            display: inline-flex;
             align-items: center;
+            flex-grow: 0; /* FIX: Prevents stretching */
         }
         .player-draggable:active {
             cursor: grabbing;
@@ -112,6 +117,7 @@
         
         .player-list-container {
              background-color: var(--bg-muted);
+             align-content: flex-start; /* FIX: Prevents vertical stretching of items */
         }
 
         .player-drop-zone.drag-over {
@@ -133,16 +139,20 @@
         html.dark .match-item.has-result { background-color: rgba(16, 185, 129, 0.1); }
         .match-item.selected { border-color: var(--accent-color); box-shadow: 0 0 0 2px var(--accent-color); }
         
-        /* Table row selection style - CORRECTED */
+        /* Table row hover style */
+        .selectable-row:hover {
+            background-color: #f9fafb !important; /* gray-50 */
+        }
+        html.dark .selectable-row:hover {
+            background-color: #1f2937 !important; /* gray-800 */
+        }
+        
+        /* Table row selection style */
         .selectable-row.selected {
-            background-color: #f3f4f6 !important; /* Tailwind gray-100 for light mode */
-            --tw-ring-color: var(--accent-color);
-            outline: 2px solid transparent;
-            outline-offset: 2px;
-            outline-color: var(--accent-color);
+            background-color: #eef2ff !important; /* indigo-50 */
         }
         html.dark .selectable-row.selected {
-             background-color: rgba(99, 102, 241, 0.2) !important;
+             background-color: #3730a3 !important; /* indigo-800 */
         }
         
         /* TT Player Item Style */
@@ -207,52 +217,67 @@
 </head>
 <body class="antialiased">
 
+    <!-- Main Application Container -->
     <div id="app-container" class="flex h-screen hidden">
-        <aside id="sidebar" class="w-64 bg-sidebar-bg text-sidebar-text flex-col fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-40 flex">
-            <div class="px-6 py-4 flex items-center justify-between">
+        <!-- Sidebar for Desktop -->
+        <aside id="sidebar" class="w-64 bg-sidebar-bg text-sidebar-text flex-col hidden md:flex">
+            <div class="px-6 py-4 flex items-center">
                 <a href="#" class="text-xl font-bold flex items-center gap-2">
                     <span class="text-2xl">⚽</span>
                     <span>LA CLANDE</span>
                 </a>
-                <button id="dark-mode-toggle" class="p-2 rounded-full hover:bg-sidebar-hover-bg">
-                    <i class="fas fa-moon text-lg"></i>
-                </button>
             </div>
             
             <nav id="main-nav" class="flex-1 px-4 space-y-2 overflow-y-auto">
-                </nav>
+                <!-- Desktop nav items will be injected by JS -->
+            </nav>
 
             <div class="px-4 py-4 mt-auto">
-                <button id="signout_button" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200">
+                 <button id="desktop-dark-mode-toggle" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200">
+                    <i class="fas fa-moon w-5 text-center"></i>
+                    <span>Modo Oscuro</span>
+                </button>
+                <button id="signout_button" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200 mt-2">
                     <i class="fas fa-sign-out-alt w-5 text-center"></i>
                     <span>Cerrar Sesión</span>
                 </button>
             </div>
         </aside>
 
+        <!-- Main content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary md:hidden">
-                <button id="sidebar-toggle" class="p-2 rounded-md">
+            <!-- Header for Mobile -->
+            <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary md:hidden relative">
+                <a href="#" class="text-xl font-bold flex items-center gap-2">
+                    <span class="text-2xl">⚽</span>
+                    <span>LA CLANDE</span>
+                </a>
+                <button id="mobile-menu-toggle" class="p-2 rounded-md">
                     <i class="fas fa-bars text-lg"></i>
                 </button>
-                 <button id="dark-mode-toggle-header" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <i class="fas fa-moon text-lg"></i>
-                </button>
+                <!-- Mobile Dropdown Menu -->
+                <div id="mobile-menu" class="hidden absolute top-full right-0 mt-2 w-64 rounded-lg shadow-xl bg-secondary border border-border-color z-50">
+                    <!-- Mobile menu content injected here -->
+                </div>
             </header>
             
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-primary p-4 sm:p-6 lg:p-8">
                 <div id="admin-content-area" class="max-w-7xl mx-auto">
+                    <!-- Loading State -->
                     <div id="loading-container" class="flex items-center justify-center h-64">
                         <i class="fas fa-spinner fa-spin text-4xl text-accent-color"></i>
                     </div>
 
+                    <!-- Main Admin Content (hidden by default) -->
                     <div id="admin-content" class="hidden">
-                        </div>
+                        <!-- Tab contents will be injected here -->
+                    </div>
                 </div>
             </main>
         </div>
     </div>
 
+    <!-- Authentication Container (outside main app) -->
     <div id="auth-container" class="hidden w-full h-screen flex items-center justify-center bg-primary">
         <div class="card rounded-xl shadow-lg p-8 max-w-md w-full">
             <h2 class="text-2xl font-bold text-center mb-6">Iniciar Sesión</h2>
@@ -273,10 +298,10 @@
         </div>
     </div>
     
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
-
+    <!-- Toast Notification -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50"></div>
 
+    <!-- Modal -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
         <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
             <h3 class="text-lg font-semibold mb-2" id="modal-title">Confirmar Acción</h3>
@@ -288,8 +313,10 @@
         </div>
     </div>
 
+    <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <!-- Main Admin Script -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- CONFIG & STATE ---
@@ -304,7 +331,7 @@
             userRole: null,
             selectedMatchId: null,
             currentDraggedPlayerId: null,
-            isInitialized: false, // Flag to check if initial data load is complete
+            isInitialized: false,
         };
 
         const NAV_ITEMS = {
@@ -328,15 +355,16 @@
         const DOMElements = {
             body: document.body,
             appContainer: document.getElementById('app-container'),
-            sidebar: document.getElementById('sidebar'),
-            sidebarToggle: document.getElementById('sidebar-toggle'),
-            sidebarOverlay: document.getElementById('sidebar-overlay'),
+            desktopSidebar: document.getElementById('sidebar'),
+            mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
+            mobileMenu: document.getElementById('mobile-menu'),
             mainNav: document.getElementById('main-nav'),
             authContainer: document.getElementById('auth-container'),
             adminContent: document.getElementById('admin-content'),
             loadingContainer: document.getElementById('loading-container'),
             loginForm: document.getElementById('login-form'),
             signoutButton: document.getElementById('signout_button'),
+            desktopDarkModeToggle: document.getElementById('desktop-dark-mode-toggle'),
             authStatus: document.getElementById('auth-status'),
             toastContainer: document.getElementById('toast-container'),
             modal: document.getElementById('custom-confirm-modal'),
@@ -351,12 +379,8 @@
             setupTheme();
             setupEventListeners();
             supabase.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_IN') {
+                if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
                     if (!AppState.isInitialized) loadAdminPanel(session);
-                } 
-                else if (event === 'INITIAL_SESSION' && session) {
-                    if (AppState.isInitialized) return; 
-                    loadAdminPanel(session);
                 } 
                 else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
                     showLoginScreen();
@@ -429,14 +453,14 @@
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
+            DOMElements.mobileMenu.classList.add('hidden'); // Hide mobile menu on logout
         }
 
         // --- UI & THEME ---
         function setupTheme() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             applyTheme(savedTheme);
-            document.getElementById('dark-mode-toggle').addEventListener('click', toggleTheme);
-            document.getElementById('dark-mode-toggle-header').addEventListener('click', toggleTheme);
+            DOMElements.desktopDarkModeToggle.addEventListener('click', toggleTheme);
         }
 
         function toggleTheme() {
@@ -446,14 +470,24 @@
 
         function applyTheme(theme) {
             document.documentElement.classList.toggle('dark', theme === 'dark');
-            document.querySelectorAll('#dark-mode-toggle, #dark-mode-toggle-header').forEach(btn => {
-                btn.querySelector('i').classList.toggle('fa-moon', theme !== 'dark');
-                btn.querySelector('i').classList.toggle('fa-sun', theme === 'dark');
-            });
-            localStorage.setItem('theme', theme);
+            const isDark = theme === 'dark';
+            
+            DOMElements.desktopDarkModeToggle.querySelector('i').classList.toggle('fa-moon', !isDark);
+            DOMElements.desktopDarkModeToggle.querySelector('i').classList.toggle('fa-sun', isDark);
+            
+            const mobileToggle = document.getElementById('mobile-dark-mode-toggle');
+            if(mobileToggle) {
+                mobileToggle.querySelector('i').classList.toggle('fa-moon', !isDark);
+                mobileToggle.querySelector('i').classList.toggle('fa-sun', isDark);
+            }
         }
 
         function setupUI() {
+            setupDesktopNav();
+            setupMobileMenu();
+        }
+        
+        function setupDesktopNav() {
             let navHtml = `
                 <div>
                     <span class="px-4 text-xs font-semibold uppercase text-gray-400">Principal</span>
@@ -491,16 +525,77 @@
 
             DOMElements.mainNav.innerHTML = navHtml;
             
-            document.querySelectorAll('.nav-link').forEach(link => {
+            document.querySelectorAll('#main-nav .nav-link').forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     navigateTo(e.currentTarget.dataset.tab);
-                    if (window.innerWidth < 768) {
-                        DOMElements.sidebar.classList.add('-translate-x-full');
-                        DOMElements.sidebarOverlay.classList.add('hidden');
-                    }
                 });
             });
+        }
+        
+        function setupMobileMenu() {
+            const adminItemsHtml = AppState.userRole === 'Admin' ? NAV_ITEMS.admin.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-text-primary hover:bg-gray-100 dark:hover:bg-gray-700">${item.name}</a></li>`).join('') : '';
+
+            const menuHtml = `
+                <div class="p-2 space-y-2">
+                    <div>
+                        <button class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold">
+                            <span>Principal</span>
+                            <i class="fas fa-chevron-down transform transition-transform"></i>
+                        </button>
+                        <ul class="collapsible-content hidden mt-1 space-y-1 pl-4">
+                            ${NAV_ITEMS.main.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-text-primary hover:bg-gray-100 dark:hover:bg-gray-700">${item.name}</a></li>`).join('')}
+                        </ul>
+                    </div>
+                    ${AppState.userRole === 'Admin' ? `
+                    <div>
+                        <button class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold">
+                            <span>Administración</span>
+                            <i class="fas fa-chevron-down transform transition-transform"></i>
+                        </button>
+                        <ul class="collapsible-content hidden mt-1 space-y-1 pl-4">
+                            ${adminItemsHtml}
+                        </ul>
+                    </div>` : ''}
+                    <div>
+                        <a href="${NAV_ITEMS.links[0].href}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center px-2 py-2 text-left font-semibold">
+                            <span>${NAV_ITEMS.links[0].name}</span>
+                        </a>
+                    </div>
+                    <div class="border-t border-border-color my-2"></div>
+                    <button id="mobile-dark-mode-toggle" class="w-full flex items-center gap-3 px-2 py-2 text-left">
+                        <i class="fas fa-moon w-5 text-center"></i>
+                        <span>Modo Oscuro</span>
+                    </button>
+                    <button id="mobile-signout-button" class="w-full flex items-center gap-3 px-2 py-2 text-left">
+                        <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                        <span>Cerrar Sesión</span>
+                    </button>
+                </div>
+            `;
+            DOMElements.mobileMenu.innerHTML = menuHtml;
+            
+            // Add event listeners for mobile menu
+            DOMElements.mobileMenu.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    navigateTo(e.currentTarget.dataset.tab);
+                    DOMElements.mobileMenu.classList.add('hidden');
+                });
+            });
+            
+            DOMElements.mobileMenu.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    const content = trigger.nextElementSibling;
+                    const icon = trigger.querySelector('i');
+                    content.classList.toggle('hidden');
+                    icon.classList.toggle('rotate-180');
+                });
+            });
+            
+            document.getElementById('mobile-dark-mode-toggle').addEventListener('click', toggleTheme);
+            document.getElementById('mobile-signout-button').addEventListener('click', () => supabase.auth.signOut());
+            applyTheme(localStorage.getItem('theme') || 'light'); // Re-apply theme for mobile button
         }
         
         function navigateTo(tabId) {
@@ -519,13 +614,8 @@
 
         // --- EVENT LISTENERS & AUTH ---
         function setupEventListeners() {
-            DOMElements.sidebarToggle.addEventListener('click', () => {
-                DOMElements.sidebar.classList.remove('-translate-x-full');
-                DOMElements.sidebarOverlay.classList.remove('hidden');
-            });
-            DOMElements.sidebarOverlay.addEventListener('click', () => {
-                DOMElements.sidebar.classList.add('-translate-x-full');
-                DOMElements.sidebarOverlay.classList.add('hidden');
+            DOMElements.mobileMenuToggle.addEventListener('click', () => {
+                DOMElements.mobileMenu.classList.toggle('hidden');
             });
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             DOMElements.signoutButton.addEventListener('click', () => supabase.auth.signOut());
@@ -557,7 +647,6 @@
             </div>`;
 
         window.render_team_formation = () => {
-             // FIX: Added id="team-formation" to the main div
             const content = `
                 <div id="team-formation" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
@@ -602,7 +691,6 @@
                 else suplentesDiv.appendChild(playerEl);
             });
             setupDragAndDrop();
-            // FIX: Add event listener to date input
             document.getElementById('team-match-date').addEventListener('change', updateTeamCounts);
             document.getElementById('save-teams-button').addEventListener('click', handleSaveTeams);
         };
@@ -820,8 +908,7 @@
         // --- HELPERS & LOGIC ---
         function createDraggablePlayer(player) {
             const el = document.createElement('div');
-            // FIX: Refined classes for better "pill" appearance
-            el.className = 'player-draggable text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
+            el.className = 'player-draggable flex-grow-0 text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
             el.draggable = true;
             el.dataset.id = player.id;
             el.textContent = player.name;
@@ -847,18 +934,16 @@
                         return;
                     }
                     zone.appendChild(playerEl);
-                    // FIX: Check for the correct container ID
                     if (zone.closest('#team-formation')) {
                         updateTeamCounts();
                     }
                     if (zone.closest('#edit-match-content')) {
-                        // This part for edit-match was correct
+                        // Logic for edit match panel
                     }
                 });
             });
         }
         
-        // FIX: Corrected and enhanced logic
         function updateTeamCounts() {
             const clarosCount = document.getElementById('team-claros').children.length;
             const oscurosCount = document.getElementById('team-oscuros').children.length;
@@ -868,13 +953,11 @@
             document.getElementById('oscuros-count').textContent = oscurosCount;
             document.getElementById('total-selected-players').textContent = clarosCount + oscurosCount;
             
-            // FIX: Button is enabled only if teams are full AND date is selected
             document.getElementById('save-teams-button').disabled = !(clarosCount === 5 && oscurosCount === 5 && matchDate);
         }
 
         async function handleSaveTeams() {
             const matchDate = document.getElementById('team-match-date').value;
-            // This check is now slightly redundant due to button state, but good for safety
             if (!matchDate) { 
                 showToast('Por favor, selecciona la fecha del partido.', 'warning');
                 return;
@@ -894,12 +977,11 @@
                 showToast(`Error al crear el partido: ${error.message}`, 'error');
             } else {
                 showToast('Partido creado exitosamente!', 'success');
-                AppState.matches.unshift(data); // Add to local state
-                navigateTo('team-formation'); // Re-render tab
+                AppState.matches.unshift(data);
+                navigateTo('team-formation');
             }
         }
         
-        // FIX: Enhanced to auto-select the most recent match
         function populateMatchFilters(prefix) {
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
@@ -932,7 +1014,6 @@
 
                 listContainer.innerHTML = filteredMatches.map(match => {
                     const d = new Date(match.match_date);
-                    // Use UTC to prevent timezone off-by-one-day errors
                     const formattedDate = d.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'});
                     return `
                         <div class="match-item border-l-4 p-3 rounded-r-lg cursor-pointer transition" data-match-id="${match.id}">
@@ -953,7 +1034,6 @@
                     });
                 });
                 
-                // FIX: Auto-select first item
                 const firstItem = listContainer.querySelector('.match-item');
                 if (firstItem) {
                     firstItem.classList.add('selected');
@@ -1051,20 +1131,20 @@
             const currentVotes = match.chamigo_votes || {};
 
             playerIDs.forEach(id => {
-                const player = AppState.players.find(p => p.id === id);
+                const player = AppState.players.find(p => p.id == id);
                 if (!player) return;
                 
                 const voteCount = currentVotes[id] || 0;
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'chamigo-player-item flex items-center justify-between p-2 border border-border-color rounded-lg';
                 playerDiv.dataset.id = id;
-                // FIX: Corrected button styles for light mode
+                // FIX: Corrected button styles for light/dark mode
                 playerDiv.innerHTML = `
                     <span class="player-name">${player.name}</span>
                     <div class="chamigo-vote-controls flex items-center gap-2">
-                        <button class="chamigo-vote-btn subtract-vote w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors">-</button>
+                        <button class="chamigo-vote-btn subtract-vote w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">-</button>
                         <span class="chamigo-vote-counter font-bold w-6 text-center">${voteCount}</span>
-                        <button class="chamigo-vote-btn add-vote w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors">+</button>
+                        <button class="chamigo-vote-btn add-vote w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">+</button>
                     </div>`;
                 
                 playerDiv.querySelector('.add-vote').addEventListener('click', () => {
@@ -1122,7 +1202,7 @@
         }
         
         async function handleRegisterTt() {
-            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => parseInt(el.dataset.id));
+            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
             const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
             if (error) { showToast('Error al guardar asistencia a TT', 'error'); } 
             else {
@@ -1135,7 +1215,7 @@
         function renderPlayersListAdmin() {
             const tableBody = document.getElementById('players-list-admin');
             tableBody.innerHTML = AppState.players.map(p => `
-                <tr class="selectable-row border-b border-border-color hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" data-player-id="${p.id}">
+                <tr class="selectable-row border-b border-border-color cursor-pointer" data-player-id="${p.id}">
                     <td class="p-4">${p.id}</td><td class="p-4">${p.name}</td>
                     <td class="p-4">${p.status}</td><td class="p-4">${p.role}</td>
                 </tr>`).join('');
@@ -1187,7 +1267,7 @@
         function renderUsersListAdmin() {
             const tableBody = document.getElementById('users-list-admin');
             tableBody.innerHTML = AppState.users.map(u => `
-                <tr class="selectable-row border-b border-border-color hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" data-user-id="${u.id}">
+                <tr class="selectable-row border-b border-border-color cursor-pointer" data-user-id="${u.id}">
                     <td class="p-4">${u.email}</td>
                     <td class="p-4">${u.name || 'N/A'}</td>
                     <td class="p-4">${u.role || 'Sin Rol'}</td>
@@ -1259,8 +1339,8 @@
 
         async function handleUpdateMatch() {
             const newDate = document.getElementById('edit-match-date').value;
-            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => parseInt(el.dataset.id));
-            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => parseInt(el.dataset.id));
+            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
+            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => el.dataset.id);
             
             if (newTeamWhite.length + newTeamDark.length !== 10) {
                 showToast('Deben haber 10 jugadores en total para conformar los equipos.', 'warning');
