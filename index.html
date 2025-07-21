@@ -262,6 +262,10 @@
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-primary p-4 sm:p-6 lg:p-8">
                 <div id="stats-content-area" class="max-w-7xl mx-auto">
                     <!-- Contenido de las pestañas se insertará aquí -->
+                     <div class="flex items-center justify-center h-64">
+                        <i class="fas fa-spinner fa-spin text-4xl text-accent-color"></i>
+                        <p class="ml-4 text-lg text-secondary">Cargando datos iniciales...</p>
+                    </div>
                 </div>
             </main>
         </div>
@@ -599,10 +603,11 @@
         };
 
         // --- INITIALIZATION ---
-        function init() {
+        async function init() {
             setupTheme();
             setupNavigation();
-            loadInitialData();
+            // Wait for data before setting up the rest of the UI
+            await loadInitialData(); 
             
             DOMElements.mobileMenuToggle.addEventListener('click', toggleMobileMenu);
             DOMElements.mobileMenuOverlay.addEventListener('click', toggleMobileMenu);
@@ -622,10 +627,11 @@
                 allMatches = matchesRes.data;
                 isDataLoaded = true;
                 
-                handleHashChange(); // Load data for the initial or hashed tab
+                // Now that data is loaded, handle the initial view
+                handleHashChange();
             } catch (error) {
                 console.error("Error loading initial data:", error);
-                DOMElements.contentArea.innerHTML = `<div class="card p-6 text-center text-danger-color">Error al cargar los datos. Por favor, recarga la página.</div>`;
+                DOMElements.contentArea.innerHTML = `<div class="card p-6 text-center text-red-500">Error al cargar los datos. Mensaje: ${error.message}. Por favor, recarga la página.</div>`;
             }
         }
 
@@ -639,7 +645,6 @@
                 const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
                 applyTheme(newTheme);
             });
-            // Mobile dark mode button will be created dynamically
         }
 
         function applyTheme(theme) {
@@ -652,7 +657,7 @@
             const isDark = document.documentElement.classList.contains('dark');
             const toggleButtons = [
                 DOMElements.desktopDarkModeToggle, 
-                document.getElementById('mobile-dark-mode-toggle') // This might not exist yet
+                document.getElementById('mobile-dark-mode-toggle')
             ];
 
             toggleButtons.forEach(btn => {
@@ -667,7 +672,6 @@
         }
 
         function setupNavigation() {
-            // Populate nav bars
             DOMElements.mainNav.innerHTML = TABS.map(tab => `
                 <a href="#${tab.id}" data-tab="${tab.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200">
                     <i class="fas ${tab.icon} w-5 text-center"></i><span>${tab.name}</span>
@@ -711,12 +715,10 @@
             if (!isDataLoaded) return;
             const hash = window.location.hash.substring(1) || TABS[0].id;
             
-            // Activate nav link
             document.querySelectorAll('.nav-link').forEach(tb => {
                 tb.classList.toggle('active', tb.dataset.tab === hash);
             });
 
-            // Render content
             const template = document.getElementById(`template-${hash}-content`);
             if (template) {
                 DOMElements.contentArea.innerHTML = '';
@@ -734,9 +736,10 @@
         // --- DATA CALCULATION ---
         function getStatsForPeriod(year, period) {
             const filteredMatches = allMatches.filter(match => {
+                // Supabase date format 'YYYY-MM-DD' is safe for this constructor
                 const matchDate = new Date(match.match_date);
-                const matchYear = matchDate.getFullYear();
-                const matchMonth = matchDate.getMonth(); // 0-11
+                const matchYear = matchDate.getUTCFullYear();
+                const matchMonth = matchDate.getUTCMonth(); // 0-11
                 
                 if (matchYear != year) return false;
                 if (period === 'total') return true;
@@ -797,7 +800,7 @@
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const periodSelect = document.getElementById(`${prefix}-period-select`);
             
-            const years = [...new Set(allMatches.map(m => new Date(m.match_date).getFullYear()))].sort((a, b) => b - a);
+            const years = [...new Set(allMatches.map(m => new Date(m.match_date).getUTCFullYear()))].sort((a, b) => b - a);
             yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
 
             const today = new Date();
@@ -978,8 +981,8 @@
             
             const filteredMatches = allMatches.filter(match => {
                 const matchDate = new Date(match.match_date);
-                const matchYear = matchDate.getFullYear();
-                const matchMonth = matchDate.getMonth();
+                const matchYear = matchDate.getUTCFullYear();
+                const matchMonth = matchDate.getUTCMonth();
                 if (matchYear != year) return false;
                 if (period === 'total') return true;
                 if (period === 'apertura') return matchMonth < 6;
@@ -1016,7 +1019,7 @@
             const yearSelect = document.getElementById('fixture-year-select');
             const monthSelect = document.getElementById('fixture-month-select');
             
-            const years = [...new Set(allMatches.map(m => new Date(m.match_date).getFullYear()))].sort((a, b) => b - a);
+            const years = [...new Set(allMatches.map(m => new Date(m.match_date).getUTCFullYear()))].sort((a, b) => b - a);
             const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             
             yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
@@ -1043,7 +1046,7 @@
 
             const filteredMatches = allMatches.filter(match => {
                 const matchDate = new Date(match.match_date);
-                return matchDate.getFullYear() == year && matchDate.getMonth() == month;
+                return matchDate.getUTCFullYear() == year && matchDate.getUTCMonth() == month;
             });
 
             if (filteredMatches.length === 0) {
@@ -1175,20 +1178,20 @@
 
             const statsByYear = {};
             playerMatches.forEach(match => {
-                const year = new Date(match.match_date).getFullYear();
+                const year = new Date(match.match_date).getUTCFullYear();
                 if (!statsByYear[year]) {
                     statsByYear[year] = { 
-                        apertura: {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0, ausentes:0},
-                        clausura: {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0, ausentes:0},
-                        total: {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0, ausentes:0}
+                        apertura: null,
+                        clausura: null,
+                        total: null
                     };
                 }
             });
             
             Object.keys(statsByYear).forEach(year => {
-                statsByYear[year].apertura = getStatsForPeriod(year, 'apertura').find(p => p.id == playerId);
-                statsByYear[year].clausura = getStatsForPeriod(year, 'clausura').find(p => p.id == playerId);
-                statsByYear[year].total = getStatsForPeriod(year, 'total').find(p => p.id == playerId);
+                statsByYear[year].apertura = getStatsForPeriod(year, 'apertura').find(p => p.id == playerId) || {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0, ausentes:0, efectividad: "0.00"};
+                statsByYear[year].clausura = getStatsForPeriod(year, 'clausura').find(p => p.id == playerId) || {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0, ausentes:0, efectividad: "0.00"};
+                statsByYear[year].total = getStatsForPeriod(year, 'total').find(p => p.id == playerId) || {pj:0,pg:0,pe:0,pp:0,points:0,chamigos:0,tt:0, ausentes:0, efectividad: "0.00"};
             });
             
             let html = '';
@@ -1206,8 +1209,8 @@
             Object.keys(statsByYear).sort((a,b) => b-a).forEach(year => {
                 const yearData = statsByYear[year];
                 html += renderRow(year, 'Total Anual', yearData.total);
-                html += renderRow('', 'Apertura', yearData.apertura);
-                html += renderRow('', 'Clausura', yearData.clausura);
+                if (yearData.apertura.pj > 0) html += renderRow('', 'Apertura', yearData.apertura);
+                if (yearData.clausura.pj > 0) html += renderRow('', 'Clausura', yearData.clausura);
             });
             
             tableBody.innerHTML = html;
