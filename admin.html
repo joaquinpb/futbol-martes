@@ -26,6 +26,7 @@
             --sidebar-bg: #111827;
             --sidebar-text: #e5e7eb;
             --sidebar-active-bg: #4f46e5;
+            --sidebar-active-text: #ffffff;
             --sidebar-hover-bg: #374151;
             --text-primary: #111827;
             --text-secondary: #4b5563;
@@ -43,15 +44,13 @@
             --sidebar-bg: #111827;
             --sidebar-text: #e5e7eb;
             --sidebar-active-bg: #4f46e5;
+            --sidebar-active-text: #ffffff;
             --sidebar-hover-bg: #374151;
             --text-primary: #f9fafb;
             --text-secondary: #d1d5db;
             --border-color: #374151;
             --accent-color: #6366f1;
             --accent-color-hover: #818cf8;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
-            --warning-color: #f59e0b;
         }
 
         body {
@@ -82,6 +81,12 @@
         ::-webkit-scrollbar-thumb:hover { background: #555; }
         html.dark ::-webkit-scrollbar-thumb { background: #555; }
         html.dark ::-webkit-scrollbar-thumb:hover { background: #888; }
+
+        /* Sidebar active link text color */
+        .nav-link.active {
+            background-color: var(--sidebar-active-bg);
+            color: var(--sidebar-active-text);
+        }
 
         /* Player Draggable Styles */
         .player-draggable {
@@ -122,6 +127,13 @@
         }
         html.dark .selectable-row.selected {
              background-color: rgba(99, 102, 241, 0.2) !important;
+        }
+        
+        /* TT Player Item Style */
+        .tt-player-item.selected {
+            background-color: var(--accent-color);
+            color: var(--sidebar-active-text);
+            border-color: var(--accent-color-hover);
         }
 
     </style>
@@ -324,7 +336,20 @@
                 }
 
                 setupUI();
-                navigateTo(NAV_ITEMS.main[0].id);
+                
+                const savedTab = localStorage.getItem('lastAdminTab');
+                const allNavItems = [...NAV_ITEMS.main, ...NAV_ITEMS.admin];
+                const isValidTab = allNavItems.some(item => item.id === savedTab);
+                let initialTab = NAV_ITEMS.main[0].id;
+
+                if (isValidTab) {
+                    const navItem = allNavItems.find(item => item.id === savedTab);
+                    const isAdminTab = NAV_ITEMS.admin.some(item => item.id === savedTab);
+                    if (!isAdminTab || (isAdminTab && AppState.userRole === 'Admin')) {
+                        initialTab = savedTab;
+                    }
+                }
+                navigateTo(initialTab);
 
             } catch (error) {
                 console.error("Fatal error during admin panel setup:", error);
@@ -419,13 +444,13 @@
         
         function navigateTo(tabId) {
             document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.toggle('bg-sidebar-active-bg', link.dataset.tab === tabId);
-                link.classList.toggle('text-white', link.dataset.tab === tabId);
+                link.classList.toggle('active', link.dataset.tab === tabId);
             });
             
             const renderFunction = window[`render_${tabId.replace(/-/g, '_')}`];
             if (typeof renderFunction === 'function') {
                 renderFunction();
+                localStorage.setItem('lastAdminTab', tabId);
             } else {
                 DOMElements.adminContent.innerHTML = `<h1 class="text-2xl font-bold">Contenido para ${tabId} no implementado.</h1>`;
             }
@@ -947,7 +972,7 @@
                 
                 const voteCount = currentVotes[id] || 0;
                 const playerDiv = document.createElement('div');
-                playerDiv.className = 'chamigo-player-item flex items-center justify-between p-2 border rounded-lg';
+                playerDiv.className = 'chamigo-player-item flex items-center justify-between p-2 border border-border-color rounded-lg';
                 playerDiv.dataset.id = id;
                 playerDiv.innerHTML = `
                     <span class="player-name">${player.name}</span>
@@ -993,20 +1018,26 @@
 
             activePlayers.forEach(player => {
                 const playerDiv = document.createElement('div');
-                playerDiv.className = 'tt-player-item p-2 border rounded-lg cursor-pointer text-center';
-                if (existingAttendees.includes(player.id)) playerDiv.classList.add('bg-accent-color', 'text-white');
+                playerDiv.className = 'tt-player-item p-2 border border-border-color rounded-lg cursor-pointer text-center flex items-center justify-center gap-2';
+                if (existingAttendees.includes(player.id)) {
+                    playerDiv.classList.add('selected');
+                }
                 playerDiv.dataset.id = player.id;
-                playerDiv.textContent = player.name;
+                playerDiv.innerHTML = `<i class="fas fa-check-circle text-white hidden"></i><span>${player.name}</span>`;
+                
+                const icon = playerDiv.querySelector('i');
+                icon.style.display = playerDiv.classList.contains('selected') ? 'inline' : 'none';
+
                 playerDiv.addEventListener('click', () => {
-                    playerDiv.classList.toggle('bg-accent-color');
-                    playerDiv.classList.toggle('text-white');
+                    playerDiv.classList.toggle('selected');
+                    icon.style.display = playerDiv.classList.contains('selected') ? 'inline' : 'none';
                 });
                 container.appendChild(playerDiv);
             });
         }
         
         async function handleRegisterTt() {
-            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .bg-accent-color')).map(el => el.dataset.id);
+            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
             const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
             if (error) { showToast('Error al guardar asistencia a TT', 'error'); } 
             else {
@@ -1129,8 +1160,14 @@
             AppState.players.filter(p => p.status === 'Activo' && !matchPlayerIds.has(p.id))
                 .forEach(p => availablePlayersDiv.appendChild(createDraggablePlayer(p)));
 
-            (match.team_white_players || []).forEach(id => teamClarosDiv.appendChild(createDraggablePlayer(AppState.players.find(p => p.id === id))));
-            (match.team_dark_players || []).forEach(id => teamOscurosDiv.appendChild(createDraggablePlayer(AppState.players.find(p => p.id === id))));
+            (match.team_white_players || []).forEach(id => {
+                const player = AppState.players.find(p => p.id === id);
+                if (player) teamClarosDiv.appendChild(createDraggablePlayer(player));
+            });
+            (match.team_dark_players || []).forEach(id => {
+                const player = AppState.players.find(p => p.id === id);
+                if (player) teamOscurosDiv.appendChild(createDraggablePlayer(player));
+            });
             
             setupDragAndDrop();
         }
@@ -1140,7 +1177,7 @@
             const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
             const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => el.dataset.id);
             
-            if (newTeamWhite.length + newTeamDark.length < 10) {
+            if (newTeamWhite.length + newTeamDark.length !== 10) {
                 showToast('Deben haber 10 jugadores en total.', 'warning');
                 return;
             }
