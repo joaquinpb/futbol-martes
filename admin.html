@@ -98,6 +98,18 @@
         html.dark .match-item.no-result { background-color: rgba(239, 68, 68, 0.1); }
         html.dark .match-item.has-result { background-color: rgba(16, 185, 129, 0.1); }
         .match-item.selected { border-color: var(--accent-color); box-shadow: 0 0 0 2px var(--accent-color); }
+        
+        /* Table row selection style */
+        .selectable-row.selected {
+            background-color: rgba(79, 70, 229, 0.1) !important;
+            --tw-ring-color: var(--accent-color);
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            outline-color: var(--accent-color);
+        }
+        html.dark .selectable-row.selected {
+             background-color: rgba(99, 102, 241, 0.2) !important;
+        }
 
     </style>
 </head>
@@ -210,8 +222,8 @@
             matches: [],
             users: [],
             userRole: null,
-            selectedMatchIds: {},
-            currentDraggedPlayer: null,
+            selectedMatchId: null, // Unified selected match ID
+            currentDraggedPlayerId: null,
             isInitializing: false,
         };
 
@@ -240,7 +252,6 @@
             mainNav: document.getElementById('main-nav'),
             authContainer: document.getElementById('auth-container'),
             adminContent: document.getElementById('admin-content'),
-            adminContentArea: document.getElementById('admin-content-area'),
             loadingContainer: document.getElementById('loading-container'),
             loginForm: document.getElementById('login-form'),
             signoutButton: document.getElementById('signout_button'),
@@ -279,56 +290,40 @@
             DOMElements.adminContent.classList.add('hidden');
             
             try {
-                // Fetch profile first, as it determines other fetches
                 const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-                if (profileError) {
-                    console.error("Error fetching user profile:", profileError);
-                    showToast("No se pudo verificar el rol del usuario.", "warning");
-                    AppState.userRole = null;
-                } else {
-                    AppState.userRole = profile ? profile.role : null;
-                }
+                AppState.userRole = profile ? profile.role : null;
 
-                // Fetch main data concurrently, but handle errors gracefully using Promise.allSettled
                 const [playersRes, matchesRes, usersRes] = await Promise.allSettled([
                     supabase.from('players').select('*').order('id', { ascending: true }),
                     supabase.from('matches').select('*').order('match_date', { ascending: false }),
                     AppState.userRole === 'Admin' ? supabase.rpc('get_all_users_with_roles') : Promise.resolve({ data: [], error: null })
                 ]);
 
-                if (playersRes.status === 'fulfilled' && !playersRes.value.error) {
-                    AppState.players = playersRes.value.data || [];
-                } else {
+                AppState.players = (playersRes.status === 'fulfilled' && !playersRes.value.error) ? (playersRes.value.data || []) : [];
+                if (playersRes.status === 'rejected' || (playersRes.value && playersRes.value.error)) {
                     console.error("Error fetching players:", playersRes.reason || playersRes.value.error);
                     showToast("Error al cargar la lista de jugadores.", "error");
-                    AppState.players = [];
                 }
 
-                if (matchesRes.status === 'fulfilled' && !matchesRes.value.error) {
-                    AppState.matches = matchesRes.value.data || [];
-                } else {
+                AppState.matches = (matchesRes.status === 'fulfilled' && !matchesRes.value.error) ? (matchesRes.value.data || []) : [];
+                 if (matchesRes.status === 'rejected' || (matchesRes.value && matchesRes.value.error)) {
                     console.error("Error fetching matches:", matchesRes.reason || matchesRes.value.error);
                     showToast("Error al cargar la lista de partidos.", "error");
-                    AppState.matches = [];
                 }
                 
                 if (AppState.userRole === 'Admin') {
-                    if (usersRes.status === 'fulfilled' && usersRes.value && !usersRes.value.error) {
-                        AppState.users = usersRes.value.data || [];
-                    } else {
+                    AppState.users = (usersRes.status === 'fulfilled' && usersRes.value && !usersRes.value.error) ? (usersRes.value.data || []) : [];
+                    if (usersRes.status === 'rejected' || (usersRes.value && usersRes.value.error)) {
                         console.error("Error fetching users:", usersRes.reason || (usersRes.value ? usersRes.value.error : 'Unknown error'));
                         showToast("Error al cargar la lista de usuarios (Admin).", "error");
-                        AppState.users = [];
                     }
                 }
 
-                // After fetching, setup the UI
                 setupUI();
                 const initialTab = NAV_ITEMS.main[0].id;
                 navigateTo(initialTab);
 
             } catch (error) {
-                // A catch-all for any unexpected synchronous errors during setup
                 console.error("Fatal error during admin panel setup:", error);
                 showToast("Ocurrió un error inesperado al cargar el panel.", "error");
                 await supabase.auth.signOut();
@@ -370,7 +365,6 @@
         }
 
         function setupUI() {
-            // Populate sidebar
             let navHtml = `
                 <div>
                     <span class="px-4 text-xs font-semibold uppercase text-gray-400">Principal</span>
@@ -408,12 +402,11 @@
 
             DOMElements.mainNav.innerHTML = navHtml;
             
-            // Add event listeners to new nav links
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     navigateTo(e.currentTarget.dataset.tab);
-                    if (window.innerWidth < 768) { // Close sidebar on mobile
+                    if (window.innerWidth < 768) {
                         DOMElements.sidebar.classList.add('-translate-x-full');
                         DOMElements.sidebarOverlay.classList.add('hidden');
                     }
@@ -422,14 +415,12 @@
         }
         
         function navigateTo(tabId) {
-            // Update active link style
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('bg-sidebar-active-bg', link.dataset.tab === tabId);
                 link.classList.toggle('text-white', link.dataset.tab === tabId);
             });
             
-            // Render content for the new tab
-            const renderFunction = window[`render${tabId.replace(/-/g, '_')}`];
+            const renderFunction = window[`render_${tabId.replace(/-/g, '_')}`];
             if (typeof renderFunction === 'function') {
                 renderFunction();
             } else {
@@ -437,7 +428,7 @@
             }
         }
 
-        // --- EVENT LISTENERS ---
+        // --- EVENT LISTENERS & AUTH ---
         function setupEventListeners() {
             DOMElements.sidebarToggle.addEventListener('click', () => {
                 DOMElements.sidebar.classList.remove('-translate-x-full');
@@ -447,23 +438,20 @@
                 DOMElements.sidebar.classList.add('-translate-x-full');
                 DOMElements.sidebarOverlay.classList.add('hidden');
             });
-
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             DOMElements.signoutButton.addEventListener('click', () => supabase.auth.signOut());
         }
 
-        // --- AUTHENTICATION ---
         async function handleLogin(e) {
             e.preventDefault();
             const loginButton = document.getElementById('login-button');
             loginButton.disabled = true;
             loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
             
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            DOMElements.authStatus.textContent = '';
-
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            const { error } = await supabase.auth.signInWithPassword({ 
+                email: document.getElementById('email').value, 
+                password: document.getElementById('password').value 
+            });
 
             if (error) {
                 DOMElements.authStatus.textContent = 'Email o contraseña incorrectos.';
@@ -473,17 +461,13 @@
         }
 
         // --- RENDER FUNCTIONS FOR TABS ---
-        
-        // Template for a tab's content
         const tabContentTemplate = (title, content) => `
             <div class="space-y-6">
                 <h1 class="text-3xl font-bold tracking-tight">${title}</h1>
                 ${content}
-            </div>
-        `;
+            </div>`;
 
-        // Render "Armar Equipos"
-        window.renderteam_formation = () => {
+        window.render_team_formation = () => {
             const content = `
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
@@ -517,83 +501,151 @@
                             Guardar Partido
                         </button>
                     </div>
-                </div>
-            `;
+                </div>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Armar Equipos', content);
             
-            // Post-render logic
             const titularesDiv = document.getElementById('titulares-players');
             const suplentesDiv = document.getElementById('suplentes-players');
-            
             AppState.players.filter(p => p.status === 'Activo').forEach(player => {
                 const playerEl = createDraggablePlayer(player);
-                if (player.role === 'Titular') {
-                    titularesDiv.appendChild(playerEl);
-                } else {
-                    suplentesDiv.appendChild(playerEl);
-                }
+                if (player.role === 'Titular') titularesDiv.appendChild(playerEl);
+                else suplentesDiv.appendChild(playerEl);
             });
-            
             setupDragAndDrop();
             document.getElementById('save-teams-button').addEventListener('click', handleSaveTeams);
         };
 
-        // Render "Resultados"
+        const renderMatchSelectionTemplate = (prefix, panelContent) => `
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1 card rounded-xl shadow-sm p-6">
+                    <h3 class="text-xl font-semibold mb-4">Seleccionar Partido</h3>
+                    <div class="flex gap-2 mb-4">
+                        <select id="${prefix}-year-select" class="w-full bg-transparent border-border-color rounded-md"></select>
+                        <select id="${prefix}-month-select" class="w-full bg-transparent border-border-color rounded-md"></select>
+                    </div>
+                    <div id="${prefix}-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                       <p class="text-secondary">Cargando partidos...</p>
+                    </div>
+                </div>
+                 <div id="${prefix}-selection-panel" class="lg:col-span-2 card rounded-xl shadow-sm p-6 hidden">
+                    ${panelContent}
+                </div>
+            </div>`;
+
         window.render_match_results = () => {
+            const panelContent = `
+                <h3 class="text-xl font-semibold mb-4">Registrar Resultado</h3>
+                <div class="space-y-4">
+                     <div>
+                        <label class="block text-sm font-medium mb-1">Fecha del Partido</label>
+                        <input type="date" id="match-date" class="w-full p-2 border border-border-color rounded-md bg-gray-100 dark:bg-gray-800" readonly>
+                     </div>
+                     <div>
+                        <label for="match-result" class="block text-sm font-medium mb-1">Resultado</label>
+                        <select id="match-result" class="w-full p-2 border border-border-color rounded-md bg-transparent">
+                             <option value="">Seleccionar resultado</option>
+                             <option value="Claros">Claros</option>
+                             <option value="Oscuros">Oscuros</option>
+                             <option value="Empate">Empate</option>
+                             <option value="Suspendido">Suspendido</option>
+                        </select>
+                     </div>
+                     <div class="flex gap-4 pt-4">
+                        <button id="register-match-button" class="flex-1 px-6 py-3 bg-success-color text-white font-semibold rounded-lg shadow-md hover:opacity-90 transition">
+                         Registrar Resultado
+                        </button>
+                        <button id="delete-match-button" class="flex-1 px-6 py-3 bg-danger-color text-white font-semibold rounded-lg shadow-md hover:opacity-90 transition">
+                         Eliminar Partido
+                        </button>
+                     </div>
+                </div>`;
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Resultados de Partidos', renderMatchSelectionTemplate('results', panelContent));
+            populateMatchFilters('results');
+        };
+        
+        window.render_chamigo_management = () => {
+            const panelContent = `
+                <h3 class="text-xl font-semibold mb-4">Registrar Votos de Chamigo</h3>
+                <div id="chamigo-voting-players" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 max-h-[50vh] overflow-y-auto">
+                    <p class="text-secondary col-span-full">Selecciona un partido para cargar los jugadores.</p>
+                </div>
+                <button id="register-chamigo-button" class="w-full mt-4 px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition">
+                    Registrar Chamigo(s)
+                </button>`;
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Chamigo', renderMatchSelectionTemplate('chamigo', panelContent));
+            populateMatchFilters('chamigo');
+        };
+
+        window.render_tt_attendance = () => {
+             const panelContent = `
+                <h3 class="text-xl font-semibold mb-4">Registrar Asistencia a Tercer Tiempo</h3>
+                <div id="tt-attendance-players" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4 max-h-[50vh] overflow-y-auto">
+                    <p class="text-secondary col-span-full">Selecciona un partido para cargar los jugadores.</p>
+                </div>
+                <button id="register-tt-button" class="w-full mt-4 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition">
+                    Registrar Asistencia
+                </button>`;
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Asistencia a TT', renderMatchSelectionTemplate('tt', panelContent));
+            populateMatchFilters('tt');
+        };
+
+        window.render_edit_match = () => { DOMElements.adminContent.innerHTML = 'Edit Match'; };
+        window.render_players_management = () => {
             const content = `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-1 card rounded-xl shadow-sm p-6">
-                        <h3 class="text-xl font-semibold mb-4">Seleccionar Partido</h3>
-                        <div class="flex gap-2 mb-4">
-                            <select id="results-year-select" class="w-full bg-transparent border-border-color rounded-md"></select>
-                            <select id="results-month-select" class="w-full bg-transparent border-border-color rounded-md"></select>
-                        </div>
-                        <div id="results-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-                           <p class="text-secondary">Cargando partidos...</p>
-                        </div>
-                    </div>
-                     <div id="results-selection-panel" class="lg:col-span-2 card rounded-xl shadow-sm p-6 hidden">
-                        <h3 class="text-xl font-semibold mb-4">Registrar Resultado</h3>
-                        <div class="space-y-4">
-                             <div>
-                                <label class="block text-sm font-medium mb-1">Fecha del Partido</label>
-                                <input type="date" id="match-date" class="w-full p-2 border border-border-color rounded-md bg-gray-100 dark:bg-gray-800" readonly>
-                             </div>
-                             <div>
-                                <label for="match-result" class="block text-sm font-medium mb-1">Resultado</label>
-                                <select id="match-result" class="w-full p-2 border border-border-color rounded-md bg-transparent">
-                                     <option value="">Seleccionar resultado</option>
-                                     <option value="Claros">Claros</option>
-                                     <option value="Oscuros">Oscuros</option>
-                                     <option value="Empate">Empate</option>
-                                     <option value="Suspendido">Suspendido</option>
+                        <h3 class="text-xl font-semibold mb-4">Añadir/Modificar Jugador</h3>
+                        <form id="player-form" class="space-y-4">
+                            <input type="hidden" id="player-id">
+                            <div>
+                                <label for="player-name" class="block text-sm font-medium mb-1">Nombre</label>
+                                <input type="text" id="player-name" class="w-full p-2 border border-border-color rounded-md bg-transparent" required>
+                            </div>
+                            <div>
+                                <label for="player-status" class="block text-sm font-medium mb-1">Estado</label>
+                                <select id="player-status" class="w-full p-2 border border-border-color rounded-md bg-transparent">
+                                    <option value="Activo">Activo</option>
+                                    <option value="Inactivo">Inactivo</option>
                                 </select>
-                             </div>
-                             <div class="flex gap-4 pt-4">
-                                <button id="register-match-button" class="flex-1 px-6 py-3 bg-success-color text-white font-semibold rounded-lg shadow-md hover:opacity-90 transition">
-                                 Registrar Resultado
-                                </button>
-                                <button id="delete-match-button" class="flex-1 px-6 py-3 bg-danger-color text-white font-semibold rounded-lg shadow-md hover:opacity-90 transition">
-                                 Eliminar Partido
-                                </button>
-                             </div>
+                            </div>
+                            <div>
+                                <label for="player-role" class="block text-sm font-medium mb-1">Rol</label>
+                                <select id="player-role" class="w-full p-2 border border-border-color rounded-md bg-transparent">
+                                    <option value="Titular">Titular</option>
+                                    <option value="Suplente">Suplente</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-3 pt-2">
+                                <button type="submit" class="flex-1 px-4 py-2 bg-success-color text-white font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
+                                <button type="button" id="clear-player-form-button" class="flex-1 px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="lg:col-span-2 card rounded-xl shadow-sm p-6">
+                        <h3 class="text-xl font-semibold mb-4">Listado de Jugadores</h3>
+                        <div class="overflow-x-auto max-h-[60vh]">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-800">
+                                    <tr>
+                                        <th class="p-4">ID</th>
+                                        <th class="p-4">Nombre</th>
+                                        <th class="p-4">Estado</th>
+                                        <th class="p-4">Rol</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="players-list-admin"></tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
-            `;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Resultados de Partidos', content);
-            populateMatchFilters('results');
+                </div>`;
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Jugadores', content);
+            renderPlayersListAdmin();
+            document.getElementById('player-form').addEventListener('submit', handleSavePlayer);
+            document.getElementById('clear-player-form-button').addEventListener('click', clearPlayerForm);
         };
-
-        // Placeholder for other render functions
-        window.renderchamigo_management = () => { DOMElements.adminContent.innerHTML = 'Chamigo Management'; };
-        window.rendertt_attendance = () => { DOMElements.adminContent.innerHTML = 'TT Attendance'; };
-        window.renderedit_match = () => { DOMElements.adminContent.innerHTML = 'Edit Match'; };
-        window.renderplayers_management = () => { DOMElements.adminContent.innerHTML = 'Players Management'; };
-        window.renderuser_management = () => { DOMElements.adminContent.innerHTML = 'User Management'; };
+        window.render_user_management = () => { DOMElements.adminContent.innerHTML = 'User Management'; };
 
         // --- HELPERS & LOGIC ---
-
         function createDraggablePlayer(player) {
             const el = document.createElement('div');
             el.className = 'player-draggable bg-gray-200 dark:bg-gray-700 text-sm font-medium px-3 py-1 rounded-full shadow-sm';
@@ -610,22 +662,16 @@
 
         function setupDragAndDrop() {
             document.querySelectorAll('.player-drop-zone').forEach(zone => {
-                zone.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    zone.classList.add('drag-over');
-                });
+                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
                 zone.addEventListener('dragleave', e => zone.classList.remove('drag-over'));
                 zone.addEventListener('drop', e => {
                     e.preventDefault();
                     zone.classList.remove('drag-over');
                     const playerId = e.dataTransfer.getData('text/plain');
                     const playerEl = document.querySelector(`.player-draggable[data-id="${playerId}"]`);
-                    
-                    if (zone.id.startsWith('team-')) {
-                        if (zone.children.length >= 5) {
-                            showToast('El equipo ya tiene 5 jugadores.', 'warning');
-                            return;
-                        }
+                    if (zone.id.startsWith('team-') && zone.children.length >= 5) {
+                        showToast('El equipo ya tiene 5 jugadores.', 'warning');
+                        return;
                     }
                     zone.appendChild(playerEl);
                     updateTeamCounts();
@@ -651,27 +697,26 @@
             const teamWhitePlayers = Array.from(document.getElementById('team-claros').children).map(el => el.dataset.id);
             const teamDarkPlayers = Array.from(document.getElementById('team-oscuros').children).map(el => el.dataset.id);
 
-            const { error } = await supabase.from('matches').insert([{ 
+            const { data, error } = await supabase.from('matches').insert([{ 
                 match_date: matchDate,
                 team_white_players: teamWhitePlayers,
                 team_dark_players: teamDarkPlayers,
                 chamigo_votes: {},
                 tt_attendees: []
-            }]);
+            }]).select().single();
 
             if (error) {
                 showToast(`Error al crear el partido: ${error.message}`, 'error');
             } else {
                 showToast('Partido creado exitosamente!', 'success');
-                AppState.matches.unshift({match_date: matchDate, team_white_players: teamWhitePlayers, team_dark_players: teamDarkPlayers}); // Add to local cache
-                navigateTo('team-formation'); // Re-render tab
+                AppState.matches.unshift(data);
+                navigateTo('team-formation');
             }
         }
         
         function populateMatchFilters(prefix) {
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
-            const listContainer = document.getElementById(`${prefix}-list`);
             
             const years = [...new Set(AppState.matches.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a);
             yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
@@ -680,10 +725,11 @@
             monthSelect.innerHTML = months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
             
             const today = new Date();
-            yearSelect.value = today.getFullYear();
+            if (years.includes(today.getFullYear())) yearSelect.value = today.getFullYear();
             monthSelect.value = today.getMonth();
 
             const renderList = () => {
+                const listContainer = document.getElementById(`${prefix}-list`);
                 const selectedYear = yearSelect.value;
                 const selectedMonth = monthSelect.value;
                 const filteredMatches = AppState.matches.filter(m => {
@@ -703,8 +749,7 @@
                         <div class="match-item border-l-4 p-3 rounded-r-lg cursor-pointer transition ${match.result ? 'has-result' : 'no-result'}" data-match-id="${match.id}">
                             <p class="font-semibold">${formattedDate}</p>
                             <p class="text-xs text-secondary">Resultado: ${match.result || 'Pendiente'}</p>
-                        </div>
-                    `;
+                        </div>`;
                 }).join('');
 
                 listContainer.querySelectorAll('.match-item').forEach(item => {
@@ -722,59 +767,230 @@
         }
 
         function handleMatchSelection(matchId, prefix) {
+            AppState.selectedMatchId = matchId;
             const match = AppState.matches.find(m => m.id == matchId);
             if (!match) return;
             
+            const panel = document.getElementById(`${prefix}-selection-panel`);
+            panel.classList.remove('hidden');
+
             if (prefix === 'results') {
-                const panel = document.getElementById('results-selection-panel');
-                panel.classList.remove('hidden');
                 panel.querySelector('#match-date').value = match.match_date;
                 panel.querySelector('#match-result').value = match.result || '';
-                
-                // Add listeners if they don't exist
                 if (!panel.dataset.listenersAdded) {
-                    panel.querySelector('#register-match-button').addEventListener('click', async () => {
-                        const result = panel.querySelector('#match-result').value;
-                        const { error } = await supabase.from('matches').update({ result }).eq('id', matchId);
-                        if(error) showToast('Error al registrar resultado', 'error');
-                        else {
-                             showToast('Resultado registrado!', 'success');
-                             match.result = result; // Update local cache
-                             populateMatchFilters('results');
-                        }
-                    });
-                     panel.querySelector('#delete-match-button').addEventListener('click', async () => {
-                        const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
-                        if (confirmed) {
-                            const { error } = await supabase.from('matches').delete().eq('id', matchId);
-                            if(error) showToast('Error al eliminar partido', 'error');
-                            else {
-                                showToast('Partido eliminado.', 'success');
-                                AppState.matches = AppState.matches.filter(m => m.id != matchId);
-                                panel.classList.add('hidden');
-                                populateMatchFilters('results');
-                            }
-                        }
-                    });
-                    panel.dataset.listenersAdded = true;
+                    panel.querySelector('#register-match-button').addEventListener('click', handleRegisterResult);
+                    panel.querySelector('#delete-match-button').addEventListener('click', handleDeleteMatch);
+                    panel.dataset.listenersAdded = 'true';
+                }
+            } else if (prefix === 'chamigo') {
+                renderChamigoVotingPlayers(match);
+                 if (!panel.dataset.listenersAdded) {
+                    panel.querySelector('#register-chamigo-button').addEventListener('click', handleRegisterChamigo);
+                    panel.dataset.listenersAdded = 'true';
+                }
+            } else if (prefix === 'tt') {
+                renderTtAttendancePlayers(match);
+                if (!panel.dataset.listenersAdded) {
+                    panel.querySelector('#register-tt-button').addEventListener('click', handleRegisterTt);
+                    panel.dataset.listenersAdded = 'true';
                 }
             }
         }
 
+        async function handleRegisterResult() {
+            const result = document.getElementById('match-result').value;
+            const { error } = await supabase.from('matches').update({ result }).eq('id', AppState.selectedMatchId);
+            if(error) {
+                showToast('Error al registrar resultado', 'error');
+            } else {
+                 showToast('Resultado registrado!', 'success');
+                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
+                 if (matchInState) matchInState.result = result;
+                 populateMatchFilters('results');
+            }
+        }
+        
+        async function handleDeleteMatch() {
+            const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
+            if (confirmed) {
+                const { error } = await supabase.from('matches').delete().eq('id', AppState.selectedMatchId);
+                if(error) {
+                    showToast('Error al eliminar partido', 'error');
+                } else {
+                    showToast('Partido eliminado.', 'success');
+                    AppState.matches = AppState.matches.filter(m => m.id != AppState.selectedMatchId);
+                    document.getElementById('results-selection-panel').classList.add('hidden');
+                    populateMatchFilters('results');
+                }
+            }
+        }
+        
+        function renderChamigoVotingPlayers(match) {
+            const container = document.getElementById('chamigo-voting-players');
+            container.innerHTML = '';
+            const playerIDs = [...new Set([...(match.team_white_players||[]), ...(match.team_dark_players||[])])];
+            const currentVotes = match.chamigo_votes || {};
+
+            playerIDs.forEach(id => {
+                const player = AppState.players.find(p => p.id === id);
+                if (!player) return;
+                
+                const voteCount = currentVotes[id] || 0;
+                
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'chamigo-player-item flex items-center justify-between p-2 border border-border-color rounded-lg';
+                playerDiv.dataset.id = id;
+                playerDiv.innerHTML = `
+                    <span class="player-name">${player.name}</span>
+                    <div class="chamigo-vote-controls flex items-center gap-2">
+                        <button class="chamigo-vote-btn subtract-vote w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600">-</button>
+                        <span class="chamigo-vote-counter font-bold w-6 text-center">${voteCount}</span>
+                        <button class="chamigo-vote-btn add-vote w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600">+</button>
+                    </div>`;
+                
+                playerDiv.querySelector('.add-vote').addEventListener('click', () => {
+                    const counter = playerDiv.querySelector('.chamigo-vote-counter');
+                    counter.textContent = parseInt(counter.textContent) + 1;
+                });
+                playerDiv.querySelector('.subtract-vote').addEventListener('click', () => {
+                    const counter = playerDiv.querySelector('.chamigo-vote-counter');
+                    counter.textContent = Math.max(0, parseInt(counter.textContent) - 1);
+                });
+                container.appendChild(playerDiv);
+            });
+        }
+        
+        async function handleRegisterChamigo() {
+            const votes = {};
+            document.querySelectorAll('.chamigo-player-item').forEach(item => {
+                const id = item.dataset.id;
+                const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
+                if (count > 0) votes[id] = count;
+            });
+            
+            const { error } = await supabase.from('matches').update({ chamigo_votes: votes }).eq('id', AppState.selectedMatchId);
+            if (error) {
+                showToast('Error al guardar votos de Chamigo', 'error');
+            } else {
+                showToast('Votos de Chamigo guardados!', 'success');
+                const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
+                if (matchInState) matchInState.chamigo_votes = votes;
+            }
+        }
+        
+        function renderTtAttendancePlayers(match) {
+            const container = document.getElementById('tt-attendance-players');
+            container.innerHTML = '';
+            const activePlayers = AppState.players.filter(p => p.status === 'Activo');
+            const existingAttendees = match.tt_attendees || [];
+
+            activePlayers.forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'tt-player-item p-2 border border-border-color rounded-lg cursor-pointer text-center';
+                if (existingAttendees.includes(player.id)) {
+                    playerDiv.classList.add('bg-accent-color', 'text-white');
+                }
+                playerDiv.dataset.id = player.id;
+                playerDiv.textContent = player.name;
+                playerDiv.addEventListener('click', () => {
+                    playerDiv.classList.toggle('bg-accent-color');
+                    playerDiv.classList.toggle('text-white');
+                });
+                container.appendChild(playerDiv);
+            });
+        }
+        
+        async function handleRegisterTt() {
+            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .bg-accent-color')).map(el => el.dataset.id);
+            const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
+
+            if (error) {
+                showToast('Error al guardar asistencia a TT', 'error');
+            } else {
+                showToast('Asistencia a TT guardada!', 'success');
+                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
+                if (matchInState) matchInState.tt_attendees = attendees;
+            }
+        }
+        
+        function renderPlayersListAdmin() {
+            const tableBody = document.getElementById('players-list-admin');
+            tableBody.innerHTML = AppState.players.map(p => `
+                <tr class="selectable-row border-b border-border-color hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" data-player-id="${p.id}">
+                    <td class="p-4">${p.id}</td>
+                    <td class="p-4">${p.name}</td>
+                    <td class="p-4">${p.status}</td>
+                    <td class="p-4">${p.role}</td>
+                </tr>
+            `).join('');
+            
+            tableBody.querySelectorAll('.selectable-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    tableBody.querySelectorAll('.selectable-row').forEach(r => r.classList.remove('selected'));
+                    row.classList.add('selected');
+                    const player = AppState.players.find(p => p.id === row.dataset.playerId);
+                    populatePlayerForm(player);
+                });
+            });
+        }
+
+        function populatePlayerForm(player) {
+            document.getElementById('player-id').value = player.id;
+            document.getElementById('player-name').value = player.name;
+            document.getElementById('player-status').value = player.status;
+            document.getElementById('player-role').value = player.role;
+        }
+        
+        function clearPlayerForm() {
+            document.getElementById('player-form').reset();
+            document.getElementById('player-id').value = '';
+            document.querySelectorAll('#players-list-admin .selectable-row').forEach(r => r.classList.remove('selected'));
+        }
+
+        async function handleSavePlayer(e) {
+            e.preventDefault();
+            const id = document.getElementById('player-id').value;
+            const playerData = {
+                name: document.getElementById('player-name').value,
+                status: document.getElementById('player-status').value,
+                role: document.getElementById('player-role').value,
+            };
+
+            let response;
+            if (id) { // Update
+                response = await supabase.from('players').update(playerData).eq('id', id).select().single();
+            } else { // Insert
+                 const { data: lastPlayer } = await supabase.from('players').select('id').order('id', { ascending: false }).limit(1).single();
+                 const lastIdNum = lastPlayer ? parseInt(lastPlayer.id.replace('J', '')) : 0;
+                 playerData.id = 'J' + String(lastIdNum + 1).padStart(3, '0');
+                 response = await supabase.from('players').insert(playerData).select().single();
+            }
+
+            if (response.error) {
+                showToast(`Error al guardar jugador: ${response.error.message}`, 'error');
+            } else {
+                showToast('Jugador guardado exitosamente.', 'success');
+                await refreshDataAndRender('players-management');
+                clearPlayerForm();
+            }
+        }
+
+        async function refreshDataAndRender(tabToRender) {
+            const { data: players, error } = await supabase.from('players').select('*').order('id');
+            if (!error) AppState.players = players;
+            navigateTo(tabToRender);
+        }
+
         function showToast(message, type = 'info') {
             const colors = {
-                success: 'bg-success-color',
-                error: 'bg-danger-color',
-                warning: 'bg-warning-color',
-                info: 'bg-blue-500',
+                success: 'bg-success-color', error: 'bg-danger-color',
+                warning: 'bg-warning-color', info: 'bg-blue-500',
             };
             const toast = document.createElement('div');
             toast.className = `w-full max-w-sm p-4 rounded-lg shadow-lg text-white ${colors[type]} mb-2`;
             toast.textContent = message;
             DOMElements.toastContainer.prepend(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 4000);
+            setTimeout(() => toast.remove(), 4000);
         }
 
         function showModal(title, message) {
@@ -782,22 +998,13 @@
                 DOMElements.modalTitle.textContent = title;
                 DOMElements.modalMessage.textContent = message;
                 DOMElements.modal.classList.remove('hidden');
-
-                const confirmHandler = () => {
-                    DOMElements.modal.classList.add('hidden');
-                    cleanup();
-                    resolve(true);
-                };
-                const cancelHandler = () => {
-                    DOMElements.modal.classList.add('hidden');
-                    cleanup();
-                    resolve(false);
-                };
+                const confirmHandler = () => { cleanup(); resolve(true); };
+                const cancelHandler = () => { cleanup(); resolve(false); };
                 const cleanup = () => {
+                    DOMElements.modal.classList.add('hidden');
                     DOMElements.modalConfirm.removeEventListener('click', confirmHandler);
                     DOMElements.modalCancel.removeEventListener('click', cancelHandler);
                 };
-
                 DOMElements.modalConfirm.addEventListener('click', confirmHandler);
                 DOMElements.modalCancel.addEventListener('click', cancelHandler);
             });
