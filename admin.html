@@ -113,15 +113,20 @@
             display: inline-flex;
             align-items: center;
             flex-grow: 0;
-            touch-action: none; /* Recommended for custom drag handling */
+            touch-action: none; /* Prevents browser default touch actions like scrolling */
         }
         .player-element.draggable {
             cursor: grab;
         }
-        .player-element.draggable:active {
-            cursor: grabbing;
+        .player-element.dragging {
+            opacity: 0.5;
+        }
+        .player-element.ghost {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.7;
             transform: scale(1.05);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
         
         .player-list-container {
@@ -647,6 +652,7 @@
         }
         
         function navigateTo(tabId) {
+            DOMElements.body.classList.remove('overflow-hidden'); // Ensure scroll is enabled on navigation
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('active', link.dataset.tab === tabId);
             });
@@ -1002,10 +1008,10 @@
             const container = document.getElementById('team-formation-container');
             if (!container) return;
 
-            // Handle Clicks/Taps
+            // Handle Clicks/Taps for non-drag actions
             container.addEventListener('click', (e) => {
                 const playerEl = e.target.closest('.player-element');
-                if (!playerEl) return;
+                if (!playerEl || (e.type === 'click' && playerEl.classList.contains('dragging'))) return;
 
                 const parentId = playerEl.parentElement.id;
                 
@@ -1016,8 +1022,8 @@
                 }
             });
 
-            // Handle Drag & Drop (now always enabled)
-            setupDragAndDrop();
+            // Handle Drag & Drop for both Desktop and Mobile
+            setupUniversalDragDrop();
         }
         
         function returnPlayerToOrigin(playerEl) {
@@ -1027,7 +1033,6 @@
             if (player && player.role === 'Suplente') {
                 document.getElementById('suplentes-players').appendChild(playerEl);
             } else {
-                // Default to Titular if role is not 'Suplente' or player not found
                 document.getElementById('titulares-players').appendChild(playerEl);
             }
             updateTeamCounts();
@@ -1060,42 +1065,100 @@
             updateTeamCounts();
         }
 
-        function setupDragAndDrop() {
-            document.querySelectorAll('.player-element').forEach(p => {
-                p.draggable = true;
-                p.classList.add('draggable');
-            });
+        function setupUniversalDragDrop() {
+            const container = document.getElementById('team-formation-container');
+            let draggedElement = null;
+            let ghostElement = null;
 
-            document.querySelectorAll('.player-drop-zone').forEach(zone => {
-                zone.addEventListener('dragstart', (e) => {
-                    if (e.target.classList.contains('player-element')) {
-                        e.dataTransfer.setData('text/plain', e.target.dataset.id);
-                        setTimeout(() => e.target.classList.add('opacity-50'), 0);
-                    }
-                });
-                zone.addEventListener('dragend', (e) => {
-                    if (e.target.classList.contains('player-element')) {
-                       e.target.classList.remove('opacity-50');
-                    }
-                });
-                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-                zone.addEventListener('dragleave', e => zone.classList.remove('drag-over'));
-                zone.addEventListener('drop', e => {
-                    e.preventDefault();
-                    zone.classList.remove('drag-over');
-                    const playerId = e.dataTransfer.getData('text/plain');
-                    const playerEl = document.querySelector(`.player-element[data-id="${playerId}"]`);
-                    
-                    if (!playerEl) return;
+            const handleDragStart = (e) => {
+                const target = e.target.closest('.player-element');
+                if (!target) return;
+                
+                draggedElement = target;
+                draggedElement.classList.add('dragging');
 
-                    if (zone.id.startsWith('team-') && zone.children.length >= 5 && !zone.contains(playerEl)) {
+                if (e.type === 'dragstart') {
+                    e.dataTransfer.setData('text/plain', draggedElement.dataset.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                } else { // Touch event
+                    ghostElement = draggedElement.cloneNode(true);
+                    ghostElement.classList.add('ghost');
+                    document.body.appendChild(ghostElement);
+                    const touch = e.touches[0];
+                    positionGhost(touch.clientX, touch.clientY);
+                }
+            };
+
+            const handleDragMove = (e) => {
+                if (!draggedElement) return;
+                e.preventDefault();
+
+                const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                
+                if (ghostElement) {
+                    positionGhost(clientX, clientY);
+                }
+
+                document.querySelectorAll('.player-drop-zone').forEach(zone => zone.classList.remove('drag-over'));
+                
+                const dropTarget = document.elementFromPoint(clientX, clientY);
+                const dropZone = dropTarget ? dropTarget.closest('.player-drop-zone') : null;
+
+                if (dropZone) {
+                    dropZone.classList.add('drag-over');
+                }
+            };
+
+            const handleDragEnd = (e) => {
+                if (!draggedElement) return;
+
+                const clientX = e.type === 'touchend' ? e.changedTouches[0].clientX : e.clientX;
+                const clientY = e.type === 'touchend' ? e.changedTouches[0].clientY : e.clientY;
+                
+                const dropTarget = document.elementFromPoint(clientX, clientY);
+                const dropZone = dropTarget ? dropTarget.closest('.player-drop-zone') : null;
+
+                if (dropZone) {
+                    if (dropZone.id.startsWith('team-') && dropZone.children.length >= 5 && !dropZone.contains(draggedElement)) {
                         showToast('El equipo ya tiene 5 jugadores.', 'warning');
-                        return;
+                    } else if (dropZone.id === 'titulares-players' || dropZone.id === 'suplentes-players') {
+                        returnPlayerToOrigin(draggedElement);
+                    } else {
+                        dropZone.appendChild(draggedElement);
                     }
-                    zone.appendChild(playerEl);
-                    updateTeamCounts();
-                });
-            });
+                }
+                
+                document.querySelectorAll('.player-drop-zone').forEach(zone => zone.classList.remove('drag-over'));
+                draggedElement.classList.remove('dragging');
+                if (ghostElement) {
+                    ghostElement.remove();
+                }
+                draggedElement = null;
+                ghostElement = null;
+                updateTeamCounts();
+            };
+            
+            const positionGhost = (x, y) => {
+                if (!ghostElement) return;
+                ghostElement.style.left = `${x - ghostElement.offsetWidth / 2}px`;
+                ghostElement.style.top = `${y - ghostElement.offsetHeight / 2}px`;
+            };
+
+            // Attach listeners
+            container.addEventListener('mousedown', handleDragStart);
+            container.addEventListener('touchstart', handleDragStart);
+
+            document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('touchmove', handleDragMove, { passive: false });
+
+            document.addEventListener('mouseup', handleDragEnd);
+            document.addEventListener('touchend', handleDragEnd);
+            
+            // For standard desktop drag
+            container.addEventListener('dragstart', handleDragStart);
+            container.addEventListener('dragover', (e) => e.preventDefault());
+            container.addEventListener('drop', handleDragEnd);
         }
         
         function updateTeamCounts() {
@@ -1487,7 +1550,7 @@
                 if (player) teamOscurosDiv.appendChild(createPlayerElement(player));
             });
             
-            setupDragAndDrop();
+            setupUniversalDragDrop();
         }
 
         async function handleUpdateMatch() {
