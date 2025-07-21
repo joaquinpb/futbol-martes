@@ -37,6 +37,7 @@
             --success-color: #10b981;
             --danger-color: #ef4444;
             --warning-color: #f59e0b;
+            --button-text-color: #ffffff;
         }
 
         html.dark {
@@ -96,6 +97,9 @@
             color: #ffffff; /* white */
             transition: all 0.2s ease;
             cursor: grab;
+            white-space: nowrap; /* Prevent name wrapping */
+            width: auto; /* Allow tag to fit content */
+            display: inline-block; /* Needed for width: auto to work well */
         }
         .player-draggable:active {
             cursor: grabbing;
@@ -158,6 +162,43 @@
         html.dark thead th {
             color: var(--sidebar-text);
         }
+        
+        /* Button text color fix */
+        .button-primary {
+            background-color: var(--accent-color);
+            color: var(--button-text-color);
+        }
+        .button-primary:hover {
+            background-color: var(--accent-color-hover);
+        }
+        .button-success {
+            background-color: var(--success-color);
+            color: var(--button-text-color);
+        }
+        .button-danger {
+            background-color: var(--danger-color);
+            color: var(--button-text-color);
+        }
+        .button-warning {
+            background-color: var(--warning-color);
+            color: var(--button-text-color);
+        }
+        .button-secondary {
+            background-color: var(--text-secondary);
+            color: var(--button-text-color);
+        }
+         .button-purple {
+            background-color: #9333ea; /* purple-600 */
+            color: var(--button-text-color);
+        }
+        .button-purple:hover {
+            background-color: #7e22ce; /* purple-700 */
+        }
+
+        /* Hide sidebar on logged-out state */
+        body.logged-out #sidebar, body.logged-out #sidebar-toggle, body.logged-out #dark-mode-toggle-header {
+            display: none;
+        }
 
     </style>
 </head>
@@ -219,7 +260,7 @@
                                     <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
                                     <input type="password" id="password" class="w-full p-2 border rounded-md" required>
                                 </div>
-                                <button id="login-button" type="submit" class="w-full px-6 py-3 bg-accent-color text-white font-semibold rounded-lg shadow-md hover:bg-accent-color-hover transition duration-300">
+                                <button id="login-button" type="submit" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition duration-300">
                                     Entrar
                                 </button>
                                 <p id="auth-status" class="text-center text-danger-color mt-4 h-5"></p>
@@ -249,7 +290,7 @@
             <p class="text-secondary mb-6" id="modal-message">¿Estás seguro?</p>
             <div class="flex justify-end space-x-3">
                 <button id="modal-cancel-button" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition">Cancelar</button>
-                <button id="modal-confirm-button" class="px-4 py-2 bg-danger-color text-white font-semibold rounded-md hover:opacity-90 transition">Confirmar</button>
+                <button id="modal-confirm-button" class="px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Confirmar</button>
             </div>
         </div>
     </div>
@@ -294,6 +335,7 @@
 
         // --- DOM ELEMENTS ---
         const DOMElements = {
+            body: document.body,
             sidebar: document.getElementById('sidebar'),
             sidebarToggle: document.getElementById('sidebar-toggle'),
             sidebarOverlay: document.getElementById('sidebar-overlay'),
@@ -333,6 +375,7 @@
         async function loadAdminPanel(session) {
             if (AppState.isInitializing) return;
             AppState.isInitializing = true;
+            DOMElements.body.classList.remove('logged-out');
             
             DOMElements.authContainer.classList.add('hidden');
             DOMElements.loadingContainer.classList.remove('hidden');
@@ -388,6 +431,7 @@
         
         function showLoginScreen() {
             AppState.isInitialized = false;
+            DOMElements.body.classList.add('logged-out');
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
@@ -550,7 +594,7 @@
                             <label for="team-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
                             <input type="date" id="team-match-date" class="w-full p-2 border rounded-md">
                         </div>
-                        <button id="save-teams-button" class="w-full px-6 py-3 bg-accent-color text-white font-semibold rounded-lg shadow-md hover:bg-accent-color-hover transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <button id="save-teams-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                             Guardar Partido
                         </button>
                     </div>
@@ -604,10 +648,10 @@
                         </select>
                      </div>
                      <div class="flex gap-4 pt-4">
-                        <button id="register-match-button" class="flex-1 px-6 py-3 bg-success-color text-white font-semibold rounded-lg shadow-md hover:opacity-90 transition">
+                        <button id="register-match-button" class="flex-1 px-6 py-3 button-success font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                          Registrar Resultado
                         </button>
-                        <button id="delete-match-button" class="flex-1 px-6 py-3 bg-danger-color text-white font-semibold rounded-lg shadow-md hover:opacity-90 transition">
+                        <button id="delete-match-button" class="flex-1 px-6 py-3 button-danger font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                          Eliminar Partido
                         </button>
                      </div>
@@ -622,7 +666,7 @@
                 <div id="chamigo-voting-players" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 max-h-[50vh] overflow-y-auto">
                     <p class="text-secondary col-span-full">Selecciona un partido para cargar los jugadores.</p>
                 </div>
-                <button id="register-chamigo-button" class="w-full mt-4 px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition">
+                <button id="register-chamigo-button" class="w-full mt-4 px-6 py-3 button-warning font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                     Registrar Chamigo(s)
                 </button>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Chamigo', renderMatchSelectionTemplate('chamigo', panelContent));
@@ -635,7 +679,7 @@
                 <div id="tt-attendance-players" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4 max-h-[50vh] overflow-y-auto">
                     <p class="text-secondary col-span-full">Selecciona un partido para cargar los jugadores.</p>
                 </div>
-                <button id="register-tt-button" class="w-full mt-4 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition">
+                <button id="register-tt-button" class="w-full mt-4 px-6 py-3 button-purple font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                     Registrar Asistencia
                 </button>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Asistencia a TT', renderMatchSelectionTemplate('tt', panelContent));
@@ -665,7 +709,7 @@
                             <label for="edit-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
                             <input type="date" id="edit-match-date" class="w-full p-2 border rounded-md">
                         </div>
-                        <button id="update-match-button" class="w-full px-6 py-3 bg-accent-color text-white font-semibold rounded-lg shadow-md hover:bg-accent-color-hover transition">
+                        <button id="update-match-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition">
                             Actualizar Partido
                         </button>
                     </div>
@@ -700,8 +744,8 @@
                                 </select>
                             </div>
                             <div class="flex gap-3 pt-2">
-                                <button type="submit" class="flex-1 px-4 py-2 bg-success-color text-white font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
-                                <button type="button" id="clear-player-form-button" class="flex-1 px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
+                                <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
+                                <button type="button" id="clear-player-form-button" class="flex-1 px-4 py-2 button-secondary font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
                             </div>
                         </form>
                     </div>
@@ -751,8 +795,8 @@
                                 </select>
                             </div>
                             <div class="flex gap-3 pt-2">
-                                <button type="submit" class="flex-1 px-4 py-2 bg-success-color text-white font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
-                                <button type="button" id="clear-user-form-button" class="flex-1 px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
+                                <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
+                                <button type="button" id="clear-user-form-button" class="flex-1 px-4 py-2 button-secondary font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
                             </div>
                         </form>
                     </div>
