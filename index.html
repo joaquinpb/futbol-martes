@@ -778,14 +778,19 @@
                     if (match.result !== 'Suspendido') {
                         stats[pId].pj++;
                         const isWinner = (match.result === 'Claros' && (match.team_white_players || []).includes(pId)) || (match.result === 'Oscuros' && (match.team_dark_players || []).includes(pId));
+                        const isTie = match.result === 'Empate';
+                        
                         if (isWinner) {
                             stats[pId].points += 3;
                             stats[pId].pg++;
-                        } else if (match.result === 'Empate') {
+                        } else if (isTie) {
                             stats[pId].points += 1;
                             stats[pId].pe++;
                         } else {
-                            stats[pId].pp++;
+                            // Only count as loss if the result is not null/undefined (i.e., the match was played)
+                            if(match.result) {
+                                stats[pId].pp++;
+                            }
                         }
                     }
                 });
@@ -793,8 +798,11 @@
                 if (match.chamigo_votes && Object.keys(match.chamigo_votes).length) {
                     const maxVotes = Math.max(0, ...Object.values(match.chamigo_votes));
                     if(maxVotes > 0) {
-                        Object.entries(match.chamigo_votes).forEach(([pId, votes]) => {
-                            if (votes === maxVotes && stats[pId]) stats[pId].chamigos++;
+                        Object.entries(match.chamigo_votes).forEach(([pIdStr, votes]) => {
+                            const pIdNum = parseInt(pIdStr, 10); // CORRECTION: Ensure ID is a number
+                            if (votes === maxVotes && stats[pIdNum]) {
+                                stats[pIdNum].chamigos++;
+                            }
                         });
                     }
                 }
