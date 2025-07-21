@@ -145,6 +145,9 @@
         .tt-player-item.selected span {
             color: var(--sidebar-active-text);
         }
+        .tt-player-item.selected i {
+            color: var(--sidebar-active-text);
+        }
 
     </style>
 </head>
@@ -304,19 +307,13 @@
             setupTheme();
             setupEventListeners();
             supabase.auth.onAuthStateChange((event, session) => {
-                // This is the key event for a fresh login
                 if (event === 'SIGNED_IN') {
-                    loadAdminPanel(session);
+                    if (!AppState.isInitialized) loadAdminPanel(session);
                 } 
-                // This handles when the page is loaded and the user is already logged in
                 else if (event === 'INITIAL_SESSION' && session) {
-                    // Prevent re-loading if data is already present (e.g., on tab refocus)
-                    if (AppState.isInitialized) {
-                        return; 
-                    }
+                    if (AppState.isInitialized) return; 
                     loadAdminPanel(session);
                 } 
-                // This handles logout or no session found on initial load
                 else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
                     showLoginScreen();
                 }
@@ -375,12 +372,12 @@
                 DOMElements.loadingContainer.classList.add('hidden');
                 DOMElements.adminContent.classList.remove('hidden');
                 AppState.isInitializing = false;
-                AppState.isInitialized = true; // Set flag to true after successful load
+                AppState.isInitialized = true;
             }
         }
         
         function showLoginScreen() {
-            AppState.isInitialized = false; // Reset flag on logout
+            AppState.isInitialized = false;
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
