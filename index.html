@@ -752,70 +752,74 @@
         
         // --- DATA CALCULATION ---
         function getStatsForPeriod(year, period) {
-            const filteredMatches = allMatches.filter(match => {
-                const matchDate = new Date(match.match_date);
-                const matchYear = matchDate.getUTCFullYear();
-                const matchMonth = matchDate.getUTCMonth(); // 0-11
-                
-                if (matchYear != year) return false;
-                if (period === 'total') return true;
-                if (period === 'apertura') return matchMonth < 6;
-                if (period === 'clausura') return matchMonth >= 6;
-                return false;
-            });
+            try {
+                const filteredMatches = allMatches.filter(match => {
+                    const matchDate = new Date(match.match_date);
+                    const matchYear = matchDate.getUTCFullYear();
+                    const matchMonth = matchDate.getUTCMonth(); // 0-11
+                    
+                    if (matchYear != year) return false;
+                    if (period === 'total') return true;
+                    if (period === 'apertura') return matchMonth < 6;
+                    if (period === 'clausura') return matchMonth >= 6;
+                    return false;
+                });
 
-            const stats = {};
-            allPlayers.forEach(p => {
-                stats[p.id] = { name: p.name, id: p.id, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, chamigos: 0, tt: 0 };
-            });
+                const stats = {};
+                allPlayers.forEach(p => {
+                    stats[p.id] = { name: p.name, id: p.id, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, chamigos: 0, tt: 0 };
+                });
 
-            const totalPlayedMatches = filteredMatches.filter(m => m.result !== 'Suspendido').length;
+                const totalPlayedMatches = filteredMatches.filter(m => m.result !== 'Suspendido').length;
 
-            filteredMatches.forEach(match => {
-                const playersInMatch = [...new Set([...(match.team_white_players || []), ...(match.team_dark_players || [])])];
-                playersInMatch.forEach(pId => {
-                    if (!stats[pId]) return;
-                    if (match.result !== 'Suspendido') {
-                        stats[pId].pj++;
-                        const isWinner = (match.result === 'Claros' && (match.team_white_players || []).includes(pId)) || (match.result === 'Oscuros' && (match.team_dark_players || []).includes(pId));
-                        const isTie = match.result === 'Empate';
-                        
-                        if (isWinner) {
-                            stats[pId].points += 3;
-                            stats[pId].pg++;
-                        } else if (isTie) {
-                            stats[pId].points += 1;
-                            stats[pId].pe++;
-                        } else {
-                            // Only count as loss if the result is not null/undefined (i.e., the match was played)
-                            if(match.result) {
-                                stats[pId].pp++;
+                filteredMatches.forEach(match => {
+                    const playersInMatch = [...new Set([...(match.team_white_players || []), ...(match.team_dark_players || [])])];
+                    playersInMatch.forEach(pId => {
+                        if (!stats[pId]) return;
+                        if (match.result !== 'Suspendido') {
+                            stats[pId].pj++;
+                            const isWinner = (match.result === 'Claros' && (match.team_white_players || []).includes(pId)) || (match.result === 'Oscuros' && (match.team_dark_players || []).includes(pId));
+                            const isTie = match.result === 'Empate';
+                            
+                            if (isWinner) {
+                                stats[pId].points += 3;
+                                stats[pId].pg++;
+                            } else if (isTie) {
+                                stats[pId].points += 1;
+                                stats[pId].pe++;
                             }
                         }
+                    });
+
+                    if (match.chamigo_votes && Object.keys(match.chamigo_votes).length) {
+                        const maxVotes = Math.max(0, ...Object.values(match.chamigo_votes));
+                        if(maxVotes > 0) {
+                            Object.entries(match.chamigo_votes).forEach(([pIdStr, votes]) => {
+                                const pIdNum = parseInt(pIdStr, 10);
+                                if (votes === maxVotes && stats[pIdNum]) {
+                                    stats[pIdNum].chamigos++;
+                                }
+                            });
+                        }
+                    }
+                    if (match.tt_attendees) {
+                        match.tt_attendees.forEach(pId => { if(stats[pId]) stats[pId].tt++; });
                     }
                 });
 
-                if (match.chamigo_votes && Object.keys(match.chamigo_votes).length) {
-                    const maxVotes = Math.max(0, ...Object.values(match.chamigo_votes));
-                    if(maxVotes > 0) {
-                        Object.entries(match.chamigo_votes).forEach(([pIdStr, votes]) => {
-                            const pIdNum = parseInt(pIdStr, 10); // CORRECTION: Ensure ID is a number
-                            if (votes === maxVotes && stats[pIdNum]) {
-                                stats[pIdNum].chamigos++;
-                            }
-                        });
-                    }
-                }
-                if (match.tt_attendees) {
-                    match.tt_attendees.forEach(pId => { if(stats[pId]) stats[pId].tt++; });
-                }
-            });
-
-            return Object.values(stats).map(s => ({
-                ...s,
-                efectividad: s.pj > 0 ? ((s.points / (s.pj * 3)) * 100).toFixed(2) : "0.00",
-                ausentes: Math.max(0, totalPlayedMatches - s.pj)
-            }));
+                return Object.values(stats).map(s => {
+                    // Correctly calculate losses after all games are processed
+                    s.pp = s.pj - s.pg - s.pe;
+                    return {
+                        ...s,
+                        efectividad: s.pj > 0 ? ((s.points / (s.pj * 3)) * 100).toFixed(2) : "0.00",
+                        ausentes: Math.max(0, totalPlayedMatches - s.pj)
+                    };
+                });
+            } catch (error) {
+                console.error("Error in getStatsForPeriod:", error);
+                return null; // Return null to indicate failure
+            }
         }
 
         // --- RENDER FUNCTIONS (one for each tab) ---
@@ -836,35 +840,60 @@
             yearSelect.addEventListener('change', renderFn);
             periodSelect.addEventListener('change', renderFn);
         }
+        
+        // Generic renderer to avoid code repetition
+        function renderStatTable(config) {
+            const { prefix, sortFn, filterFn, columns } = config;
+            const year = document.getElementById(`${prefix}-year-select`).value;
+            const period = document.getElementById(`${prefix}-period-select`).value;
+            const tableBody = document.querySelector(`#${prefix}-table tbody`);
+            const loadingMsg = document.getElementById(`${prefix}-loading-message`);
+            const table = document.getElementById(`${prefix}-table`);
+            
+            loadingMsg.classList.remove('hidden');
+            table.classList.add('hidden');
+
+            const stats = getStatsForPeriod(year, period);
+
+            if (stats === null) { // Check for error from getStatsForPeriod
+                loadingMsg.textContent = 'Error al procesar los datos.';
+                loadingMsg.style.color = 'var(--danger-color)';
+                return;
+            }
+
+            const rankedPlayers = stats.filter(filterFn).sort(sortFn);
+
+            if (rankedPlayers.length === 0) {
+                loadingMsg.textContent = 'No hay datos para los filtros seleccionados.';
+                return;
+            }
+
+            tableBody.innerHTML = rankedPlayers.map((p, i) => `
+                <tr class="border-b border-border-color">
+                    <td class="p-4 text-secondary">${i + 1}</td>
+                    ${columns.map(col => `<td class="p-4 ${col.classes}">${p[col.key]}</td>`).join('')}
+                </tr>
+            `).join('');
+
+            loadingMsg.classList.add('hidden');
+            table.classList.remove('hidden');
+        }
 
         function renderLeaderboard() {
             setupFilterListeners('leaderboard', renderLeaderboardContent);
             renderLeaderboardContent();
         }
         function renderLeaderboardContent() {
-            const year = document.getElementById('leaderboard-year-select').value;
-            const period = document.getElementById('leaderboard-period-select').value;
-            const tableBody = document.querySelector('#leaderboard-table tbody');
-            const loadingMsg = document.getElementById('leaderboard-loading-message');
-            const table = document.getElementById('leaderboard-table');
-            
-            loadingMsg.classList.remove('hidden');
-            table.classList.add('hidden');
-
-            const stats = getStatsForPeriod(year, period);
-            const rankedPlayers = stats.filter(p => p.pj > 0).sort((a, b) => b.points - a.points || b.efectividad - a.efectividad);
-
-            tableBody.innerHTML = rankedPlayers.map((p, i) => `
-                <tr class="border-b border-border-color">
-                    <td class="p-4 text-secondary">${i + 1}</td>
-                    <td class="p-4 font-medium">${p.name}</td>
-                    <td class="p-4 text-center font-semibold">${p.points}</td>
-                    <td class="p-4 text-center text-secondary">${p.efectividad}%</td>
-                </tr>
-            `).join('');
-
-            loadingMsg.classList.add('hidden');
-            table.classList.remove('hidden');
+            renderStatTable({
+                prefix: 'leaderboard',
+                filterFn: p => p.pj > 0,
+                sortFn: (a, b) => b.points - a.points || b.efectividad - a.efectividad,
+                columns: [
+                    { key: 'name', classes: 'font-medium' },
+                    { key: 'points', classes: 'text-center font-semibold' },
+                    { key: 'efectividad', classes: 'text-center text-secondary', suffix: '%' }
+                ]
+            });
         }
         
         function renderChamigo() {
@@ -872,22 +901,15 @@
             renderChamigoContent();
         }
         function renderChamigoContent() {
-            const year = document.getElementById('chamigo-year-select').value;
-            const period = document.getElementById('chamigo-period-select').value;
-            const tableBody = document.querySelector('#chamigo-table tbody');
-            const loadingMsg = document.getElementById('chamigo-loading-message');
-            const table = document.getElementById('chamigo-table');
-
-            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
-            const stats = getStatsForPeriod(year, period);
-            const rankedPlayers = stats.filter(p => p.chamigos > 0).sort((a, b) => b.chamigos - a.chamigos);
-            tableBody.innerHTML = rankedPlayers.map((p, i) => `
-                <tr class="border-b border-border-color">
-                    <td class="p-4 text-secondary">${i + 1}</td>
-                    <td class="p-4 font-medium">${p.name}</td>
-                    <td class="p-4 text-center font-semibold">${p.chamigos}</td>
-                </tr>`).join('');
-            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
+             renderStatTable({
+                prefix: 'chamigo',
+                filterFn: p => p.chamigos > 0,
+                sortFn: (a, b) => b.chamigos - a.chamigos,
+                columns: [
+                    { key: 'name', classes: 'font-medium' },
+                    { key: 'chamigos', classes: 'text-center font-semibold' }
+                ]
+            });
         }
         
         function renderTt() {
@@ -895,22 +917,15 @@
             renderTtContent();
         }
         function renderTtContent() {
-            const year = document.getElementById('tt-year-select').value;
-            const period = document.getElementById('tt-period-select').value;
-            const tableBody = document.querySelector('#tt-table tbody');
-            const loadingMsg = document.getElementById('tt-loading-message');
-            const table = document.getElementById('tt-table');
-
-            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
-            const stats = getStatsForPeriod(year, period);
-            const rankedPlayers = stats.filter(p => p.tt > 0).sort((a, b) => b.tt - a.tt);
-            tableBody.innerHTML = rankedPlayers.map((p, i) => `
-                <tr class="border-b border-border-color">
-                    <td class="p-4 text-secondary">${i + 1}</td>
-                    <td class="p-4 font-medium">${p.name}</td>
-                    <td class="p-4 text-center font-semibold">${p.tt}</td>
-                </tr>`).join('');
-            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
+             renderStatTable({
+                prefix: 'tt',
+                filterFn: p => p.tt > 0,
+                sortFn: (a, b) => b.tt - a.tt,
+                columns: [
+                    { key: 'name', classes: 'font-medium' },
+                    { key: 'tt', classes: 'text-center font-semibold' }
+                ]
+            });
         }
 
         function renderPresentismo() {
@@ -918,22 +933,15 @@
             renderPresentismoContent();
         }
         function renderPresentismoContent() {
-            const year = document.getElementById('presentismo-year-select').value;
-            const period = document.getElementById('presentismo-period-select').value;
-            const tableBody = document.querySelector('#presentismo-table tbody');
-            const loadingMsg = document.getElementById('presentismo-loading-message');
-            const table = document.getElementById('presentismo-table');
-
-            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
-            const stats = getStatsForPeriod(year, period);
-            const rankedPlayers = stats.filter(p => p.pj > 0).sort((a, b) => b.pj - a.pj);
-            tableBody.innerHTML = rankedPlayers.map((p, i) => `
-                <tr class="border-b border-border-color">
-                    <td class="p-4 text-secondary">${i + 1}</td>
-                    <td class="p-4 font-medium">${p.name}</td>
-                    <td class="p-4 text-center font-semibold">${p.pj}</td>
-                </tr>`).join('');
-            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
+            renderStatTable({
+                prefix: 'presentismo',
+                filterFn: p => p.pj > 0,
+                sortFn: (a, b) => b.pj - a.pj,
+                columns: [
+                    { key: 'name', classes: 'font-medium' },
+                    { key: 'pj', classes: 'text-center font-semibold' }
+                ]
+            });
         }
         
         function renderAusentismo() {
@@ -941,22 +949,15 @@
             renderAusentismoContent();
         }
         function renderAusentismoContent() {
-            const year = document.getElementById('ausentismo-year-select').value;
-            const period = document.getElementById('ausentismo-period-select').value;
-            const tableBody = document.querySelector('#ausentismo-table tbody');
-            const loadingMsg = document.getElementById('ausentismo-loading-message');
-            const table = document.getElementById('ausentismo-table');
-
-            loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
-            const stats = getStatsForPeriod(year, period);
-            const rankedPlayers = stats.filter(p => p.ausentes > 0).sort((a, b) => b.ausentes - a.ausentes);
-            tableBody.innerHTML = rankedPlayers.map((p, i) => `
-                <tr class="border-b border-border-color">
-                    <td class="p-4 text-secondary">${i + 1}</td>
-                    <td class="p-4 font-medium">${p.name}</td>
-                    <td class="p-4 text-center font-semibold">${p.ausentes}</td>
-                </tr>`).join('');
-            loadingMsg.classList.add('hidden'); table.classList.remove('hidden');
+            renderStatTable({
+                prefix: 'ausentismo',
+                filterFn: p => p.ausentes > 0,
+                sortFn: (a, b) => b.ausentes - a.ausentes,
+                columns: [
+                    { key: 'name', classes: 'font-medium' },
+                    { key: 'ausentes', classes: 'text-center font-semibold' }
+                ]
+            });
         }
 
         function renderEstadisticas() {
@@ -972,6 +973,13 @@
 
             loadingMsg.classList.remove('hidden'); table.classList.add('hidden');
             const stats = getStatsForPeriod(year, period);
+            
+            if (stats === null) {
+                loadingMsg.textContent = 'Error al procesar los datos.';
+                loadingMsg.style.color = 'var(--danger-color)';
+                return;
+            }
+
             const rankedPlayers = stats.filter(p => p.pj > 0).sort((a, b) => b.points - a.points);
             
             tableBody.innerHTML = rankedPlayers.map((p, i) => `
