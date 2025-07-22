@@ -498,7 +498,8 @@
                 const [playersRes, matchesRes, usersRes] = await Promise.allSettled([
                     supabase.from('players').select('*').order('id', { ascending: true }),
                     supabase.from('matches').select('*').order('match_date', { ascending: false }),
-                    AppState.userRole === 'Admin' ? supabase.rpc('get_all_users_with_roles') : Promise.resolve({ data: [], error: null })
+                    // CAMBIO AQUI: Se pasa un objeto vacío {} como segundo argumento a rpc
+                    AppState.userRole === 'Admin' ? supabase.rpc('get_all_users_with_roles', {}) : Promise.resolve({ data: [], error: null })
                 ]);
 
                 AppState.players = (playersRes.status === 'fulfilled' && !playersRes.value.error) ? (playersRes.value.data || []) : [];
@@ -1828,7 +1829,8 @@
             if (!mError) AppState.matches = matches;
 
             if(AppState.userRole === 'Admin') {
-                const { data: users, uError } = await supabase.rpc('get_all_users_with_roles');
+                // CAMBIO AQUI: Se pasa un objeto vacío {} como segundo argumento a rpc
+                const { data: users, uError } = await supabase.rpc('get_all_users_with_roles', {}); 
                 if (!uError) AppState.users = users;
             }
             
