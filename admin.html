@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -175,14 +176,6 @@
             background-color: var(--bg-secondary);
             border-color: var(--border-color);
         }
-        .avatar-preview {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-size: cover;
-            background-position: center;
-            background-color: var(--bg-muted);
-        }
     </style>
 </head>
 <body class="antialiased">
@@ -325,7 +318,7 @@
 
     <!-- Profile Modal -->
     <div id="profile-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
-        <div class="card rounded-lg shadow-xl max-w-md w-full p-6 overflow-y-auto max-h-[90vh]">
+        <div class="card rounded-lg shadow-xl max-w-md w-full p-6">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-semibold">Editar Perfil</h3>
                 <button id="profile-modal-close-button" class="p-2 -mr-2 rounded-full hover:bg-bg-muted"><i class="fas fa-times"></i></button>
@@ -333,13 +326,6 @@
             
             <form id="profile-form" class="space-y-4">
                 <h4 class="font-semibold text-text-secondary border-b border-border-color pb-2">Mis Datos</h4>
-                <div class="flex flex-col items-center space-y-4">
-                    <div id="profile-avatar-preview" class="avatar-preview border-2 border-border-color"></div>
-                    <input type="file" id="profile-avatar-input" class="hidden" accept="image/png, image/jpeg">
-                    <button type="button" id="profile-avatar-button" class="px-4 py-2 text-sm border border-border-color rounded-md hover:bg-bg-muted">
-                        Cambiar foto
-                    </button>
-                </div>
                 <div>
                     <label for="profile-email" class="block text-sm font-medium mb-1">Email</label>
                     <input type="email" id="profile-email" class="w-full p-2 border rounded-md" readonly>
@@ -429,9 +415,6 @@
             passwordFormModal: document.getElementById('password-form-modal'),
             profileMessage: document.getElementById('profile-message'),
             passwordMessage: document.getElementById('password-message'),
-            profileAvatarPreview: document.getElementById('profile-avatar-preview'),
-            profileAvatarInput: document.getElementById('profile-avatar-input'),
-            profileAvatarButton: document.getElementById('profile-avatar-button'),
             // Confirmation Modal
             modal: document.getElementById('custom-confirm-modal'),
             modalTitle: document.getElementById('modal-title'),
@@ -478,28 +461,14 @@
             DOMElements.adminContent.classList.add('hidden');
             
             try {
-                const { data: profile, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('role, name, status, avatar_url')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (profileError) throw profileError;
-                
-                if (profile.status === 'inactive') {
-                    showNotification('Tu cuenta ha sido desactivada.', 'error');
-                    await supabase.auth.signOut();
-                    return; 
-                }
-
+                const { data: profile } = await supabase.from('profiles').select('role, name').eq('id', session.user.id).single();
                 AppState.userProfile = profile;
                 AppState.userRole = profile ? profile.role : null;
-                
+
                 const [playersRes, matchesRes, usersRes] = await Promise.allSettled([
                     supabase.from('players').select('*').order('id', { ascending: true }),
                     supabase.from('matches').select('*').order('match_date', { ascending: false }),
-                    // CAMBIO AQUI: Se pasa un objeto vacío {} como segundo argumento a rpc
-                    AppState.userRole === 'Admin' ? supabase.rpc('get_all_users_data', {}) : Promise.resolve({ data: [], error: null })
+                    AppState.userRole === 'Admin' ? supabase.rpc('get_all_users_with_roles') : Promise.resolve({ data: [], error: null })
                 ]);
 
                 AppState.players = (playersRes.status === 'fulfilled' && !playersRes.value.error) ? (playersRes.value.data || []) : [];
@@ -530,7 +499,7 @@
 
             } catch (error) {
                 console.error("Fatal error during admin panel setup:", error);
-                showNotification(`Ocurrió un error inesperado: ${error.message}`, "error");
+                showNotification("Ocurrió un error inesperado al cargar el panel.", "error");
                 await supabase.auth.signOut();
             } finally {
                 DOMElements.loadingContainer.classList.add('hidden');
@@ -763,23 +732,12 @@
             
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             
-            // Profile Modal Listeners
+            // Profile Modal
             DOMElements.profileModalCloseButton.addEventListener('click', () => DOMElements.profileModal.classList.add('hidden'));
             DOMElements.profileForm.addEventListener('submit', handleUpdateProfile);
             DOMElements.passwordFormModal.addEventListener('submit', handleUpdatePassword);
-            DOMElements.profileAvatarButton.addEventListener('click', () => DOMElements.profileAvatarInput.click());
-            DOMElements.profileAvatarInput.addEventListener('change', (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        DOMElements.profileAvatarPreview.style.backgroundImage = `url('${e.target.result}')`;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
 
-            // Global click listener
+            // Global click listener to close dropdowns
             document.addEventListener('click', (e) => {
                 if (e.target.closest('.signout-trigger')) {
                      supabase.auth.signOut().catch(err => showNotification(`Error: ${err.message}`, 'error'));
@@ -818,9 +776,8 @@
             const loginButton = document.getElementById('login-button');
             loginButton.disabled = true;
             loginButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
-            DOMElements.authStatus.textContent = '';
             
-            const { data: { session }, error } = await supabase.auth.signInWithPassword({ 
+            const { error } = await supabase.auth.signInWithPassword({ 
                 email: document.getElementById('email').value, 
                 password: document.getElementById('password').value 
             });
@@ -829,22 +786,6 @@
                 DOMElements.authStatus.textContent = 'Email o contraseña incorrectos.';
                 loginButton.disabled = false;
                 loginButton.textContent = 'Entrar';
-                return;
-            }
-            
-            if (session) {
-                 const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('status')
-                    .eq('id', session.user.id)
-                    .single();
-                
-                if (profile && profile.status === 'inactive') {
-                    DOMElements.authStatus.textContent = 'Tu cuenta está desactivada. Contacta al administrador.';
-                    loginButton.disabled = false;
-                    loginButton.textContent = 'Entrar';
-                    await supabase.auth.signOut();
-                }
             }
         }
 
@@ -852,12 +793,7 @@
         async function openProfileModal() {
             if (!AppState.currentUser) return;
             
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('name, avatar_url')
-                .eq('id', AppState.currentUser.id)
-                .single();
-                
+            const { data: profile, error } = await supabase.from('profiles').select('name').eq('id', AppState.currentUser.id).single();
             if (error) {
                 showNotification('No se pudo cargar tu perfil.', 'error');
                 return;
@@ -865,8 +801,6 @@
             
             document.getElementById('profile-email').value = AppState.currentUser.email;
             document.getElementById('profile-name').value = profile.name || '';
-            DOMElements.profileAvatarPreview.style.backgroundImage = profile.avatar_url ? `url('${profile.avatar_url}')` : 'none';
-            DOMElements.profileAvatarInput.value = '';
             
             DOMElements.profileMessage.textContent = '';
             DOMElements.passwordMessage.textContent = '';
@@ -877,51 +811,22 @@
 
         async function handleUpdateProfile(e) {
             e.preventDefault();
-            DOMElements.profileMessage.textContent = 'Guardando...';
-            
             const newName = document.getElementById('profile-name').value;
-            const avatarFile = DOMElements.profileAvatarInput.files[0];
-            let avatarUrl = AppState.userProfile.avatar_url;
+            DOMElements.profileMessage.textContent = 'Guardando...';
 
-            try {
-                if (avatarFile) {
-                    const fileExt = avatarFile.name.split('.').pop();
-                    const fileName = `${AppState.currentUser.id}-${Date.now()}.${fileExt}`;
-                    const filePath = `${fileName}`;
+            const { error } = await supabase
+                .from('profiles')
+                .update({ name: newName })
+                .eq('id', AppState.currentUser.id);
 
-                    const { error: uploadError } = await supabase.storage
-                        .from('avatars')
-                        .upload(filePath, avatarFile, {
-                            cacheControl: '3600',
-                            upsert: true
-                        });
-
-                    if (uploadError) throw uploadError;
-
-                    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
-                    avatarUrl = urlData.publicUrl;
-                }
-
-                const { data: updatedProfile, error: updateError } = await supabase
-                    .from('profiles')
-                    .update({ name: newName, avatar_url: avatarUrl })
-                    .eq('id', AppState.currentUser.id)
-                    .select()
-                    .single();
-
-                if (updateError) throw updateError;
-                
-                AppState.userProfile = updatedProfile;
-                document.getElementById('user-menu-name-main').textContent = updatedProfile.name;
-                const userAvatarMain = document.getElementById('user-avatar-main');
-                if(userAvatarMain) userAvatarMain.src = updatedProfile.avatar_url;
-                
-                DOMElements.profileMessage.textContent = 'Perfil actualizado.';
+            if (error) {
+                DOMElements.profileMessage.textContent = `Error: ${error.message}`;
+                DOMElements.profileMessage.style.color = 'var(--danger-color)';
+            } else {
+                DOMElements.profileMessage.textContent = 'Nombre actualizado.';
                 DOMElements.profileMessage.style.color = 'var(--success-color)';
-
-            } catch (error) {
-                 DOMElements.profileMessage.textContent = `Error: ${error.message}`;
-                 DOMElements.profileMessage.style.color = 'var(--danger-color)';
+                AppState.userProfile.name = newName;
+                document.getElementById('user-menu-name-main').textContent = newName;
             }
         }
 
@@ -951,20 +856,14 @@
 
 
         // --- RENDER FUNCTIONS FOR TABS ---
-        const tabContentTemplate = (title, content) => { 
-            const avatarSrc = AppState.userProfile?.avatar_url;
-            const avatarDisplay = avatarSrc 
-                ? `<img id="user-avatar-main" src="${avatarSrc}" class="w-8 h-8 rounded-full object-cover">`
-                : `<i class="fas fa-user-circle text-2xl"></i>`;
-
-            return `
+        const tabContentTemplate = (title, content) => `
             <div class="space-y-6">
                 <div class="p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 text-white shadow-lg flex items-center justify-between">
                     <h1 class="text-2xl font-bold tracking-tight uppercase">${title}</h1>
                     <div class="relative">
-                        <button id="user-menu-button-main" class="flex items-center gap-2 p-1 rounded-full hover:bg-white/20 transition-colors">
+                        <button id="user-menu-button-main" class="flex items-center gap-2 p-2 rounded-full hover:bg-white/20 transition-colors">
                             <span id="user-menu-name-main" class="hidden md:inline font-semibold text-sm"></span>
-                            ${avatarDisplay}
+                            <i class="fas fa-user-circle text-2xl"></i>
                         </button>
                         <div id="user-menu-dropdown-main" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
                             <a href="#" id="edit-profile-button-main" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Editar Perfil</a>
@@ -975,30 +874,21 @@
                 </div>
                 ${content}
             </div>`;
-        }
             
         function setupDynamicHeaderContent() {
             const userMenuButton = document.getElementById('user-menu-button-main');
             const userMenuDropdown = document.getElementById('user-menu-dropdown-main');
             const editProfileButton = document.getElementById('edit-profile-button-main');
             const userMenuName = document.getElementById('user-menu-name-main');
-            const userAvatar = document.getElementById('user-avatar-main');
 
             if (userMenuButton) {
                 userMenuButton.addEventListener('click', () => userMenuDropdown.classList.toggle('hidden'));
             }
             if (editProfileButton) {
-                editProfileButton.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    userMenuDropdown.classList.add('hidden');
-                    openProfileModal();
-                });
+                editProfileButton.addEventListener('click', openProfileModal);
             }
             if (userMenuName && AppState.userProfile) {
                 userMenuName.textContent = AppState.userProfile.name || AppState.currentUser.email;
-            }
-            if (userAvatar && AppState.userProfile?.avatar_url) {
-                userAvatar.src = AppState.userProfile.avatar_url;
             }
         }
 
@@ -1249,13 +1139,6 @@
                                     <option value="Admin">Admin</option>
                                 </select>
                             </div>
-                            <div>
-                                <label for="user-status" class="block text-sm font-medium mb-1">Estado</label>
-                                <select id="user-status" class="w-full p-2 border rounded-md">
-                                    <option value="active">Activo</option>
-                                    <option value="inactive">Inactivo</option>
-                                </select>
-                            </div>
                             <div class="flex gap-3 pt-2">
                                 <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
                                 <button type="button" id="clear-user-form-button" class="flex-1 px-4 py-2 button-secondary font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
@@ -1268,11 +1151,9 @@
                             <table class="w-full text-sm text-left">
                                 <thead class="text-xs uppercase bg-muted">
                                     <tr>
-                                        <th class="p-4">ID</th>
                                         <th class="p-4">Email</th>
-                                        <!-- <th class="p-4">Nombre</th> -->
-                                        <!-- <th class="p-4">Rol</th> -->
-                                        <!-- <th class="p-4">Estado</th> -->
+                                        <th class="p-4">Nombre</th>
+                                        <th class="p-4">Rol</th>
                                     </tr>
                                 </thead>
                                 <tbody id="users-list-admin"></tbody>
@@ -1707,23 +1588,17 @@
 
         function renderUsersListAdmin() {
             const tableBody = document.getElementById('users-list-admin');
-            // MODIFICACIÓN: Solo se renderizan ID y Email para la prueba de aislamiento
-            tableBody.innerHTML = AppState.users.map(u => {
-                return `
+            tableBody.innerHTML = AppState.users.map(u => `
                 <tr class="selectable-row border-b border-border-color cursor-pointer" data-user-id="${u.id}">
-                    <td class="p-4">${u.id}</td>
                     <td class="p-4">${u.email}</td>
-                    <!-- <td class="p-4">${u.name || 'N/A'}</td> -->
-                    <!-- <td class="p-4">${u.role || 'Sin Rol'}</td> -->
-                    <!-- <td class="p-4 font-semibold ${u.status && (u.status || '').toLowerCase() === 'active' ? 'text-green-500' : 'text-red-500'}">${u.status && (u.status || '').toLowerCase() === 'active' ? 'Activo' : 'Inactivo'}</td> -->
-                </tr>`
-            }).join('');
+                    <td class="p-4">${u.name || 'N/A'}</td>
+                    <td class="p-4">${u.role || 'Sin Rol'}</td>
+                </tr>`).join('');
             
             tableBody.querySelectorAll('.selectable-row').forEach(row => {
                 row.addEventListener('click', () => {
                     tableBody.querySelectorAll('.selectable-row').forEach(r => r.classList.remove('selected'));
                     row.classList.add('selected');
-                    // MODIFICACIÓN: populateUserForm necesita manejar que 'name', 'role', 'status' pueden no estar
                     populateUserForm(AppState.users.find(u => u.id === row.dataset.userId));
                 });
             });
@@ -1732,10 +1607,8 @@
         function populateUserForm(user) {
             document.getElementById('user-id').value = user.id;
             document.getElementById('user-email').value = user.email;
-            // Asegúrate de que estos campos no causen error si no están presentes en el objeto 'user'
             document.getElementById('user-name').value = user.name || '';
             document.getElementById('user-role').value = user.role || 'Operador';
-            document.getElementById('user-status').value = user.status || 'active';
         }
 
         function clearUserForm() {
@@ -1751,7 +1624,6 @@
             const userData = {
                 name: document.getElementById('user-name').value,
                 role: document.getElementById('user-role').value,
-                status: document.getElementById('user-status').value,
             };
             const { error } = await supabase.from('profiles').update(userData).eq('id', id);
             if (error) { showNotification(`Error al guardar usuario: ${error.message}`, 'error'); }
@@ -1829,8 +1701,7 @@
             if (!mError) AppState.matches = matches;
 
             if(AppState.userRole === 'Admin') {
-                // CAMBIO AQUI: Se pasa un objeto vacío {} como segundo argumento a rpc
-                const { data: users, uError } = await supabase.rpc('get_all_users_data', {}); 
+                const { data: users, uError } = await supabase.rpc('get_all_users_with_roles');
                 if (!uError) AppState.users = users;
             }
             
