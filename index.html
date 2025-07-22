@@ -154,6 +154,7 @@
         .fixture-match-item { background-color: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); }
         .fixture-match-item.selected { box-shadow: 0 0 0 2px var(--accent-color); border-color: var(--accent-color); }
         .fixture-match-item.current-match-card { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); border-color: transparent;}
+        .player-marker { border: 2px solid; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .player-marker.claros { background-color: var(--player-claros-bg); color: var(--player-claros-text); border-color: var(--player-claros-text); }
         .player-marker.oscuros { background-color: var(--player-oscuros-bg); color: var(--player-oscuros-text); border-color: var(--player-oscuros-text); }
         .player-name-label { background-color: var(--bg-secondary); color: var(--text-primary); }
@@ -227,6 +228,7 @@
         let lastSelectedFixtureMatchId = null;
 
         const DOMElements = {
+            body: document.body,
             hamburgerButton: document.getElementById('hamburger-button'),
             sideMenu: document.getElementById('side-menu'),
             overlay: document.getElementById('overlay'),
@@ -261,27 +263,700 @@
         }
 
         function toggleSideMenu() {
-            const isMobile = window.innerWidth < 768;
-            if (isMobile) {
-                DOMElements.sideMenu.classList.toggle('open');
-                DOMElements.overlay.classList.toggle('hidden');
-                document.body.classList.toggle('overflow-hidden');
-            }
+            DOMElements.sideMenu.classList.toggle('open');
+            DOMElements.overlay.classList.toggle('hidden');
+            DOMElements.body.classList.toggle('overflow-hidden');
         }
 
         function applyInitialResponsiveStyles() {
              if (window.innerWidth >= 768) {
                 DOMElements.sideMenu.classList.remove('open');
                 DOMElements.overlay.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
+                DOMElements.body.classList.remove('overflow-hidden');
             }
         }
         
-        // --- LÓGICA DE DATOS Y RENDERIZADO ---
+        // --- LÓGICA DE DATOS Y RENDERIZADO (RESTAURADA) ---
         
-        // ... (Aquí va toda la lógica de cálculo y renderizado del index.html original)
-        // Se incluyen las funciones: parseDate, populateYearSelects, populateMonthSelects, etc.
-        // Las funciones de renderizado ahora inyectarán el HTML en DOMElements.mainContentArea
+        function parseDate(dateString) { 
+            if (!dateString) return new Date();
+            return new Date(dateString + 'T00:00:00'); 
+        }
+
+        function populateYearSelects(selectId) {
+            const yearSelect = document.getElementById(selectId);
+            if (!yearSelect) return;
+            const years = [...new Set(allMatchDates.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
+            
+            yearSelect.innerHTML = '<option value="all">Todos los Años</option>';
+            years.forEach(year => yearSelect.innerHTML += `<option value="${year}">${year}</option>`);
+        }
+
+        function populateMonthSelects(selectId) {
+            const monthSelect = document.getElementById(selectId);
+            if (!monthSelect) return;
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            
+            monthSelect.innerHTML = '<option value="all">Todos los Meses</option>';
+            months.forEach((month, index) => monthSelect.innerHTML += `<option value="${index + 1}">${month}</option>`);
+        }
+        
+        function populateAndSetCurrentPeriod(yearSelectId, periodSelectId) {
+            populateYearSelects(yearSelectId);
+            const yearSelect = document.getElementById(yearSelectId);
+            const periodSelect = document.getElementById(periodSelectId);
+            if (!periodSelect || !yearSelect) return;
+            
+            const currentYear = new Date().getFullYear();
+            yearSelect.value = Array.from(yearSelect.options).some(opt => opt.value == currentYear) ? currentYear : 'all';
+
+            const currentMonth = new Date().getMonth();
+            periodSelect.value = (currentMonth <= 5) ? 'apertura' : 'clausura';
+        }
+
+        function setTodayFilters(sectionPrefix, isMonthFilter = false) {
+             const today = new Date();
+             const yearSelect = document.getElementById(`${sectionPrefix}-year-select`);
+             const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${sectionPrefix}-month-select`) : document.getElementById(`${sectionPrefix}-period-select`);
+             
+             if(yearSelect) yearSelect.value = today.getFullYear();
+             if(periodOrMonthSelect) {
+                 periodOrMonthSelect.value = isMonthFilter ? today.getMonth() + 1 : (today.getMonth() <= 5 ? 'apertura' : 'clausura');
+             }
+        }
+
+        async function fetchAndCalculateStatsForPeriod(yearSelectId, periodSelectId) {
+            const selectedYear = document.getElementById(yearSelectId).value;
+            const selectedPeriod = document.getElementById(periodSelectId).value;
+
+            let query = supabaseClient.from('matches').select('*');
+
+            if (selectedYear !== 'all') {
+                let startDate, endDate;
+                if (selectedPeriod === 'apertura') {
+                    startDate = `${selectedYear}-01-01`;
+                    endDate = `${selectedYear}-06-30`;
+                } else if (selectedPeriod === 'clausura') {
+                    startDate = `${selectedYear}-07-01`;
+                    endDate = `${selectedYear}-12-31`;
+                } else { // total
+                    startDate = `${selectedYear}-01-01`;
+                    endDate = `${selectedYear}-12-31`;
+                }
+                query = query.gte('match_date', startDate).lte('match_date', endDate);
+            }
+            
+            const { data: filteredMatches, error } = await query;
+
+            if (error) {
+                console.error("Error fetching matches:", error);
+                return { players: [], teamStats: {}, error };
+            }
+
+            const playerStats = {};
+            allPlayersData.forEach(player => {
+                playerStats[player.id] = { name: player.name, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player.id };
+            });
+
+            let clarosWins = 0, oscurosWins = 0, empates = 0, suspendidos = 0, totalPJMatches = 0;
+
+            (filteredMatches || []).forEach(match => {
+                const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
+                const allPlayersInMatch = [...new Set([...(team_white_players || []), ...(team_dark_players || [])])];
+
+                if (result !== 'Suspendido') totalPJMatches++;
+                else suspendidos++;
+
+                allPlayersInMatch.forEach(pId => {
+                    if (playerStats[pId]) {
+                        if (result === 'Claros' && (team_white_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
+                        else if (result === 'Oscuros' && (team_dark_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
+                        else if (result === 'Empate') { playerStats[pId].points += 1; playerStats[pId].pe++; }
+                        else if (result !== 'Suspendido') { playerStats[pId].pp++; }
+                        if (result !== 'Suspendido') playerStats[pId].pj++;
+                    }
+                });
+
+                if (result === 'Claros') clarosWins++;
+                else if (result === 'Oscuros') oscurosWins++;
+                else if (result === 'Empate') empates++;
+
+                if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
+                    const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
+                    if (votosArray.length > 0) {
+                        const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                        votosArray.filter(v => v.votos === maxVotes).forEach(chamigo => {
+                            if (playerStats[chamigo.id]) playerStats[chamigo.id].chamigos++;
+                        });
+                    }
+                }
+
+                if (tt_attendees) {
+                    tt_attendees.forEach(pId => { if (playerStats[pId]) playerStats[pId].tt++; });
+                }
+            });
+
+            Object.values(playerStats).forEach(player => {
+                const maxPossiblePoints = player.pj * 3;
+                let currentEfectividad = (maxPossiblePoints > 0) ? (player.points / maxPossiblePoints) * 100 : 0;
+                if (totalPJMatches > 0) {
+                    const participationRatio = player.pj / totalPJMatches;
+                    player.efectividad = (participationRatio < 0.20) ? (currentEfectividad * participationRatio).toFixed(2) : currentEfectividad.toFixed(2);
+                } else {
+                    player.efectividad = "0.00";
+                }
+                player.ausentes = Math.max(0, totalPJMatches - player.pj);
+            });
+
+            return {
+                players: Object.values(playerStats).filter(p => p.name),
+                teamStats: { clarosWins, oscurosWins, empates, suspendidos, totalPJMatches },
+                error: null
+            };
+        }
+
+        async function renderGenericTable(section, filterFn, sortFn, renderRowFn, headers) {
+            const table = document.getElementById(`${section}-table`);
+            const loadingMessage = document.getElementById(`${section}-loading-message`);
+            if (!table || !loadingMessage) return;
+
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando datos...`;
+            
+            const { players, error } = await fetchAndCalculateStatsForPeriod(`${section}-year-select`, `${section}-period-select`);
+            
+            if (error) {
+                loadingMessage.innerHTML = 'Error al cargar los datos.';
+                return;
+            }
+
+            const rankedPlayers = players.filter(filterFn).sort(sortFn);
+            if (rankedPlayers.length === 0) {
+                loadingMessage.innerHTML = `No hay datos disponibles para los filtros seleccionados.`;
+                return;
+            }
+            
+            table.innerHTML = `
+                <thead><tr>${headers.map(h => `<th class="p-3 text-center">${h}</th>`).join('')}</tr></thead>
+                <tbody>${rankedPlayers.map(renderRowFn).join('')}</tbody>`;
+
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
+        }
+
+        function renderLeaderboard() {
+            renderGenericTable(
+                'leaderboard',
+                player => player.pj > 0,
+                (a, b) => b.points - a.points,
+                (player, index) => `
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.points}</td>
+                        <td class="p-3 text-center">${player.efectividad}%</td>
+                    </tr>`,
+                ['#', 'Jugador', 'Puntos', 'Efectividad']
+            );
+        }
+
+        function renderChamigo() {
+            renderGenericTable(
+                'chamigo',
+                p => p.chamigos > 0,
+                (a, b) => b.chamigos - a.chamigos,
+                (player, index) => `
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.chamigos}</td>
+                    </tr>`,
+                ['#', 'Jugador', 'Chamigos']
+            );
+        }
+        
+        function renderTT() {
+            renderGenericTable(
+                'tt',
+                p => p.tt > 0,
+                (a, b) => b.tt - a.tt,
+                (player, index) => `
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.tt}</td>
+                    </tr>`,
+                ['#', 'Jugador', 'TT']
+            );
+        }
+
+        function renderPresentismo() {
+            renderGenericTable(
+                'presentismo',
+                p => p.pj > 0,
+                (a, b) => b.pj - a.pj,
+                (player, index) => `
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.pj}</td>
+                    </tr>`,
+                ['#', 'Jugador', 'PJ']
+            );
+        }
+        
+        function renderAusentismo() {
+            renderGenericTable(
+                'ausentismo',
+                p => p.pj > 0,
+                (a, b) => b.ausentes - a.ausentes,
+                (player, index) => `
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.ausentes}</td>
+                    </tr>`,
+                ['#', 'Jugador', 'Ausentes']
+            );
+        }
+
+        async function renderEstadisticas() {
+            const table = document.getElementById('estadisticas-table');
+            const loadingMessage = document.getElementById('estadisticas-loading-message');
+            if (!table || !loadingMessage) return;
+            
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+
+            const { players, error } = await fetchAndCalculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
+            
+            if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
+
+            const sortCriterion = document.getElementById('estadisticas-sort-criterion').value;
+            const sortOrder = document.getElementById('estadisticas-sort-order').value;
+            const rankedPlayers = players.filter(p => p.pj > 0).sort((a, b) => {
+                let valA = parseFloat(a[sortCriterion]) || 0;
+                let valB = parseFloat(b[sortCriterion]) || 0;
+                return sortOrder === 'asc' ? valA - valB : valB - valA;
+            });
+            
+            if (rankedPlayers.length === 0) { loadingMessage.innerHTML = `No hay datos disponibles.`; return; }
+
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th class="p-2 text-center sticky-col sticky-col-1">#</th>
+                        <th class="p-3 text-left-player sticky-col sticky-col-2">Jugador</th>
+                        <th class="p-3 text-center">Puntos</th><th class="p-3 text-center">PG</th><th class="p-3 text-center">PE</th><th class="p-3 text-center">PP</th>
+                        <th class="p-3 text-center">PJ</th><th class="p-3 text-center">Efectividad</th><th class="p-3 text-center">Chamigo</th>
+                        <th class="p-3 text-center">TT</th><th class="p-3 text-center">Ausentismo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rankedPlayers.map((player, index) => `
+                    <tr>
+                        <td class="p-2 text-center sticky-col sticky-col-1">${index + 1}</td>
+                        <td class="p-3 text-left-player sticky-col sticky-col-2">${player.name}</td>
+                        <td class="p-3 text-center">${player.points}</td><td class="p-3 text-center">${player.pg}</td><td class="p-3 text-center">${player.pe}</td>
+                        <td class="p-3 text-center">${player.pp}</td><td class="p-3 text-center">${player.pj}</td><td class="p-3 text-center">${player.efectividad}%</td>
+                        <td class="p-3 text-center">${player.chamigos}</td><td class="p-3 text-center">${player.tt}</td><td class="p-3 text-center">${player.ausentes}</td>
+                    </tr>`).join('')}
+                </tbody>`;
+
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
+        }
+
+        async function renderEquipos() {
+            const statsDisplay = document.getElementById('equipos-stats-display');
+            const loadingMessage = document.getElementById('equipos-loading-message');
+            if (!statsDisplay || !loadingMessage) return;
+
+            statsDisplay.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+
+            const { teamStats, error } = await fetchAndCalculateStatsForPeriod('equipos-year-select', 'equipos-period-select');
+
+            if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
+            
+            const statCard = (value, label, color) => `
+                <div class="p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px] text-white" style="background: ${color};">
+                    <span class="text-3xl font-bold">${value}</span><span class="text-sm uppercase mt-1">${label}</span>
+                </div>`;
+            
+            statsDisplay.innerHTML = 
+                statCard(teamStats.oscurosWins, 'Oscuros Ganados', 'var(--sidebar-bg)') +
+                statCard(teamStats.clarosWins, 'Claros Ganados', '#e2e8f0') +
+                statCard(teamStats.empates, 'Empates', 'var(--text-secondary)') +
+                statCard(teamStats.suspendidos, 'Suspendidos', 'var(--danger-color)') +
+                statCard(teamStats.totalPJMatches, 'Partidos Jugados', 'var(--accent-color)');
+            
+            statsDisplay.querySelector('.text-white')?.classList.add('dark:text-black'); // Fix for Claros card in dark mode
+
+            loadingMessage.classList.add('hidden');
+            statsDisplay.classList.remove('hidden');
+        }
+        
+        async function renderFixture() {
+            const cardsContainer = document.getElementById('fixture-matches-cards-container');
+            const loadingMessage = document.getElementById('fixture-loading-message');
+            const year = document.getElementById('fixture-year-select').value;
+            const month = document.getElementById('fixture-month-select').value;
+            if (!cardsContainer || !loadingMessage) return;
+
+            cardsContainer.innerHTML = '';
+            loadingMessage.classList.remove('hidden');
+
+            let query = supabaseClient.from('matches').select('*');
+            if (year !== 'all' && month !== 'all') {
+                const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+                const endDate = new Date(year, month, 0).getDate();
+                query = query.gte('match_date', startDate).lte('match_date', `${year}-${String(month).padStart(2, '0')}-${endDate}`);
+            } else if (year !== 'all') {
+                query = query.gte('match_date', `${year}-01-01`).lte('match_date', `${year}-12-31`);
+            }
+
+            const { data: filteredMatches, error } = await query;
+
+            if (error) { loadingMessage.innerHTML = `Error al cargar partidos.`; return; }
+            if (!filteredMatches || filteredMatches.length === 0) { loadingMessage.innerHTML = `No hay partidos disponibles.`; lastSelectedFixtureMatchId = null; return; }
+
+            filteredMatches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let currentOrFutureMatchFound = false;
+
+            cardsContainer.innerHTML = filteredMatches.map(match => {
+                const matchDateObj = parseDate(match.match_date);
+                let isCurrent = !currentOrFutureMatchFound && matchDateObj.getTime() >= today.getTime();
+                if(isCurrent) currentOrFutureMatchFound = true;
+
+                return `
+                    <div class="fixture-match-item p-2 rounded-lg shadow-sm cursor-pointer transition flex justify-center items-center text-center text-sm font-semibold sm:p-4 sm:shadow-md ${isCurrent ? 'current-match-card' : ''}" data-match-id="${match.id}">
+                        ${isCurrent ? 'PARTIDO ACTUAL' : `Partido del ${matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC'})}`}
+                    </div>`;
+            }).join('');
+
+            cardsContainer.querySelectorAll('.fixture-match-item').forEach(card => card.addEventListener('click', (e) => {
+                cardsContainer.querySelectorAll('.fixture-match-item').forEach(c => c.classList.remove('selected'));
+                e.currentTarget.classList.add('selected');
+                renderFixtureDetails(e.currentTarget.dataset.matchId);
+            }));
+
+            loadingMessage.classList.add('hidden');
+
+            setTimeout(() => {
+                const currentMatchCard = document.querySelector('.current-match-card');
+                const firstCard = cardsContainer.querySelector('[data-match-id]');
+                if (currentMatchCard) currentMatchCard.click(); 
+                else if (firstCard) firstCard.click();
+            }, 100);
+        }
+
+        async function renderFixtureDetails(matchId) {
+            const { data: match, error } = await supabaseClient.from('matches').select('*').eq('id', matchId).single();
+            if (error || !match) { console.error("Error fetching match details:", error); return; }
+            
+            lastSelectedFixtureMatchId = matchId;
+            
+            const visualDetailsContainer = document.getElementById('fixture-visual-details-container');
+            const soccerFieldContainer = document.getElementById('soccer-field-container');
+            const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
+            const collapsibleContent = document.getElementById('fixture-collapsible-content');
+            if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
+            
+            soccerFieldContainer.innerHTML = `
+                <div class="goal top"></div><div class="goal bottom"></div>
+                <div class="penalty-area top"></div><div class="penalty-area bottom"></div>
+                <div class="goal-area top"></div><div class="goal-area bottom"></div>`;
+            ttAttendeesTableBody.innerHTML = '';
+
+            const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
+            const getPlayerName = id => (allPlayersData.find(p => p.id === id) || {name: 'ID Desconocido'}).name;
+            
+            ttAttendeesTableBody.innerHTML = (tt_attendees && tt_attendees.length > 0)
+                ? tt_attendees.map(id => `<tr><td class="p-2 text-center">${getPlayerName(id)}</td></tr>`).join('')
+                : `<tr><td class="p-2 text-center">No hay asistentes al TT.</td></tr>`;
+
+            const isHorizontalField = window.innerWidth >= 768;
+            soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
+            soccerFieldContainer.querySelectorAll('.goal, .penalty-area, .goal-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
+
+            const pos = {
+                v: {
+                    claros: [{ x: 0.5, y: 0.93 }, { x: 0.3, y: 0.79 }, { x: 0.7, y: 0.79 }, { x: 0.35, y: 0.63 }, { x: 0.65, y: 0.58 }],
+                    oscuros: [{ x: 0.5, y: 0.07 }, { x: 0.3, y: 0.21 }, { x: 0.7, y: 0.21 }, { x: 0.35, y: 0.42 }, { x: 0.65, y: 0.37 }]
+                },
+                h: {
+                    claros: [{ x: 0.92, y: 0.50 }, { x: 0.79, y: 0.20 }, { x: 0.79, y: 0.80 }, { x: 0.60, y: 0.32 }, { x: 0.64, y: 0.68 }],
+                    oscuros: [{ x: 0.08, y: 0.50 }, { x: 0.21, y: 0.20 }, { x: 0.21, y: 0.80 }, { x: 0.42, y: 0.32 }, { x: 0.38, y: 0.68 }]
+                }
+            };
+            const currentPos = isHorizontalField ? pos.h : pos.v;
+            
+            let chamigosIds = [];
+            if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
+                const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
+                if (votosArray.length > 0) {
+                    const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                    chamigosIds = votosArray.filter(v => v.votos === maxVotes).map(c => c.id);
+                }
+            }
+
+            const createPlayerMarker = (playerId, team, index) => {
+                const playerWrapper = document.createElement('div');
+                playerWrapper.className = `player-wrapper absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10`;
+                playerWrapper.style.top = `${currentPos[team][index].y * 100}%`;
+                playerWrapper.style.left = `${currentPos[team][index].x * 100}%`;
+                
+                let markerHTML = `<div class="player-marker relative w-14 h-14 rounded-full flex items-center justify-center text-base font-bold text-center">
+                    ${parseInt(playerId.replace('J', ''))}`;
+                if (chamigosIds.includes(playerId)) {
+                    markerHTML += `<i class="fas fa-star text-yellow-400 absolute -top-1 -right-1 text-lg"></i>`;
+                }
+                markerHTML += `</div><div class="player-name-label text-xs font-bold p-1 rounded-md">${getPlayerName(playerId)}</div>`;
+                playerWrapper.innerHTML = markerHTML;
+                soccerFieldContainer.appendChild(playerWrapper);
+            };
+
+            (team_white_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'claros', i));
+            (team_dark_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'oscuros', i));
+            
+            if (result && result !== 'Empate' && result !== 'Suspendido') {
+                 const trophyDiv = document.createElement('div');
+                 trophyDiv.className = 'winner-trophy absolute text-2xl z-20 transform -translate-x-1/2 -translate-y-1/2';
+                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
+                 const trophyPos = {
+                     h: { Claros: { top: '50%', left: '95%'}, Oscuros: { top: '50%', left: '5%'} },
+                     v: { Claros: { top: '95%', left: '50%'}, Oscuros: { top: '5%', left: '50%'} }
+                 };
+                 Object.assign(trophyDiv.style, (isHorizontalField ? trophyPos.h : trophyPos.v)[result]);
+                 soccerFieldContainer.appendChild(trophyDiv);
+            }
+            
+            visualDetailsContainer.classList.remove('hidden');
+            if(collapsibleContent) collapsibleContent.classList.add('hidden');
+        }
+        
+        async function renderIndividualStatsTable() {
+            const selectedPlayerId = document.getElementById('selected-player-id').value;
+            const table = document.getElementById('individual-stats-table');
+            const loadingMessage = document.getElementById('individual-stats-loading-message');
+            if (!table || !loadingMessage) return;
+            
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            
+            if(!selectedPlayerId) {
+                loadingMessage.textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                return;
+            }
+
+            const { data: matches, error } = await supabaseClient.from('matches').select('*').or(`team_white_players.cs.{${selectedPlayerId}},team_dark_players.cs.{${selectedPlayerId}}`);
+
+            if(error) { loadingMessage.textContent = 'Error al cargar el historial del jugador.'; return; }
+            if (!matches || matches.length === 0) { loadingMessage.textContent = 'Este jugador no tiene partidos registrados.'; return; }
+
+            const playerStats = calculateIndividualPlayerStats(selectedPlayerId, matches);
+
+            if (!playerStats) { loadingMessage.textContent = 'No se pudieron calcular las estadísticas.'; return; }
+            
+            let tableHtml = `
+                <thead>
+                    <tr>
+                        <th class="p-3 text-left pl-4 sticky-col sticky-col-1">Año</th>
+                        <th class="p-3 text-center sticky-col sticky-col-2">Torneo</th>
+                        <th class="p-3 text-center">Puntos</th><th class="p-3 text-center">PG</th><th class="p-3 text-center">PE</th>
+                        <th class="p-3 text-center">PP</th><th class="p-3 text-center">PJ</th><th class="p-3 text-center">Efectividad</th>
+                        <th class="p-3 text-center">Chamigo</th><th class="p-3 text-center">TT</th><th class="p-3 text-center">Ausentismo</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            tableHtml += `
+                <tr class="font-bold" style="background-color: var(--accent-color); color: var(--button-text-color);">
+                    <td class="p-3 text-left pl-4 sticky-col sticky-col-1"><b>TOTAL</b></td>
+                    <td class="p-3 text-center sticky-col sticky-col-2"></td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.points}</td><td class="p-3 text-center">${playerStats.overallTotal.pg}</td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.pe}</td><td class="p-3 text-center">${playerStats.overallTotal.pp}</td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.pj}</td><td class="p-3 text-center">${playerStats.overallTotal.efectividad}%</td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.chamigos}</td><td class="p-3 text-center">${playerStats.overallTotal.tt}</td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.ausentes}</td>
+                </tr>`;
+
+            Object.keys(playerStats.years).sort((a,b) => b-a).forEach(year => {
+                const yearData = playerStats.years[year];
+                if(yearData.total.pj > 0) {
+                    tableHtml += `
+                        <tr class="font-semibold cursor-pointer" style="background-color: var(--bg-muted);" data-year="${year}">
+                            <td class="p-3 text-left pl-4 sticky-col sticky-col-1"><i class="fas fa-plus-circle toggle-details mr-2 text-accent-color"></i><b>${year}</b></td>
+                            <td class="p-3 text-center sticky-col sticky-col-2"><b>TOTAL AÑO</b></td>
+                            <td class="p-3 text-center">${yearData.total.points}</td><td class="p-3 text-center">${yearData.total.pg}</td>
+                            <td class="p-3 text-center">${yearData.total.pe}</td><td class="p-3 text-center">${yearData.total.pp}</td>
+                            <td class="p-3 text-center">${yearData.total.pj}</td><td class="p-3 text-center">${yearData.total.efectividad}%</td>
+                            <td class="p-3 text-center">${yearData.total.chamigos}</td><td class="p-3 text-center">${yearData.total.tt}</td>
+                            <td class="p-3 text-center">${yearData.total.ausentes}</td>
+                        </tr>
+                        <tr class="period-details-row hidden" data-year-parent="${year}">
+                            <td class="p-3 text-left pl-12 sticky-col sticky-col-1"></td><td class="p-3 text-center sticky-col sticky-col-2">Clausura</td>
+                            <td class="p-3 text-center">${yearData.clausura.points}</td><td class="p-3 text-center">${yearData.clausura.pg}</td>
+                            <td class="p-3 text-center">${yearData.clausura.pe}</td><td class="p-3 text-center">${yearData.clausura.pp}</td>
+                            <td class="p-3 text-center">${yearData.clausura.pj}</td><td class="p-3 text-center">${yearData.clausura.efectividad}%</td>
+                            <td class="p-3 text-center">${yearData.clausura.chamigos}</td><td class="p-3 text-center">${yearData.clausura.tt}</td>
+                            <td class="p-3 text-center">${yearData.clausura.ausentes}</td>
+                        </tr>
+                        <tr class="period-details-row hidden" data-year-parent="${year}">
+                            <td class="p-3 text-left pl-12 sticky-col sticky-col-1"></td><td class="p-3 text-center sticky-col sticky-col-2">Apertura</td>
+                            <td class="p-3 text-center">${yearData.apertura.points}</td><td class="p-3 text-center">${yearData.apertura.pg}</td>
+                            <td class="p-3 text-center">${yearData.apertura.pe}</td><td class="p-3 text-center">${yearData.apertura.pp}</td>
+                            <td class="p-3 text-center">${yearData.apertura.pj}</td><td class="p-3 text-center">${yearData.apertura.efectividad}%</td>
+                            <td class="p-3 text-center">${yearData.apertura.chamigos}</td><td class="p-3 text-center">${yearData.apertura.tt}</td>
+                            <td class="p-3 text-center">${yearData.apertura.ausentes}</td>
+                        </tr>`;
+                }
+            });
+            
+            table.innerHTML = tableHtml + '</tbody>';
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
+            
+            table.querySelectorAll('[data-year]').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    const year = row.dataset.year;
+                    const toggleIcon = row.querySelector('.toggle-details');
+                    document.querySelectorAll(`.period-details-row[data-year-parent="${year}"]`).forEach(r => r.classList.toggle('hidden'));
+                    toggleIcon?.classList.toggle('fa-plus-circle');
+                    toggleIcon?.classList.toggle('fa-minus-circle');
+                });
+            });
+        }
+
+        function calculateIndividualPlayerStats(playerId, matches) {
+            const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }};
+            const allYearsInMatches = [...new Set(matches.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
+
+            allYearsInMatches.forEach(year => {
+                playerStats.years[year] = {
+                    apertura: { name: 'Apertura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
+                    clausura: { name: 'Clausura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
+                    total: { name: year, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }
+                };
+            });
+            
+            matches.forEach(match => {
+                 const { match_date, team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
+                 if (!match_date) return;
+
+                 const matchDate = parseDate(match_date);
+                 const year = matchDate.getFullYear();
+                 const period = matchDate.getMonth() <= 5 ? 'apertura' : 'clausura';
+
+                 if (!playerStats.years[year]) return;
+                 
+                 const playerIsInMatch = (team_white_players || []).includes(playerId) || (team_dark_players || []).includes(playerId);
+                 if (!playerIsInMatch) return;
+
+                 const statsToUpdate = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
+                 
+                 if (result !== 'Suspendido') {
+                     statsToUpdate.forEach(s => s.pj++);
+                     if (result === 'Claros' && (team_white_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                     else if (result === 'Oscuros' && (team_dark_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                     else if (result === 'Empate') statsToUpdate.forEach(s => { s.points += 1; s.pe++; });
+                     else statsToUpdate.forEach(s => s.pp++);
+                 }
+
+                 if (chamigo_votes) {
+                     const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
+                     if (votosArray.length > 0) {
+                         const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                         if (votosArray.some(v => v.id === playerId && v.votos === maxVotes)) {
+                             statsToUpdate.forEach(s => s.chamigos++);
+                         }
+                     }
+                 }
+                 if (tt_attendees && tt_attendees.includes(playerId)) {
+                     statsToUpdate.forEach(s => s.tt++);
+                 }
+            });
+
+            allYearsInMatches.forEach(year => {
+                const yearData = playerStats.years[year];
+                ['apertura', 'clausura', 'total'].forEach(periodType => {
+                    const stats = yearData[periodType];
+                    const totalMatchesInPeriod = matches.filter(m => {
+                        if (!m.match_date) return false;
+                        const d = parseDate(m.match_date);
+                        const p = d.getMonth() <= 5 ? 'apertura' : 'clausura';
+                        const y = d.getFullYear();
+                        if (periodType === 'total') return y === year && m.result !== 'Suspendido';
+                        return y === year && p === periodType && m.result !== 'Suspendido';
+                    }).length;
+
+                    const maxPoints = stats.pj * 3;
+                    stats.efectividad = maxPoints > 0 ? ((stats.points / maxPoints) * 100).toFixed(2) : "0.00";
+                    stats.ausentes = Math.max(0, totalMatchesInPeriod - stats.pj);
+                });
+            });
+
+            const totalNonSuspendedMatches = matches.filter(m => m.result !== 'Suspendido').length;
+            const overall = playerStats.overallTotal;
+            const maxTotalPoints = overall.pj * 3;
+            overall.efectividad = maxTotalPoints > 0 ? ((overall.points / maxTotalPoints) * 100).toFixed(2) : "0.00";
+            overall.ausentes = Math.max(0, totalNonSuspendedMatches - overall.pj);
+
+            return playerStats;
+        }
+
+        function setupPlayerSearch() {
+            const searchInput = document.getElementById('individual-player-search');
+            const resultsDiv = document.getElementById('individual-player-results');
+            const selectedIdInput = document.getElementById('selected-player-id');
+            const clearButton = document.getElementById('clear-player-search');
+            if(!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
+
+            const filterAndDisplay = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm)).sort((a, b) => a.name.localeCompare(b.name));
+                resultsDiv.innerHTML = filtered.map(player => `<div class="p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
+                resultsDiv.classList.remove('hidden');
+            };
+
+            resultsDiv.addEventListener('mousedown', (e) => {
+                if (e.target.dataset.playerId) {
+                    const player = allPlayersData.find(p => p.id === e.target.dataset.playerId);
+                    searchInput.value = player.name;
+                    selectedIdInput.value = player.id;
+                    resultsDiv.classList.add('hidden');
+                    renderIndividualStatsTable();
+                }
+            });
+
+            searchInput.addEventListener('input', filterAndDisplay);
+            searchInput.addEventListener('focus', filterAndDisplay);
+            searchInput.addEventListener('blur', () => setTimeout(() => resultsDiv.classList.add('hidden'), 150));
+
+            clearButton.addEventListener('mousedown', (e) => {
+                e.preventDefault(); 
+                searchInput.value = '';
+                selectedIdInput.value = '';
+                document.getElementById('individual-stats-table').innerHTML = '';
+                document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                searchInput.focus();
+            });
+            
+            if(allPlayersData.length > 0) {
+                const defaultPlayer = allPlayersData.find(p => p.id === 'J001') || allPlayersData[0];
+                if (defaultPlayer) {
+                    searchInput.value = defaultPlayer.name;
+                    selectedIdInput.value = defaultPlayer.id;
+                }
+            }
+        }
+        
+        // --- FLUJO PRINCIPAL Y NAVEGACIÓN ---
         
         function getTabContentHTML(tabId) {
             const titles = {
@@ -291,33 +966,29 @@
             };
             const title = titles[tabId] || 'Contenido';
             
-            // Estructura base para cada pestaña
             let baseHtml = `<div id="${tabId}" class="main-content-container space-y-6">
                 <h2 class="tab-title text-3xl md:text-4xl font-extrabold text-center pb-2 border-b-4">${title.toUpperCase()}</h2>`;
             
-            // Contenido específico de cada pestaña
+            const prefix = tabId.replace('-content', '');
+            
+            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos'].includes(prefix)) {
+                 baseHtml += `
+                    <div id="${prefix}-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
+                        <span>Seleccionar Torneo</span><i class="fas fa-chevron-down toggle-icon"></i>
+                    </div>
+                    <div id="${prefix}-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 hidden items-end">
+                        <button id="${prefix}-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm">Torneo Actual</button>
+                        <div><label for="${prefix}-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="${prefix}-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
+                        <div><label for="${prefix}-period-select" class="block text-sm font-medium mb-1">Torneo:</label><select id="${prefix}-period-select" class="mt-1 block w-full p-2 text-sm shadow-sm"><option value="apertura">Apertura</option><option value="clausura">Clausura</option><option value="total">Totales</option></select></div>
+                    </div>`;
+            }
+            
             switch(tabId) {
-                case 'leaderboard-content':
-                case 'chamigo-content':
-                case 'tt-content':
-                case 'presentismo-content':
-                case 'ausentismo-content':
-                    const prefix = tabId.replace('-content', '');
-                    baseHtml += `
-                        <div id="${prefix}-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
-                            <span>Seleccionar Torneo</span><i class="fas fa-chevron-down toggle-icon"></i>
-                        </div>
-                        <div id="${prefix}-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 hidden items-end">
-                            <button id="${prefix}-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm transition-colors duration-150 ease-in-out flex-shrink-0">Torneo Actual</button>
-                            <div><label for="${prefix}-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="${prefix}-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
-                            <div><label for="${prefix}-period-select" class="block text-sm font-medium mb-1">Torneo:</label><select id="${prefix}-period-select" class="mt-1 block w-full p-2 text-sm shadow-sm"><option value="apertura">Apertura</option><option value="clausura">Clausura</option><option value="total">Totales</option></select></div>
-                        </div>
-                        <div class="table-container">
-                            <p id="${prefix}-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
-                            <table id="${prefix}-table" class="hidden">
-                                <!-- thead y tbody se llenarán dinámicamente -->
-                            </table>
-                        </div>`;
+                case 'leaderboard-content': case 'chamigo-content': case 'tt-content': case 'presentismo-content': case 'ausentismo-content':
+                    baseHtml += `<div class="table-container">
+                                    <p id="${prefix}-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                                    <table id="${prefix}-table" class="hidden"></table>
+                                 </div>`;
                     break;
                 case 'estadisticas-content':
                      baseHtml += `
@@ -337,24 +1008,15 @@
                         </div>`;
                     break;
                 case 'equipos-content':
-                    baseHtml += `
-                        <div id="equipos-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
-                            <span>Seleccionar Torneo</span><i class="fas fa-chevron-down toggle-icon"></i>
-                        </div>
-                        <div id="equipos-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 hidden items-end">
-                             <button id="equipos-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm">Torneo Actual</button>
-                             <div><label for="equipos-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="equipos-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
-                             <div><label for="equipos-period-select" class="block text-sm font-medium mb-1">Torneo:</label><select id="equipos-period-select" class="mt-1 block w-full p-2 text-sm shadow-sm"><option value="apertura">Apertura</option><option value="clausura">Clausura</option><option value="total">Totales</option></select></div>
-                        </div>
-                        <p id="equipos-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
-                        <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>`;
+                    baseHtml += `<p id="equipos-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                                 <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>`;
                     break;
                 case 'fixture-content':
                      baseHtml += `
                         <div id="fixture-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
                             <span>Elegir otro partido</span><i class="fas fa-chevron-down toggle-icon"></i>
                         </div>
-                        <div id="fixture-collapsible-content" class="hidden space-y-4">
+                        <div id="fixture-collapsible-content" class="hidden space-y-4 pt-4">
                             <div class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
                                 <button id="fixture-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm">Torneo Actual</button>
                                 <div><label for="fixture-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="fixture-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
@@ -366,7 +1028,7 @@
                         </div>
                         <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
                             <div class="md:w-[65%] min-w-0"><div id="soccer-field-container" class="relative w-full pt-[168.75%] md:pt-0 md:h-full rounded-lg overflow-hidden"></div></div>
-                            <div id="fixture-details-display" class="flex-1 md:w-[35%] p-4 rounded-lg shadow-md mt-6 md:mt-0">
+                            <div id="fixture-details-display" class="flex-1 md:w-[35%] p-4 rounded-lg mt-6 md:mt-0">
                                 <h3 class="font-semibold text-center mb-2">Asistentes al TT</h3>
                                 <div class="overflow-x-auto"><table id="tt-attendees-table" class="w-full"><tbody></tbody></table></div>
                             </div>
@@ -377,7 +1039,7 @@
                         <div class="mb-6">
                             <label for="individual-player-search" class="block text-sm font-medium mb-1">Buscar Jugador:</label>
                             <div class="relative">
-                                <input type="text" id="individual-player-search" placeholder="Escribe para buscar..." class="mt-1 block w-full p-2 border-gray-300 shadow-sm">
+                                <input type="text" id="individual-player-search" placeholder="Escribe para buscar..." class="mt-1 block w-full p-2 shadow-sm">
                                 <button id="clear-player-search" class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"><i class="fas fa-times-circle"></i></button>
                                 <div id="individual-player-results" class="absolute z-10 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                             </div>
@@ -394,9 +1056,69 @@
             return baseHtml;
         }
 
-        // ... El resto de tus funciones de renderizado y cálculo van aquí ...
-        // (código omitido por brevedad, pero es el mismo que tenías)
+        function activateTab(tabId) {
+            DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
+            
+            DOMElements.tabButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabId);
+            });
+            
+            const renderFunctions = {
+                'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
+                'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
+                'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
+            };
+            
+            if (renderFunctions[tabId]) {
+                renderFunctions[tabId]();
+            }
+            
+            setupDynamicEventListeners(tabId);
+            
+            localStorage.setItem('lastActiveTab', tabId);
+            const hash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === tabId);
+            if (hash && window.location.hash !== hash) {
+                history.pushState(null, '', hash);
+            }
+        }
         
+        function setupDynamicEventListeners(tabId) {
+            const prefix = tabId.replace('-content', '');
+
+            const filterToggle = document.getElementById(`${prefix}-filter-toggle`);
+            const filtersCollapsible = document.getElementById(`${prefix}-filters-collapsible`);
+            
+            if(filterToggle && filtersCollapsible) {
+                filterToggle.addEventListener('click', () => {
+                    filtersCollapsible.classList.toggle('hidden');
+                    filterToggle.classList.toggle('visible-content');
+                    filterToggle.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-up');
+                });
+            }
+
+            if (tabId.includes('content') && !tabId.includes('fixture') && !tabId.includes('individual')) {
+                populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
+                document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => { setTodayFilters(prefix); activateTab(tabId); });
+                document.getElementById(`${prefix}-year-select`)?.addEventListener('change', () => activateTab(tabId));
+                document.getElementById(`${prefix}-period-select`)?.addEventListener('change', () => activateTab(tabId));
+            }
+            if (tabId === 'estadisticas-content') {
+                 document.getElementById('estadisticas-sort-criterion')?.addEventListener('change', () => activateTab(tabId));
+                 document.getElementById('estadisticas-sort-order')?.addEventListener('change', () => activateTab(tabId));
+            }
+            if (tabId === 'fixture-content') {
+                populateYearSelects('fixture-year-select');
+                populateMonthSelects('fixture-month-select');
+                setTodayFilters('fixture', true);
+                document.getElementById('fixture-hoy-button')?.addEventListener('click', () => { setTodayFilters('fixture', true); renderFixture(); });
+                document.getElementById('fixture-year-select')?.addEventListener('change', renderFixture);
+                document.getElementById('fixture-month-select')?.addEventListener('change', renderFixture);
+            }
+            if (tabId === 'individual-stats-content') {
+                setupPlayerSearch();
+            }
+        }
+
         async function initializeApp() {
             try {
                 const { data: players, error: pError } = await supabaseClient.from('players').select('*');
@@ -425,73 +1147,6 @@
             }
         }
 
-        function activateTab(tabId) {
-            DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
-            
-            DOMElements.tabButtons.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === tabId);
-            });
-            
-            const renderFunctions = {
-                'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
-                'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
-                'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
-            };
-            
-            if (renderFunctions[tabId]) {
-                renderFunctions[tabId]();
-            }
-            
-            localStorage.setItem('lastActiveTab', tabId);
-            const hash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === tabId);
-            if (hash && window.location.hash !== hash) {
-                history.pushState(null, '', hash);
-            }
-        }
-        
-        function setupDynamicEventListeners() {
-            const currentTabId = document.querySelector('.main-content-container').id;
-            const prefix = currentTabId.replace('-content', '');
-
-            const filterToggle = document.getElementById(`${prefix}-filter-toggle`);
-            const filtersCollapsible = document.getElementById(`${prefix}-filters-collapsible`);
-            
-            if(filterToggle && filtersCollapsible) {
-                filterToggle.addEventListener('click', () => {
-                    filtersCollapsible.classList.toggle('hidden');
-                    filterToggle.classList.toggle('visible-content');
-                    filterToggle.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-up');
-                });
-            }
-
-            if (currentTabId.includes('content') && !currentTabId.includes('fixture') && !currentTabId.includes('individual')) {
-                populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
-                document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => {
-                    setTodayFilters(prefix);
-                    activateTab(currentTabId);
-                });
-                document.getElementById(`${prefix}-year-select`)?.addEventListener('change', () => activateTab(currentTabId));
-                document.getElementById(`${prefix}-period-select`)?.addEventListener('change', () => activateTab(currentTabId));
-            }
-            if (currentTabId === 'estadisticas-content') {
-                 document.getElementById('estadisticas-sort-criterion')?.addEventListener('change', () => activateTab(currentTabId));
-                 document.getElementById('estadisticas-sort-order')?.addEventListener('change', () => activateTab(currentTabId));
-            }
-            if (currentTabId === 'fixture-content') {
-                populateYearSelects('fixture-year-select');
-                populateMonthSelects('fixture-month-select');
-                setTodayFilters('fixture', true);
-                document.getElementById('fixture-hoy-button')?.addEventListener('click', () => { setTodayFilters('fixture', true); renderFixture(); });
-                document.getElementById('fixture-year-select')?.addEventListener('change', renderFixture);
-                document.getElementById('fixture-month-select')?.addEventListener('change', renderFixture);
-            }
-            if (currentTabId === 'individual-stats-content') {
-                setupPlayerSearch();
-            }
-        }
-
-
-        // --- INICIALIZACIÓN ---
         function init() {
             console.log('Aplicación LA CLANDE cargada y corregida!');
             
