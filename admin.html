@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -61,8 +62,7 @@
         body:has(#mobile-menu.translate-x-0),
         body:has(#custom-confirm-modal:not(.hidden)),
         body:has(#player-assignment-modal:not(.hidden)),
-        body:has(#notification-modal:not(.hidden)),
-        body:has(#profile-modal:not(.hidden)) {
+        body:has(#notification-modal:not(.hidden)) {
             overflow: hidden;
         }
 
@@ -164,6 +164,7 @@
         .button-purple { background-color: #9333ea; color: var(--button-text-color); }
         .button-purple:hover { background-color: #7e22ce; }
 
+        /* MEJORA: Clases para el fondo de las notificaciones */
         .bg-success-color { background-color: var(--success-color); }
         .bg-danger-color { background-color: var(--danger-color); }
         .bg-warning-color { background-color: var(--warning-color); }
@@ -200,22 +201,29 @@
                     <i class="fas fa-moon w-5 text-center"></i>
                     <span>Modo Oscuro</span>
                 </button>
+                <button class="signout-trigger w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200 mt-2">
+                    <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                    <span>Cerrar Sesión</span>
+                </button>
             </div>
         </aside>
 
         <!-- Main content -->
         <div class="flex-1 flex flex-col relative">
-            <!-- Header for Mobile -->
-            <header class="flex items-center justify-between p-4 border-b border-border-color bg-bg-secondary sticky top-0 z-30 md:hidden">
-                <button id="mobile-menu-toggle" class="p-2 rounded-md -ml-2">
-                    <i class="fas fa-bars text-lg"></i>
-                </button>
-                <a href="#" class="text-xl font-bold flex items-center gap-2 justify-center">
-                    <span class="text-2xl">⚽</span>
-                    <span>LA CLANDE</span>
-                </a>
-                <!-- Spacer -->
-                <div class="w-8"></div>
+            <!-- Header for Mobile (Sticky) -->
+            <header class="flex items-center justify-between p-4 border-b border-border-color bg-white text-gray-800 dark:bg-gray-800 dark:text-white md:hidden sticky top-0 z-30">
+                <div class="w-10">
+                     <button id="mobile-menu-toggle" class="p-2 rounded-md -ml-2">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                </div>
+                <div class="flex-1 text-center">
+                    <a href="#" class="text-xl font-bold flex items-center gap-2 justify-center">
+                        <span class="text-2xl">⚽</span>
+                        <span>LA CLANDE</span>
+                    </a>
+                </div>
+                <div class="w-10"></div> <!-- Spacer -->
             </header>
             
             <main class="bg-primary p-4 sm:p-6 lg:p-8">
@@ -234,7 +242,7 @@
         </div>
     </div>
     
-    <!-- Mobile Menu -->
+    <!-- Mobile Menu (now outside the main flow, controlled by overlay) -->
     <div id="mobile-menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
     <div id="mobile-menu" class="hidden fixed top-0 left-0 h-full w-64 bg-secondary shadow-xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out">
         <!-- Mobile menu content injected here -->
@@ -271,19 +279,19 @@
                             </button>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <a href="recuperar-pass.html" class="text-sm font-medium text-accent-color hover:text-accent-color-hover">¿Olvidaste tu contraseña?</a>
-                    </div>
                     <button id="login-button" type="submit" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition duration-300">
                         Entrar
                     </button>
+                    <div class="text-center mt-4">
+                        <a href="recuperar-pass.html" class="text-sm text-accent-color hover:underline">¿Olvidaste tu contraseña?</a>
+                    </div>
                     <p id="auth-status" class="text-center text-danger-color mt-4 h-5"></p>
                 </form>
             </div>
         </div>
     </div>
     
-    <!-- Notification Modal -->
+    <!-- MEJORA: Nuevo Modal de Notificación Centrado -->
     <div id="notification-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-[100] p-4">
         <div id="notification-content" class="flex items-center gap-4 text-white font-semibold p-6 rounded-lg shadow-xl max-w-sm w-full">
             <i id="notification-icon" class="fas fa-2x"></i>
@@ -291,7 +299,7 @@
         </div>
     </div>
 
-    <!-- Confirmation Modal -->
+    <!-- Main Confirmation Modal -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
         <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
             <h3 class="text-lg font-semibold mb-2" id="modal-title">Confirmar Acción</h3>
@@ -316,43 +324,6 @@
         </div>
     </div>
 
-    <!-- Profile Modal -->
-    <div id="profile-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
-        <div class="card rounded-lg shadow-xl max-w-md w-full p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-semibold">Editar Perfil</h3>
-                <button id="profile-modal-close-button" class="p-2 -mr-2 rounded-full hover:bg-bg-muted"><i class="fas fa-times"></i></button>
-            </div>
-            
-            <form id="profile-form" class="space-y-4">
-                <h4 class="font-semibold text-text-secondary border-b border-border-color pb-2">Mis Datos</h4>
-                <div>
-                    <label for="profile-email" class="block text-sm font-medium mb-1">Email</label>
-                    <input type="email" id="profile-email" class="w-full p-2 border rounded-md" readonly>
-                </div>
-                <div>
-                    <label for="profile-name" class="block text-sm font-medium mb-1">Nombre</label>
-                    <input type="text" id="profile-name" class="w-full p-2 border rounded-md" required>
-                </div>
-                <button type="submit" class="w-full px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar Cambios</button>
-                <p id="profile-message" class="text-center h-5 mt-2"></p>
-            </form>
-
-            <div class="border-t border-border-color my-6"></div>
-
-            <form id="password-form-modal" class="space-y-4">
-                <h4 class="font-semibold text-text-secondary border-b border-border-color pb-2">Cambiar Contraseña</h4>
-                <div>
-                    <label for="modal-new-password" class="block text-sm font-medium mb-1">Nueva Contraseña</label>
-                    <input type="password" id="modal-new-password" class="w-full p-2 border rounded-md" required placeholder="Mínimo 6 caracteres">
-                </div>
-                <button type="submit" class="w-full px-4 py-2 button-primary font-semibold rounded-lg shadow-md hover:opacity-90">Actualizar Contraseña</button>
-                 <p id="password-message" class="text-center h-5 mt-2"></p>
-            </form>
-        </div>
-    </div>
-
-
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -360,16 +331,14 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- CONFIG & STATE ---
-        const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ';
+        const SUPABASE_URL = 'https://ccvfhajwlfhnrmftqpxs.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjdmZoYWp3bGZobnJtZnRxcHhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyMTQyMDksImV4cCI6MjA2ODc5MDIwOX0._7seIybO8-cvmj0qd4a86Cht63Yl2Y0OPGSenEv9emk';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const AppState = {
             players: [],
             matches: [],
             users: [],
-            currentUser: null,
-            userProfile: null,
             userRole: null,
             selectedMatchId: null,
             isInitialized: false,
@@ -408,13 +377,6 @@
             desktopDarkModeToggle: document.getElementById('desktop-dark-mode-toggle'),
             loginDarkModeToggle: document.getElementById('login-dark-mode-toggle'),
             authStatus: document.getElementById('auth-status'),
-            // Profile Modal
-            profileModal: document.getElementById('profile-modal'),
-            profileModalCloseButton: document.getElementById('profile-modal-close-button'),
-            profileForm: document.getElementById('profile-form'),
-            passwordFormModal: document.getElementById('password-form-modal'),
-            profileMessage: document.getElementById('profile-message'),
-            passwordMessage: document.getElementById('password-message'),
             // Confirmation Modal
             modal: document.getElementById('custom-confirm-modal'),
             modalTitle: document.getElementById('modal-title'),
@@ -440,11 +402,9 @@
             setupEventListeners();
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
-                    AppState.currentUser = session.user;
                     if (!AppState.isInitialized) loadAdminPanel(session);
                 } 
                 else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
-                    AppState.currentUser = null;
                     showLoginScreen();
                 }
             });
@@ -461,8 +421,7 @@
             DOMElements.adminContent.classList.add('hidden');
             
             try {
-                const { data: profile } = await supabase.from('profiles').select('role, name').eq('id', session.user.id).single();
-                AppState.userProfile = profile;
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
                 AppState.userRole = profile ? profile.role : null;
 
                 const [playersRes, matchesRes, usersRes] = await Promise.allSettled([
@@ -662,6 +621,10 @@
                         <i class="fas fa-moon w-5 text-center"></i>
                         <span>Modo Oscuro</span>
                     </button>
+                    <button class="signout-trigger w-full flex items-center gap-3 px-2 py-2 text-left text-text-secondary rounded-md hover:bg-bg-muted">
+                        <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                        <span>Cerrar Sesión</span>
+                    </button>
                 </div>
             `;
             DOMElements.mobileMenu.innerHTML = menuHtml;
@@ -704,7 +667,6 @@
             if (typeof renderFunction === 'function') {
                 renderFunction();
                 localStorage.setItem('lastAdminTab', tabId);
-                setupDynamicHeaderContent();
             } else {
                 DOMElements.adminContent.innerHTML = `<h1 class="text-2xl font-bold">Contenido para ${tabId} no implementado.</h1>`;
             }
@@ -732,21 +694,9 @@
             
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             
-            // Profile Modal
-            DOMElements.profileModalCloseButton.addEventListener('click', () => DOMElements.profileModal.classList.add('hidden'));
-            DOMElements.profileForm.addEventListener('submit', handleUpdateProfile);
-            DOMElements.passwordFormModal.addEventListener('submit', handleUpdatePassword);
-
-            // Global click listener to close dropdowns
-            document.addEventListener('click', (e) => {
+            document.addEventListener('click', async (e) => {
                 if (e.target.closest('.signout-trigger')) {
-                     supabase.auth.signOut().catch(err => showNotification(`Error: ${err.message}`, 'error'));
-                }
-                
-                const userMenuButton = document.getElementById('user-menu-button-main');
-                const userMenuDropdown = document.getElementById('user-menu-dropdown-main');
-                if (userMenuButton && userMenuDropdown && !userMenuButton.contains(e.target) && !userMenuDropdown.contains(e.target)) {
-                    userMenuDropdown.classList.add('hidden');
+                    await supabase.auth.signOut().catch(err => showNotification(`Error: ${err.message}`, 'error'));
                 }
             });
 
@@ -789,108 +739,14 @@
             }
         }
 
-        // --- PROFILE & PASSWORD LOGIC ---
-        async function openProfileModal() {
-            if (!AppState.currentUser) return;
-            
-            const { data: profile, error } = await supabase.from('profiles').select('name').eq('id', AppState.currentUser.id).single();
-            if (error) {
-                showNotification('No se pudo cargar tu perfil.', 'error');
-                return;
-            }
-            
-            document.getElementById('profile-email').value = AppState.currentUser.email;
-            document.getElementById('profile-name').value = profile.name || '';
-            
-            DOMElements.profileMessage.textContent = '';
-            DOMElements.passwordMessage.textContent = '';
-            document.getElementById('modal-new-password').value = '';
-
-            DOMElements.profileModal.classList.remove('hidden');
-        }
-
-        async function handleUpdateProfile(e) {
-            e.preventDefault();
-            const newName = document.getElementById('profile-name').value;
-            DOMElements.profileMessage.textContent = 'Guardando...';
-
-            const { error } = await supabase
-                .from('profiles')
-                .update({ name: newName })
-                .eq('id', AppState.currentUser.id);
-
-            if (error) {
-                DOMElements.profileMessage.textContent = `Error: ${error.message}`;
-                DOMElements.profileMessage.style.color = 'var(--danger-color)';
-            } else {
-                DOMElements.profileMessage.textContent = 'Nombre actualizado.';
-                DOMElements.profileMessage.style.color = 'var(--success-color)';
-                AppState.userProfile.name = newName;
-                document.getElementById('user-menu-name-main').textContent = newName;
-            }
-        }
-
-        async function handleUpdatePassword(e) {
-            e.preventDefault();
-            const newPassword = document.getElementById('modal-new-password').value;
-            if (newPassword.length < 6) {
-                 DOMElements.passwordMessage.textContent = 'La contraseña debe tener al menos 6 caracteres.';
-                 DOMElements.passwordMessage.style.color = 'var(--danger-color)';
-                 return;
-            }
-            DOMElements.passwordMessage.textContent = 'Actualizando...';
-
-            const { error } = await supabase.auth.updateUser({
-                password: newPassword
-            });
-
-            if (error) {
-                DOMElements.passwordMessage.textContent = `Error: ${error.message}`;
-                DOMElements.passwordMessage.style.color = 'var(--danger-color)';
-            } else {
-                DOMElements.passwordMessage.textContent = 'Contraseña actualizada con éxito.';
-                DOMElements.passwordMessage.style.color = 'var(--success-color)';
-                DOMElements.passwordFormModal.reset();
-            }
-        }
-
-
         // --- RENDER FUNCTIONS FOR TABS ---
         const tabContentTemplate = (title, content) => `
             <div class="space-y-6">
-                <div class="p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 text-white shadow-lg flex items-center justify-between">
-                    <h1 class="text-2xl font-bold tracking-tight uppercase">${title}</h1>
-                    <div class="relative">
-                        <button id="user-menu-button-main" class="flex items-center gap-2 p-2 rounded-full hover:bg-white/20 transition-colors">
-                            <span id="user-menu-name-main" class="hidden md:inline font-semibold text-sm"></span>
-                            <i class="fas fa-user-circle text-2xl"></i>
-                        </button>
-                        <div id="user-menu-dropdown-main" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
-                            <a href="#" id="edit-profile-button-main" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Editar Perfil</a>
-                            <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
-                            <a href="#" class="signout-trigger block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Cerrar Sesión</a>
-                        </div>
-                    </div>
+                <div class="p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 text-white shadow-lg">
+                    <h1 class="text-2xl font-bold tracking-tight uppercase text-center">${title}</h1>
                 </div>
                 ${content}
             </div>`;
-            
-        function setupDynamicHeaderContent() {
-            const userMenuButton = document.getElementById('user-menu-button-main');
-            const userMenuDropdown = document.getElementById('user-menu-dropdown-main');
-            const editProfileButton = document.getElementById('edit-profile-button-main');
-            const userMenuName = document.getElementById('user-menu-name-main');
-
-            if (userMenuButton) {
-                userMenuButton.addEventListener('click', () => userMenuDropdown.classList.toggle('hidden'));
-            }
-            if (editProfileButton) {
-                editProfileButton.addEventListener('click', openProfileModal);
-            }
-            if (userMenuName && AppState.userProfile) {
-                userMenuName.textContent = AppState.userProfile.name || AppState.currentUser.email;
-            }
-        }
 
         window.render_team_formation = () => {
             const content = `
@@ -1394,6 +1250,7 @@
             const updateBtn = panel.querySelector('#update-match-button');
             const deleteBtn = panel.querySelector('#delete-match-from-edit-button');
 
+            // Remove old listeners before adding new ones to prevent duplicates
             const newUpdateBtn = updateBtn.cloneNode(true);
             updateBtn.parentNode.replaceChild(newUpdateBtn, updateBtn);
             newUpdateBtn.addEventListener('click', handleUpdateMatch);
@@ -1708,9 +1565,11 @@
             navigateTo(tabToRender);
         }
 
+        // MEJORA: Nueva función de notificación centralizada
         function showNotification(message, type = 'success') {
             const { notificationModal, notificationContent, notificationIcon, notificationMessage } = DOMElements;
             
+            // Configurar contenido y estilo
             notificationMessage.textContent = message;
             notificationContent.classList.remove('bg-success-color', 'bg-danger-color', 'bg-warning-color');
             notificationIcon.classList.remove('fa-check-circle', 'fa-exclamation-triangle', 'fa-times-circle');
@@ -1718,13 +1577,15 @@
             if (type === 'success') {
                 notificationContent.classList.add('bg-success-color');
                 notificationIcon.classList.add('fa-check-circle');
-            } else {
+            } else { // 'error' o 'warning'
                 notificationContent.classList.add('bg-danger-color');
                 notificationIcon.classList.add('fa-times-circle');
             }
 
+            // Mostrar modal
             notificationModal.classList.remove('hidden');
 
+            // Ocultar después de 3 segundos
             setTimeout(() => {
                 notificationModal.classList.add('hidden');
             }, 3000);
