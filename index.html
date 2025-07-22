@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,14 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estadísticas - LA CLANDE</title>
     
-    <!-- Dependencias de Estilos y Fuentes -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
 
     <style>
@@ -286,8 +283,7 @@
     <div id="overlay" class="hidden md:hidden"></div>
 
     <main class="flex-1 p-4 sm:p-6 lg:p-8">
-        <!-- El contenido de las pestañas se renderizará aquí -->
-    </main>
+        </main>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -411,8 +407,8 @@
             const selectedYear = document.getElementById(yearSelectId)?.value;
             const selectedPeriod = document.getElementById(periodSelectId)?.value;
 
-            let query = supabaseClient.from('matches').select('*');
-
+            // Query for the specific period (Apertura/Clausura/Total)
+            let periodQuery = supabaseClient.from('matches').select('*');
             if (selectedYear && selectedYear !== 'all') {
                 let startDate, endDate;
                 if (selectedPeriod === 'apertura') {
@@ -425,30 +421,27 @@
                     startDate = `${selectedYear}-01-01`;
                     endDate = `${selectedYear}-12-31`;
                 }
-                query = query.gte('match_date', startDate).lte('match_date', endDate);
+                periodQuery = periodQuery.gte('match_date', startDate).lte('match_date', endDate);
             }
-            
-            const { data: filteredMatches, error } = await query;
-
-            if (error) {
-                console.error("Error fetching matches:", error);
-                return { players: [], teamStats: {}, error };
+            const { data: filteredMatches, error: periodError } = await periodQuery;
+            if (periodError) {
+                console.error("Error fetching period matches:", periodError);
+                return { players: [], teamStats: {}, error: periodError };
             }
 
+            // Initialize stats for ALL players
             const playerStats = {};
             allPlayersData.forEach(player => {
                 playerStats[player.id] = { name: player.name, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player.id };
             });
 
+            // Calculate stats based on the period's matches
             let clarosWins = 0, oscurosWins = 0, empates = 0, suspendidos = 0, totalPJMatches = 0;
-
             (filteredMatches || []).forEach(match => {
                 const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
                 const allPlayersInMatch = [...new Set([...(team_white_players || []), ...(team_dark_players || [])])];
-
                 if (result !== 'Suspendido') totalPJMatches++;
                 else suspendidos++;
-
                 allPlayersInMatch.forEach(pId => {
                     if (playerStats[pId]) {
                         if (result === 'Claros' && (team_white_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
@@ -458,11 +451,9 @@
                         if (result !== 'Suspendido') playerStats[pId].pj++;
                     }
                 });
-
                 if (result === 'Claros') clarosWins++;
                 else if (result === 'Oscuros') oscurosWins++;
                 else if (result === 'Empate') empates++;
-
                 if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
                     const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
                     if (votosArray.length > 0) {
@@ -472,12 +463,10 @@
                         });
                     }
                 }
-
                 if (tt_attendees) {
                     tt_attendees.forEach(pId => { if (playerStats[pId]) playerStats[pId].tt++; });
                 }
             });
-
             Object.values(playerStats).forEach(player => {
                 const maxPossiblePoints = player.pj * 3;
                 let currentEfectividad = (maxPossiblePoints > 0) ? (player.points / maxPossiblePoints) * 100 : 0;
@@ -490,8 +479,36 @@
                 player.ausentes = Math.max(0, totalPJMatches - player.pj);
             });
 
+            // Determine which players to show in the table
+            let playersToShow;
+            if (selectedYear && selectedYear !== 'all') {
+                // If a specific year is selected, get all players who played in that year.
+                const { data: yearlyMatches, error: yearlyError } = await supabaseClient
+                    .from('matches')
+                    .select('team_white_players, team_dark_players')
+                    .gte('match_date', `${selectedYear}-01-01`)
+                    .lte('match_date', `${selectedYear}-12-31`);
+
+                if (yearlyError) {
+                    console.error("Error fetching yearly matches:", yearlyError);
+                    // Fallback to showing players who played in the period
+                    playersToShow = Object.values(playerStats).filter(p => p.pj > 0);
+                } else {
+                    const yearlyPlayerIds = new Set();
+                    yearlyMatches.forEach(match => {
+                        (match.team_white_players || []).forEach(id => yearlyPlayerIds.add(id));
+                        (match.team_dark_players || []).forEach(id => yearlyPlayerIds.add(id));
+                    });
+                    // The final list contains all players who played in the year, with their stats from the selected period.
+                    playersToShow = Object.values(playerStats).filter(p => yearlyPlayerIds.has(p.id));
+                }
+            } else {
+                // If "All Years" is selected, show players who played in any match of the selected period (which is all matches)
+                playersToShow = Object.values(playerStats).filter(p => p.pj > 0);
+            }
+
             return {
-                players: Object.values(playerStats).filter(p => p.name),
+                players: playersToShow,
                 teamStats: { clarosWins, oscurosWins, empates, suspendidos, totalPJMatches },
                 error: null
             };
@@ -530,7 +547,7 @@
         function renderLeaderboard() {
             renderGenericTable(
                 'leaderboard',
-                player => player.pj > 0,
+                () => true, // Show all players who played in the year
                 (a, b) => b.points - a.points,
                 (player, index) => `
                     <tr>
@@ -546,7 +563,7 @@
         function renderChamigo() {
             renderGenericTable(
                 'chamigo',
-                p => p.chamigos > 0,
+                p => p.chamigos > 0, // Keep original filter
                 (a, b) => b.chamigos - a.chamigos,
                 (player, index) => `
                     <tr>
@@ -561,7 +578,7 @@
         function renderTT() {
             renderGenericTable(
                 'tt',
-                p => p.tt > 0,
+                p => p.tt > 0, // Keep original filter
                 (a, b) => b.tt - a.tt,
                 (player, index) => `
                     <tr>
@@ -576,7 +593,7 @@
         function renderPresentismo() {
             renderGenericTable(
                 'presentismo',
-                p => p.pj > 0,
+                () => true, // Show all players who played in the year
                 (a, b) => b.pj - a.pj,
                 (player, index) => `
                     <tr>
@@ -591,7 +608,7 @@
         function renderAusentismo() {
             renderGenericTable(
                 'ausentismo',
-                p => p.pj > 0,
+                () => true, // Show all players who played in the year
                 (a, b) => b.ausentes - a.ausentes,
                 (player, index) => `
                     <tr>
@@ -618,7 +635,7 @@
 
             const sortCriterion = estadisticasSortState.criterion;
             const sortOrder = estadisticasSortState.order;
-            const rankedPlayers = [...currentEstadisticasData].filter(p => p.pj > 0).sort((a, b) => {
+            const rankedPlayers = [...currentEstadisticasData].sort((a, b) => { // Removed .filter(p => p.pj > 0)
                 let valA = parseFloat(a[sortCriterion]) || 0;
                 let valB = parseFloat(b[sortCriterion]) || 0;
                 return sortOrder === 'asc' ? valA - valB : valB - valA;
