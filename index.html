@@ -132,8 +132,12 @@
 
         td { color: var(--text-primary); }
         tbody td { transition: background-color 150ms ease-in-out; }
-        tbody tr:hover { background-color: var(--bg-muted); }
-        tbody tr:first-child { border-top: none; }
+        tbody tr.row-hover {
+            background-color: var(--bg-muted);
+        }
+        tbody tr.row-hover td.sticky-col {
+            background-color: var(--bg-muted); /* Se asegura que la celda fija también se pinte */
+        }
         
         /* --- Columnas Fijas y Scroll --- */
         #estadisticas-table, #individual-stats-table { min-width: 800px; }
@@ -672,6 +676,15 @@
 
             loadingMessage.classList.add('hidden');
             table.classList.remove('hidden');
+
+            table.querySelectorAll('tbody tr').forEach(row => {
+                row.addEventListener('mouseenter', () => {
+                    row.classList.add('row-hover');
+                });
+                row.addEventListener('mouseleave', () => {
+                    row.classList.remove('row-hover');
+                });
+            });
             
             const activeTh = table.querySelector(`thead th[data-sort="${sortCriterion}"]`);
             if (activeTh) {
