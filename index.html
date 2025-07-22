@@ -323,8 +323,12 @@
             if (!yearSelect) return;
             const years = [...new Set(allMatchDates.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
             
+            const currentValue = yearSelect.value; // Guardar valor actual
             yearSelect.innerHTML = '<option value="all">Todos los Años</option>';
             years.forEach(year => yearSelect.innerHTML += `<option value="${year}">${year}</option>`);
+            if (Array.from(yearSelect.options).some(opt => opt.value === currentValue)) {
+                yearSelect.value = currentValue; // Restaurar si es posible
+            }
         }
 
         function populateMonthSelects(selectId) {
@@ -332,8 +336,10 @@
             if (!monthSelect) return;
             const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             
+            const currentValue = monthSelect.value;
             monthSelect.innerHTML = '<option value="all">Todos los Meses</option>';
             months.forEach((month, index) => monthSelect.innerHTML += `<option value="${index + 1}">${month}</option>`);
+            if (currentValue) monthSelect.value = currentValue;
         }
         
         function populateAndSetCurrentPeriod(yearSelectId, periodSelectId) {
@@ -342,6 +348,9 @@
             const periodSelect = document.getElementById(periodSelectId);
             if (!periodSelect || !yearSelect) return;
             
+            // Si ya tienen valor, no los reinicies
+            if (yearSelect.value && periodSelect.value) return;
+
             const currentYear = new Date().getFullYear();
             yearSelect.value = Array.from(yearSelect.options).some(opt => opt.value == currentYear) ? currentYear : 'all';
 
@@ -361,8 +370,8 @@
         }
 
         async function fetchAndCalculateStatsForPeriod(yearSelectId, periodSelectId) {
-            const selectedYear = document.getElementById(yearSelectId).value;
-            const selectedPeriod = document.getElementById(periodSelectId).value;
+            const selectedYear = document.getElementById(yearSelectId)?.value;
+            const selectedPeriod = document.getElementById(periodSelectId)?.value;
 
             let query = supabaseClient.from('matches').select('*');
 
@@ -620,9 +629,8 @@
                     <span class="text-3xl font-bold">${value}</span><span class="text-sm uppercase mt-1 font-semibold">${label}</span>
                 </div>`;
             
-            // CORRECCIÓN: Se usa un color fijo para el texto de Claros
             const clarosBgColor = '#E2E8F0';
-            const clarosTextColor = '#1A202C'; // Siempre oscuro
+            const clarosTextColor = '#1A202C';
 
             statsDisplay.innerHTML = 
                 statCard(teamStats.oscurosWins, 'Oscuros Ganados', 'var(--sidebar-bg)') +
@@ -701,7 +709,7 @@
             const visualDetailsContainer = document.getElementById('fixture-visual-details-container');
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
-            const collapsibleContent = document.getElementById('fixture-collapsible-content');
+            const collapsibleContent = document.getElementById('fixture-filters-collapsible');
             if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
             
             soccerFieldContainer.innerHTML = `
@@ -722,8 +730,8 @@
 
             const pos = {
                 v: {
-                    claros: [{ x: 0.5, y: 0.95 }, { x: 0.25, y: 0.75 }, { x: 0.75, y: 0.75 }, { x: 0.35, y: 0.60 }, { x: 0.65, y: 0.60 }],
-                    oscuros: [{ x: 0.5, y: 0.05 }, { x: 0.25, y: 0.25 }, { x: 0.75, y: 0.25 }, { x: 0.35, y: 0.40 }, { x: 0.65, y: 0.40 }]
+                    claros: [{ x: 0.5, y: 0.92 }, { x: 0.25, y: 0.75 }, { x: 0.75, y: 0.75 }, { x: 0.35, y: 0.60 }, { x: 0.65, y: 0.60 }],
+                    oscuros: [{ x: 0.5, y: 0.08 }, { x: 0.25, y: 0.25 }, { x: 0.75, y: 0.25 }, { x: 0.35, y: 0.40 }, { x: 0.65, y: 0.40 }]
                 },
                 h: {
                     claros: [{ x: 0.95, y: 0.50 }, { x: 0.75, y: 0.25 }, { x: 0.75, y: 0.75 }, { x: 0.60, y: 0.35 }, { x: 0.60, y: 0.65 }],
@@ -1007,7 +1015,7 @@
             
             const prefix = tabId.replace('-content', '');
             
-            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos'].includes(prefix)) {
+            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas'].includes(prefix)) {
                  baseHtml += `
                     <div id="${prefix}-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
                         <span>Seleccionar Torneo</span><i class="fas fa-chevron-down toggle-icon"></i>
@@ -1028,9 +1036,6 @@
                     break;
                 case 'estadisticas-content':
                      baseHtml += `
-                        <div id="estadisticas-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
-                            <span>Seleccionar Torneo / Criterios</span><i class="fas fa-chevron-down toggle-icon"></i>
-                        </div>
                         <div id="estadisticas-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[20%_1fr_1fr] gap-4 hidden items-end">
                             <button id="estadisticas-hoy-button" class="button-primary h-full px-6 py-2 rounded-md shadow-sm col-span-2 md:col-span-1 md:row-span-2 flex items-center justify-center">Torneo Actual</button>
                             <div><label for="estadisticas-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="estadisticas-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
@@ -1052,7 +1057,7 @@
                         <div id="fixture-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
                             <span>Elegir otro partido</span><i class="fas fa-chevron-down toggle-icon"></i>
                         </div>
-                        <div id="fixture-collapsible-content" class="hidden space-y-4 pt-4">
+                        <div id="fixture-filters-collapsible" class="hidden space-y-4 pt-4">
                             <div class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
                                 <button id="fixture-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm">Torneo Actual</button>
                                 <div><label for="fixture-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="fixture-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
@@ -1093,7 +1098,9 @@
         }
 
         function activateTab(tabId) {
+            const filtersBeforeRender = saveFiltersState();
             DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
+            restoreFiltersState(filtersBeforeRender);
             
             DOMElements.tabButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
@@ -1105,7 +1112,6 @@
                 'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
             };
 
-            // CORRECCIÓN: Se llama a setupDynamicEventListeners ANTES de renderizar los datos
             setupDynamicEventListeners(tabId);
             
             if (renderFunctions[tabId]) {
@@ -1119,9 +1125,30 @@
             }
         }
         
+        // CORRECCIÓN: Funciones para guardar y restaurar el estado de los filtros
+        function saveFiltersState() {
+            const activeFilters = DOMElements.mainContentArea.querySelectorAll('select, input');
+            const state = {};
+            activeFilters.forEach(el => {
+                if (el.id) {
+                    state[el.id] = el.value;
+                }
+            });
+            return state;
+        }
+
+        function restoreFiltersState(state) {
+            Object.keys(state).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = state[id];
+                }
+            });
+        }
+
         function setupDynamicEventListeners(tabId) {
             const prefix = tabId.replace('-content', '');
-            const renderFn = () => activateTab(tabId); // Simplificado para re-renderizar la pestaña actual
+            const renderFn = renderFunctions[tabId];
 
             const filterToggle = document.getElementById(`${prefix}-filter-toggle`);
             const filtersCollapsible = document.getElementById(`${prefix}-filters-collapsible`);
@@ -1134,8 +1161,7 @@
                 });
             }
 
-            if (tabId.includes('content') && !tabId.includes('fixture') && !tabId.includes('individual')) {
-                populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
+            if (renderFn) {
                 document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => { setTodayFilters(prefix); renderFn(); });
                 document.getElementById(`${prefix}-year-select`)?.addEventListener('change', renderFn);
                 document.getElementById(`${prefix}-period-select`)?.addEventListener('change', renderFn);
@@ -1155,7 +1181,17 @@
             if (tabId === 'individual-stats-content') {
                 setupPlayerSearch();
             }
+            // Poblar filtros después de asignar listeners
+            if (tabId.includes('content') && !tabId.includes('fixture') && !tabId.includes('individual')) {
+                populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
+            }
         }
+        
+        const renderFunctions = {
+            'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
+            'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
+            'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
+        };
 
         async function initializeApp() {
             try {
