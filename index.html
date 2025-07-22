@@ -35,7 +35,6 @@
             --danger-color: #ef4444;
             --button-text-color: #ffffff;
             --text-yellow-400: #facc15;
-            /* CORRECCIÓN 1: Colores de jugadores fijos */
             --player-claros-bg: #ffffff;
             --player-claros-text: #1a202c;
             --player-oscuros-bg: #1a202c;
@@ -52,7 +51,6 @@
             --border-color: #374151;
             --accent-color: #6366f1;
             --accent-color-hover: #818cf8;
-            /* CORRECCIÓN 1: Colores de jugadores fijos (se mantienen en modo oscuro) */
             --player-claros-bg: #ffffff;
             --player-claros-text: #1a202c;
             --player-oscuros-bg: #1a202c;
@@ -150,7 +148,7 @@
         .collapsible-toggle-button { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); }
         .collapsible-toggle-button.visible-content { background: linear-gradient(to right, #e53e3e, var(--danger-color)); }
 
-        /* --- Fixture y Campo de Fútbol (CORREGIDO) --- */
+        /* --- Fixture y Campo de Fútbol --- */
         #soccer-field-container {
             position: relative;
             width: 100%;
@@ -622,9 +620,9 @@
                     <span class="text-3xl font-bold">${value}</span><span class="text-sm uppercase mt-1 font-semibold">${label}</span>
                 </div>`;
             
-            // CORRECCIÓN: Se usa un color fijo para Claros y se ajusta el texto para modo oscuro
-            const clarosBgColor = '#E2E8F0'; // light gray
-            const clarosTextColor = document.documentElement.classList.contains('dark') ? 'var(--text-primary)' : '#1A202C';
+            // CORRECCIÓN: Se usa un color fijo para el texto de Claros
+            const clarosBgColor = '#E2E8F0';
+            const clarosTextColor = '#1A202C'; // Siempre oscuro
 
             statsDisplay.innerHTML = 
                 statCard(teamStats.oscurosWins, 'Oscuros Ganados', 'var(--sidebar-bg)') +
@@ -722,7 +720,6 @@
             soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
             soccerFieldContainer.querySelectorAll('.goal-area, .penalty-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
 
-            // CORRECCIÓN 4: Posiciones de arqueros ajustadas
             const pos = {
                 v: {
                     claros: [{ x: 0.5, y: 0.95 }, { x: 0.25, y: 0.75 }, { x: 0.75, y: 0.75 }, { x: 0.35, y: 0.60 }, { x: 0.65, y: 0.60 }],
@@ -750,7 +747,6 @@
                 playerWrapper.style.top = `${currentPos[team][index].y * 100}%`;
                 playerWrapper.style.left = `${currentPos[team][index].x * 100}%`;
                 
-                // CORRECCIÓN 3: Se usa -top-2.5 para elevar la estrella
                 let markerHTML = `<div class="player-marker ${team} relative w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-center">
                     ${parseInt(playerId.replace('J', ''))}`;
                 if (chamigosIds.includes(playerId)) {
@@ -768,7 +764,6 @@
                  const trophyDiv = document.createElement('div');
                  trophyDiv.className = 'winner-trophy absolute text-2xl z-20 transform -translate-x-1/2 -translate-y-1/2';
                  trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
-                 // CORRECCIÓN 2: Posición del trofeo en esquinas inferiores
                  const trophyPos = {
                      h: { Claros: { top: '95%', left: '95%'}, Oscuros: { top: '95%', left: '5%'} },
                      v: { Claros: { top: '95%', left: '95%'}, Oscuros: { top: '95%', left: '5%'} }
@@ -1104,13 +1099,14 @@
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
             });
             
-            setupDynamicEventListeners(tabId);
-            
             const renderFunctions = {
                 'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
                 'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
                 'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
             };
+
+            // CORRECCIÓN: Se llama a setupDynamicEventListeners ANTES de renderizar los datos
+            setupDynamicEventListeners(tabId);
             
             if (renderFunctions[tabId]) {
                 renderFunctions[tabId]();
@@ -1125,6 +1121,7 @@
         
         function setupDynamicEventListeners(tabId) {
             const prefix = tabId.replace('-content', '');
+            const renderFn = () => activateTab(tabId); // Simplificado para re-renderizar la pestaña actual
 
             const filterToggle = document.getElementById(`${prefix}-filter-toggle`);
             const filtersCollapsible = document.getElementById(`${prefix}-filters-collapsible`);
@@ -1139,13 +1136,13 @@
 
             if (tabId.includes('content') && !tabId.includes('fixture') && !tabId.includes('individual')) {
                 populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
-                document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => { setTodayFilters(prefix); activateTab(tabId); });
-                document.getElementById(`${prefix}-year-select`)?.addEventListener('change', () => activateTab(tabId));
-                document.getElementById(`${prefix}-period-select`)?.addEventListener('change', () => activateTab(tabId));
+                document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => { setTodayFilters(prefix); renderFn(); });
+                document.getElementById(`${prefix}-year-select`)?.addEventListener('change', renderFn);
+                document.getElementById(`${prefix}-period-select`)?.addEventListener('change', renderFn);
             }
             if (tabId === 'estadisticas-content') {
-                 document.getElementById('estadisticas-sort-criterion')?.addEventListener('change', () => activateTab(tabId));
-                 document.getElementById('estadisticas-sort-order')?.addEventListener('change', () => activateTab(tabId));
+                 document.getElementById('estadisticas-sort-criterion')?.addEventListener('change', renderFn);
+                 document.getElementById('estadisticas-sort-order')?.addEventListener('change', renderFn);
             }
             if (tabId === 'fixture-content') {
                 populateYearSelects('fixture-year-select');
@@ -1191,10 +1188,8 @@
         function init() {
             console.log('Aplicación LA CLANDE cargada y corregida!');
             
-            // 1. Aplicar tema
             applyTheme(localStorage.getItem('theme') || 'light');
             
-            // 2. Configurar listeners estáticos
             DOMElements.darkModeToggle.addEventListener('click', toggleTheme);
             DOMElements.hamburgerButton.addEventListener('click', toggleSideMenu);
             DOMElements.overlay.addEventListener('click', toggleSideMenu);
@@ -1210,7 +1205,6 @@
                 activateTab(tabId);
             });
 
-            // 3. Cargar datos e iniciar la app
             initializeApp();
         }
 
