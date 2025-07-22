@@ -57,17 +57,32 @@
             border-color: var(--border-color);
             color: var(--text-primary);
         }
+
+        .login-bg { background: #f0f2f5; }
+        html.dark .login-bg { background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%); }
     </style>
 </head>
-<body class="antialiased flex items-center justify-center min-h-screen p-4">
+<body class="antialiased flex items-center justify-center min-h-screen p-4 login-bg">
 
     <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-text-secondary">Panel de Administración</h1>
+            <h2 class="text-4xl font-extrabold text-text-primary mt-2 flex items-center justify-center gap-3">
+                <span>LA CLANDE ⚽</span>
+            </h2>
+        </div>
+
         <!-- Contenedor para el formulario de solicitar reseteo -->
         <div id="request-reset-container">
-            <div class="card rounded-xl shadow-lg p-8">
+            <div class="card rounded-xl shadow-lg p-8 relative">
+                <div class="absolute top-4 right-4">
+                    <button id="dark-mode-toggle-request" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                        <i class="fas fa-moon text-lg text-text-secondary"></i>
+                    </button>
+                </div>
                 <div class="text-center mb-6">
                     <h1 class="text-2xl font-bold">¿Olvidaste tu contraseña?</h1>
-                    <p class="text-secondary mt-2">No te preocupes. Ingresá tu email y te enviaremos un enlace para recuperarla.</p>
+                    <p class="text-secondary mt-2">Ingresá tu email y te enviaremos un enlace para recuperarla.</p>
                 </div>
                 <form id="request-reset-form" class="space-y-4">
                     <div>
@@ -84,7 +99,12 @@
 
         <!-- Contenedor para el formulario de establecer nueva contraseña -->
         <div id="update-password-container" class="hidden">
-            <div class="card rounded-xl shadow-lg p-8">
+             <div class="card rounded-xl shadow-lg p-8 relative">
+                <div class="absolute top-4 right-4">
+                    <button id="dark-mode-toggle-update" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                        <i class="fas fa-moon text-lg text-text-secondary"></i>
+                    </button>
+                </div>
                 <div class="text-center mb-6">
                     <h1 class="text-2xl font-bold">Crear nueva contraseña</h1>
                     <p class="text-secondary mt-2">Ingresá tu nueva contraseña. Asegurate de que sea segura.</p>
@@ -92,7 +112,21 @@
                 <form id="update-password-form" class="space-y-4">
                     <div>
                         <label for="new-password" class="block text-sm font-medium mb-1">Nueva Contraseña</label>
-                        <input type="password" id="new-password" class="w-full p-2 border rounded-md" required>
+                        <div class="relative">
+                            <input type="password" id="new-password" class="w-full p-2 border rounded-md pr-10" required placeholder="Mínimo 8 caracteres">
+                            <button type="button" class="password-toggle absolute inset-y-0 right-0 px-3 flex items-center text-text-secondary">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="confirm-password" class="block text-sm font-medium mb-1">Repetir Contraseña</label>
+                        <div class="relative">
+                            <input type="password" id="confirm-password" class="w-full p-2 border rounded-md pr-10" required>
+                             <button type="button" class="password-toggle absolute inset-y-0 right-0 px-3 flex items-center text-text-secondary">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" class="w-full px-6 py-3 font-semibold rounded-lg shadow-md transition duration-300 text-button-text-color" style="background-color: var(--accent-color);">
                         Guardar nueva contraseña
@@ -101,9 +135,6 @@
                 </form>
             </div>
         </div>
-
-        <!-- NOTA: Para cambiar la contraseña de un usuario logueado, podés usar el mismo formulario
-             de "Crear nueva contraseña" dentro de tu panel de administración. La lógica de JS es la misma. -->
     </div>
 
     <!-- Supabase Client -->
@@ -119,25 +150,51 @@
         // --- ELEMENTOS DEL DOM ---
         const requestResetContainer = document.getElementById('request-reset-container');
         const updatePasswordContainer = document.getElementById('update-password-container');
-        
         const requestResetForm = document.getElementById('request-reset-form');
         const updatePasswordForm = document.getElementById('update-password-form');
-
         const requestMessage = document.getElementById('request-message');
         const updateMessage = document.getElementById('update-message');
 
-        // --- LÓGICA ---
+        // --- LÓGICA DE TEMA (MODO OSCURO/CLARO) ---
+        function applyTheme(theme) {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            localStorage.setItem('theme', theme);
+            const icons = document.querySelectorAll('#dark-mode-toggle-request i, #dark-mode-toggle-update i');
+            icons.forEach(icon => {
+                icon.classList.toggle('fa-sun', theme === 'dark');
+                icon.classList.toggle('fa-moon', theme !== 'dark');
+            });
+        }
 
-        // 1. Escuchar por el evento de "hashchange" para detectar el token de reseteo
+        function toggleTheme() {
+            const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+        }
+
+        // Aplicar tema al cargar la página
+        applyTheme(localStorage.getItem('theme') || 'light');
+        document.getElementById('dark-mode-toggle-request').addEventListener('click', toggleTheme);
+        document.getElementById('dark-mode-toggle-update').addEventListener('click', toggleTheme);
+
+
+        // --- LÓGICA DE VISIBILIDAD DE CONTRASEÑA ---
+        document.querySelectorAll('.password-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const passwordInput = toggle.previousElementSibling;
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                toggle.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+        });
+
+        // --- LÓGICA PRINCIPAL DE RECUPERACIÓN ---
         supabase.auth.onAuthStateChange((event, session) => {
-            // Este evento se dispara cuando el usuario llega desde el enlace del email
             if (event === 'PASSWORD_RECOVERY') {
                 requestResetContainer.classList.add('hidden');
                 updatePasswordContainer.classList.remove('hidden');
             }
         });
 
-        // 2. Manejar el formulario para solicitar el enlace de reseteo
         requestResetForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('reset-email').value;
@@ -145,8 +202,6 @@
             requestMessage.style.color = 'var(--text-secondary)';
 
             const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-                // Esta es la URL a la que será redirigido el usuario desde su email.
-                // Asegurate de que coincida con la URL de tu página de reseteo.
                 redirectTo: window.location.href,
             });
 
@@ -154,35 +209,45 @@
                 requestMessage.textContent = `Error: ${error.message}`;
                 requestMessage.style.color = 'var(--danger-color)';
             } else {
-                requestMessage.textContent = '¡Enviado! Revisá tu correo electrónico para ver el enlace.';
+                requestMessage.textContent = '¡Enviado! Redirigiendo al login...';
                 requestMessage.style.color = 'var(--success-color)';
+                setTimeout(() => { window.location.href = 'admin.html'; }, 3000);
             }
         });
 
-        // 3. Manejar el formulario para actualizar la contraseña
         updatePasswordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            updateMessage.style.color = 'var(--danger-color)';
+
+            if (newPassword.length < 8) {
+                updateMessage.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                updateMessage.textContent = 'Las contraseñas no coinciden.';
+                return;
+            }
+
             updateMessage.textContent = 'Guardando...';
             updateMessage.style.color = 'var(--text-secondary)';
 
-            // La sesión del usuario (que viene en el token de la URL) es manejada
-            // automáticamente por Supabase. Solo necesitamos pasar la nueva contraseña.
             const { data, error } = await supabase.auth.updateUser({
                 password: newPassword
             });
 
             if (error) {
-                updateMessage.textContent = `Error: ${error.message}`;
+                updateMessage.textContent = error.message.includes('weak password') 
+                    ? 'La contraseña debe contener 8 caracteres y al menos una letra mayúscula y una minúscula, un número y un caracter especial' 
+                    : `Error: ${error.message}`;
                 updateMessage.style.color = 'var(--danger-color)';
             } else {
-                updateMessage.textContent = '¡Contraseña actualizada con éxito!';
+                updateMessage.textContent = '¡Contraseña actualizada! Redirigiendo al login...';
                 updateMessage.style.color = 'var(--success-color)';
-                
-                // Opcional: Redirigir al login después de unos segundos
-                setTimeout(() => {
-                    // window.location.href = '/admin.html'; // Descomentar para redirigir
-                }, 3000);
+                setTimeout(() => { window.location.href = 'admin.html'; }, 3000);
             }
         });
 
