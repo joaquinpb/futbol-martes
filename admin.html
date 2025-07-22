@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -44,6 +46,11 @@
             --bg-primary: #030712;
             --bg-secondary: #1f2937;
             --bg-muted: #111827;
+            --sidebar-bg: #111827;
+            --sidebar-text: #e5e7eb;
+            --sidebar-active-bg: #4f46e5;
+            --sidebar-active-text: #ffffff;
+            --sidebar-hover-bg: #374151;
             --text-primary: #f9fafb;
             --text-secondary: #d1d5db;
             --border-color: #374151;
@@ -77,6 +84,7 @@
              color: var(--text-primary);
         }
         
+        /* Fix for browser autofill styles in dark mode */
         html.dark input:-webkit-autofill,
         html.dark input:-webkit-autofill:hover, 
         html.dark input:-webkit-autofill:focus, 
@@ -91,6 +99,7 @@
             cursor: not-allowed;
         }
 
+        /* Custom scrollbar for webkit browsers */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
@@ -98,35 +107,28 @@
         html.dark ::-webkit-scrollbar-thumb { background: #555; }
         html.dark ::-webkit-scrollbar-thumb:hover { background: #888; }
 
+        /* Sidebar active link text color */
         .nav-link.active {
             background-color: var(--sidebar-active-bg);
             color: var(--sidebar-active-text) !important;
         }
 
-        .player-element {
-            background-color: #374151;
-            color: #ffffff;
+        /* Player Draggable Styles */
+        .player-draggable {
+            background-color: #374151; /* dark gray */
+            color: #ffffff; /* white */
             transition: all 0.2s ease;
-            cursor: pointer;
+            cursor: grab;
             white-space: nowrap; 
             width: auto; 
             display: inline-flex;
             align-items: center;
             flex-grow: 0;
-            touch-action: none;
         }
-        .player-element.draggable {
-            cursor: grab;
-        }
-        .player-element.dragging {
-            opacity: 0.5;
-        }
-        .player-element.ghost {
-            position: fixed; /* Use fixed positioning for ghost */
-            pointer-events: none;
-            z-index: 1000;
-            opacity: 0.7;
+        .player-draggable:active {
+            cursor: grabbing;
             transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
         
         .player-list-container {
@@ -143,6 +145,9 @@
             background-color: rgba(99, 102, 241, 0.1);
         }
         
+        .match-item {
+            background-color: var(--bg-secondary);
+        }
         .match-item.no-result { border-left-color: var(--danger-color); }
         .match-item.has-result { border-left-color: var(--success-color); }
         html.dark .match-item.no-result { background-color: rgba(239, 68, 68, 0.1); }
@@ -152,11 +157,23 @@
             box-shadow: 0 0 0 2px var(--accent-color);
         }
         
-        .selectable-row:hover { background-color: #f9fafb !important; }
-        html.dark .selectable-row:hover { background-color: #1f2937 !important; }
-        .selectable-row.selected { background-color: #eef2ff !important; }
-        html.dark .selectable-row.selected { background-color: #3730a3 !important; }
+        /* Table row hover style */
+        .selectable-row:hover {
+            background-color: #f9fafb !important; /* gray-50 */
+        }
+        html.dark .selectable-row:hover {
+            background-color: #1f2937 !important; /* gray-800 */
+        }
         
+        /* Table row selection style */
+        .selectable-row.selected {
+            background-color: #eef2ff !important; /* indigo-50 */
+        }
+        html.dark .selectable-row.selected {
+             background-color: #3730a3 !important; /* indigo-800 */
+        }
+        
+        /* TT Player Item Style */
         .tt-player-item.selected {
             background-color: var(--accent-color);
             color: var(--sidebar-active-text);
@@ -166,9 +183,15 @@
             color: var(--sidebar-active-text);
         }
         
-        thead th { color: var(--text-secondary); }
-        html.dark thead th { color: var(--sidebar-text); }
+        /* Table Header fix */
+        thead th {
+            color: var(--text-secondary);
+        }
+        html.dark thead th {
+            color: var(--sidebar-text);
+        }
         
+        /* Button text color fix */
         .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
         .button-primary:hover { background-color: var(--accent-color-hover); }
         .button-success { background-color: var(--success-color); color: var(--button-text-color); }
@@ -178,14 +201,25 @@
         .button-purple { background-color: #9333ea; color: var(--button-text-color); }
         .button-purple:hover { background-color: #7e22ce; }
 
-        body.logged-out #app-container { display: none; }
-        .login-bg { background: #f0f2f5; }
-        html.dark .login-bg { background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%); }
+        /* Hide sidebar on logged-out state */
+        body.logged-out #app-container {
+            display: none;
+        }
         
+        /* Login screen background */
+        .login-bg {
+            background: #f0f2f5;
+        }
+        html.dark .login-bg {
+            background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%);
+        }
+        
+        /* Mobile Menu Dropdown Style Fix */
         #mobile-menu {
             background-color: var(--bg-secondary);
             border-color: var(--border-color);
         }
+
     </style>
 </head>
 <body class="antialiased">
@@ -219,8 +253,8 @@
 
         <!-- Main content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <!-- Header for Mobile (Sticky) -->
-            <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary md:hidden sticky top-0 z-30">
+            <!-- Header for Mobile -->
+            <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary md:hidden relative">
                 <div class="w-10">
                      <button id="mobile-menu-toggle" class="p-2 rounded-md -ml-2">
                         <i class="fas fa-bars text-lg"></i>
@@ -233,9 +267,14 @@
                     </a>
                 </div>
                 <div class="w-10"></div> <!-- Spacer -->
+
+                <!-- Mobile Dropdown Menu -->
+                <div id="mobile-menu" class="hidden absolute top-full left-4 mt-2 w-64 rounded-lg shadow-xl border z-50">
+                    <!-- Mobile menu content injected here -->
+                </div>
             </header>
             
-            <main class="flex-1 overflow-y-auto bg-primary p-4 sm:p-6 lg:p-8">
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-primary p-4 sm:p-6 lg:p-8 overscroll-y-auto">
                 <div id="admin-content-area" class="max-w-7xl mx-auto">
                     <!-- Loading State -->
                     <div id="loading-container" class="flex items-center justify-center h-64">
@@ -250,15 +289,12 @@
             </main>
         </div>
     </div>
-    
-    <!-- Mobile Menu (now outside the main flow, controlled by overlay) -->
+
+    <!-- Mobile Menu Overlay -->
     <div id="mobile-menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
-    <div id="mobile-menu" class="hidden fixed top-0 left-0 h-full w-64 bg-secondary shadow-xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out">
-        <!-- Mobile menu content injected here -->
-    </div>
 
-
-    <!-- Authentication Container -->
+    <!-- Authentication Container (outside main app) -->
+    <!-- CHANGE: Added fixed positioning and z-index to ensure it covers the viewport and prevents scrolling -->
     <div id="auth-container" class="hidden fixed inset-0 z-50 flex items-center justify-center login-bg">
         <div class="w-full max-w-md p-4">
             <div class="text-center mb-8">
@@ -300,7 +336,7 @@
     <!-- Toast Notification -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50"></div>
 
-    <!-- Main Confirmation Modal -->
+    <!-- Modal -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
         <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
             <h3 class="text-lg font-semibold mb-2" id="modal-title">Confirmar Acción</h3>
@@ -308,19 +344,6 @@
             <div class="flex justify-end space-x-3">
                 <button id="modal-cancel-button" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition">Cancelar</button>
                 <button id="modal-confirm-button" class="px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Confirmar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Player Assignment Modal -->
-    <div id="player-assignment-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
-        <div class="card rounded-lg shadow-xl max-w-xs w-full p-6 text-center">
-            <h3 class="text-lg font-semibold mb-2" id="assign-modal-title">Asignar Jugador</h3>
-            <p class="text-secondary mb-6" id="assign-modal-player-name">Nombre del Jugador</p>
-            <div class="flex flex-col space-y-3">
-                <button id="assign-to-claros" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-100 text-black font-semibold rounded-md hover:opacity-90 transition">Mover a Claros</button>
-                <button id="assign-to-oscuros" class="w-full px-4 py-2 bg-gray-800 text-white font-semibold rounded-md hover:opacity-90 transition">Mover a Oscuros</button>
-                <button id="assign-modal-cancel" class="mt-4 text-sm text-secondary hover:underline">Cancelar</button>
             </div>
         </div>
     </div>
@@ -343,7 +366,6 @@
             userRole: null,
             selectedMatchId: null,
             isInitialized: false,
-            activePlayerElement: null, // For player assignment modal
         };
 
         const NAV_ITEMS = {
@@ -379,18 +401,11 @@
             loginDarkModeToggle: document.getElementById('login-dark-mode-toggle'),
             authStatus: document.getElementById('auth-status'),
             toastContainer: document.getElementById('toast-container'),
-            // Confirmation Modal
             modal: document.getElementById('custom-confirm-modal'),
             modalTitle: document.getElementById('modal-title'),
             modalMessage: document.getElementById('modal-message'),
             modalConfirm: document.getElementById('modal-confirm-button'),
             modalCancel: document.getElementById('modal-cancel-button'),
-            // Player Assignment Modal
-            playerAssignmentModal: document.getElementById('player-assignment-modal'),
-            assignModalPlayerName: document.getElementById('assign-modal-player-name'),
-            assignToClarosBtn: document.getElementById('assign-to-claros'),
-            assignToOscurosBtn: document.getElementById('assign-to-oscuros'),
-            assignModalCancelBtn: document.getElementById('assign-modal-cancel'),
         };
 
         // --- INITIALIZATION ---
@@ -462,21 +477,22 @@
                 DOMElements.adminContent.classList.remove('hidden');
                 AppState.isInitializing = false;
                 AppState.isInitialized = true;
-                window.scrollTo(0, 0);
+                window.scrollTo(0, 0); // Scroll to top after content loads
             }
         }
         
         function showLoginScreen() {
             AppState.isInitialized = false;
+            // CHANGE: Re-added 'overflow-hidden' to the body to prevent scrolling on the login screen
             DOMElements.body.classList.add('logged-out', 'overflow-hidden');
             DOMElements.appContainer.classList.add('hidden');
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
-            DOMElements.mobileMenu.classList.remove('translate-x-0');
-            DOMElements.mobileMenu.classList.add('-translate-x-full');
+            DOMElements.mobileMenu.classList.add('hidden');
             DOMElements.mobileMenuOverlay.classList.add('hidden');
 
+            // Reset login form state to prevent loop
             const loginButton = document.getElementById('login-button');
             if (loginButton) {
                 loginButton.disabled = false;
@@ -582,10 +598,6 @@
             const adminItemsHtml = AppState.userRole === 'Admin' ? NAV_ITEMS.admin.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-text-secondary hover:bg-bg-muted rounded-md">${item.name}</a></li>`).join('') : '';
 
             const menuHtml = `
-                <div class="p-4 flex justify-between items-center border-b border-border-color">
-                    <span class="font-bold">Menú</span>
-                    <button id="close-mobile-menu" class="p-2 -mr-2"><i class="fas fa-times"></i></button>
-                </div>
                 <div class="p-2 space-y-1">
                     <div>
                         <button id="mobile-main-trigger" class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold text-text-primary rounded-md hover:bg-bg-muted">
@@ -634,9 +646,9 @@
             DOMElements.mobileMenu.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', e => {
                     e.preventDefault();
-                    e.stopPropagation();
                     navigateTo(e.currentTarget.dataset.tab);
-                    closeMobileMenu();
+                    DOMElements.mobileMenu.classList.add('hidden');
+                    DOMElements.mobileMenuOverlay.classList.add('hidden');
                 });
             });
             
@@ -650,13 +662,11 @@
             });
             
             document.getElementById('mobile-dark-mode-toggle').addEventListener('click', toggleTheme);
-            document.getElementById('close-mobile-menu').addEventListener('click', closeMobileMenu);
             
             updateThemeToggleIcons();
         }
         
         function navigateTo(tabId) {
-            DOMElements.body.classList.remove('overflow-hidden');
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('active', link.dataset.tab === tabId);
             });
@@ -671,32 +681,28 @@
         }
 
         // --- EVENT LISTENERS & AUTH ---
-        function openMobileMenu() {
-            DOMElements.mobileMenuOverlay.classList.remove('hidden');
-            DOMElements.mobileMenu.classList.remove('hidden');
-            setTimeout(() => {
-                 DOMElements.mobileMenu.classList.remove('-translate-x-full');
-                 DOMElements.mobileMenu.classList.add('translate-x-0');
-            }, 10);
-            DOMElements.body.classList.add('overflow-hidden');
-        }
-
-        function closeMobileMenu() {
-            DOMElements.mobileMenu.classList.add('-translate-x-full');
-            DOMElements.mobileMenu.classList.remove('translate-x-0');
-            DOMElements.mobileMenuOverlay.classList.add('hidden');
-            DOMElements.body.classList.remove('overflow-hidden');
-        }
-
         function setupEventListeners() {
-            DOMElements.mobileMenuToggle.addEventListener('click', openMobileMenu);
-            DOMElements.mobileMenuOverlay.addEventListener('click', closeMobileMenu);
-            
+            DOMElements.mobileMenuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isHidden = DOMElements.mobileMenu.classList.toggle('hidden');
+                DOMElements.mobileMenuOverlay.classList.toggle('hidden', isHidden);
+            });
+            DOMElements.mobileMenuOverlay.addEventListener('click', () => {
+                DOMElements.mobileMenu.classList.add('hidden');
+                DOMElements.mobileMenuOverlay.classList.add('hidden');
+            });
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             
             document.addEventListener('click', async (e) => {
                 if (e.target.closest('.signout-trigger')) {
-                    await supabase.auth.signOut().catch(err => showToast(`Error: ${err.message}`, 'error'));
+                    try {
+                        const { error } = await supabase.auth.signOut();
+                        if (error) {
+                           showToast(`Error al cerrar sesión: ${error.message}`, 'error');
+                        }
+                    } catch (err) {
+                        showToast(`Error inesperado: ${err.message}`, 'error');
+                    }
                 }
             });
 
@@ -706,19 +712,11 @@
                 passwordToggle.addEventListener('click', () => {
                     const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
                     passwordInput.setAttribute('type', type);
-                    passwordToggle.querySelector('i').classList.toggle('fa-eye-slash');
+                    const icon = passwordToggle.querySelector('i');
+                    icon.classList.toggle('fa-eye');
+                    icon.classList.toggle('fa-eye-slash');
                 });
             }
-
-            // Player Assignment Modal Listeners
-            DOMElements.assignToClarosBtn.addEventListener('click', () => movePlayerToTeam('team-claros'));
-            DOMElements.assignToOscurosBtn.addEventListener('click', () => movePlayerToTeam('team-oscuros'));
-            DOMElements.assignModalCancelBtn.addEventListener('click', hidePlayerAssignmentModal);
-            DOMElements.playerAssignmentModal.addEventListener('click', (e) => {
-                if (e.target.id === 'player-assignment-modal') {
-                    hidePlayerAssignmentModal();
-                }
-            });
         }
 
         async function handleLogin(e) {
@@ -750,7 +748,7 @@
 
         window.render_team_formation = () => {
             const content = `
-                <div id="team-formation-container" class="flex flex-col lg:grid lg:grid-cols-2 gap-6">
+                <div id="team-formation" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
                         <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
                         <div>
@@ -788,12 +786,11 @@
             const titularesDiv = document.getElementById('titulares-players');
             const suplentesDiv = document.getElementById('suplentes-players');
             AppState.players.filter(p => p.status === 'Activo').forEach(player => {
-                const playerEl = createPlayerElement(player);
+                const playerEl = createDraggablePlayer(player);
                 if (player.role === 'Titular') titularesDiv.appendChild(playerEl);
                 else suplentesDiv.appendChild(playerEl);
             });
-
-            setupPlayerInteractions('team-formation-container');
+            setupDragAndDrop();
             document.getElementById('team-match-date').addEventListener('change', updateTeamCounts);
             document.getElementById('save-teams-button').addEventListener('click', handleSaveTeams);
         };
@@ -874,17 +871,10 @@
 
         window.render_edit_match = () => {
             const panelContent = `
-                <div id="edit-match-content" class="flex flex-col lg:grid lg:grid-cols-2 gap-6">
+                <div id="edit-match-content" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
                         <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
-                        <div>
-                            <h4 class="font-medium mb-2 text-secondary">Titulares</h4>
-                            <div id="edit-titulares-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
-                        </div>
-                        <div>
-                            <h4 class="font-medium mb-2 text-secondary">Suplentes</h4>
-                            <div id="edit-suplentes-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
-                        </div>
+                        <div id="edit-available-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                     </div>
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
                         <h3 class="text-xl font-semibold">Equipos del Partido</h3>
@@ -1015,176 +1005,39 @@
             document.getElementById('clear-user-form-button').addEventListener('click', clearUserForm);
         };
 
-        // --- TEAM FORMATION & EDIT MATCH LOGIC (REUSABLE) ---
-        function createPlayerElement(player) {
+        // --- HELPERS & LOGIC ---
+        function createDraggablePlayer(player) {
             const el = document.createElement('div');
-            el.className = 'player-element flex-grow-0 text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
+            el.className = 'player-draggable flex-grow-0 text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
+            el.draggable = true;
             el.dataset.id = player.id;
             el.textContent = player.name;
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', player.id);
+                e.target.classList.add('opacity-50');
+            });
+            el.addEventListener('dragend', (e) => e.target.classList.remove('opacity-50'));
             return el;
         }
 
-        function setupPlayerInteractions(containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            
-            const returnPlayerToOrigin = (playerEl) => {
-                const playerId = playerEl.dataset.id;
-                const player = AppState.players.find(p => p.id == playerId);
-                const isEditMode = containerId === 'edit-match-content';
-
-                const suplentesList = document.getElementById(isEditMode ? 'edit-suplentes-players' : 'suplentes-players');
-                const titularesList = document.getElementById(isEditMode ? 'edit-titulares-players' : 'titulares-players');
-
-                if (player && player.role === 'Suplente') {
-                    suplentesList.appendChild(playerEl);
-                } else {
-                    titularesList.appendChild(playerEl);
-                }
-                if (!isEditMode) updateTeamCounts();
-            };
-
-            container.addEventListener('click', (e) => {
-                const playerEl = e.target.closest('.player-element');
-                if (!playerEl || (e.type === 'click' && playerEl.classList.contains('dragging'))) return;
-
-                const parentId = playerEl.parentElement.id;
-                
-                if (parentId.includes('titulares-players') || parentId.includes('suplentes-players')) {
-                    showPlayerAssignmentModal(playerEl);
-                } else if (parentId.includes('team-claros') || parentId.includes('team-oscuros')) {
-                    returnPlayerToOrigin(playerEl);
-                }
-            });
-
-            setupUniversalDragDrop(containerId, returnPlayerToOrigin);
-        }
-        
-        function showPlayerAssignmentModal(playerEl) {
-            AppState.activePlayerElement = playerEl;
-            DOMElements.assignModalPlayerName.textContent = playerEl.textContent;
-            DOMElements.body.classList.add('overflow-hidden');
-            DOMElements.playerAssignmentModal.classList.remove('hidden');
-        }
-
-        function hidePlayerAssignmentModal() {
-            AppState.activePlayerElement = null;
-            DOMElements.body.classList.remove('overflow-hidden');
-            DOMElements.playerAssignmentModal.classList.add('hidden');
-        }
-        
-        function movePlayerToTeam(teamId) {
-            if (!AppState.activePlayerElement) return;
-            
-            const isEditMode = AppState.activePlayerElement.closest('#edit-match-content');
-            const finalTeamId = isEditMode ? `edit-${teamId}` : teamId;
-            
-            const teamContainer = document.getElementById(finalTeamId);
-            if (teamContainer.children.length >= 5) {
-                showToast(`El equipo ${teamId.includes('claros') ? 'Claros' : 'Oscuros'} ya está lleno.`, 'warning');
-                return;
-            }
-            
-            teamContainer.appendChild(AppState.activePlayerElement);
-            hidePlayerAssignmentModal();
-            if (!isEditMode) updateTeamCounts();
-        }
-
-        function setupUniversalDragDrop(containerId, returnPlayerFn) {
-            const container = document.getElementById(containerId);
-            let draggedElement = null, ghostElement = null;
-            let startX = 0, startY = 0;
-
-            const onDragStart = (e) => {
-                const target = e.target.closest('.player-element');
-                if (!target) return;
-                
-                draggedElement = target;
-                
-                if (e.type === 'dragstart') {
-                    e.dataTransfer.setData('text/plain', draggedElement.dataset.id);
-                    e.dataTransfer.effectAllowed = 'move';
-                } else {
-                    const touch = e.touches[0];
-                    startX = touch.clientX;
-                    startY = touch.clientY;
-                }
-                
-                setTimeout(() => {
-                    if(draggedElement) draggedElement.classList.add('dragging');
-                }, 100);
-            };
-
-            const onDragMove = (e) => {
-                if (!draggedElement) return;
-                
-                const isTouchEvent = e.type === 'touchmove';
-                if (isTouchEvent) e.preventDefault();
-
-                const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX;
-                const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY;
-
-                if (isTouchEvent && !ghostElement) {
-                    if (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5) {
-                        ghostElement = draggedElement.cloneNode(true);
-                        ghostElement.classList.add('ghost');
-                        document.body.appendChild(ghostElement);
-                    }
-                }
-                
-                if (ghostElement) positionGhost(clientX, clientY);
-
-                document.querySelectorAll(`#${containerId} .player-drop-zone`).forEach(zone => zone.classList.remove('drag-over'));
-                
-                const dropTarget = document.elementFromPoint(clientX, clientY);
-                const dropZone = dropTarget ? dropTarget.closest(`#${containerId} .player-drop-zone`) : null;
-
-                if (dropZone) dropZone.classList.add('drag-over');
-            };
-
-            const onDragEnd = (e) => {
-                if (!draggedElement) return;
-
-                const clientX = e.type.includes('mouse') ? e.clientX : e.changedTouches[0].clientX;
-                const clientY = e.type.includes('mouse') ? e.clientY : e.changedTouches[0].clientY;
-                
-                const dropTarget = document.elementFromPoint(clientX, clientY);
-                const dropZone = dropTarget ? dropTarget.closest(`#${containerId} .player-drop-zone`) : null;
-
-                if (dropZone) {
-                    if (dropZone.id.includes('team-') && dropZone.children.length >= 5 && !dropZone.contains(draggedElement)) {
+        function setupDragAndDrop() {
+            document.querySelectorAll('.player-drop-zone').forEach(zone => {
+                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', e => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', e => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    const playerId = e.dataTransfer.getData('text/plain');
+                    const playerEl = document.querySelector(`.player-draggable[data-id="${playerId}"]`);
+                    if (zone.id.startsWith('team-') && zone.children.length >= 5) {
                         showToast('El equipo ya tiene 5 jugadores.', 'warning');
-                    } else if (dropZone.id.includes('titulares-players') || dropZone.id.includes('suplentes-players')) {
-                        returnPlayerFn(draggedElement);
-                    } else {
-                        dropZone.appendChild(draggedElement);
+                        return;
                     }
-                }
-                
-                document.querySelectorAll(`#${containerId} .player-drop-zone`).forEach(zone => zone.classList.remove('drag-over'));
-                draggedElement.classList.remove('dragging');
-                if (ghostElement) ghostElement.remove();
-                
-                draggedElement = null;
-                ghostElement = null;
-                if (containerId === 'team-formation-container') updateTeamCounts();
-            };
-            
-            const positionGhost = (x, y) => {
-                if (!ghostElement) return;
-                ghostElement.style.left = `${x - ghostElement.offsetWidth / 2}px`;
-                ghostElement.style.top = `${y - ghostElement.offsetHeight / 2}px`;
-            };
-
-            // Attach listeners
-            container.addEventListener('dragstart', onDragStart);
-            container.addEventListener('touchstart', onDragStart, { passive: true });
-            
-            document.addEventListener('dragover', onDragMove);
-            document.addEventListener('touchmove', onDragMove, { passive: false });
-
-            document.addEventListener('drop', onDragEnd);
-            document.addEventListener('touchend', onDragEnd);
+                    zone.appendChild(playerEl);
+                    if (zone.closest('#team-formation')) updateTeamCounts();
+                    if (zone.closest('#edit-match-content')) { /* Logic for edit match panel */ }
+                });
+            });
         }
         
         function updateTeamCounts() {
@@ -1225,7 +1078,6 @@
             }
         }
         
-        // --- OTHER TAB LOGIC ---
         function populateMatchFilters(prefix) {
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
@@ -1280,7 +1132,8 @@
                 
                 const firstItem = listContainer.querySelector('.match-item');
                 if (firstItem) {
-                    firstItem.click();
+                    firstItem.classList.add('selected');
+                    handleMatchSelection(firstItem.dataset.matchId, prefix);
                 }
             };
             
@@ -1556,38 +1409,27 @@
         
         function renderEditMatchPlayers(match) {
             document.getElementById('edit-match-date').value = match.match_date;
-            const titularesDiv = document.getElementById('edit-titulares-players');
-            const suplentesDiv = document.getElementById('edit-suplentes-players');
+            const availablePlayersDiv = document.getElementById('edit-available-players');
             const teamClarosDiv = document.getElementById('edit-team-claros');
             const teamOscurosDiv = document.getElementById('edit-team-oscuros');
             
-            [titularesDiv, suplentesDiv, teamClarosDiv, teamOscurosDiv].forEach(div => div.innerHTML = '');
+            [availablePlayersDiv, teamClarosDiv, teamOscurosDiv].forEach(div => div.innerHTML = '');
 
-            const matchPlayerIds = new Set([
-                ...(match.team_white_players || []).map(String), 
-                ...(match.team_dark_players || []).map(String)
-            ]);
+            const matchPlayerIds = new Set([...(match.team_white_players || []).map(String), ...(match.team_dark_players || []).map(String)]);
 
             AppState.players.filter(p => p.status === 'Activo' && !matchPlayerIds.has(String(p.id)))
-                .forEach(p => {
-                    const playerEl = createPlayerElement(p);
-                    if (p.role === 'Suplente') {
-                        suplentesDiv.appendChild(playerEl);
-                    } else {
-                        titularesDiv.appendChild(playerEl);
-                    }
-                });
+                .forEach(p => availablePlayersDiv.appendChild(createDraggablePlayer(p)));
 
             (match.team_white_players || []).forEach(id => {
                 const player = AppState.players.find(p => p.id == id);
-                if (player) teamClarosDiv.appendChild(createPlayerElement(player));
+                if (player) teamClarosDiv.appendChild(createDraggablePlayer(player));
             });
             (match.team_dark_players || []).forEach(id => {
                 const player = AppState.players.find(p => p.id == id);
-                if (player) teamOscurosDiv.appendChild(createPlayerElement(player));
+                if (player) teamOscurosDiv.appendChild(createDraggablePlayer(player));
             });
             
-            setupPlayerInteractions('edit-match-content');
+            setupDragAndDrop();
         }
 
         async function handleUpdateMatch() {
@@ -1639,14 +1481,12 @@
 
         function showModal(title, message) {
             return new Promise(resolve => {
-                DOMElements.body.classList.add('overflow-hidden');
                 DOMElements.modalTitle.textContent = title;
                 DOMElements.modalMessage.textContent = message;
                 DOMElements.modal.classList.remove('hidden');
                 const confirmHandler = () => { cleanup(); resolve(true); };
                 const cancelHandler = () => { cleanup(); resolve(false); };
                 const cleanup = () => {
-                    DOMElements.body.classList.remove('overflow-hidden');
                     DOMElements.modal.classList.add('hidden');
                     DOMElements.modalConfirm.removeEventListener('click', confirmHandler);
                     DOMElements.modalCancel.removeEventListener('click', cancelHandler);
