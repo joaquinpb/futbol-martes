@@ -33,6 +33,7 @@
             --accent-color: #4f46e5;
             --accent-color-hover: #4338ca;
             --danger-color: #ef4444;
+            --warning-color: #f59e0b;
             --button-text-color: #ffffff;
             --text-yellow-400: #facc15;
             --player-claros-bg: #ffffff;
@@ -122,19 +123,19 @@
             border: 1px solid var(--border-color);
         }
         table { background-color: var(--bg-secondary); width: 100%; border-collapse: collapse; }
+        /* CORRECCIÓN 4: Estilo de encabezado de tabla */
         thead th {
-            background-color: var(--bg-muted) !important; color: var(--text-secondary) !important;
+            background-color: #111827 !important; 
+            color: #ffffff !important;
             text-transform: uppercase; font-size: 0.75rem; position: sticky; top: 0; z-index: 10;
         }
-        /* Estilo para encabezados clickeables */
         thead th[data-sort] { cursor: pointer; transition: background-color 0.2s; }
-        thead th[data-sort]:hover { background-color: var(--border-color) !important; }
+        thead th[data-sort]:hover { background-color: #374151 !important; }
 
         td { color: var(--text-primary); }
         tbody tr { border-top: 1px solid var(--border-color); transition: background-color 150ms ease-in-out; }
         tbody tr:hover { background-color: var(--bg-muted); }
         tbody tr:first-child { border-top: none; }
-        .text-left-player { text-align: left !important; }
         
         /* Columnas Fijas y Scroll */
         #estadisticas-table, #individual-stats-table { min-width: 800px; }
@@ -146,7 +147,14 @@
         thead th.sticky-col { z-index: 15; }
         
         /* --- Títulos y Botones --- */
-        .tab-title { color: var(--text-primary); border-color: var(--accent-color); }
+        /* CORRECCIÓN 7: Estilo de título de sección */
+        .tab-title {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover));
+            color: var(--button-text-color);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
+        }
         .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
         .button-primary:hover { background-color: var(--accent-color-hover); }
         .collapsible-toggle-button { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); }
@@ -265,7 +273,8 @@
         let allPlayersData = [];
         let allMatchDates = [];
         let lastSelectedFixtureMatchId = null;
-        // Estado para el ordenamiento en Estadísticas
+        let currentEstadisticasData = []; // Cache para datos de estadísticas
+
         let estadisticasSortState = { criterion: 'points', order: 'desc' };
 
         const DOMElements = {
@@ -356,11 +365,7 @@
             
             if (yearSelect.value && periodSelect.value) return;
 
-            const currentYear = new Date().getFullYear();
-            yearSelect.value = Array.from(yearSelect.options).some(opt => opt.value == currentYear) ? currentYear : 'all';
-
-            const currentMonth = new Date().getMonth();
-            periodSelect.value = (currentMonth <= 5) ? 'apertura' : 'clausura';
+            setTodayFilters(yearSelectId.replace('-year-select', ''));
         }
 
         function setTodayFilters(sectionPrefix, isMonthFilter = false) {
@@ -502,7 +507,7 @@
                 (player, index) => `
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.points}</td>
                         <td class="p-3 text-center">${player.efectividad}%</td>
                     </tr>`,
@@ -518,7 +523,7 @@
                 (player, index) => `
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.chamigos}</td>
                     </tr>`,
                 ['#', 'Jugador', 'Chamigos']
@@ -533,7 +538,7 @@
                 (player, index) => `
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.tt}</td>
                     </tr>`,
                 ['#', 'Jugador', 'TT']
@@ -548,7 +553,7 @@
                 (player, index) => `
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.pj}</td>
                     </tr>`,
                 ['#', 'Jugador', 'PJ']
@@ -563,28 +568,29 @@
                 (player, index) => `
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-3 text-left-player">${player.name}</td>
+                        <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.ausentes}</td>
                     </tr>`,
                 ['#', 'Jugador', 'Ausentes']
             );
         }
 
-        async function renderEstadisticas() {
+        async function renderEstadisticas(fromSort = false) {
             const table = document.getElementById('estadisticas-table');
             const loadingMessage = document.getElementById('estadisticas-loading-message');
             if (!table || !loadingMessage) return;
             
-            table.classList.add('hidden');
-            loadingMessage.classList.remove('hidden');
-
-            const { players, error } = await fetchAndCalculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
-            
-            if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
+            if (!fromSort) {
+                table.classList.add('hidden');
+                loadingMessage.classList.remove('hidden');
+                const { players, error } = await fetchAndCalculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
+                if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
+                currentEstadisticasData = players;
+            }
 
             const sortCriterion = estadisticasSortState.criterion;
             const sortOrder = estadisticasSortState.order;
-            const rankedPlayers = players.filter(p => p.pj > 0).sort((a, b) => {
+            const rankedPlayers = [...currentEstadisticasData].filter(p => p.pj > 0).sort((a, b) => {
                 let valA = parseFloat(a[sortCriterion]) || 0;
                 let valB = parseFloat(b[sortCriterion]) || 0;
                 return sortOrder === 'asc' ? valA - valB : valB - valA;
@@ -596,7 +602,7 @@
                 <thead>
                     <tr>
                         <th class="p-2 text-center sticky-col sticky-col-1">#</th>
-                        <th class="p-3 text-left-player sticky-col sticky-col-2">Jugador</th>
+                        <th class="p-3 text-center sticky-col sticky-col-2">Jugador</th>
                         <th class="p-3 text-center" data-sort="points">Puntos</th>
                         <th class="p-3 text-center" data-sort="pg">PG</th>
                         <th class="p-3 text-center" data-sort="pe">PE</th>
@@ -612,7 +618,7 @@
                     ${rankedPlayers.map((player, index) => `
                     <tr>
                         <td class="p-2 text-center sticky-col sticky-col-1">${index + 1}</td>
-                        <td class="p-3 text-left-player sticky-col sticky-col-2">${player.name}</td>
+                        <td class="p-3 text-center sticky-col sticky-col-2">${player.name}</td>
                         <td class="p-3 text-center">${player.points}</td><td class="p-3 text-center">${player.pg}</td><td class="p-3 text-center">${player.pe}</td>
                         <td class="p-3 text-center">${player.pp}</td><td class="p-3 text-center">${player.pj}</td><td class="p-3 text-center">${player.efectividad}%</td>
                         <td class="p-3 text-center">${player.chamigos}</td><td class="p-3 text-center">${player.tt}</td><td class="p-3 text-center">${player.ausentes}</td>
@@ -622,7 +628,6 @@
             loadingMessage.classList.add('hidden');
             table.classList.remove('hidden');
             
-            // Añadir indicador visual de ordenamiento
             const activeTh = table.querySelector(`thead th[data-sort="${sortCriterion}"]`);
             if (activeTh) {
                 const icon = document.createElement('i');
@@ -650,11 +655,12 @@
             
             const clarosBgColor = '#E2E8F0';
             const clarosTextColor = '#1A202C';
+            const empatesBgColor = 'var(--warning-color)';
 
             statsDisplay.innerHTML = 
                 statCard(teamStats.oscurosWins, 'Oscuros Ganados', 'var(--sidebar-bg)') +
                 statCard(teamStats.clarosWins, 'Claros Ganados', clarosBgColor, clarosTextColor) +
-                statCard(teamStats.empates, 'Empates', 'var(--text-secondary)') +
+                statCard(teamStats.empates, 'Empates', empatesBgColor) +
                 statCard(teamStats.suspendidos, 'Suspendidos', 'var(--danger-color)') +
                 statCard(teamStats.totalPJMatches, 'Partidos Jugados', 'var(--accent-color)');
 
@@ -800,8 +806,7 @@
             }
             
             visualDetailsContainer.classList.remove('hidden');
-            // CORRECCIÓN: Se mueve el cierre del collapsible al listener del item
-            // if(collapsibleContent) collapsibleContent.classList.add('hidden');
+            if(collapsibleContent) collapsibleContent.classList.add('hidden');
         }
         
         async function renderIndividualStatsTable() {
@@ -1031,11 +1036,11 @@
             const title = titles[tabId] || 'Contenido';
             
             let baseHtml = `<div id="${tabId}" class="main-content-container space-y-6">
-                <h2 class="tab-title text-3xl md:text-4xl font-extrabold text-center pb-2 border-b-4">${title.toUpperCase()}</h2>`;
+                <h2 class="tab-title text-2xl font-bold tracking-tight uppercase text-center">${title}</h2>`;
             
             const prefix = tabId.replace('-content', '');
             
-            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos'].includes(prefix)) {
+            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas'].includes(prefix)) {
                  baseHtml += `
                     <div id="${prefix}-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
                         <span>Seleccionar Torneo</span><i class="fas fa-chevron-down toggle-icon"></i>
@@ -1056,11 +1061,6 @@
                     break;
                 case 'estadisticas-content':
                      baseHtml += `
-                        <div id="estadisticas-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[20%_1fr_1fr] gap-4 hidden items-end">
-                            <button id="estadisticas-hoy-button" class="button-primary h-full px-6 py-2 rounded-md shadow-sm col-span-2 md:col-span-1 md:row-span-2 flex items-center justify-center">Torneo Actual</button>
-                            <div><label for="estadisticas-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="estadisticas-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
-                            <div><label for="estadisticas-period-select" class="block text-sm font-medium mb-1">Torneo:</label><select id="estadisticas-period-select" class="mt-1 block w-full p-2 text-sm shadow-sm"><option value="apertura">Apertura</option><option value="clausura">Clausura</option><option value="total">Totales</option></select></div>
-                        </div>
                         <div class="table-container overflow-x-auto">
                             <p id="estadisticas-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
                             <table id="estadisticas-table" class="hidden"></table>
@@ -1178,12 +1178,18 @@
                 });
             }
 
-            if (renderFn && !tabId.startsWith('fixture')) {
+            if (renderFn && !tabId.startsWith('fixture') && !tabId.startsWith('estadisticas')) {
                 document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => { setTodayFilters(prefix); renderFn(); });
                 document.getElementById(`${prefix}-year-select`)?.addEventListener('change', renderFn);
                 document.getElementById(`${prefix}-period-select`)?.addEventListener('change', renderFn);
             }
             if (tabId === 'estadisticas-content') {
+                 // Reset cache when filters change
+                 const resetAndRender = () => { currentEstadisticasData = []; renderEstadisticas(); };
+                 document.getElementById('estadisticas-hoy-button')?.addEventListener('click', () => { setTodayFilters('estadisticas'); resetAndRender(); });
+                 document.getElementById('estadisticas-year-select')?.addEventListener('change', resetAndRender);
+                 document.getElementById('estadisticas-period-select')?.addEventListener('change', resetAndRender);
+
                  const table = document.getElementById('estadisticas-table');
                  table?.addEventListener('click', (e) => {
                      const th = e.target.closest('th[data-sort]');
@@ -1195,7 +1201,7 @@
                          estadisticasSortState.criterion = newCriterion;
                          estadisticasSortState.order = 'desc';
                      }
-                     renderEstadisticas();
+                     renderEstadisticas(true); // Re-render from cache
                  });
             }
             if (tabId === 'fixture-content') {
