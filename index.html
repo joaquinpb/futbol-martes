@@ -35,6 +35,7 @@
             --danger-color: #ef4444;
             --button-text-color: #ffffff;
             --text-yellow-400: #facc15;
+            /* CORRECCIÓN 1: Colores de jugadores fijos */
             --player-claros-bg: #ffffff;
             --player-claros-text: #1a202c;
             --player-oscuros-bg: #1a202c;
@@ -51,10 +52,11 @@
             --border-color: #374151;
             --accent-color: #6366f1;
             --accent-color-hover: #818cf8;
-            --player-claros-bg: #e5e7eb;
-            --player-claros-text: #111827;
-            --player-oscuros-bg: #111827;
-            --player-oscuros-text: #e5e7eb;
+            /* CORRECCIÓN 1: Colores de jugadores fijos (se mantienen en modo oscuro) */
+            --player-claros-bg: #ffffff;
+            --player-claros-text: #1a202c;
+            --player-oscuros-bg: #1a202c;
+            --player-oscuros-text: #ffffff;
         }
 
         /* --- Estilos Base --- */
@@ -148,8 +150,43 @@
         .collapsible-toggle-button { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); }
         .collapsible-toggle-button.visible-content { background: linear-gradient(to right, #e53e3e, var(--danger-color)); }
 
-        /* --- Fixture y Campo de Fútbol --- */
-        #soccer-field-container { background-color: #0f8d48; border: 2px solid rgba(255,255,255,0.7); }
+        /* --- Fixture y Campo de Fútbol (CORREGIDO) --- */
+        #soccer-field-container {
+            position: relative;
+            width: 100%;
+            padding-top: 168.75%; /* Proporción 9:16 para vista vertical */
+            background-color: #0f8d48;
+            border: 2px solid white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        #soccer-field-container::before { /* Línea de medio campo */
+            content: ''; position: absolute; top: 50%; left: 0; right: 0;
+            height: 2px; background-color: rgba(255,255,255,0.7); transform: translateY(-50%); z-index: 1;
+        }
+        #soccer-field-container::after { /* Círculo central */
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 20%; padding-top: 20%; border: 2px solid rgba(255,255,255,0.7);
+            border-radius: 50%; transform: translate(-50%, -50%); z-index: 1;
+        }
+        .goal-area, .penalty-area { position: absolute; box-sizing: border-box; border-style: solid; border-color: rgba(255,255,255,0.7); z-index: 1; }
+        .goal-area.top { top: 0; left: 35%; width: 30%; height: 8%; border-width: 0 2px 2px 2px; }
+        .goal-area.bottom { bottom: 0; left: 35%; width: 30%; height: 8%; border-width: 2px 2px 0 2px; }
+        .penalty-area.top { top: 0; left: 20%; width: 60%; height: 18%; border-width: 0 2px 2px 2px; }
+        .penalty-area.bottom { bottom: 0; left: 20%; width: 60%; height: 18%; border-width: 2px 2px 0 2px; }
+        
+        @media (min-width: 768px) {
+            #soccer-field-container.horizontal-layout {
+                padding-top: 60%; /* Proporción ~5:3 para vista horizontal */
+            }
+            #soccer-field-container.horizontal-layout::before { top: 0; left: 50%; height: 100%; width: 2px; transform: translateX(-50%); }
+            #soccer-field-container.horizontal-layout::after { width: 15%; padding-top: 15%; }
+            .goal-area.top.horizontal-layout { top: 35%; left: 0; height: 30%; width: 8%; border-width: 2px 2px 2px 0; }
+            .goal-area.bottom.horizontal-layout { top: 35%; right: 0; left: auto; height: 30%; width: 8%; border-width: 2px 0 2px 2px; }
+            .penalty-area.top.horizontal-layout { top: 20%; left: 0; height: 60%; width: 18%; border-width: 2px 2px 2px 0; }
+            .penalty-area.bottom.horizontal-layout { top: 20%; right: 0; left: auto; height: 60%; width: 18%; border-width: 2px 0 2px 2px; }
+        }
+
         #fixture-details-display { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
         .fixture-match-item { background-color: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); }
         .fixture-match-item.selected { box-shadow: 0 0 0 2px var(--accent-color); border-color: var(--accent-color); }
@@ -276,7 +313,7 @@
             }
         }
         
-        // --- LÓGICA DE DATOS Y RENDERIZADO (RESTAURADA) ---
+        // --- LÓGICA DE DATOS Y RENDERIZADO ---
         
         function parseDate(dateString) { 
             if (!dateString) return new Date();
@@ -331,7 +368,6 @@
 
             let query = supabaseClient.from('matches').select('*');
 
-            // CORRECCIÓN: Añadido chequeo para evitar fechas inválidas.
             if (selectedYear && selectedYear !== 'all') {
                 let startDate, endDate;
                 if (selectedPeriod === 'apertura') {
@@ -581,19 +617,21 @@
 
             if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
             
-            const statCard = (value, label, color) => `
-                <div class="p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px] text-white" style="background: ${color};">
-                    <span class="text-3xl font-bold">${value}</span><span class="text-sm uppercase mt-1">${label}</span>
+            const statCard = (value, label, bgColor, textColor = 'var(--button-text-color)') => `
+                <div class="p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]" style="background-color: ${bgColor}; color: ${textColor};">
+                    <span class="text-3xl font-bold">${value}</span><span class="text-sm uppercase mt-1 font-semibold">${label}</span>
                 </div>`;
             
+            // CORRECCIÓN: Se usa un color fijo para Claros y se ajusta el texto para modo oscuro
+            const clarosBgColor = '#E2E8F0'; // light gray
+            const clarosTextColor = document.documentElement.classList.contains('dark') ? 'var(--text-primary)' : '#1A202C';
+
             statsDisplay.innerHTML = 
                 statCard(teamStats.oscurosWins, 'Oscuros Ganados', 'var(--sidebar-bg)') +
-                statCard(teamStats.clarosWins, 'Claros Ganados', '#e2e8f0') +
+                statCard(teamStats.clarosWins, 'Claros Ganados', clarosBgColor, clarosTextColor) +
                 statCard(teamStats.empates, 'Empates', 'var(--text-secondary)') +
                 statCard(teamStats.suspendidos, 'Suspendidos', 'var(--danger-color)') +
                 statCard(teamStats.totalPJMatches, 'Partidos Jugados', 'var(--accent-color)');
-            
-            statsDisplay.querySelector('.text-white')?.classList.add('dark:text-black'); // Fix for Claros card in dark mode
 
             loadingMessage.classList.add('hidden');
             statsDisplay.classList.remove('hidden');
@@ -669,9 +707,8 @@
             if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
             
             soccerFieldContainer.innerHTML = `
-                <div class="goal top"></div><div class="goal bottom"></div>
-                <div class="penalty-area top"></div><div class="penalty-area bottom"></div>
-                <div class="goal-area top"></div><div class="goal-area bottom"></div>`;
+                <div class="goal-area top"></div><div class="goal-area bottom"></div>
+                <div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
             ttAttendeesTableBody.innerHTML = '';
 
             const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
@@ -683,16 +720,17 @@
 
             const isHorizontalField = window.innerWidth >= 768;
             soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
-            soccerFieldContainer.querySelectorAll('.goal, .penalty-area, .goal-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
+            soccerFieldContainer.querySelectorAll('.goal-area, .penalty-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
 
+            // CORRECCIÓN 4: Posiciones de arqueros ajustadas
             const pos = {
                 v: {
-                    claros: [{ x: 0.5, y: 0.93 }, { x: 0.3, y: 0.79 }, { x: 0.7, y: 0.79 }, { x: 0.35, y: 0.63 }, { x: 0.65, y: 0.58 }],
-                    oscuros: [{ x: 0.5, y: 0.07 }, { x: 0.3, y: 0.21 }, { x: 0.7, y: 0.21 }, { x: 0.35, y: 0.42 }, { x: 0.65, y: 0.37 }]
+                    claros: [{ x: 0.5, y: 0.95 }, { x: 0.25, y: 0.75 }, { x: 0.75, y: 0.75 }, { x: 0.35, y: 0.60 }, { x: 0.65, y: 0.60 }],
+                    oscuros: [{ x: 0.5, y: 0.05 }, { x: 0.25, y: 0.25 }, { x: 0.75, y: 0.25 }, { x: 0.35, y: 0.40 }, { x: 0.65, y: 0.40 }]
                 },
                 h: {
-                    claros: [{ x: 0.92, y: 0.50 }, { x: 0.79, y: 0.20 }, { x: 0.79, y: 0.80 }, { x: 0.60, y: 0.32 }, { x: 0.64, y: 0.68 }],
-                    oscuros: [{ x: 0.08, y: 0.50 }, { x: 0.21, y: 0.20 }, { x: 0.21, y: 0.80 }, { x: 0.42, y: 0.32 }, { x: 0.38, y: 0.68 }]
+                    claros: [{ x: 0.95, y: 0.50 }, { x: 0.75, y: 0.25 }, { x: 0.75, y: 0.75 }, { x: 0.60, y: 0.35 }, { x: 0.60, y: 0.65 }],
+                    oscuros: [{ x: 0.05, y: 0.50 }, { x: 0.25, y: 0.25 }, { x: 0.25, y: 0.75 }, { x: 0.40, y: 0.35 }, { x: 0.40, y: 0.65 }]
                 }
             };
             const currentPos = isHorizontalField ? pos.h : pos.v;
@@ -712,12 +750,13 @@
                 playerWrapper.style.top = `${currentPos[team][index].y * 100}%`;
                 playerWrapper.style.left = `${currentPos[team][index].x * 100}%`;
                 
-                let markerHTML = `<div class="player-marker relative w-14 h-14 rounded-full flex items-center justify-center text-base font-bold text-center">
+                // CORRECCIÓN 3: Se usa -top-2.5 para elevar la estrella
+                let markerHTML = `<div class="player-marker ${team} relative w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-center">
                     ${parseInt(playerId.replace('J', ''))}`;
                 if (chamigosIds.includes(playerId)) {
-                    markerHTML += `<i class="fas fa-star text-yellow-400 absolute -top-1 -right-1 text-lg"></i>`;
+                    markerHTML += `<i class="fas fa-star text-yellow-400 absolute -top-2.5 -right-1 text-lg"></i>`;
                 }
-                markerHTML += `</div><div class="player-name-label text-xs font-bold p-1 rounded-md">${getPlayerName(playerId)}</div>`;
+                markerHTML += `</div><div class="player-name-label text-xs font-bold px-2 py-0.5 rounded-md">${getPlayerName(playerId)}</div>`;
                 playerWrapper.innerHTML = markerHTML;
                 soccerFieldContainer.appendChild(playerWrapper);
             };
@@ -729,9 +768,10 @@
                  const trophyDiv = document.createElement('div');
                  trophyDiv.className = 'winner-trophy absolute text-2xl z-20 transform -translate-x-1/2 -translate-y-1/2';
                  trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
+                 // CORRECCIÓN 2: Posición del trofeo en esquinas inferiores
                  const trophyPos = {
-                     h: { Claros: { top: '50%', left: '95%'}, Oscuros: { top: '50%', left: '5%'} },
-                     v: { Claros: { top: '95%', left: '50%'}, Oscuros: { top: '5%', left: '50%'} }
+                     h: { Claros: { top: '95%', left: '95%'}, Oscuros: { top: '95%', left: '5%'} },
+                     v: { Claros: { top: '95%', left: '95%'}, Oscuros: { top: '95%', left: '5%'} }
                  };
                  Object.assign(trophyDiv.style, (isHorizontalField ? trophyPos.h : trophyPos.v)[result]);
                  soccerFieldContainer.appendChild(trophyDiv);
@@ -1028,7 +1068,7 @@
                             <div id="fixture-matches-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"></div>
                         </div>
                         <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
-                            <div class="md:w-[65%] min-w-0"><div id="soccer-field-container" class="relative w-full pt-[168.75%] md:pt-0 md:h-full rounded-lg overflow-hidden"></div></div>
+                            <div class="md:w-[65%] min-w-0"><div id="soccer-field-container" class="rounded-lg overflow-hidden"></div></div>
                             <div id="fixture-details-display" class="flex-1 md:w-[35%] p-4 rounded-lg mt-6 md:mt-0">
                                 <h3 class="font-semibold text-center mb-2">Asistentes al TT</h3>
                                 <div class="overflow-x-auto"><table id="tt-attendees-table" class="w-full"><tbody></tbody></table></div>
@@ -1058,30 +1098,24 @@
         }
 
         function activateTab(tabId) {
-            // 1. Crear la estructura HTML para la pestaña
             DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
             
-            // 2. Actualizar el estado activo del botón del menú lateral
             DOMElements.tabButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
             });
             
-            // 3. CORRECCIÓN: Configurar listeners y poblar filtros ANTES de renderizar
             setupDynamicEventListeners(tabId);
             
-            // 4. Definir las funciones de renderizado
             const renderFunctions = {
                 'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
                 'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
                 'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
             };
             
-            // 5. Llamar a la función de renderizado específica para la pestaña
             if (renderFunctions[tabId]) {
                 renderFunctions[tabId]();
             }
             
-            // 6. Guardar estado
             localStorage.setItem('lastActiveTab', tabId);
             const hash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === tabId);
             if (hash && window.location.hash !== hash) {
