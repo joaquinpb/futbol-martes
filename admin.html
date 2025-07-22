@@ -74,8 +74,9 @@
             color: var(--text-primary);
         }
         
+        /* CORRECCIÓN: Fondo de inputs en modo oscuro para mejorar contraste de spellcheck */
         html.dark input, html.dark select {
-             background-color: var(--bg-muted);
+             background-color: var(--bg-secondary); /* Usar un fondo ligeramente más claro */
              color: var(--text-primary);
         }
         
@@ -83,7 +84,7 @@
         html.dark input:-webkit-autofill:hover, 
         html.dark input:-webkit-autofill:focus, 
         html.dark input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px var(--bg-muted) inset !important;
+            -webkit-box-shadow: 0 0 0 30px var(--bg-secondary) inset !important; /* Coincidir con el fondo del input */
             -webkit-text-fill-color: var(--text-primary) !important;
         }
 
@@ -105,47 +106,26 @@
             color: var(--sidebar-active-text) !important;
         }
         
-        /* CORRECCIÓN DRAG & DROP: Estilos mejorados para la interacción */
+        /* CORRECCIÓN: Se elimina Drag & Drop, se simplifica a cursor de puntero */
         .player-element {
             background-color: #374151;
             color: #ffffff;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            cursor: grab; /* Indica que se puede arrastrar */
+            cursor: pointer; /* Cambiado de 'grab' a 'pointer' */
             white-space: nowrap; 
             width: auto; 
             display: inline-flex;
             align-items: center;
             flex-grow: 0;
-            touch-action: none; /* Esencial para Pointer Events en móviles */
-            user-select: none; /* Evita la selección de texto al arrastrar */
+            user-select: none;
         }
-        .player-element.dragging {
-            cursor: grabbing;
-            opacity: 0.5;
+        .player-element:hover {
             transform: scale(1.05);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        .player-element.ghost {
-            position: fixed; /* El fantasma se mueve por toda la pantalla */
-            pointer-events: none; /* El fantasma no interfiere con la detección del drop */
-            z-index: 1000;
-            opacity: 0.8;
-            transform: scale(1.05);
-            background-color: var(--accent-color);
         }
         
         .player-list-container {
              background-color: var(--bg-muted);
              align-content: flex-start;
-        }
-
-        .player-drop-zone.drag-over {
-            border-style: dashed;
-            border-color: var(--accent-color);
-            background-color: rgba(79, 70, 229, 0.05);
-        }
-        html.dark .player-drop-zone.drag-over {
-            background-color: rgba(99, 102, 241, 0.1);
         }
         
         .match-item.no-result { border-left-color: var(--danger-color); }
@@ -1027,17 +1007,11 @@
         }
 
         // =================================================================================
-        // CORRECCIÓN DRAG & DROP Y CLIC: Lógica de interacción unificada y robusta
+        // CORRECCIÓN: Lógica de interacción simplificada a solo CLIC
         // =================================================================================
         function setupPlayerInteractions(containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
-
-            let draggedElement = null;
-            let ghostElement = null;
-            let isDragging = false;
-            let startX = 0, startY = 0;
-            let offsetX = 0, offsetY = 0;
 
             // Función para devolver un jugador a su lista de origen
             const returnPlayerToOrigin = (playerEl) => {
@@ -1057,126 +1031,25 @@
                 if (!isEditMode) updateTeamCounts();
             };
 
-            // Evento de inicio: Captura el elemento y la posición
-            const onPointerDown = (e) => {
-                const target = e.target.closest('.player-element');
-                if (!target) return;
+            // Listener de clic unificado para todo el contenedor
+            const onClick = (e) => {
+                const playerEl = e.target.closest('.player-element');
+                if (!playerEl) return; // Si no se hizo clic en un jugador, no hacer nada
 
-                // Prevenir comportamiento por defecto en algunos navegadores
-                e.preventDefault();
-
-                draggedElement = target;
-                isDragging = false; // Aún no estamos arrastrando, solo hemos presionado
-
-                startX = e.clientX;
-                startY = e.clientY;
-
-                // Capturar el puntero para recibir eventos incluso si sale del elemento
-                draggedElement.setPointerCapture(e.pointerId);
-
-                // Escuchar eventos de movimiento y fin
-                draggedElement.addEventListener('pointermove', onPointerMove);
-                draggedElement.addEventListener('pointerup', onPointerUp);
-                draggedElement.addEventListener('pointercancel', onPointerUp);
-            };
-
-            // Evento de movimiento: Decide si es un arrastre e inicia la lógica visual
-            const onPointerMove = (e) => {
-                if (!draggedElement) return;
-
-                const currentX = e.clientX;
-                const currentY = e.clientY;
-                const deltaX = Math.abs(currentX - startX);
-                const deltaY = Math.abs(currentY - startY);
-
-                // Si no estamos arrastrando y el movimiento supera un umbral, empezamos a arrastrar
-                if (!isDragging && (deltaX > 5 || deltaY > 5)) {
-                    isDragging = true;
-                    draggedElement.classList.add('dragging');
-
-                    // Crear el "fantasma" para feedback visual
-                    ghostElement = draggedElement.cloneNode(true);
-                    ghostElement.classList.add('ghost');
-                    document.body.appendChild(ghostElement);
-                    
-                    // Calcular el desfase del puntero respecto a la esquina del elemento
-                    const rect = draggedElement.getBoundingClientRect();
-                    offsetX = startX - rect.left;
-                    offsetY = startY - rect.top;
-                }
-
-                if (isDragging && ghostElement) {
-                    // Mover el fantasma
-                    ghostElement.style.left = `${currentX - offsetX}px`;
-                    ghostElement.style.top = `${currentY - offsetY}px`;
-                    
-                    // Resaltar la zona de destino (drop zone)
-                    document.querySelectorAll(`#${containerId} .player-drop-zone`).forEach(zone => zone.classList.remove('drag-over'));
-                    const elementUnderPointer = document.elementFromPoint(currentX, currentY);
-                    const dropZone = elementUnderPointer ? elementUnderPointer.closest('.player-drop-zone') : null;
-                    if (dropZone) {
-                        dropZone.classList.add('drag-over');
-                    }
+                const parentId = playerEl.parentElement.id;
+                
+                // Si el jugador está en la lista de disponibles, mostrar modal
+                if (parentId.includes('titulares-players') || parentId.includes('suplentes-players')) {
+                    showPlayerAssignmentModal(playerEl);
+                } 
+                // Si el jugador ya está en un equipo, devolverlo a la lista de origen
+                else if (parentId.includes('team-claros') || parentId.includes('team-oscuros')) {
+                    returnPlayerToOrigin(playerEl);
                 }
             };
 
-            // Evento de fin: Decide si fue un clic o un arrastre y actúa en consecuencia
-            const onPointerUp = (e) => {
-                if (!draggedElement) return;
-
-                // Limpiar listeners
-                draggedElement.removeEventListener('pointermove', onPointerMove);
-                draggedElement.removeEventListener('pointerup', onPointerUp);
-                draggedElement.removeEventListener('pointercancel', onPointerUp);
-                draggedElement.releasePointerCapture(e.pointerId);
-
-                if (isDragging) {
-                    // --- LÓGICA DE SOLTAR (DROP) ---
-                    const currentX = e.clientX;
-                    const currentY = e.clientY;
-
-                    // Ocultar el fantasma temporalmente para detectar el elemento real debajo
-                    if (ghostElement) ghostElement.style.display = 'none';
-                    const elementUnderPointer = document.elementFromPoint(currentX, currentY);
-                    if (ghostElement) ghostElement.style.display = '';
-
-                    const dropZone = elementUnderPointer ? elementUnderPointer.closest('.player-drop-zone') : null;
-
-                    if (dropZone) {
-                        if (dropZone.id.includes('team-') && dropZone.children.length >= 5 && !dropZone.contains(draggedElement)) {
-                            showToast('El equipo ya tiene 5 jugadores.', 'warning');
-                        } else if (dropZone.id.includes('titulares-players') || dropZone.id.includes('suplentes-players')) {
-                            returnPlayerToOrigin(draggedElement);
-                        } else {
-                            dropZone.appendChild(draggedElement);
-                        }
-                    }
-                    
-                    if (containerId === 'team-formation-container') updateTeamCounts();
-                    else if (containerId === 'edit-match-content') { /* No se necesita update de counts aquí */ }
-
-                } else {
-                    // --- LÓGICA DE CLIC (TAP) ---
-                    const parentId = draggedElement.parentElement.id;
-                    if (parentId.includes('titulares-players') || parentId.includes('suplentes-players')) {
-                        showPlayerAssignmentModal(draggedElement);
-                    } else if (parentId.includes('team-claros') || parentId.includes('team-oscuros')) {
-                        returnPlayerToOrigin(draggedElement);
-                    }
-                }
-
-                // Limpieza final
-                if (ghostElement) ghostElement.remove();
-                draggedElement.classList.remove('dragging');
-                document.querySelectorAll(`#${containerId} .player-drop-zone`).forEach(zone => zone.classList.remove('drag-over'));
-
-                draggedElement = null;
-                ghostElement = null;
-                isDragging = false;
-            };
-
-            // Añadir el listener inicial al contenedor principal
-            container.addEventListener('pointerdown', onPointerDown);
+            // Añadir el listener de clic al contenedor principal
+            container.addEventListener('click', onClick);
         }
         
         function showPlayerAssignmentModal(playerEl) {
