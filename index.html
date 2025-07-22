@@ -123,7 +123,6 @@
             border: 1px solid var(--border-color);
         }
         table { background-color: var(--bg-secondary); width: 100%; border-collapse: collapse; }
-        /* CORRECCIÓN 4: Estilo de encabezado de tabla */
         thead th {
             background-color: #111827 !important; 
             color: #ffffff !important;
@@ -147,7 +146,6 @@
         thead th.sticky-col { z-index: 15; }
         
         /* --- Títulos y Botones --- */
-        /* CORRECCIÓN 7: Estilo de título de sección */
         .tab-title {
             padding: 1rem;
             border-radius: 0.5rem;
@@ -363,9 +361,9 @@
             const periodSelect = document.getElementById(periodSelectId);
             if (!periodSelect || !yearSelect) return;
             
-            if (yearSelect.value && periodSelect.value) return;
-
-            setTodayFilters(yearSelectId.replace('-year-select', ''));
+            if (!yearSelect.value || yearSelect.value === 'all' || !periodSelect.value) {
+                setTodayFilters(yearSelectId.replace('-year-select', ''));
+            }
         }
 
         function setTodayFilters(sectionPrefix, isMonthFilter = false) {
@@ -668,7 +666,7 @@
             statsDisplay.classList.remove('hidden');
         }
         
-        async function renderFixture() {
+        async function renderFixture(isFilterChange = false) {
             const cardsContainer = document.getElementById('fixture-matches-cards-container');
             const loadingMessage = document.getElementById('fixture-loading-message');
             const year = document.getElementById('fixture-year-select').value;
@@ -679,12 +677,15 @@
             loadingMessage.classList.remove('hidden');
 
             let query = supabaseClient.from('matches').select('*');
+            
             if (year && year !== 'all') {
-                const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-                const endDate = new Date(year, month, 0).getDate();
-                query = query.gte('match_date', startDate).lte('match_date', `${year}-${String(month).padStart(2, '0')}-${endDate}`);
-            } else if (year && year !== 'all') {
-                query = query.gte('match_date', `${year}-01-01`).lte('match_date', `${year}-12-31`);
+                if (month && month !== 'all') {
+                    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+                    const endDate = new Date(year, month, 0).getDate();
+                    query = query.gte('match_date', startDate).lte('match_date', `${year}-${String(month).padStart(2, '0')}-${endDate}`);
+                } else {
+                    query = query.gte('match_date', `${year}-01-01`).lte('match_date', `${year}-12-31`);
+                }
             }
 
             const { data: filteredMatches, error } = await query;
@@ -712,20 +713,27 @@
             cardsContainer.querySelectorAll('.fixture-match-item').forEach(card => card.addEventListener('click', (e) => {
                 cardsContainer.querySelectorAll('.fixture-match-item').forEach(c => c.classList.remove('selected'));
                 e.currentTarget.classList.add('selected');
-                renderFixtureDetails(e.currentTarget.dataset.matchId);
+                renderFixtureDetails(e.currentTarget.dataset.matchId, true);
             }));
 
             loadingMessage.classList.add('hidden');
 
-            setTimeout(() => {
-                const currentMatchCard = document.querySelector('.current-match-card');
-                const firstCard = cardsContainer.querySelector('[data-match-id]');
-                if (currentMatchCard) currentMatchCard.click(); 
-                else if (firstCard) firstCard.click();
-            }, 100);
+            if (!isFilterChange) {
+                setTimeout(() => {
+                    const currentMatchCard = document.querySelector('.current-match-card');
+                    const firstCard = cardsContainer.querySelector('[data-match-id]');
+                    if (currentMatchCard) {
+                        currentMatchCard.classList.add('selected');
+                        renderFixtureDetails(currentMatchCard.dataset.matchId, false);
+                    } else if (firstCard) {
+                        firstCard.classList.add('selected');
+                        renderFixtureDetails(firstCard.dataset.matchId, false);
+                    }
+                }, 100);
+            }
         }
 
-        async function renderFixtureDetails(matchId) {
+        async function renderFixtureDetails(matchId, fromUserClick = false) {
             const { data: match, error } = await supabaseClient.from('matches').select('*').eq('id', matchId).single();
             if (error || !match) { console.error("Error fetching match details:", error); return; }
             
@@ -735,6 +743,7 @@
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
             const collapsibleContent = document.getElementById('fixture-filters-collapsible');
+            const filterToggle = document.getElementById('fixture-filter-toggle');
             if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
             
             soccerFieldContainer.innerHTML = `
@@ -745,7 +754,7 @@
             const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
             const getPlayerName = id => (allPlayersData.find(p => p.id === id) || {name: 'ID Desconocido'}).name;
             
-            ttAttendeesTableBody.innerHTML = (tt_attendees && tt_attendees.length > 0)
+            ttAttendeesTableBody.innerHTML = (Array.isArray(tt_attendees) && tt_attendees.length > 0)
                 ? tt_attendees.map(id => `<tr><td class="p-2 text-center">${getPlayerName(id)}</td></tr>`).join('')
                 : `<tr><td class="p-2 text-center">No hay asistentes al TT.</td></tr>`;
 
@@ -806,7 +815,11 @@
             }
             
             visualDetailsContainer.classList.remove('hidden');
-            if(collapsibleContent) collapsibleContent.classList.add('hidden');
+            if (collapsibleContent && fromUserClick) {
+                collapsibleContent.classList.add('hidden');
+                filterToggle.classList.remove('visible-content');
+                filterToggle.querySelector('.toggle-icon')?.classList.remove('fa-chevron-up');
+            }
         }
         
         async function renderIndividualStatsTable() {
@@ -1014,6 +1027,7 @@
                 document.getElementById('individual-stats-table').innerHTML = '';
                 document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
                 searchInput.focus();
+                filterAndDisplay(); // Show all players again
             });
             
             if(allPlayersData.length > 0) {
@@ -1184,7 +1198,6 @@
                 document.getElementById(`${prefix}-period-select`)?.addEventListener('change', renderFn);
             }
             if (tabId === 'estadisticas-content') {
-                 // Reset cache when filters change
                  const resetAndRender = () => { currentEstadisticasData = []; renderEstadisticas(); };
                  document.getElementById('estadisticas-hoy-button')?.addEventListener('click', () => { setTodayFilters('estadisticas'); resetAndRender(); });
                  document.getElementById('estadisticas-year-select')?.addEventListener('change', resetAndRender);
@@ -1207,10 +1220,11 @@
             if (tabId === 'fixture-content') {
                 populateYearSelects('fixture-year-select');
                 populateMonthSelects('fixture-month-select');
+                // CORRECCIÓN 1: Se llama a setTodayFilters sin condiciones
                 setTodayFilters('fixture', true);
-                document.getElementById('fixture-hoy-button')?.addEventListener('click', () => { setTodayFilters('fixture', true); renderFixture(); });
-                document.getElementById('fixture-year-select')?.addEventListener('change', renderFixture);
-                document.getElementById('fixture-month-select')?.addEventListener('change', renderFixture);
+                document.getElementById('fixture-hoy-button')?.addEventListener('click', () => { setTodayFilters('fixture', true); renderFixture(true); });
+                document.getElementById('fixture-year-select')?.addEventListener('change', () => renderFixture(true));
+                document.getElementById('fixture-month-select')?.addEventListener('change', () => renderFixture(true));
             }
             if (tabId === 'individual-stats-content') {
                 setupPlayerSearch();
