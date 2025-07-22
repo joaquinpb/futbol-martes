@@ -331,7 +331,8 @@
 
             let query = supabaseClient.from('matches').select('*');
 
-            if (selectedYear !== 'all') {
+            // CORRECCIÓN: Añadido chequeo para evitar fechas inválidas.
+            if (selectedYear && selectedYear !== 'all') {
                 let startDate, endDate;
                 if (selectedPeriod === 'apertura') {
                     startDate = `${selectedYear}-01-01`;
@@ -609,11 +610,11 @@
             loadingMessage.classList.remove('hidden');
 
             let query = supabaseClient.from('matches').select('*');
-            if (year !== 'all' && month !== 'all') {
+            if (year && year !== 'all') {
                 const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
                 const endDate = new Date(year, month, 0).getDate();
                 query = query.gte('match_date', startDate).lte('match_date', `${year}-${String(month).padStart(2, '0')}-${endDate}`);
-            } else if (year !== 'all') {
+            } else if (year && year !== 'all') {
                 query = query.gte('match_date', `${year}-01-01`).lte('match_date', `${year}-12-31`);
             }
 
@@ -1057,24 +1058,30 @@
         }
 
         function activateTab(tabId) {
+            // 1. Crear la estructura HTML para la pestaña
             DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
             
+            // 2. Actualizar el estado activo del botón del menú lateral
             DOMElements.tabButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
             });
             
+            // 3. CORRECCIÓN: Configurar listeners y poblar filtros ANTES de renderizar
+            setupDynamicEventListeners(tabId);
+            
+            // 4. Definir las funciones de renderizado
             const renderFunctions = {
                 'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
                 'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
                 'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
             };
             
+            // 5. Llamar a la función de renderizado específica para la pestaña
             if (renderFunctions[tabId]) {
                 renderFunctions[tabId]();
             }
             
-            setupDynamicEventListeners(tabId);
-            
+            // 6. Guardar estado
             localStorage.setItem('lastActiveTab', tabId);
             const hash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === tabId);
             if (hash && window.location.hash !== hash) {
