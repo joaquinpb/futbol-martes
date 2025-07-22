@@ -59,7 +59,8 @@
         
         body:has(#mobile-menu.translate-x-0),
         body:has(#custom-confirm-modal:not(.hidden)),
-        body:has(#player-assignment-modal:not(.hidden)) {
+        body:has(#player-assignment-modal:not(.hidden)),
+        body:has(#notification-modal:not(.hidden)) {
             overflow: hidden;
         }
 
@@ -74,9 +75,8 @@
             color: var(--text-primary);
         }
         
-        /* CORRECCIÓN: Fondo de inputs en modo oscuro para mejorar contraste de spellcheck */
         html.dark input, html.dark select {
-             background-color: var(--bg-secondary); /* Usar un fondo ligeramente más claro */
+             background-color: var(--bg-secondary);
              color: var(--text-primary);
         }
         
@@ -84,7 +84,7 @@
         html.dark input:-webkit-autofill:hover, 
         html.dark input:-webkit-autofill:focus, 
         html.dark input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px var(--bg-secondary) inset !important; /* Coincidir con el fondo del input */
+            -webkit-box-shadow: 0 0 0 30px var(--bg-secondary) inset !important;
             -webkit-text-fill-color: var(--text-primary) !important;
         }
 
@@ -106,12 +106,11 @@
             color: var(--sidebar-active-text) !important;
         }
         
-        /* CORRECCIÓN: Se elimina Drag & Drop, se simplifica a cursor de puntero */
         .player-element {
             background-color: #374151;
             color: #ffffff;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            cursor: pointer; /* Cambiado de 'grab' a 'pointer' */
+            cursor: pointer;
             white-space: nowrap; 
             width: auto; 
             display: inline-flex;
@@ -282,8 +281,13 @@
         </div>
     </div>
     
-    <!-- Toast Notification -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50"></div>
+    <!-- MEJORA: Nuevo Modal de Notificación Centrado -->
+    <div id="notification-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-[100] p-4">
+        <div id="notification-content" class="flex items-center gap-4 text-white font-semibold p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <i id="notification-icon" class="fas fa-2x"></i>
+            <span id="notification-message"></span>
+        </div>
+    </div>
 
     <!-- Main Confirmation Modal -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
@@ -328,7 +332,7 @@
             userRole: null,
             selectedMatchId: null,
             isInitialized: false,
-            activePlayerElement: null, // For player assignment modal
+            activePlayerElement: null,
         };
 
         const NAV_ITEMS = {
@@ -363,7 +367,6 @@
             desktopDarkModeToggle: document.getElementById('desktop-dark-mode-toggle'),
             loginDarkModeToggle: document.getElementById('login-dark-mode-toggle'),
             authStatus: document.getElementById('auth-status'),
-            toastContainer: document.getElementById('toast-container'),
             // Confirmation Modal
             modal: document.getElementById('custom-confirm-modal'),
             modalTitle: document.getElementById('modal-title'),
@@ -376,6 +379,11 @@
             assignToClarosBtn: document.getElementById('assign-to-claros'),
             assignToOscurosBtn: document.getElementById('assign-to-oscuros'),
             assignModalCancelBtn: document.getElementById('assign-modal-cancel'),
+            // Notification Modal
+            notificationModal: document.getElementById('notification-modal'),
+            notificationContent: document.getElementById('notification-content'),
+            notificationIcon: document.getElementById('notification-icon'),
+            notificationMessage: document.getElementById('notification-message'),
         };
 
         // --- INITIALIZATION ---
@@ -413,14 +421,14 @@
                 ]);
 
                 AppState.players = (playersRes.status === 'fulfilled' && !playersRes.value.error) ? (playersRes.value.data || []) : [];
-                if (playersRes.value?.error) showToast("Error al cargar jugadores.", "error");
+                if (playersRes.value?.error) showNotification("Error al cargar jugadores.", "error");
 
                 AppState.matches = (matchesRes.status === 'fulfilled' && !matchesRes.value.error) ? (matchesRes.value.data || []) : [];
-                if (matchesRes.value?.error) showToast("Error al cargar partidos.", "error");
+                if (matchesRes.value?.error) showNotification("Error al cargar partidos.", "error");
                 
                 if (AppState.userRole === 'Admin') {
                     AppState.users = (usersRes.status === 'fulfilled' && usersRes.value && !usersRes.value.error) ? (usersRes.value.data || []) : [];
-                    if (usersRes.value?.error) showToast("Error al cargar usuarios (Admin).", "error");
+                    if (usersRes.value?.error) showNotification("Error al cargar usuarios (Admin).", "error");
                 }
 
                 setupUI();
@@ -440,7 +448,7 @@
 
             } catch (error) {
                 console.error("Fatal error during admin panel setup:", error);
-                showToast("Ocurrió un error inesperado al cargar el panel.", "error");
+                showNotification("Ocurrió un error inesperado al cargar el panel.", "error");
                 await supabase.auth.signOut();
             } finally {
                 DOMElements.loadingContainer.classList.add('hidden');
@@ -678,7 +686,7 @@
             
             document.addEventListener('click', async (e) => {
                 if (e.target.closest('.signout-trigger')) {
-                    await supabase.auth.signOut().catch(err => showToast(`Error: ${err.message}`, 'error'));
+                    await supabase.auth.signOut().catch(err => showNotification(`Error: ${err.message}`, 'error'));
                 }
             });
 
@@ -737,11 +745,11 @@
                         <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
                         <div>
                             <h4 class="font-medium mb-2 text-secondary">Titulares</h4>
-                            <div id="titulares-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
+                            <div id="titulares-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                         </div>
                         <div>
                             <h4 class="font-medium mb-2 text-secondary">Suplentes</h4>
-                            <div id="suplentes-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
+                            <div id="suplentes-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                         </div>
                     </div>
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
@@ -749,11 +757,11 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <h4 class="font-semibold mb-2">Claros (<span id="claros-count">0</span>)</h4>
-                                <div id="team-claros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
+                                <div id="team-claros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
                             </div>
                              <div>
                                 <h4 class="font-semibold mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
-                                <div id="team-oscuros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-gray-800"></div>
+                                <div id="team-oscuros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-gray-800"></div>
                             </div>
                         </div>
                         <div class="pt-4">
@@ -861,11 +869,11 @@
                         <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
                         <div>
                             <h4 class="font-medium mb-2 text-secondary">Titulares</h4>
-                            <div id="edit-titulares-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
+                            <div id="edit-titulares-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                         </div>
                         <div>
                             <h4 class="font-medium mb-2 text-secondary">Suplentes</h4>
-                            <div id="edit-suplentes-players" class="player-list-container player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
+                            <div id="edit-suplentes-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                         </div>
                     </div>
                     <div class="card rounded-xl shadow-sm p-6 space-y-4">
@@ -873,20 +881,25 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <h4 class="font-semibold mb-2">Claros</h4>
-                                <div id="edit-team-claros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
+                                <div id="edit-team-claros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
                             </div>
                              <div>
                                 <h4 class="font-semibold mb-2">Oscuros</h4>
-                                <div id="edit-team-oscuros" class="player-drop-zone border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-gray-800"></div>
+                                <div id="edit-team-oscuros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-gray-800"></div>
                             </div>
                         </div>
                         <div class="pt-4">
                             <label for="edit-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
                             <input type="date" id="edit-match-date" class="w-full p-2 border rounded-md">
                         </div>
-                        <button id="update-match-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition">
-                            Actualizar Partido
-                        </button>
+                        <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                            <button id="update-match-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition">
+                                Actualizar Partido
+                            </button>
+                            <button id="delete-match-from-edit-button" class="w-full px-6 py-3 button-danger font-semibold rounded-lg shadow-md transition">
+                                Eliminar Partido
+                            </button>
+                        </div>
                     </div>
                 </div>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Editar Partido', renderMatchSelectionTemplate('edit', panelContent));
@@ -1006,14 +1019,10 @@
             return el;
         }
 
-        // =================================================================================
-        // CORRECCIÓN: Lógica de interacción simplificada a solo CLIC
-        // =================================================================================
         function setupPlayerInteractions(containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            // Función para devolver un jugador a su lista de origen
             const returnPlayerToOrigin = (playerEl) => {
                 if (!playerEl) return;
                 const playerId = playerEl.dataset.id;
@@ -1031,24 +1040,20 @@
                 if (!isEditMode) updateTeamCounts();
             };
 
-            // Listener de clic unificado para todo el contenedor
             const onClick = (e) => {
                 const playerEl = e.target.closest('.player-element');
-                if (!playerEl) return; // Si no se hizo clic en un jugador, no hacer nada
+                if (!playerEl) return;
 
                 const parentId = playerEl.parentElement.id;
                 
-                // Si el jugador está en la lista de disponibles, mostrar modal
                 if (parentId.includes('titulares-players') || parentId.includes('suplentes-players')) {
                     showPlayerAssignmentModal(playerEl);
                 } 
-                // Si el jugador ya está en un equipo, devolverlo a la lista de origen
                 else if (parentId.includes('team-claros') || parentId.includes('team-oscuros')) {
                     returnPlayerToOrigin(playerEl);
                 }
             };
 
-            // Añadir el listener de clic al contenedor principal
             container.addEventListener('click', onClick);
         }
         
@@ -1071,7 +1076,7 @@
             
             const teamContainer = document.getElementById(finalTeamId);
             if (teamContainer.children.length >= 5) {
-                showToast(`El equipo ${teamId.includes('claros') ? 'Claros' : 'Oscuros'} ya está lleno.`, 'warning');
+                showNotification(`El equipo ${teamId.includes('claros') ? 'Claros' : 'Oscuros'} ya está lleno.`, 'warning');
                 return;
             }
             
@@ -1095,7 +1100,7 @@
         async function handleSaveTeams() {
             const matchDate = document.getElementById('team-match-date').value;
             if (!matchDate) { 
-                showToast('Por favor, selecciona la fecha del partido.', 'warning');
+                showNotification('Por favor, selecciona la fecha del partido.', 'warning');
                 return;
             }
             const teamWhitePlayers = Array.from(document.getElementById('team-claros').children).map(el => el.dataset.id);
@@ -1110,9 +1115,9 @@
             }]).select().single();
 
             if (error) {
-                showToast(`Error al crear el partido: ${error.message}`, 'error');
+                showNotification(`Error al crear el partido: ${error.message}`, 'error');
             } else {
-                showToast('Partido creado exitosamente!', 'success');
+                showNotification('Partido creado exitosamente!', 'success');
                 AppState.matches.unshift(data);
                 navigateTo('team-formation');
             }
@@ -1228,18 +1233,26 @@
         
         function setupEditMatchPanel(panel, match) {
             renderEditMatchPlayers(match);
-            if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#update-match-button').addEventListener('click', handleUpdateMatch);
-                panel.dataset.listenersAdded = 'true';
-            }
+            
+            const updateBtn = panel.querySelector('#update-match-button');
+            const deleteBtn = panel.querySelector('#delete-match-from-edit-button');
+
+            // Remove old listeners before adding new ones to prevent duplicates
+            const newUpdateBtn = updateBtn.cloneNode(true);
+            updateBtn.parentNode.replaceChild(newUpdateBtn, updateBtn);
+            newUpdateBtn.addEventListener('click', handleUpdateMatch);
+
+            const newDeleteBtn = deleteBtn.cloneNode(true);
+            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+            newDeleteBtn.addEventListener('click', handleDeleteMatchFromEdit);
         }
 
         async function handleRegisterResult() {
             const result = document.getElementById('match-result').value;
             const { error } = await supabase.from('matches').update({ result }).eq('id', AppState.selectedMatchId);
-            if(error) { showToast('Error al registrar resultado', 'error'); } 
+            if(error) { showNotification('Error al registrar resultado', 'error'); } 
             else {
-                 showToast('Resultado registrado!', 'success');
+                 showNotification('Resultado registrado!', 'success');
                  const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
                  if (matchInState) matchInState.result = result;
                  populateMatchFilters('results');
@@ -1250,12 +1263,26 @@
             const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
             if (confirmed) {
                 const { error } = await supabase.from('matches').delete().eq('id', AppState.selectedMatchId);
-                if(error) { showToast('Error al eliminar partido', 'error'); } 
+                if(error) { showNotification('Error al eliminar partido', 'error'); } 
                 else {
-                    showToast('Partido eliminado.', 'success');
+                    showNotification('Partido eliminado.', 'success');
                     AppState.matches = AppState.matches.filter(m => m.id != AppState.selectedMatchId);
                     document.getElementById('results-selection-panel').classList.add('hidden');
                     populateMatchFilters('results');
+                }
+            }
+        }
+
+        async function handleDeleteMatchFromEdit() {
+            const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
+            if (confirmed) {
+                const { error } = await supabase.from('matches').delete().eq('id', AppState.selectedMatchId);
+                if(error) { showNotification('Error al eliminar partido', 'error'); } 
+                else {
+                    showNotification('Partido eliminado.', 'success');
+                    AppState.matches = AppState.matches.filter(m => m.id != AppState.selectedMatchId);
+                    document.getElementById('edit-selection-panel').classList.add('hidden');
+                    populateMatchFilters('edit');
                 }
             }
         }
@@ -1302,9 +1329,9 @@
             });
             
             const { error } = await supabase.from('matches').update({ chamigo_votes: votes }).eq('id', AppState.selectedMatchId);
-            if (error) { showToast('Error al guardar votos de Chamigo', 'error'); } 
+            if (error) { showNotification('Error al guardar votos de Chamigo', 'error'); } 
             else {
-                showToast('Votos de Chamigo guardados!', 'success');
+                showNotification('Votos de Chamigo guardados!', 'success');
                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
                 if (matchInState) matchInState.chamigo_votes = votes;
             }
@@ -1337,11 +1364,12 @@
         }
         
         async function handleRegisterTt() {
-            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => parseInt(el.dataset.id));
+            // CORRECCIÓN: Se elimina parseInt para guardar el ID como string
+            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
             const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
-            if (error) { showToast('Error al guardar asistencia a TT', 'error'); } 
+            if (error) { showNotification('Error al guardar asistencia a TT', 'error'); } 
             else {
-                showToast('Asistencia a TT guardada!', 'success');
+                showNotification('Asistencia a TT guardada!', 'success');
                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
                 if (matchInState) matchInState.tt_attendees = attendees;
             }
@@ -1391,9 +1419,9 @@
                 : await supabase.from('players').insert(playerData).select().single();
 
             if (error) {
-                showToast(`Error al guardar jugador: ${error.message}`, 'error');
+                showNotification(`Error al guardar jugador: ${error.message}`, 'error');
             } else {
-                showToast('Jugador guardado exitosamente.', 'success');
+                showNotification('Jugador guardado exitosamente.', 'success');
                 await refreshDataAndRender('players-management');
                 clearPlayerForm();
             }
@@ -1433,15 +1461,15 @@
         async function handleSaveUser(e) {
             e.preventDefault();
             const id = document.getElementById('user-id').value;
-            if (!id) { showToast('Selecciona un usuario de la lista.', 'warning'); return; }
+            if (!id) { showNotification('Selecciona un usuario de la lista.', 'warning'); return; }
             const userData = {
                 name: document.getElementById('user-name').value,
                 role: document.getElementById('user-role').value,
             };
             const { error } = await supabase.from('profiles').update(userData).eq('id', id);
-            if (error) { showToast(`Error al guardar usuario: ${error.message}`, 'error'); }
+            if (error) { showNotification(`Error al guardar usuario: ${error.message}`, 'error'); }
             else {
-                showToast('Usuario guardado.', 'success');
+                showNotification('Usuario guardado.', 'success');
                 await refreshDataAndRender('user-management');
                 clearUserForm();
             }
@@ -1485,11 +1513,11 @@
 
         async function handleUpdateMatch() {
             const newDate = document.getElementById('edit-match-date').value;
-            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => parseInt(el.dataset.id));
-            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => parseInt(el.dataset.id));
+            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
+            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => el.dataset.id);
             
             if (newTeamWhite.length + newTeamDark.length !== 10) {
-                showToast('Deben haber 10 jugadores en total para conformar los equipos.', 'warning');
+                showNotification('Deben haber 10 jugadores en total para conformar los equipos.', 'warning');
                 return;
             }
 
@@ -1499,9 +1527,9 @@
                 team_dark_players: newTeamDark
             }).eq('id', AppState.selectedMatchId);
             
-            if (error) { showToast('Error al actualizar el partido.', 'error'); }
+            if (error) { showNotification('Error al actualizar el partido.', 'error'); }
             else {
-                showToast('Partido actualizado.', 'success');
+                showNotification('Partido actualizado.', 'success');
                 await refreshDataAndRender('edit-match');
             }
         }
@@ -1521,13 +1549,30 @@
             navigateTo(tabToRender);
         }
 
-        function showToast(message, type = 'info') {
-            const colors = { success: 'bg-success-color', error: 'bg-danger-color', warning: 'bg-warning-color', info: 'bg-blue-500' };
-            const toast = document.createElement('div');
-            toast.className = `w-full max-w-sm p-4 rounded-lg shadow-lg text-white ${colors[type]} mb-2`;
-            toast.textContent = message;
-            DOMElements.toastContainer.prepend(toast);
-            setTimeout(() => toast.remove(), 4000);
+        // MEJORA: Nueva función de notificación centralizada
+        function showNotification(message, type = 'success') {
+            const { notificationModal, notificationContent, notificationIcon, notificationMessage } = DOMElements;
+            
+            // Configurar contenido y estilo
+            notificationMessage.textContent = message;
+            notificationContent.classList.remove('bg-success-color', 'bg-danger-color', 'bg-warning-color');
+            notificationIcon.classList.remove('fa-check-circle', 'fa-exclamation-triangle');
+
+            if (type === 'success') {
+                notificationContent.classList.add('bg-success-color');
+                notificationIcon.classList.add('fa-check-circle');
+            } else { // 'error' o 'warning'
+                notificationContent.classList.add('bg-danger-color');
+                notificationIcon.classList.add('fa-exclamation-triangle');
+            }
+
+            // Mostrar modal
+            notificationModal.classList.remove('hidden');
+
+            // Ocultar después de 3 segundos
+            setTimeout(() => {
+                notificationModal.classList.add('hidden');
+            }, 3000);
         }
 
         function showModal(title, message) {
