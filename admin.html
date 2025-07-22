@@ -218,7 +218,7 @@
         </aside>
 
         <!-- Main content -->
-        <div class="flex-1 flex flex-col h-screen">
+        <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Header for Mobile (Sticky) -->
             <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary md:hidden sticky top-0 z-30">
                 <div class="w-10">
@@ -233,11 +233,6 @@
                     </a>
                 </div>
                 <div class="w-10"></div> <!-- Spacer -->
-
-                <!-- Mobile Dropdown Menu -->
-                <div id="mobile-menu" class="hidden absolute top-full left-4 mt-2 w-64 rounded-lg shadow-xl border z-50">
-                    <!-- Mobile menu content injected here -->
-                </div>
             </header>
             
             <main class="flex-1 overflow-y-auto bg-primary p-4 sm:p-6 lg:p-8">
@@ -255,9 +250,13 @@
             </main>
         </div>
     </div>
-
-    <!-- Mobile Menu Overlay -->
+    
+    <!-- Mobile Menu (now outside the main flow, controlled by overlay) -->
     <div id="mobile-menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+    <div id="mobile-menu" class="hidden fixed top-0 left-0 h-full w-64 bg-secondary shadow-xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out">
+        <!-- Mobile menu content injected here -->
+    </div>
+
 
     <!-- Authentication Container -->
     <div id="auth-container" class="hidden fixed inset-0 z-50 flex items-center justify-center login-bg">
@@ -474,7 +473,8 @@
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
             DOMElements.authContainer.classList.remove('hidden');
-            DOMElements.mobileMenu.classList.add('hidden');
+            DOMElements.mobileMenu.classList.remove('translate-x-0');
+            DOMElements.mobileMenu.classList.add('-translate-x-full');
             DOMElements.mobileMenuOverlay.classList.add('hidden');
 
             const loginButton = document.getElementById('login-button');
@@ -582,6 +582,10 @@
             const adminItemsHtml = AppState.userRole === 'Admin' ? NAV_ITEMS.admin.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-text-secondary hover:bg-bg-muted rounded-md">${item.name}</a></li>`).join('') : '';
 
             const menuHtml = `
+                <div class="p-4 flex justify-between items-center border-b border-border-color">
+                    <span class="font-bold">Menú</span>
+                    <button id="close-mobile-menu" class="p-2 -mr-2"><i class="fas fa-times"></i></button>
+                </div>
                 <div class="p-2 space-y-1">
                     <div>
                         <button id="mobile-main-trigger" class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold text-text-primary rounded-md hover:bg-bg-muted">
@@ -630,11 +634,9 @@
             DOMElements.mobileMenu.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', e => {
                     e.preventDefault();
-                    e.stopPropagation(); // Prevents overlay click from firing
+                    e.stopPropagation();
                     navigateTo(e.currentTarget.dataset.tab);
-                    DOMElements.mobileMenu.classList.add('hidden');
-                    DOMElements.mobileMenuOverlay.classList.add('hidden');
-                    DOMElements.body.classList.remove('overflow-hidden');
+                    closeMobileMenu();
                 });
             });
             
@@ -648,6 +650,7 @@
             });
             
             document.getElementById('mobile-dark-mode-toggle').addEventListener('click', toggleTheme);
+            document.getElementById('close-mobile-menu').addEventListener('click', closeMobileMenu);
             
             updateThemeToggleIcons();
         }
@@ -668,18 +671,27 @@
         }
 
         // --- EVENT LISTENERS & AUTH ---
+        function openMobileMenu() {
+            DOMElements.mobileMenuOverlay.classList.remove('hidden');
+            DOMElements.mobileMenu.classList.remove('hidden');
+            setTimeout(() => {
+                 DOMElements.mobileMenu.classList.remove('-translate-x-full');
+                 DOMElements.mobileMenu.classList.add('translate-x-0');
+            }, 10);
+            DOMElements.body.classList.add('overflow-hidden');
+        }
+
+        function closeMobileMenu() {
+            DOMElements.mobileMenu.classList.add('-translate-x-full');
+            DOMElements.mobileMenu.classList.remove('translate-x-0');
+            DOMElements.mobileMenuOverlay.classList.add('hidden');
+            DOMElements.body.classList.remove('overflow-hidden');
+        }
+
         function setupEventListeners() {
-            DOMElements.mobileMenuToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isHidden = DOMElements.mobileMenu.classList.toggle('hidden');
-                DOMElements.mobileMenuOverlay.classList.toggle('hidden', isHidden);
-                DOMElements.body.classList.toggle('overflow-hidden', !isHidden);
-            });
-            DOMElements.mobileMenuOverlay.addEventListener('click', () => {
-                DOMElements.mobileMenu.classList.add('hidden');
-                DOMElements.mobileMenuOverlay.classList.add('hidden');
-                DOMElements.body.classList.remove('overflow-hidden');
-            });
+            DOMElements.mobileMenuToggle.addEventListener('click', openMobileMenu);
+            DOMElements.mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+            
             DOMElements.loginForm.addEventListener('submit', handleLogin);
             
             document.addEventListener('click', async (e) => {
@@ -1098,7 +1110,6 @@
                     startY = touch.clientY;
                 }
                 
-                // Delay adding class to avoid interfering with click
                 setTimeout(() => {
                     if(draggedElement) draggedElement.classList.add('dragging');
                 }, 100);
@@ -1106,13 +1117,14 @@
 
             const onDragMove = (e) => {
                 if (!draggedElement) return;
-                e.preventDefault();
+                
+                const isTouchEvent = e.type === 'touchmove';
+                if (isTouchEvent) e.preventDefault();
 
-                const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-                const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX;
+                const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY;
 
-                if (e.type === 'touchmove' && !ghostElement) {
-                    // Create ghost only after moving a certain threshold
+                if (isTouchEvent && !ghostElement) {
                     if (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5) {
                         ghostElement = draggedElement.cloneNode(true);
                         ghostElement.classList.add('ghost');
@@ -1168,11 +1180,11 @@
             container.addEventListener('dragstart', onDragStart);
             container.addEventListener('touchstart', onDragStart, { passive: true });
             
-            container.addEventListener('dragover', onDragMove);
-            container.addEventListener('touchmove', onDragMove, { passive: false });
+            document.addEventListener('dragover', onDragMove);
+            document.addEventListener('touchmove', onDragMove, { passive: false });
 
-            container.addEventListener('drop', onDragEnd);
-            container.addEventListener('touchend', onDragEnd);
+            document.addEventListener('drop', onDragEnd);
+            document.addEventListener('touchend', onDragEnd);
         }
         
         function updateTeamCounts() {
