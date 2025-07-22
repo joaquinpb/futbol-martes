@@ -61,6 +61,13 @@
             overflow: hidden;
         }
 
+        /* --- CAMBIO 1: Se añade la nueva regla CSS para controlar el scroll de forma robusta --- */
+        body:has(#mobile-menu.translate-x-0),
+        body:has(#custom-confirm-modal:not(.hidden)),
+        body:has(#player-assignment-modal:not(.hidden)) {
+            overflow: hidden;
+        }
+
         .card {
             background-color: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -410,7 +417,7 @@
         async function loadAdminPanel(session) {
             if (AppState.isInitializing) return;
             AppState.isInitializing = true;
-            DOMElements.body.classList.remove('logged-out', 'overflow-hidden');
+            DOMElements.body.classList.remove('logged-out');
             
             DOMElements.authContainer.classList.add('hidden');
             DOMElements.appContainer.classList.remove('hidden');
@@ -468,7 +475,7 @@
         
         function showLoginScreen() {
             AppState.isInitialized = false;
-            DOMElements.body.classList.add('logged-out', 'overflow-hidden');
+            DOMElements.body.classList.add('logged-out');
             DOMElements.appContainer.classList.add('hidden');
             DOMElements.loadingContainer.classList.add('hidden');
             DOMElements.adminContent.classList.add('hidden');
@@ -656,7 +663,6 @@
         }
         
         function navigateTo(tabId) {
-            DOMElements.body.classList.remove('overflow-hidden');
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('active', link.dataset.tab === tabId);
             });
@@ -678,14 +684,12 @@
                  DOMElements.mobileMenu.classList.remove('-translate-x-full');
                  DOMElements.mobileMenu.classList.add('translate-x-0');
             }, 10);
-            DOMElements.body.classList.add('overflow-hidden');
         }
 
         function closeMobileMenu() {
             DOMElements.mobileMenu.classList.add('-translate-x-full');
             DOMElements.mobileMenu.classList.remove('translate-x-0');
             DOMElements.mobileMenuOverlay.classList.add('hidden');
-            DOMElements.body.classList.remove('overflow-hidden');
         }
 
         function setupEventListeners() {
@@ -1063,13 +1067,11 @@
         function showPlayerAssignmentModal(playerEl) {
             AppState.activePlayerElement = playerEl;
             DOMElements.assignModalPlayerName.textContent = playerEl.textContent;
-            DOMElements.body.classList.add('overflow-hidden');
             DOMElements.playerAssignmentModal.classList.remove('hidden');
         }
 
         function hidePlayerAssignmentModal() {
             AppState.activePlayerElement = null;
-            DOMElements.body.classList.remove('overflow-hidden');
             DOMElements.playerAssignmentModal.classList.add('hidden');
         }
         
@@ -1639,14 +1641,12 @@
 
         function showModal(title, message) {
             return new Promise(resolve => {
-                DOMElements.body.classList.add('overflow-hidden');
                 DOMElements.modalTitle.textContent = title;
                 DOMElements.modalMessage.textContent = message;
                 DOMElements.modal.classList.remove('hidden');
                 const confirmHandler = () => { cleanup(); resolve(true); };
                 const cancelHandler = () => { cleanup(); resolve(false); };
                 const cleanup = () => {
-                    DOMElements.body.classList.remove('overflow-hidden');
                     DOMElements.modal.classList.add('hidden');
                     DOMElements.modalConfirm.removeEventListener('click', confirmHandler);
                     DOMElements.modalCancel.removeEventListener('click', cancelHandler);
