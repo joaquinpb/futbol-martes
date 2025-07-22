@@ -126,6 +126,10 @@
             background-color: var(--bg-muted) !important; color: var(--text-secondary) !important;
             text-transform: uppercase; font-size: 0.75rem; position: sticky; top: 0; z-index: 10;
         }
+        /* Estilo para encabezados clickeables */
+        thead th[data-sort] { cursor: pointer; transition: background-color 0.2s; }
+        thead th[data-sort]:hover { background-color: var(--border-color) !important; }
+
         td { color: var(--text-primary); }
         tbody tr { border-top: 1px solid var(--border-color); transition: background-color 150ms ease-in-out; }
         tbody tr:hover { background-color: var(--bg-muted); }
@@ -261,6 +265,8 @@
         let allPlayersData = [];
         let allMatchDates = [];
         let lastSelectedFixtureMatchId = null;
+        // Estado para el ordenamiento en Estadísticas
+        let estadisticasSortState = { criterion: 'points', order: 'desc' };
 
         const DOMElements = {
             body: document.body,
@@ -323,11 +329,11 @@
             if (!yearSelect) return;
             const years = [...new Set(allMatchDates.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
             
-            const currentValue = yearSelect.value; // Guardar valor actual
+            const currentValue = yearSelect.value;
             yearSelect.innerHTML = '<option value="all">Todos los Años</option>';
             years.forEach(year => yearSelect.innerHTML += `<option value="${year}">${year}</option>`);
             if (Array.from(yearSelect.options).some(opt => opt.value === currentValue)) {
-                yearSelect.value = currentValue; // Restaurar si es posible
+                yearSelect.value = currentValue;
             }
         }
 
@@ -348,7 +354,6 @@
             const periodSelect = document.getElementById(periodSelectId);
             if (!periodSelect || !yearSelect) return;
             
-            // Si ya tienen valor, no los reinicies
             if (yearSelect.value && periodSelect.value) return;
 
             const currentYear = new Date().getFullYear();
@@ -577,8 +582,8 @@
             
             if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
 
-            const sortCriterion = document.getElementById('estadisticas-sort-criterion').value;
-            const sortOrder = document.getElementById('estadisticas-sort-order').value;
+            const sortCriterion = estadisticasSortState.criterion;
+            const sortOrder = estadisticasSortState.order;
             const rankedPlayers = players.filter(p => p.pj > 0).sort((a, b) => {
                 let valA = parseFloat(a[sortCriterion]) || 0;
                 let valB = parseFloat(b[sortCriterion]) || 0;
@@ -592,9 +597,15 @@
                     <tr>
                         <th class="p-2 text-center sticky-col sticky-col-1">#</th>
                         <th class="p-3 text-left-player sticky-col sticky-col-2">Jugador</th>
-                        <th class="p-3 text-center">Puntos</th><th class="p-3 text-center">PG</th><th class="p-3 text-center">PE</th><th class="p-3 text-center">PP</th>
-                        <th class="p-3 text-center">PJ</th><th class="p-3 text-center">Efectividad</th><th class="p-3 text-center">Chamigo</th>
-                        <th class="p-3 text-center">TT</th><th class="p-3 text-center">Ausentismo</th>
+                        <th class="p-3 text-center" data-sort="points">Puntos</th>
+                        <th class="p-3 text-center" data-sort="pg">PG</th>
+                        <th class="p-3 text-center" data-sort="pe">PE</th>
+                        <th class="p-3 text-center" data-sort="pp">PP</th>
+                        <th class="p-3 text-center" data-sort="pj">PJ</th>
+                        <th class="p-3 text-center" data-sort="efectividad">Efectividad</th>
+                        <th class="p-3 text-center" data-sort="chamigos">Chamigo</th>
+                        <th class="p-3 text-center" data-sort="tt">TT</th>
+                        <th class="p-3 text-center" data-sort="ausentes">Ausentismo</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -610,6 +621,14 @@
 
             loadingMessage.classList.add('hidden');
             table.classList.remove('hidden');
+            
+            // Añadir indicador visual de ordenamiento
+            const activeTh = table.querySelector(`thead th[data-sort="${sortCriterion}"]`);
+            if (activeTh) {
+                const icon = document.createElement('i');
+                icon.className = `fas fa-chevron-${sortOrder === 'desc' ? 'down' : 'up'} ml-2`;
+                activeTh.appendChild(icon);
+            }
         }
 
         async function renderEquipos() {
@@ -781,7 +800,8 @@
             }
             
             visualDetailsContainer.classList.remove('hidden');
-            if(collapsibleContent) collapsibleContent.classList.add('hidden');
+            // CORRECCIÓN: Se mueve el cierre del collapsible al listener del item
+            // if(collapsibleContent) collapsibleContent.classList.add('hidden');
         }
         
         async function renderIndividualStatsTable() {
@@ -1015,7 +1035,7 @@
             
             const prefix = tabId.replace('-content', '');
             
-            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas'].includes(prefix)) {
+            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos'].includes(prefix)) {
                  baseHtml += `
                     <div id="${prefix}-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
                         <span>Seleccionar Torneo</span><i class="fas fa-chevron-down toggle-icon"></i>
@@ -1040,8 +1060,6 @@
                             <button id="estadisticas-hoy-button" class="button-primary h-full px-6 py-2 rounded-md shadow-sm col-span-2 md:col-span-1 md:row-span-2 flex items-center justify-center">Torneo Actual</button>
                             <div><label for="estadisticas-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="estadisticas-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
                             <div><label for="estadisticas-period-select" class="block text-sm font-medium mb-1">Torneo:</label><select id="estadisticas-period-select" class="mt-1 block w-full p-2 text-sm shadow-sm"><option value="apertura">Apertura</option><option value="clausura">Clausura</option><option value="total">Totales</option></select></div>
-                            <div><label for="estadisticas-sort-criterion" class="block text-sm font-medium mb-1">Ordenar por:</label><select id="estadisticas-sort-criterion" class="mt-1 block w-full p-2 text-sm shadow-sm"><option value="points">Puntos</option><option value="pg">PG</option><option value="pe">PE</option><option value="pp">PP</option><option value="pj">PJ</option><option value="efectividad">Efectividad</option><option value="chamigos">Chamigo</option><option value="tt">TT</option><option value="ausentes">Ausentismo</option></select></div>
-                            <div><label for="estadisticas-sort-order" class="block text-sm font-medium mb-1">Criterio:</label><select id="estadisticas-sort-order" class="mt-1 block w-full p-2 text-sm shadow-sm"><option value="desc">Descendente</option><option value="asc">Ascendente</option></select></div>
                         </div>
                         <div class="table-container overflow-x-auto">
                             <p id="estadisticas-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
@@ -1125,7 +1143,6 @@
             }
         }
         
-        // CORRECCIÓN: Funciones para guardar y restaurar el estado de los filtros
         function saveFiltersState() {
             const activeFilters = DOMElements.mainContentArea.querySelectorAll('select, input');
             const state = {};
@@ -1161,14 +1178,25 @@
                 });
             }
 
-            if (renderFn) {
+            if (renderFn && !tabId.startsWith('fixture')) {
                 document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => { setTodayFilters(prefix); renderFn(); });
                 document.getElementById(`${prefix}-year-select`)?.addEventListener('change', renderFn);
                 document.getElementById(`${prefix}-period-select`)?.addEventListener('change', renderFn);
             }
             if (tabId === 'estadisticas-content') {
-                 document.getElementById('estadisticas-sort-criterion')?.addEventListener('change', renderFn);
-                 document.getElementById('estadisticas-sort-order')?.addEventListener('change', renderFn);
+                 const table = document.getElementById('estadisticas-table');
+                 table?.addEventListener('click', (e) => {
+                     const th = e.target.closest('th[data-sort]');
+                     if (!th) return;
+                     const newCriterion = th.dataset.sort;
+                     if (estadisticasSortState.criterion === newCriterion) {
+                         estadisticasSortState.order = estadisticasSortState.order === 'desc' ? 'asc' : 'desc';
+                     } else {
+                         estadisticasSortState.criterion = newCriterion;
+                         estadisticasSortState.order = 'desc';
+                     }
+                     renderEstadisticas();
+                 });
             }
             if (tabId === 'fixture-content') {
                 populateYearSelects('fixture-year-select');
@@ -1181,7 +1209,6 @@
             if (tabId === 'individual-stats-content') {
                 setupPlayerSearch();
             }
-            // Poblar filtros después de asignar listeners
             if (tabId.includes('content') && !tabId.includes('fixture') && !tabId.includes('individual')) {
                 populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
             }
