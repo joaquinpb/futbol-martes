@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Contraseña - LA CLANDE</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome (Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
+
+    <style>
+        :root {
+            --bg-primary: #f4f7fe;
+            --bg-secondary: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --border-color: #e5e7eb;
+            --accent-color: #4f46e5;
+            --accent-color-hover: #4338ca;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --button-text-color: #ffffff;
+        }
+
+        html.dark {
+            --bg-primary: #030712;
+            --bg-secondary: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --border-color: #374151;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+        }
+        
+        input {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-text-secondary">Panel de Administración</h1>
+                <h2 class="text-4xl font-extrabold text-text-primary mt-2 flex items-center justify-center gap-3">
+                    <span>LA CLANDE ⚽</span>
+                </h2>
+            </div>
+
+            <!-- Contenedor para el formulario de solicitar reseteo -->
+            <div id="request-reset-container">
+                <div class="card rounded-xl shadow-lg p-8 relative">
+                    <div class="absolute top-4 right-4">
+                        <button id="dark-mode-toggle-request" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <i class="fas fa-moon text-lg text-text-secondary"></i>
+                        </button>
+                    </div>
+                    <div class="text-center mb-6 pt-8">
+                        <h1 class="text-2xl font-bold">¿Olvidaste tu contraseña?</h1>
+                        <p class="text-secondary mt-2">Ingresá tu email y te enviaremos un enlace para recuperarla.</p>
+                    </div>
+                    <form id="request-reset-form" class="space-y-4">
+                        <div>
+                            <label for="reset-email" class="block text-sm font-medium mb-1">Email</label>
+                            <input type="email" id="reset-email" class="w-full p-2 border rounded-md" required>
+                        </div>
+                        <button type="submit" class="w-full px-6 py-3 font-semibold rounded-lg shadow-md transition duration-300 text-button-text-color" style="background-color: var(--accent-color);">
+                            Enviar enlace de recuperación
+                        </button>
+                        <p id="request-message" class="text-center h-5 mt-4"></p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Contenedor para el formulario de establecer nueva contraseña -->
+            <div id="update-password-container" class="hidden">
+                 <div class="card rounded-xl shadow-lg p-8 relative">
+                    <div class="absolute top-4 right-4">
+                        <button id="dark-mode-toggle-update" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <i class="fas fa-moon text-lg text-text-secondary"></i>
+                        </button>
+                    </div>
+                    <div class="text-center mb-6 pt-8">
+                        <h1 class="text-2xl font-bold">Crear nueva contraseña</h1>
+                        <p class="text-secondary mt-2">Ingresá tu nueva contraseña. Asegurate de que sea segura.</p>
+                    </div>
+                    <form id="update-password-form" class="space-y-4">
+                        <div>
+                            <label for="new-password" class="block text-sm font-medium mb-1">Nueva Contraseña</label>
+                            <div class="relative">
+                                <input type="password" id="new-password" class="w-full p-2 border rounded-md pr-10" required placeholder="Mínimo 8 caracteres">
+                                <button type="button" class="password-toggle absolute inset-y-0 right-0 px-3 flex items-center text-text-secondary">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="confirm-password" class="block text-sm font-medium mb-1">Repetir Contraseña</label>
+                            <div class="relative">
+                                <input type="password" id="confirm-password" class="w-full p-2 border rounded-md pr-10" required>
+                                 <button type="button" class="password-toggle absolute inset-y-0 right-0 px-3 flex items-center text-text-secondary">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full px-6 py-3 font-semibold rounded-lg shadow-md transition duration-300 text-button-text-color" style="background-color: var(--accent-color);">
+                            Guardar nueva contraseña
+                        </button>
+                        <p id="update-message" class="text-center h-5 mt-4"></p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- CONFIGURACIÓN DE SUPABASE ---
+        const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- ELEMENTOS DEL DOM ---
+        const requestResetContainer = document.getElementById('request-reset-container');
+        const updatePasswordContainer = document.getElementById('update-password-container');
+        const requestResetForm = document.getElementById('request-reset-form');
+        const updatePasswordForm = document.getElementById('update-password-form');
+        const requestMessage = document.getElementById('request-message');
+        const updateMessage = document.getElementById('update-message');
+
+        // --- LÓGICA DE TEMA (MODO OSCURO/CLARO) ---
+        function applyTheme(theme) {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            localStorage.setItem('theme', theme);
+            const icons = document.querySelectorAll('#dark-mode-toggle-request i, #dark-mode-toggle-update i');
+            icons.forEach(icon => {
+                icon.classList.toggle('fa-sun', theme === 'dark');
+                icon.classList.toggle('fa-moon', theme !== 'dark');
+            });
+        }
+
+        function toggleTheme() {
+            const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+        }
+
+        // Aplicar tema al cargar la página
+        applyTheme(localStorage.getItem('theme') || 'light');
+        document.getElementById('dark-mode-toggle-request').addEventListener('click', toggleTheme);
+        document.getElementById('dark-mode-toggle-update').addEventListener('click', toggleTheme);
+
+
+        // --- LÓGICA DE VISIBILIDAD DE CONTRASEÑA ---
+        document.querySelectorAll('.password-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const passwordInput = toggle.previousElementSibling;
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                toggle.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+        });
+
+        // --- LÓGICA PRINCIPAL DE RECUPERACIÓN ---
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                requestResetContainer.classList.add('hidden');
+                updatePasswordContainer.classList.remove('hidden');
+            }
+        });
+
+        requestResetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('reset-email').value;
+            requestMessage.textContent = 'Enviando...';
+            requestMessage.style.color = 'var(--text-secondary)';
+
+            const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.href,
+            });
+
+            if (error) {
+                requestMessage.textContent = `Error: ${error.message}`;
+                requestMessage.style.color = 'var(--danger-color)';
+            } else {
+                requestMessage.textContent = '¡Enviado! Redirigiendo al login...';
+                requestMessage.style.color = 'var(--success-color)';
+                setTimeout(() => { window.location.href = 'admin.html'; }, 3000);
+            }
+        });
+
+        updatePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            updateMessage.style.color = 'var(--danger-color)';
+
+            if (newPassword.length < 8) {
+                updateMessage.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                updateMessage.textContent = 'Las contraseñas no coinciden.';
+                return;
+            }
+
+            updateMessage.textContent = 'Guardando...';
+            updateMessage.style.color = 'var(--text-secondary)';
+
+            const { data, error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) {
+                updateMessage.textContent = error.message.includes('weak password') 
+                    ? 'La contraseña debe contener 8 caracteres y al menos una letra mayúscula y una minúscula, un número y un caracter especial' 
+                    : `Error: ${error.message}`;
+                updateMessage.style.color = 'var(--danger-color)';
+            } else {
+                updateMessage.textContent = '¡Contraseña actualizada! Redirigiendo al login...';
+                updateMessage.style.color = 'var(--success-color)';
+                setTimeout(() => { window.location.href = 'admin.html'; }, 3000);
+            }
+        });
+
+    });
+    </script>
+</body>
+</html>
