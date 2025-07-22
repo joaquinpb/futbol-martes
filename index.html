@@ -4,1108 +4,357 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LA CLANDE</title>
+    <title>Estadísticas - LA CLANDE</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
+
     <style>
-        /* Estilos (sin cambios) */
+        /* --- Sistema de Diseño y Variables (Heredado de admin.html) --- */
         :root {
-            --bg-body: #f0f2f5;
-            --bg-main-content: #ffffff;
-            --text-default: #1a202c;
-            --text-secondary: #4a5568;
-            --border-default: #cbd5e0;
-            --bg-table-header: #1a202c;
-            --text-table-header: #ffffff;
-            --bg-table-row-odd: #f7fafc;
-            --bg-table-row-even: #edf2f7;
-            --bg-table-row-hover: #e2e8f0;
-            --bg-indigo-800: #312e81;
-            --bg-indigo-700: #4338ca;
-            --bg-indigo-600: #4f46e5;
-            --bg-blue-600: #2563eb;
-            --bg-green-500: #10b981;
-            --bg-red-500: #ef4444;
-            --text-indigo-800: #312e81;
-            --text-indigo-700: #4338ca;
-            --text-gray-700: #4a5568;
-            --text-gray-600: #4a5568;
-            --text-gray-500: #6b7280;
+            --bg-primary: #f4f7fe;
+            --bg-secondary: #ffffff;
+            --bg-muted: #f9fafb;
+            --sidebar-bg: #111827;
+            --sidebar-text: #e5e7eb;
+            --sidebar-active-bg: #4f46e5;
+            --sidebar-active-text: #ffffff;
+            --sidebar-hover-bg: #374151;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --accent-color: #4f46e5;
+            --accent-color-hover: #4338ca;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --button-text-color: #ffffff;
             --text-yellow-400: #facc15;
-            --bg-blue-200: #bfdbfe;
             --player-claros-bg: #ffffff;
             --player-claros-text: #1a202c;
             --player-oscuros-bg: #1a202c;
             --player-oscuros-text: #ffffff;
         }
-        body.dark-mode {
-            --bg-body: #1a202c;
-            --bg-main-content: #2d3748;
-            --text-default: #e2e8f0;
-            --text-secondary: #a0aec0;
-            --border-default: #4a5568;
-            --bg-table-header: #4a5568;
-            --text-table-header: #ffffff;
-            --bg-table-row-odd: #2d3748;
-            --bg-table-row-even: #4a5568;
-            --bg-table-row-hover: #1a202c;
-            --bg-indigo-800: #1f2937;
-            --bg-indigo-700: #374151;
-            --bg-indigo-600: #4b5563;
-            --bg-blue-600: #3b82f6;
-            --bg-green-500: #16a34a;
-            --bg-red-500: #dc2626;
-            --text-indigo-800: #93c5fd;
-            --text-indigo-700: #60a5fa;
-            --text-gray-700: #e2e8f0;
-            --text-gray-600: #a0aec0;
-            --text-gray-500: #cbd5e0;
-            --bg-blue-200: #1e3a8a;
+
+        html.dark {
+            --bg-primary: #030712;
+            --bg-secondary: #1f2937;
+            --bg-muted: #111827;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --accent-color: #6366f1;
+            --accent-color-hover: #818cf8;
+            --player-claros-bg: #ffffff;
+            --player-claros-text: #1a202c;
+            --player-oscuros-bg: #1a202c;
+            --player-oscuros-text: #ffffff;
         }
-        /* --- CAMBIO 1: SE ELIMINÓ 'html { overflow-x: hidden; }' --- */
+
+        /* --- Estilos Base --- */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            margin: 0;
-            padding: 0;
-            color: var(--text-default);
-            transition: background-color 0.3s ease, color 0.3s ease;
-            /* --- CAMBIO 2: SE ELIMINÓ 'overflow-x: hidden;' de body --- */
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
         }
-        table {
-            background-color: var(--bg-main-content);
-            width: 100%;
-            border-collapse: collapse;
+        body.overflow-hidden { overflow: hidden; }
+
+        /* --- Layout Principal --- */
+        @media (min-width: 768px) {
+            body { display: flex; }
+            main { flex-grow: 1; overflow-y: auto; height: 100vh; }
         }
-        th { @apply py-3 px-3 text-center; }
-        td { @apply py-3 px-3 text-center text-xs sm:text-sm; }
-        .text-left-player { text-align: left !important; }
+        
+        /* --- Contenedor de Contenido --- */
+        .main-content-container {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -2px rgba(0,0,0,.05);
+            padding: 1.5rem; /* p-6 */
+        }
+        @media (max-width: 767px) {
+            .main-content-container { margin-top: 3rem; }
+        }
+
+        /* --- Formularios (Select, Input) --- */
+        input, select {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 0.375rem; /* rounded-md */
+        }
+        html.dark input, html.dark select {
+             background-color: var(--bg-muted);
+        }
+        label { color: var(--text-secondary); }
+
+        /* --- Barra Lateral (Side Menu) --- */
+        #side-menu {
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            transition: transform 0.3s ease-in-out;
+            z-index: 40;
+        }
+        #side-menu.open { transform: translateX(0); }
+        #side-menu .tab-button.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); font-weight: 600; }
+        #side-menu .tab-button:hover:not(.active) { background-color: var(--sidebar-hover-bg); }
+        #dark-mode-toggle { background-color: var(--sidebar-hover-bg); }
+        #overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); z-index: 30; }
+        #hamburger-button { background-color: var(--accent-color); position: fixed; z-index: 50; }
+
+        @media (min-width: 768px) {
+            #side-menu { position: relative; transform: translateX(0); flex-shrink: 0; height: 100vh; border-right: 1px solid var(--border-color); }
+            #hamburger-button, #overlay { display: none !important; }
+        }
+
+        /* --- Tablas --- */
+        .table-container {
+            max-height: 70vh; overflow-y: auto; border-radius: 0.5rem; position: relative;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,.05), 0 1px 2px -1px rgba(0,0,0,.05);
+            border: 1px solid var(--border-color);
+        }
+        table { background-color: var(--bg-secondary); width: 100%; border-collapse: collapse; }
         thead th {
-            background-color: var(--bg-table-header) !important;
-            color: var(--text-table-header) !important;
-            text-transform: uppercase;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
+            background-color: #111827 !important; 
+            color: #ffffff !important;
+            text-transform: uppercase; font-size: 0.75rem; position: sticky; top: 0; z-index: 10;
         }
-        tbody tr:nth-child(odd) { background-color: var(--bg-table-row-odd) !important; }
-        tbody tr:nth-child(even) { background-color: var(--bg-table-row-even) !important; }
-        tbody tr {
-            border-bottom: 1px solid var(--border-default);
+        thead th[data-sort] { cursor: pointer; transition: background-color 0.2s; }
+        thead th[data-sort]:hover { background-color: #374151 !important; }
+
+        td { color: var(--text-primary); }
+        tbody td { 
             transition: background-color 150ms ease-in-out;
         }
-        tbody tr:last-child { border-bottom: 0; }
-        tbody td { color: var(--text-secondary); }
-        
-        /* --- ESTILOS PARA TABLAS CON SCROLL --- */
-        .table-container {
-            max-height: 70vh;
-            overflow-y: auto;
-            border-radius: 0.5rem;
-            position: relative;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-        }
-        .table-container thead th {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-    
-        /* --- CAMBIO 3: MEDIA QUERY AJUSTADA PARA ORIENTACIÓN HORIZONTAL --- */
-        /* --- ESTILOS GLOBALES PARA TABLAS CON SCROLL Y COLUMNAS FIJAS --- */
-        /* Se quitó la media query para que aplique en desktop y mobile */
-        
-        #estadisticas-table, #individual-stats-table {
-            min-width: 800px; /* Fuerza el overflow horizontal en cualquier resolución */
+        tbody tr.row-hover td {
+            background-color: var(--bg-muted);
         }
         
+        /* --- Columnas Fijas y Scroll --- */
+        #estadisticas-table, #individual-stats-table { min-width: 800px; }
         .sticky-col {
             position: sticky;
             z-index: 5;
+            /* FIX: Se establece un color de fondo para evitar la transparencia en el scroll */
+            background-color: var(--bg-secondary);
+        }
+        tbody tr:hover td.sticky-col {
+             /* Se asegura que el fondo en hover coincida con el resto de la fila */
+            background-color: var(--bg-muted);
+        }
+        /* FIX: Reglas específicas para que las celdas fijas en filas con colores
+           de fondo personalizados en la tabla de historial coincidan con su fila */
+        #individual-stats-table tr.font-bold td.sticky-col {
+            background-color: var(--accent-color);
+        }
+        #individual-stats-table tr[data-year] td.sticky-col {
+            background-color: var(--bg-muted);
         }
         
-        #estadisticas-table .sticky-col-1 {
-            left: 0;
-            width: 45px;
-            min-width: 45px;
-        }
-        #estadisticas-table .sticky-col-2 {
-            left: 45px; /* Coincide con el ancho de la col 1 */
-        }
+        #estadisticas-table .sticky-col-1, #individual-stats-table .sticky-col-1 { left: 0; }
+        /* Ajuste opcional para el espacio entre columnas */
+        #estadisticas-table .sticky-col-2 { left: 36px; }
+        #individual-stats-table .sticky-col-2 { left: 90px; }
+        thead th.sticky-col { z-index: 15; }
         
-        #individual-stats-table .sticky-col-1 {
-            left: 0;
-            width: 90px;
-            min-width: 90px;
+        /* --- Títulos y Botones --- */
+        .tab-title {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover));
+            color: var(--button-text-color);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
         }
-        #individual-stats-table .sticky-col-2 {
-            left: 90px; /* Coincide con el ancho de la col 1 */
-        }
-        
-        #estadisticas-table thead th.sticky-col,
-        #individual-stats-table thead th.sticky-col {
-            background-color: var(--bg-table-header) !important;
-            z-index: 15;
-        }
-        
-        /* Tema Claro: Ligeras variaciones de los colores de fila */
-        #estadisticas-table tbody tr:nth-child(odd) td.sticky-col,
-        #individual-stats-table tbody tr:nth-child(odd) td.sticky-col {
-            background-color: #e9f1f7 !important;
-        }
-        #estadisticas-table tbody tr:nth-child(even) td.sticky-col,
-        #individual-stats-table tbody tr:nth-child(even) td.sticky-col {
-            background-color: #dee7ed !important;
-        }
-        
-        /* Tema Oscuro: Ligeras variaciones de los colores de fila oscuros */
-        body.dark-mode #estadisticas-table tbody tr:nth-child(odd) td.sticky-col,
-        body.dark-mode #individual-stats-table tbody tr:nth-child(odd) td.sticky-col {
-            background-color: #374151 !important;
-        }
-        body.dark-mode #estadisticas-table tbody tr:nth-child(even) td.sticky-col,
-        body.dark-mode #individual-stats-table tbody tr:nth-child(even) td.sticky-col {
-            background-color: #526072 !important;
-        }
-        
-        /* Estilos de compatibilidad para filas especiales en la tabla de Histórico */
-        #individual-stats-table tr.bg-blue-200 td.sticky-col { background-color: var(--bg-blue-200) !important; }
-        #individual-stats-table tr.bg-gray-200 td.sticky-col { background-color: #e5e7eb !important; }
-        body.dark-mode #individual-stats-table tr.bg-gray-200 td.sticky-col { background-color: #4a5568 !important; }
-    
-        #side-menu {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: 256px;
-            background-color: var(--bg-indigo-800);
-            color: var(--text-table-header);
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out, visibility 0.3s ease;
-            z-index: 40;
-            display: flex;
-            flex-direction: column;
-            padding-top: 1rem;
-            overflow-y: auto;
-        }
-        #side-menu.open {
-            transform: translateX(0);
-            visibility: visible;
-        }
-        #side-menu:not(.open) { visibility: hidden; }
-        #overlay {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 30;
-            display: none;
-        }
-        #overlay.open { display: block; }
-        #hamburger-button {
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            z-index: 50;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            background-color: var(--bg-indigo-600);
-            color: var(--text-table-header);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            display: block;
-        }
-        #close-side-menu-button { display: none !important; }
-        #side-menu .menu-title-container {
-            padding: 0.5rem 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.25rem;
-        }
-        #side-menu .menu-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-left: 0; 
-        }
-        #side-menu .tab-button, #side-menu .sidebar-link {
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-            text-align: left;
-            width: 100%;
-            border-radius: 0;
-            margin-bottom: 0.25rem;
-            color: var(--text-table-header);
-            transition: background-color 0.15s ease-in-out;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            white-space: nowrap;
-        }
-        #side-menu .tab-button.active { background-color: var(--bg-indigo-700); }
-        #side-menu .tab-button:hover, #side-menu .sidebar-link:hover { background-color: var(--bg-indigo-600); }
-        @media (min-width: 768px) {
-            body {
-                display: flex;
-                flex-direction: row;
-                padding-top: 0;
-            }
-            #side-menu {
-                position: relative;
-                transform: translateX(0);
-                flex-shrink: 0;
-                height: auto;
-                min-height: 100vh;
-                border-right: 1px solid var(--border-default);
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-                visibility: visible !important;
-            }
-            #hamburger-button { display: none !important; }
-            #close-side-menu-button { display: none !important; }
-            #overlay { display: none !important; }
-            .main-content-container {
-                flex-grow: 1;
-                margin-left: 2rem;
-                margin-right: 2rem;
-                max-width: none !important;
-                width: auto !important;
-                margin-top: 2rem;
-            }
-        }
-        #estadisticas-table { table-layout: auto; }
-        .loading-message {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            color: var(--text-gray-500);
-            font-style: italic;
-        }
-        .loading-spinner {
-            border: 4px solid var(--border-default);
-            border-top: 4px solid var(--bg-indigo-600);
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .highlighted { background-color: var(--bg-table-row-hover); }
+        .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
+        .button-primary:hover { background-color: var(--accent-color-hover); }
+        .collapsible-toggle-button { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); }
+        .collapsible-toggle-button.visible-content { background: linear-gradient(to right, #e53e3e, var(--danger-color)); }
+
+        /* --- Fixture y Campo de Fútbol --- */
         #soccer-field-container {
             position: relative;
             width: 100%;
-            padding-top: 168.75%;
+            padding-top: 168.75%; /* Proporción 9:16 para vista vertical */
             background-color: #0f8d48;
             border: 2px solid white;
             border-radius: 0.5rem;
             overflow: hidden;
-            margin-left: auto;
-            margin-right: auto;
         }
-        #soccer-field-container::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background-color: white;
-            transform: translateY(-50%);
-            z-index: 2;
+        #soccer-field-container::before { /* Línea de medio campo */
+            content: ''; position: absolute; top: 50%; left: 0; right: 0;
+            height: 2px; background-color: rgba(255,255,255,0.7); transform: translateY(-50%); z-index: 1;
         }
-        #soccer-field-container::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 15vw;
-            height: 15vw;
-            border: 2px solid white;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2;
+        #soccer-field-container::after { /* Círculo central */
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 20%; padding-top: 20%; border: 2px solid rgba(255,255,255,0.7);
+            border-radius: 50%; transform: translate(-50%, -50%); z-index: 1;
         }
-        .goal {
-            position: absolute;
-            width: 30%;
-            height: 15px;
-            box-sizing: border-box;
-            border-left: 2px solid white;
-            border-right: 2px solid white;
-            z-index: 2;
-        }
-        .goal.top {
-            top: -15px;
-            left: 35%;
-            border-bottom: 2px solid white;
-        }
-        .goal.bottom {
-            bottom: -15px;
-            left: 35%;
-            border-top: 2px solid white;
-        }
-        .penalty-area {
-            position: absolute;
-            width: 60%;
-            height: 20%;
-            box-sizing: border-box;
-            border-color: white;
-            border-style: solid;
-            border-width: 0;
-            z-index: 2;
-        }
-        .penalty-area.top {
-            top: 0;
-            left: 20%;
-            border-width: 0 4px 2px 4px;
-        }
-        .penalty-area.bottom {
-            bottom: 0;
-            left: 20%;
-            border-width: 2px 4px 0 4px;
-        }
-        .goal-area {
-            position: absolute;
-            width: 30%;
-            height: 10%;
-            box-sizing: border-box;
-            border-color: white;
-            border-style: solid;
-            border-width: 0;
-            z-index: 2;
-        }
-        .goal-area.top {
-            top: 0;
-            left: 35%;
-            border-width: 0 4px 2px 4px;
-        }
-        .goal-area.bottom {
-            bottom: 0;
-            left: 35%;
-            border-width: 2px 4px 0 4px;
-        }
-        .player-wrapper {
-            position: absolute;
-            transform: translate(-50%, -50%); 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.25rem;
-            z-index: 3;
-        }
-        .player-marker {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            font-weight: bold;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            border: 2px solid;
-            color: var(--text-default);
-        }
-        .player-marker .fa-star {
-            font-size: 1.2em;
-            margin-top: 2px;
-            position: absolute;
-            bottom: 72px;
-            right: 0px;
-            z-index: 4;
-        }
-        .player-marker.claros {
-            background-color: var(--player-claros-bg);
-            border-color: var(--player-claros-text);
-            color: var(--player-claros-text);
-        }
-        .player-marker.oscuros {
-            background-color: var(--player-oscuros-bg);
-            color: var(--player-oscuros-text);
-            border-color: var(--player-oscuros-text);
-        }
-        .player-name-label {
-            font-size: 0.90rem;
-            font-weight: bold;
-            white-space: nowrap;
-            text-align: center;
-            padding: 0.3rem 0.6rem;
-            border-radius: 0.25rem;
-        }
-        .player-marker.claros + .player-name-label {
-            background-color: var(--player-claros-bg);
-            color: var(--player-claros-text);
-        }
-        .player-marker.oscuros + .player-name-label {
-            background-color: var(--player-oscuros-bg);
-            color: var(--player-oscuros-text);
-        }
-        .winner-trophy {
-            position: absolute;
-            font-size: 2rem;
-            color: var(--text-yellow-400);
-            z-index: 10;
-            transform: translate(-50%, -50%);
-        }
-        @media (min-width: 640px) {
-            .player-marker {
-                width: 50px;
-                height: 50px;
-                font-size: 1rem;
-            }
-            .player-marker .fa-star { font-size: 1.2em; }
-            .player-name-label {
-                font-size: 0.75rem;
-                max-width: none;
-            }
-        }
+        .goal-area, .penalty-area { position: absolute; box-sizing: border-box; border-style: solid; border-color: rgba(255,255,255,0.7); z-index: 1; }
+        .goal-area.top { top: 0; left: 35%; width: 30%; height: 8%; border-width: 0 2px 2px 2px; }
+        .goal-area.bottom { bottom: 0; left: 35%; width: 30%; height: 8%; border-width: 2px 2px 0 2px; }
+        .penalty-area.top { top: 0; left: 20%; width: 60%; height: 18%; border-width: 0 2px 2px 2px; }
+        .penalty-area.bottom { bottom: 0; left: 20%; width: 60%; height: 18%; border-width: 2px 2px 0 2px; }
+        
         @media (min-width: 768px) {
-            .player-marker {
-                width: 60px;
-                height: 60px;
-                font-size: 1.1rem;
-            }
-            .player-marker .fa-star { font-size: 1.2em; }
-            .player-name-label {
-                font-size: 0.85rem;
-                max-width: none;
-            }
             #soccer-field-container.horizontal-layout {
-                width: 100%;
-                padding-top: 45.45%;
+                padding-top: 60%; /* Proporción ~5:3 para vista horizontal */
             }
-            #fixture-details-display {
-                width: 35%;
-                margin-top: 0;
-            }
-            #soccer-field-container.horizontal-layout::before {
-                top: 0;
-                left: 50%;
-                height: 100%;
-                width: 2px;
-                transform: translateX(-50%);
-            }
-            #soccer-field-container.horizontal-layout::after {
-                width: 8vw;
-                height: 8vw;
-            }
-            .goal.top.horizontal-layout {
-                top: 35%;
-                left: -15px;
-                border-bottom: none;
-                border-right: 2px solid white;
-                border-top: none;
-                border-left: none;
-                width: 15px;
-                height: 30%;
-            }
-            .goal.bottom.horizontal-layout {
-                top: 35%;
-                right: -15px;
-                left: auto;
-                border-top: none;
-                border-left: 2px solid white;
-                border-bottom: none;
-                border-right: none;
-                width: 15px;
-                height: 30%;
-            }
-            .penalty-area.top.horizontal-layout {
-                top: 20%;
-                left: 0;
-                height: 60%;
-                width: 20%;
-                border-width: 4px 2px 4px 0;
-            }
-            .penalty-area.bottom.horizontal-layout {
-                top: 20%;
-                right: 0;
-                left: auto;
-                height: 60%;
-                width: 20%;
-                border-width: 4px 0 4px 2px;
-            }
-            .goal-area.top.horizontal-layout {
-                top: 35%;
-                left: 0;
-                height: 30%;
-                width: 10%;
-                border-width: 4px 2px 4px 0;
-            }
-            .goal-area.bottom.horizontal-layout {
-                top: 35%;
-                right: 0;
-                left: auto;
-                height: 30%;
-                width: 10%;
-                border-width: 4px 0 4px 2px;
-            }
-            .winner-trophy.claros.horizontal-layout { top: 95%; left: 94%; }
-            .winner-trophy.oscuros.horizontal-layout { top: 95%; left: 6%; }
+            #soccer-field-container.horizontal-layout::before { top: 0; left: 50%; height: 100%; width: 2px; transform: translateX(-50%); }
+            #soccer-field-container.horizontal-layout::after { width: 15%; padding-top: 15%; }
+            .goal-area.top.horizontal-layout { top: 35%; left: 0; height: 30%; width: 8%; border-width: 2px 2px 2px 0; }
+            .goal-area.bottom.horizontal-layout { top: 35%; right: 0; left: auto; height: 30%; width: 8%; border-width: 2px 0 2px 2px; }
+            .penalty-area.top.horizontal-layout { top: 20%; left: 0; height: 60%; width: 18%; border-width: 2px 2px 2px 0; }
+            .penalty-area.bottom.horizontal-layout { top: 20%; right: 0; left: auto; height: 60%; width: 18%; border-width: 2px 0 2px 2px; }
         }
-        .current-match-card-text { color: var(--text-table-header) !important; }
-        .fixture-match-item.selected {
-            box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.5);
-            border: 1px solid var(--bg-indigo-700);
-        }
-        .fixture-match-item:not(.current-match-card).selected { background-color: var(--bg-table-row-hover) !important; }
-        .current-match-card.selected { background: linear-gradient(to right, var(--bg-blue-600), var(--bg-indigo-700)) !important; }
-        .collapsible-toggle-button.hidden-content {
-            background-color: var(--bg-green-500);
-            color: var(--text-table-header);
-        }
-        .collapsible-toggle-button.visible-content {
-            background-color: var(--bg-red-500);
-            color: var(--text-table-header);
-        }
-        #dark-mode-toggle {
-            background-color: var(--bg-indigo-700);
-            color: var(--text-table-header);
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.15s ease-in-out;
-        }
-        #dark-mode-toggle:hover { background-color: var(--bg-indigo-600); }
-        body.dark-mode #dark-mode-toggle i { color: var(--text-table-header); }
-        #fixture-details-display {
-            background-color: var(--bg-main-content);
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        #fixture-details-display h3 { color: var(--text-default); }
-        #tt-attendees-table { background-color: var(--bg-main-content); }
-        #tt-attendees-table thead th {
-            background-color: var(--bg-table-header) !important;
-            color: var(--text-table-header) !important;
-        }
-        #tt-attendees-table tbody tr:nth-child(odd) { background-color: var(--bg-table-row-odd) !important; }
-        #tt-attendees-table tbody tr:nth-child(even) { background-color: var(--bg-table-row-even) !important; }
-        #tt-attendees-table tbody tr:hover { background-color: var(--bg-table-row-hover) !important; }
-        #tt-attendees-table tbody td { color: var(--text-secondary); }
-        body.dark-mode label { color: var(--text-default); }
-        body.dark-mode #individual-player-results {
-            background-color: var(--bg-main-content);
-            border-color: var(--border-default);
-        }
-        /* Asegurar que la lista de resultados esté por encima de otros elementos */
-        #individual-player-results {
-            z-index: 20; /* Un valor más alto que el z-index del encabezado de la tabla */
-        }
-        body.dark-mode #individual-player-results > div { color: var(--text-default); }
-        body.dark-mode #individual-player-results > div:hover,
-        body.dark-mode #individual-player-results > div.highlighted { background-color: var(--bg-table-row-hover); }
-        #side-menu .flex-col.p-4.md\:p-0.md\:space-y-2.flex-1 {
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .main-content-container {
-            padding: 2rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            width: 100%;
-            max-width: 80rem;
-            margin-left: auto;
-            margin-right: auto;
-            margin-bottom: 2rem;
-            background-color: var(--bg-main-content);
-        }
-        @media (max-width: 767px) {
-            .main-content-container { margin-top: 5rem; }
-        }
-        body.dark-mode h2.text-indigo-800 {
-            color: var(--text-table-header) !important;
-            border-color: var(--text-table-header) !important;
-        }
-        body.dark-mode #individual-player-search {
-            background-color: #FFFFFF !important;
-            color: #1A202C !important;
-            border-color: var(--border-default) !important;
-        }
-        body.dark-mode #individual-player-search::placeholder { color: #A0AEC0 !important; }
-        #individual-player-search::-webkit-search-cancel-button {
-            -webkit-appearance: none;
-            display: none;
-        }
-        #individual-player-search::-ms-clear { display: none; }
-        #individual-player-search {
-            background-color: var(--bg-green-500) !important;
-            color: var(--text-table-header) !important;
-            border-color: var(--text-table-header) !important;
-            padding-right: 2rem !important;
-            position: relative;
-            font-size: 1.1rem !important;
-            padding-top: 0.6rem !important;
-            padding-bottom: 0.6rem !important;
-        }
-        #individual-player-search::placeholder { color: rgba(255, 255, 255, 0.7) !important; }
-        body.dark-mode #individual-player-search {
-            background-color: #FFFFFF !important;
-            color: #1A202C !important;
-            border-color: var(--border-default) !important;
-        }
-        body.dark-mode #individual-player-search::placeholder { color: #A0AEC0 !important; }
-        #clear-player-search {
-            background-color: transparent !important;
-            border: none !important;
-            outline: none !important;
-            padding-right: 0.75rem !important;
-        }
-        #clear-player-search i.fas.fa-times-circle {
-            color: white !important;
-            -webkit-text-stroke: 1px black !important;
-            text-shadow: -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black !important;
-        }
-        body.dark-mode #clear-player-search i.fas.fa-times-circle {
-            color: var(--text-gray-400) !important;
-            -webkit-text-stroke: 0.5px var(--text-default) !important;
-            text-shadow: none !important;
-        }
-        body.dark-mode select {
-            background-color: #FFFFFF !important;
-            color: #1A202C !important;
-            border-color: var(--border-default) !important;
-        }
-        body.dark-mode label { color: white !important; }
+
+        #fixture-details-display { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
+        .fixture-match-item { background-color: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .fixture-match-item.selected { box-shadow: 0 0 0 2px var(--accent-color); border-color: var(--accent-color); }
+        .fixture-match-item.current-match-card { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); border-color: transparent;}
+        .player-marker { border: 2px solid; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .player-marker.claros { background-color: var(--player-claros-bg); color: var(--player-claros-text); border-color: var(--player-claros-text); }
+        .player-marker.oscuros { background-color: var(--player-oscuros-bg); color: var(--player-oscuros-text); border-color: var(--player-oscuros-text); }
+        .player-name-label { background-color: var(--bg-secondary); color: var(--text-primary); }
+        .winner-trophy { color: var(--text-yellow-400); }
+
+        /* --- Búsqueda Individual --- */
+        #individual-player-results { background-color: var(--bg-secondary); border: 1px solid var(--border-color); z-index: 20; }
+        #individual-player-results > div:hover { background-color: var(--bg-muted); }
+        #individual-player-search { padding-right: 2.5rem !important; }
+        #clear-player-search { color: var(--text-muted); }
+        
+        /* --- Misc --- */
+        .loading-spinner { border: 4px solid var(--border-color); border-top: 4px solid var(--accent-color); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-message { color: var(--text-secondary); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        html.dark ::-webkit-scrollbar-thumb { background: #555; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background: #888; }
     </style>
 </head>
-<body class="min-h-screen">
-    <button id="hamburger-button" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-indigo-600 text-white shadow-lg">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-    </button>
+<body class="antialiased min-h-screen">
 
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 bg-indigo-800 text-white transform -translate-x-full transition-transform duration-300 ease-in-out z-40">
-        <div class="p-4 pt-16 flex items-center justify-center mb-4">
-            <h1 class="text-3xl font-extrabold text-white">LA CLANDE</h1>
+    <header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-4 md:hidden" style="background-color: #111827;">
+
+        <button id="hamburger-button" class="p-2.5 rounded-md text-white flex-shrink-0">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+    
+        <div class="flex-1 min-w-0 px-2 text-center">
+            <h1 class="text-3xl font-bold text-white truncate">
+                LA CLANDE ⚽
+            </h1>
         </div>
-        <div class="menu-title-container flex items-center justify-between px-6 py-2 mb-1">
-            <h2 class="menu-title">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                </svg>
-                MENÚ
+    
+    </header>
+    
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 transform -translate-x-full md:transform-none md:relative md:w-64 flex flex-col">
+        <div class="p-4 pt-8 md:pt-4 flex items-center justify-center mb-4">
+            <h1 class="text-3xl font-extrabold text-white flex items-center gap-2"><span class="text-4xl">⚽</span>LA CLANDE</h1>
+        </div>
+        <div class="flex items-center justify-between px-6 py-2 mb-1">
+            <h2 class="text-lg font-semibold flex items-center gap-2 uppercase tracking-wider text-gray-400">
+                <i class="fas fa-bars"></i><span>Menú</span>
             </h2>
-            <button id="dark-mode-toggle" class="p-2 rounded-full bg-indigo-700 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-white transition-colors duration-150 ease-in-out">
-                <i class="fas fa-moon text-white" id="dark-mode-icon"></i>
+            <button id="dark-mode-toggle" class="p-2 w-10 h-10 rounded-full hover:bg-sidebar-hover-bg focus:outline-none transition-colors duration-150 ease-in-out flex items-center justify-center">
+                <i class="fas fa-moon text-lg"></i>
             </button>
         </div>
-        <div class="flex flex-col p-4 md:p-0 md:space-y-2 flex-1">
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="leaderboard-content"><i class="fas fa-trophy mr-2"></i>Tabla de Posiciones</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="chamigo-content"><i class="fas fa-star mr-2"></i>Chamigo</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="tt-content"><i class="fas fa-beer mr-2"></i>TT</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="presentismo-content"><i class="fas fa-check-circle mr-2"></i>Presentismo</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="ausentismo-content"><i class="fas fa-times-circle mr-2"></i>Ausentismo</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="estadisticas-content"><i class="fas fa-chart-bar mr-2"></i>Estadísticas</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="equipos-content"><i class="fas fa-futbol mr-2"></i>Equipos</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="fixture-content"><i class="fas fa-calendar-alt mr-2"></i>Fixture</button>
-            <button class="tab-button py-2 px-4 text-white font-medium hover:bg-indigo-700" data-tab="individual-stats-content"><i class="fas fa-history mr-2"></i>Histórico</button>
+        <div class="flex flex-col flex-1 overflow-y-auto mt-2">
+             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="leaderboard-content"><i class="fas fa-trophy w-5 text-center"></i>Tabla de Posiciones</button>
+             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="chamigo-content"><i class="fas fa-star w-5 text-center"></i>Chamigo</button>
+             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="tt-content"><i class="fas fa-beer w-5 text-center"></i>TT</button>
+             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="presentismo-content"><i class="fas fa-check-circle w-5 text-center"></i>Presentismo</button>
+             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="ausentismo-content"><i class="fas fa-times-circle w-5 text-center"></i>Ausentismo</button>
+             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="estadisticas-content"><i class="fas fa-chart-bar w-5 text-center"></i>Estadísticas</button>
+             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="equipos-content"><i class="fas fa-futbol w-5 text-center"></i>Equipos</button>
+             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</button>
+             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="individual-stats-content"><i class="fas fa-history w-5 text-center"></i>Histórico</button>
         </div>
     </nav>
+    <div id="overlay" class="hidden md:hidden"></div>
 
-    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
-
-    <div class="main-content-container p-8 rounded-xl shadow-lg w-full max-w-5xl mx-auto mt-4 md:mt-8">
-        <div id="leaderboard-content" class="tab-content">
-            <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">TABLA DE POSICIONES</h2>
-            <div id="leaderboard-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4 collapsible-toggle-button hidden-content">
-                <span class="font-semibold">Seleccionar Torneo</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div id="leaderboard-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 mb-6 hidden items-end">
-                <button id="leaderboard-hoy-button" class="col-span-2 md:col-auto px-6 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors duration-150 ease-in-out flex-shrink-0">Torneo Actual</button>
-                <div class="col-span-1 md:col-auto">
-                    <label for="leaderboard-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                    <select id="leaderboard-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm"></select>
-                </div>
-                <div class="col-span-1 md:col-auto">
-                    <label for="leaderboard-period-select" class="block text-sm font-medium text-gray-700">Torneo:</label>
-                    <select id="leaderboard-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                        <option value="apertura">Apertura</option>
-                        <option value="clausura">Clausura</option>
-                        <option value="total">Totales</option>
-                    </select>
-                </div>
-            </div>
-            <div class="table-container">
-                <p id="leaderboard-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de posiciones...</p>
-                <table id="leaderboard-table" class="bg-white hidden">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-center">#</th>
-                            <th class="py-3 px-3 text-left-player">Jugador</th>
-                            <th class="py-3 px-3 text-center">Puntos</th>
-                            <th class="py-3 px-3 text-center">Efectividad</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="chamigo-content" class="tab-content hidden">
-            <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">CHAMIGO</h2>
-            <div id="chamigo-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4 collapsible-toggle-button hidden-content">
-                <span class="font-semibold">Seleccionar Torneo</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div id="chamigo-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 mb-6 hidden items-end">
-                <button id="chamigo-hoy-button" class="col-span-2 md:col-auto px-6 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors duration-150 ease-in-out flex-shrink-0">Torneo Actual</button>
-                <div class="col-span-1 md:col-auto">
-                    <label for="chamigo-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                    <select id="chamigo-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm"></select>
-                </div>
-                <div class="col-span-1 md:col-auto">
-                    <label for="chamigo-period-select" class="block text-sm font-medium text-gray-700">Torneo:</label>
-                    <select id="chamigo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                        <option value="apertura">Apertura</option>
-                        <option value="clausura">Clausura</option>
-                        <option value="total">Totales</option>
-                    </select>
-                </div>
-            </div>
-            <div class="table-container">
-                <p id="chamigo-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de Chamigos...</p>
-                <table id="chamigo-table" class="bg-white hidden">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-center">#</th>
-                            <th class="py-3 px-3 text-left-player">Jugador</th>
-                            <th class="py-3 px-3 text-center">Chamigos</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="tt-content" class="tab-content hidden">
-            <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">TERCER TIEMPO (TT)</h2>
-            <div id="tt-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4 collapsible-toggle-button hidden-content">
-                <span class="font-semibold">Seleccionar Torneo</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div id="tt-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 mb-6 hidden items-end">
-                <button id="tt-hoy-button" class="col-span-2 md:col-auto px-6 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors duration-150 ease-in-out flex-shrink-0">Torneo Actual</button>
-                <div class="col-span-1 md:col-auto">
-                    <label for="tt-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                    <select id="tt-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm"></select>
-                </div>
-                <div class="col-span-1 md:col-auto">
-                    <label for="tt-period-select" class="block text-sm font-medium text-gray-700">Torneo:</label>
-                    <select id="tt-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                        <option value="apertura">Apertura</option>
-                        <option value="clausura">Clausura</option>
-                        <option value="total">Totales</option>
-                    </select>
-                </div>
-            </div>
-            <div class="table-container">
-                <p id="tt-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de Asistencia TT...</p>
-                <table id="tt-table" class="bg-white hidden">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-center">#</th>
-                            <th class="py-3 px-3 text-left-player">Jugador</th>
-                            <th class="py-3 px-3 text-center">TT</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="presentismo-content" class="tab-content hidden">
-            <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">PRESENTISMO</h2>
-            <div id="presentismo-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4 collapsible-toggle-button hidden-content">
-                <span class="font-semibold">Seleccionar Torneo</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div id="presentismo-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 mb-6 hidden items-end">
-                <button id="presentismo-hoy-button" class="col-span-2 md:col-auto px-6 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors duration-150 ease-in-out">Torneo Actual</button>
-                <div class="col-span-1 md:col-auto">
-                    <label for="presentismo-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                    <select id="presentismo-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm"></select>
-                </div>
-                <div class="col-span-1 md:col-auto">
-                    <label for="presentismo-period-select" class="block text-sm font-medium text-gray-700">Torneo:</label>
-                    <select id="presentismo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                        <option value="apertura">Apertura</option>
-                        <option value="clausura">Clausura</option>
-                        <option value="total">Totales</option>
-                    </select>
-                </div>
-            </div>
-            <div class="table-container">
-                <p id="presentismo-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de Presentismo...</p>
-                <table id="presentismo-table" class="bg-white hidden">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-center">#</th>
-                            <th class="py-3 px-3 text-left-player">Jugador</th>
-                            <th class="py-3 px-3 text-center">PJ</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="ausentismo-content" class="tab-content hidden">
-            <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">AUSENTISMO</h2>
-            <div id="ausentismo-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4 collapsible-toggle-button hidden-content">
-                <span class="font-semibold">Seleccionar Torneo</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div id="ausentismo-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 mb-6 hidden items-end">
-                <button id="ausentismo-hoy-button" class="col-span-2 md:col-auto px-6 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors duration-150 ease-in-out">Torneo Actual</button>
-                <div class="col-span-1 md:col-auto">
-                    <label for="ausentismo-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                    <select id="ausentismo-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm"></select>
-                </div>
-                <div class="col-span-1 md:col-auto">
-                    <label for="ausentismo-period-select" class="block text-sm font-medium text-gray-700">Torneo:</label>
-                    <select id="ausentismo-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                        <option value="apertura">Apertura</option>
-                        <option value="clausura">Clausura</option>
-                        <option value="total">Totales</option>
-                    </select>
-                </div>
-            </div>
-            <div class="table-container">
-                <p id="ausentismo-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando tabla de Ausentismo...</p>
-                <table id="ausentismo-table" class="bg-white hidden">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-center">#</th>
-                            <th class="py-3 px-3 text-left-player">Jugador</th>
-                            <th class="py-3 px-3 text-center">Ausentes</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="estadisticas-content" class="tab-content hidden">
-            <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">ESTADÍSTICAS</h2>
-            <div id="estadisticas-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4 collapsible-toggle-button hidden-content">
-                <span class="font-semibold">Seleccionar Torneo / Criterios</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div id="estadisticas-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[20%_1fr_1fr] gap-4 mb-6 hidden items-end">
-                <button id="estadisticas-hoy-button" class="h-full px-6 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors duration-150 ease-in-out col-span-2 md:col-span-1 md:row-span-2 flex items-center justify-center">Torneo Actual</button>
-                <div>
-                    <label for="estadisticas-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                    <select id="estadisticas-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm"></select>
-                </div>
-                <div>
-                    <label for="estadisticas-period-select" class="block text-sm font-medium text-gray-700">Torneo:</label>
-                    <select id="estadisticas-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                        <option value="apertura">Apertura</option>
-                        <option value="clausura">Clausura</option>
-                        <option value="total">Totales</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="estadisticas-sort-criterion" class="block text-sm font-medium text-gray-700">Ordenar por:</label>
-                    <select id="estadisticas-sort-criterion" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                        <option value="points">Puntos</option>
-                        <option value="pg">PG</option>
-                        <option value="pe">PE</option>
-                        <option value="pp">PP</option>
-                        <option value="pj">PJ</option>
-                        <option value="efectividad">Efectividad</option>
-                        <option value="chamigos">Chamigo</option>
-                        <option value="tt">TT</option>
-                        <option value="ausentes">Ausentismo</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="estadisticas-sort-order" class="block text-sm font-medium text-gray-700">Criterio:</label>
-                    <select id="estadisticas-sort-order" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                        <option value="desc">Descendente</option>
-                        <option value="asc">Ascendente</option>
-                    </select>
-                </div>
-            </div>
-            <div class="table-container overflow-x-auto">
-                <p id="estadisticas-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando estadísticas...</p>
-                <table id="estadisticas-table" class="bg-white hidden">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-2 text-center sticky-col sticky-col-1">#</th>
-                            <th class="py-3 px-3 text-left-player sticky-col sticky-col-2">Jugador</th>
-                            <th class="py-3 px-3 text-center">Puntos</th>
-                            <th class="py-3 px-3 text-center">PG</th>
-                            <th class="py-3 px-3 text-center">PE</th>
-                            <th class="py-3 px-3 text-center">PP</th>
-                            <th class="py-3 px-3 text-center">PJ</th>
-                            <th class="py-3 px-3 text-center">Efectividad</th>
-                            <th class="py-3 px-3 text-center">Chamigo</th>
-                            <th class="py-3 px-3 text-center">TT</th>
-                            <th class="py-3 px-3 text-center">Ausentismo</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="equipos-content" class="tab-content hidden">
-            <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">EQUIPOS</h2>
-            <div id="equipos-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4 collapsible-toggle-button hidden-content">
-                <span class="font-semibold">Seleccionar Torneo</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div id="equipos-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 mb-6 hidden items-end">
-                <button id="equipos-hoy-button" class="col-span-2 md:col-auto px-6 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors duration-150 ease-in-out flex-shrink-0">Torneo Actual</button>
-                <div class="col-span-1 md:col-auto">
-                    <label for="equipos-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                    <select id="equipos-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm"></select>
-                </div>
-                <div class="col-span-1 md:col-auto">
-                    <label for="equipos-period-select" class="block text-sm font-medium text-gray-700">Torneo:</label>
-                    <select id="equipos-period-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                        <option value="apertura">Apertura</option>
-                        <option value="clausura">Clausura</option>
-                        <option value="total">Totales</option>
-                    </select>
-                </div>
-            </div>
-            <p id="equipos-loading-message" class="loading-message col-span-full"><span class="loading-spinner"></span>Cargando estadísticas de equipos...</p>
-            <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden justify-items-center mx-auto"></div>
-        </div>
-
-        <div id="fixture-content" class="tab-content hidden">
-            <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">FIXTURE</h2>
-            <div id="fixture-filter-toggle" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-3 rounded-md cursor-pointer flex items-center justify-between mb-4 collapsible-toggle-button hidden-content">
-                <span class="font-semibold">Elegir otro partido</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div id="fixture-collapsible-content" class="hidden">
-                <div class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 mb-6 items-end">
-                    <button id="fixture-hoy-button" class="col-span-2 md:col-auto px-6 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 transition-colors duration-150 ease-in-out flex-shrink-0">Torneo Actual</button>
-                    <div class="col-span-1 md:col-auto">
-                        <label for="fixture-year-select" class="block text-sm font-medium text-gray-700">Año:</label>
-                        <select id="fixture-year-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm"></select>
-                    </div>
-                    <div class="col-span-1 md:col-auto">
-                        <label for="fixture-month-select" class="block text-sm font-medium text-gray-700">Mes:</label>
-                        <select id="fixture-month-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm"></select>
-                    </div>
-                </div>
-                <p id="fixture-loading-message" class="loading-message col-span-full"><span class="loading-spinner"></span>Cargando partidos...</p>
-                <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Partidos del Mes</h3>
-                <div id="fixture-matches-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-6"></div>
-            </div>
-            
-            <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
-                <div class="md:w-[65%] min-w-0">
-                    <div id="soccer-field-container">
-                        <div class="goal top"></div>
-                        <div class="goal bottom"></div>
-                        <div class="penalty-area top"></div>
-                        <div class="penalty-area bottom"></div>
-                        <div class="goal-area top"></div>
-                        <div class="goal-area bottom"></div>
-                    </div>
-                </div>
-                <div id="fixture-details-display" class="flex-1 md:w-[35%] bg-white p-4 rounded-lg shadow-md mt-6 md:mt-0">
-                    <h3 class="font-semibold text-center text-gray-700 mb-2">Asistentes al TT</h3>
-                    <div class="overflow-x-auto">
-                        <table id="tt-attendees-table" class="bg-white rounded-lg shadow">
-                            <tbody class="text-gray-600 text-sm font-light"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="individual-stats-content" class="tab-content hidden">
-            <h2 class="text-5xl font-extrabold text-center text-indigo-800 mb-8 pb-2 border-b-4 border-indigo-500 shadow-text-sm">HISTÓRICO</h2>
-            <div class="mb-6">
-                <label for="individual-player-search" class="block text-sm font-medium text-gray-700">Buscar Jugador:</label>
-                <div class="relative">
-                    <input type="text" id="individual-player-search" placeholder="Escribe para buscar..." class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm rounded-md shadow-sm">
-                    <button id="clear-player-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
-                        <i class="fas fa-times-circle"></i>
-                    </button>
-                    <div id="individual-player-results" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                </div>
-                <input type="hidden" id="selected-player-id">
-            </div>
-            <div class="table-container overflow-x-auto">
-                <p id="individual-stats-loading-message" class="loading-message"><span class="loading-spinner"></span>Cargando estadísticas individuales...</p>
-                <table id="individual-stats-table" class="bg-white hidden">
-                    <thead>
-                        <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
-                            <th class="py-3 px-3 text-left pl-4 sticky-col sticky-col-1">Año</th>
-                            <th class="py-3 px-3 text-center sticky-col sticky-col-2">Torneo</th>
-                            <th class="py-3 px-3 text-center">Puntos</th>
-                            <th class="py-3 px-3 text-center">PG</th>
-                            <th class="py-3 px-3 text-center">PE</th>
-                            <th class="py-3 px-3 text-center">PP</th>
-                            <th class="py-3 px-3 text-center">PJ</th>
-                            <th class="py-3 px-3 text-center">Efectividad</th>
-                            <th class="py-3 px-3 text-center">Chamigo</th>
-                            <th class="py-3 px-3 text-center">TT</th>
-                            <th class="py-3 px-3 text-center">Ausentismo</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light"></tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-
+    <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        </main>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
-        // --- Configuración de Supabase ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- CONFIGURACIÓN Y VARIABLES GLOBALES ---
         const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- Variables Globales (Caché) ---
         let allPlayersData = [];
         let allMatchDates = [];
         let lastSelectedFixtureMatchId = null;
+        let currentEstadisticasData = []; // Cache para datos de estadísticas
 
-        // --- Elementos del DOM ---
-        const hamburgerButton = document.getElementById('hamburger-button');
-        const sideMenu = document.getElementById('side-menu');
-        const overlay = document.getElementById('overlay');
+        let estadisticasSortState = { criterion: 'points', order: 'desc' };
 
-        // --- Mapeo de Pestañas ---
+        const DOMElements = {
+            body: document.body,
+            hamburgerButton: document.getElementById('hamburger-button'),
+            sideMenu: document.getElementById('side-menu'),
+            overlay: document.getElementById('overlay'),
+            darkModeToggle: document.getElementById('dark-mode-toggle'),
+            mainContentArea: document.querySelector('main'),
+            tabButtons: document.querySelectorAll('.tab-button'),
+        };
+
         const hashToTabMap = {
-            "#leaderboard": "leaderboard-content",
-            "#chamigo": "chamigo-content",
-            "#tt": "tt-content",
-            "#presentismo": "presentismo-content",
-            "#ausentismo": "ausentismo-content",
-            "#estadisticas": "estadisticas-content",
-            "#equipos": "equipos-content",
-            "#fixture": "fixture-content",
-            "#individual-stats": "individual-stats-content"
+            "#leaderboard": "leaderboard-content", "#chamigo": "chamigo-content", "#tt": "tt-content",
+            "#presentismo": "presentismo-content", "#ausentismo": "ausentismo-content", "#estadisticas": "estadisticas-content",
+            "#equipos": "equipos-content", "#fixture": "fixture-content", "#individual-stats": "individual-stats-content"
         };
         
-        // --- Funciones de Utilidad (Poblar Filtros) ---
+        // --- LÓGICA DE UI Y TEMA ---
+        function applyTheme(theme) {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            localStorage.setItem('theme', theme);
+            const icon = DOMElements.darkModeToggle.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-sun', theme === 'dark');
+                icon.classList.toggle('fa-moon', theme !== 'dark');
+            }
+            if (document.querySelector('.tab-button.active')?.dataset.tab === 'fixture-content' && lastSelectedFixtureMatchId) {
+                renderFixtureDetails(lastSelectedFixtureMatchId);
+            }
+        }
+
+        function toggleTheme() {
+            const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+        }
+
+        function toggleSideMenu() {
+            DOMElements.sideMenu.classList.toggle('open');
+            DOMElements.overlay.classList.toggle('hidden');
+            DOMElements.body.classList.toggle('overflow-hidden');
+        }
+
+        function applyInitialResponsiveStyles() {
+             if (window.innerWidth >= 768) {
+                DOMElements.sideMenu.classList.remove('open');
+                DOMElements.overlay.classList.add('hidden');
+                DOMElements.body.classList.remove('overflow-hidden');
+            }
+        }
+        
+        // --- LÓGICA DE DATOS Y RENDERIZADO ---
+        
         function parseDate(dateString) { 
             if (!dateString) return new Date();
             return new Date(dateString + 'T00:00:00'); 
@@ -1116,8 +365,12 @@
             if (!yearSelect) return;
             const years = [...new Set(allMatchDates.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
             
+            const currentValue = yearSelect.value;
             yearSelect.innerHTML = '<option value="all">Todos los Años</option>';
             years.forEach(year => yearSelect.innerHTML += `<option value="${year}">${year}</option>`);
+            if (Array.from(yearSelect.options).some(opt => opt.value === currentValue)) {
+                yearSelect.value = currentValue;
+            }
         }
 
         function populateMonthSelects(selectId) {
@@ -1125,8 +378,10 @@
             if (!monthSelect) return;
             const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             
+            const currentValue = monthSelect.value;
             monthSelect.innerHTML = '<option value="all">Todos los Meses</option>';
             months.forEach((month, index) => monthSelect.innerHTML += `<option value="${index + 1}">${month}</option>`);
+            if (currentValue) monthSelect.value = currentValue;
         }
         
         function populateAndSetCurrentPeriod(yearSelectId, periodSelectId) {
@@ -1135,116 +390,29 @@
             const periodSelect = document.getElementById(periodSelectId);
             if (!periodSelect || !yearSelect) return;
             
-            const currentYear = new Date().getFullYear();
-            yearSelect.value = Array.from(yearSelect.options).some(opt => opt.value == currentYear) ? currentYear : 'all';
-
-            const currentMonth = new Date().getMonth();
-            periodSelect.value = (currentMonth <= 5) ? 'apertura' : 'clausura';
-        }
-
-        // --- Flujo Principal de la Aplicación ---
-        async function initializeApp() {
-            try {
-                const playersPromise = supabaseClient.from('players').select('*');
-                const matchDatesPromise = supabaseClient.from('matches').select('match_date');
-
-                const [{ data: players, error: playersError }, { data: matchesInfo, error: matchesError }] = await Promise.all([playersPromise, matchDatesPromise]);
-
-                if (playersError) throw playersError;
-                if (matchesError) throw matchesError;
-                
-                allPlayersData = players;
-                allMatchDates = matchesInfo;
-
-                setupTabNavigation();
-
-            } catch (error) {
-                console.error("Error fatal durante la inicialización:", error);
-                const errorMessageText = `Error al cargar datos: ${error.message}. Asegúrate de que las credenciales de Supabase sean correctas y las tablas existan.`;
-                document.querySelectorAll('.loading-message').forEach(el => {
-                    el.innerHTML = `<i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> ${errorMessageText}`;
-                });
+            if (!yearSelect.value || yearSelect.value === 'all' || !periodSelect.value) {
+                setTodayFilters(yearSelectId.replace('-year-select', ''));
             }
         }
 
-        // --- Lógica de Pestañas y Navegación ---
-        function setupTabNavigation() {
-            ['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'estadisticas', 'equipos'].forEach(prefix => {
-                populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
-            });
-            populateYearSelects('fixture-year-select');
-            populateMonthSelects('fixture-month-select');
-            setTodayFilters('fixture', true);
-            
-            setupPlayerSearch();
-
-            const hash = window.location.hash;
-            const storedTabId = localStorage.getItem('lastActiveTab');
-            let initialTabId = 'leaderboard-content';
-            if (hash && hashToTabMap[hash]) {
-                initialTabId = hashToTabMap[hash];
-            } else if (storedTabId && document.getElementById(storedTabId) && window.location.pathname.includes('index.html')) {
-                initialTabId = storedTabId;
-            }
-            
-            activateTab(initialTabId);
-
-            window.addEventListener('hashchange', handleHashChange);
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.addEventListener('click', handleTabButtonClick);
-            });
-        }
-        
-        const renderFunctions = {
-            'leaderboard-content': renderLeaderboard,
-            'chamigo-content': renderChamigo,
-            'tt-content': renderTT,
-            'presentismo-content': renderPresentismo,
-            'ausentismo-content': renderAusentismo,
-            'estadisticas-content': renderEstadisticas,
-            'equipos-content': renderEquipos,
-            'fixture-content': renderFixture,
-            'individual-stats-content': renderIndividualStatsTable
-        };
-
-        function activateTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-
-            const targetButton = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
-            const targetContent = document.getElementById(tabId);
-
-            if (targetButton) targetButton.classList.add('active');
-            if (targetContent) targetContent.classList.remove('hidden');
-
-            const renderFunction = renderFunctions[tabId];
-            if (typeof renderFunction === 'function') {
-                renderFunction();
-            }
-        }
-        
-        function handleTabButtonClick(event) {
-            const targetTabId = event.currentTarget.dataset.tab;
-            activateTab(targetTabId);
-            const hash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === targetTabId);
-            if (hash) window.location.hash = hash;
-            localStorage.setItem('lastActiveTab', targetTabId);
-            if (window.innerWidth < 768) toggleSideMenu();
+        function setTodayFilters(sectionPrefix, isMonthFilter = false) {
+             const today = new Date();
+             const yearSelect = document.getElementById(`${sectionPrefix}-year-select`);
+             const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${sectionPrefix}-month-select`) : document.getElementById(`${sectionPrefix}-period-select`);
+             
+             if(yearSelect) yearSelect.value = today.getFullYear();
+             if(periodOrMonthSelect) {
+                 periodOrMonthSelect.value = isMonthFilter ? today.getMonth() + 1 : (today.getMonth() <= 5 ? 'apertura' : 'clausura');
+             }
         }
 
-        function handleHashChange() {
-            const hash = window.location.hash;
-            activateTab(hashToTabMap[hash] || 'leaderboard-content');
-        }
-
-        // --- Lógica de Búsqueda y Cálculo de Datos (OPTIMIZADA) ---
         async function fetchAndCalculateStatsForPeriod(yearSelectId, periodSelectId) {
-            const selectedYear = document.getElementById(yearSelectId).value;
-            const selectedPeriod = document.getElementById(periodSelectId).value;
+            const selectedYear = document.getElementById(yearSelectId)?.value;
+            const selectedPeriod = document.getElementById(periodSelectId)?.value;
 
-            let query = supabaseClient.from('matches').select('*');
-
-            if (selectedYear !== 'all') {
+            // Query for the specific period (Apertura/Clausura/Total)
+            let periodQuery = supabaseClient.from('matches').select('*');
+            if (selectedYear && selectedYear !== 'all') {
                 let startDate, endDate;
                 if (selectedPeriod === 'apertura') {
                     startDate = `${selectedYear}-01-01`;
@@ -1256,30 +424,27 @@
                     startDate = `${selectedYear}-01-01`;
                     endDate = `${selectedYear}-12-31`;
                 }
-                query = query.gte('match_date', startDate).lte('match_date', endDate);
+                periodQuery = periodQuery.gte('match_date', startDate).lte('match_date', endDate);
             }
-            
-            const { data: filteredMatches, error } = await query;
-
-            if (error) {
-                console.error("Error fetching matches:", error);
-                return { players: [], teamStats: {}, error };
+            const { data: filteredMatches, error: periodError } = await periodQuery;
+            if (periodError) {
+                console.error("Error fetching period matches:", periodError);
+                return { players: [], teamStats: {}, error: periodError };
             }
 
+            // Initialize stats for ALL players
             const playerStats = {};
             allPlayersData.forEach(player => {
                 playerStats[player.id] = { name: player.name, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player.id };
             });
 
+            // Calculate stats based on the period's matches
             let clarosWins = 0, oscurosWins = 0, empates = 0, suspendidos = 0, totalPJMatches = 0;
-
             (filteredMatches || []).forEach(match => {
                 const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
                 const allPlayersInMatch = [...new Set([...(team_white_players || []), ...(team_dark_players || [])])];
-
                 if (result !== 'Suspendido') totalPJMatches++;
                 else suspendidos++;
-
                 allPlayersInMatch.forEach(pId => {
                     if (playerStats[pId]) {
                         if (result === 'Claros' && (team_white_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
@@ -1289,11 +454,9 @@
                         if (result !== 'Suspendido') playerStats[pId].pj++;
                     }
                 });
-
                 if (result === 'Claros') clarosWins++;
                 else if (result === 'Oscuros') oscurosWins++;
                 else if (result === 'Empate') empates++;
-
                 if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
                     const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
                     if (votosArray.length > 0) {
@@ -1303,12 +466,10 @@
                         });
                     }
                 }
-
                 if (tt_attendees) {
                     tt_attendees.forEach(pId => { if (playerStats[pId]) playerStats[pId].tt++; });
                 }
             });
-
             Object.values(playerStats).forEach(player => {
                 const maxPossiblePoints = player.pj * 3;
                 let currentEfectividad = (maxPossiblePoints > 0) ? (player.points / maxPossiblePoints) * 100 : 0;
@@ -1321,24 +482,50 @@
                 player.ausentes = Math.max(0, totalPJMatches - player.pj);
             });
 
+            // Determine which players to show in the table
+            let playersToShow;
+            if (selectedYear && selectedYear !== 'all') {
+                // If a specific year is selected, get all players who played in that year.
+                const { data: yearlyMatches, error: yearlyError } = await supabaseClient
+                    .from('matches')
+                    .select('team_white_players, team_dark_players')
+                    .gte('match_date', `${selectedYear}-01-01`)
+                    .lte('match_date', `${selectedYear}-12-31`);
+
+                if (yearlyError) {
+                    console.error("Error fetching yearly matches:", yearlyError);
+                    // Fallback to showing players who played in the period
+                    playersToShow = Object.values(playerStats).filter(p => p.pj > 0);
+                } else {
+                    const yearlyPlayerIds = new Set();
+                    yearlyMatches.forEach(match => {
+                        (match.team_white_players || []).forEach(id => yearlyPlayerIds.add(id));
+                        (match.team_dark_players || []).forEach(id => yearlyPlayerIds.add(id));
+                    });
+                    // The final list contains all players who played in the year, with their stats from the selected period.
+                    playersToShow = Object.values(playerStats).filter(p => yearlyPlayerIds.has(p.id));
+                }
+            } else {
+                // If "All Years" is selected, show players who played in any match of the selected period (which is all matches)
+                playersToShow = Object.values(playerStats).filter(p => p.pj > 0);
+            }
+
             return {
-                players: Object.values(playerStats).filter(p => p.name),
+                players: playersToShow,
                 teamStats: { clarosWins, oscurosWins, empates, suspendidos, totalPJMatches },
                 error: null
             };
         }
 
-        // --- Funciones de Renderizado ---
-        async function renderGenericTable(section, filterFn, sortFn, renderRowFn) {
+        async function renderGenericTable(section, filterFn, sortFn, renderRowFn, headers) {
             const table = document.getElementById(`${section}-table`);
-            const tableBody = table.querySelector('tbody');
             const loadingMessage = document.getElementById(`${section}-loading-message`);
+            if (!table || !loadingMessage) return;
 
             table.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando datos...`;
-            tableBody.innerHTML = '';
-
+            
             const { players, error } = await fetchAndCalculateStatsForPeriod(`${section}-year-select`, `${section}-period-select`);
             
             if (error) {
@@ -1352,7 +539,9 @@
                 return;
             }
             
-            tableBody.innerHTML = rankedPlayers.map(renderRowFn).join('');
+            table.innerHTML = `
+                <thead><tr>${headers.map(h => `<th class="p-3 text-center">${h}</th>`).join('')}</tr></thead>
+                <tbody>${rankedPlayers.map(renderRowFn).join('')}</tbody>`;
 
             loadingMessage.classList.add('hidden');
             table.classList.remove('hidden');
@@ -1361,90 +550,95 @@
         function renderLeaderboard() {
             renderGenericTable(
                 'leaderboard',
-                player => player.pj > 0,
+                () => true, // Show all players who played in the year
                 (a, b) => b.points - a.points,
                 (player, index) => `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-3 text-center">${index + 1}</td>
-                        <td class="py-3 px-3 text-left-player">${player.name}</td>
-                        <td class="py-3 px-3 text-center">${player.points}</td>
-                        <td class="py-3 px-3 text-center">${player.efectividad}%</td>
-                    </tr>`
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-center">${player.name}</td>
+                        <td class="p-3 text-center">${player.points}</td>
+                        <td class="p-3 text-center">${player.efectividad}%</td>
+                    </tr>`,
+                ['#', 'Jugador', 'Puntos', 'Efectividad']
             );
         }
 
         function renderChamigo() {
             renderGenericTable(
                 'chamigo',
-                p => p.chamigos > 0,
+                p => p.chamigos > 0, // Keep original filter
                 (a, b) => b.chamigos - a.chamigos,
                 (player, index) => `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-3 text-center">${index + 1}</td>
-                        <td class="py-3 px-3 text-left-player">${player.name}</td>
-                        <td class="py-3 px-3 text-center">${player.chamigos}</td>
-                    </tr>`
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-center">${player.name}</td>
+                        <td class="p-3 text-center">${player.chamigos}</td>
+                    </tr>`,
+                ['#', 'Jugador', 'Chamigos']
             );
         }
         
         function renderTT() {
             renderGenericTable(
                 'tt',
-                p => p.tt > 0,
+                p => p.tt > 0, // Keep original filter
                 (a, b) => b.tt - a.tt,
                 (player, index) => `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-3 text-center">${index + 1}</td>
-                        <td class="py-3 px-3 text-left-player">${player.name}</td>
-                        <td class="py-3 px-3 text-center">${player.tt}</td>
-                    </tr>`
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-center">${player.name}</td>
+                        <td class="p-3 text-center">${player.tt}</td>
+                    </tr>`,
+                ['#', 'Jugador', 'TT']
             );
         }
 
         function renderPresentismo() {
             renderGenericTable(
                 'presentismo',
-                p => p.pj > 0,
+                () => true, // Show all players who played in the year
                 (a, b) => b.pj - a.pj,
                 (player, index) => `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-3 text-center">${index + 1}</td>
-                        <td class="py-3 px-3 text-left-player">${player.name}</td>
-                        <td class="py-3 px-3 text-center">${player.pj}</td>
-                    </tr>`
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-center">${player.name}</td>
+                        <td class="p-3 text-center">${player.pj}</td>
+                    </tr>`,
+                ['#', 'Jugador', 'PJ']
             );
         }
         
         function renderAusentismo() {
             renderGenericTable(
                 'ausentismo',
-                p => p.pj > 0,
+                () => true, // Show all players who played in the year
                 (a, b) => b.ausentes - a.ausentes,
                 (player, index) => `
-                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-3 text-center">${index + 1}</td>
-                        <td class="py-3 px-3 text-left-player">${player.name}</td>
-                        <td class="py-3 px-3 text-center">${player.ausentes}</td>
-                    </tr>`
+                    <tr>
+                        <td class="p-3 text-center">${index + 1}</td>
+                        <td class="p-3 text-center">${player.name}</td>
+                        <td class="p-3 text-center">${player.ausentes}</td>
+                    </tr>`,
+                ['#', 'Jugador', 'Ausentes']
             );
         }
 
-        async function renderEstadisticas() {
+        async function renderEstadisticas(fromSort = false) {
             const table = document.getElementById('estadisticas-table');
-            const tableBody = table.querySelector('tbody');
             const loadingMessage = document.getElementById('estadisticas-loading-message');
+            if (!table || !loadingMessage) return;
             
-            table.classList.add('hidden');
-            loadingMessage.classList.remove('hidden');
-            tableBody.innerHTML = '';
+            if (!fromSort) {
+                table.classList.add('hidden');
+                loadingMessage.classList.remove('hidden');
+                const { players, error } = await fetchAndCalculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
+                if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
+                currentEstadisticasData = players;
+            }
 
-            const { players, error } = await fetchAndCalculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
-            
-            if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
-
-            const sortCriterion = document.getElementById('estadisticas-sort-criterion').value;
-            const sortOrder = document.getElementById('estadisticas-sort-order').value;
-            const rankedPlayers = players.filter(p => p.pj > 0).sort((a, b) => {
+            const sortCriterion = estadisticasSortState.criterion;
+            const sortOrder = estadisticasSortState.order;
+            const rankedPlayers = [...currentEstadisticasData].sort((a, b) => { // Removed .filter(p => p.pj > 0)
                 let valA = parseFloat(a[sortCriterion]) || 0;
                 let valB = parseFloat(b[sortCriterion]) || 0;
                 return sortOrder === 'asc' ? valA - valB : valB - valA;
@@ -1452,75 +646,105 @@
             
             if (rankedPlayers.length === 0) { loadingMessage.innerHTML = `No hay datos disponibles.`; return; }
 
-            tableBody.innerHTML = rankedPlayers.map((player, index) => `
-                <tr class="border-b border-gray-200 hover:bg-gray-100">
-                    <td class="py-3 px-2 text-center sticky-col sticky-col-1">${index + 1}</td>
-                    <td class="py-3 px-3 text-left-player sticky-col sticky-col-2">${player.name}</td>
-                    <td class="py-3 px-3 text-center">${player.points}</td>
-                    <td class="py-3 px-3 text-center">${player.pg}</td>
-                    <td class="py-3 px-3 text-center">${player.pe}</td>
-                    <td class="py-3 px-3 text-center">${player.pp}</td>
-                    <td class="py-3 px-3 text-center">${player.pj}</td>
-                    <td class="py-3 px-3 text-center">${player.efectividad}%</td>
-                    <td class="py-3 px-3 text-center">${player.chamigos}</td>
-                    <td class="py-3 px-3 text-center">${player.tt}</td>
-                    <td class="py-3 px-3 text-center">${player.ausentes}</td>
-                </tr>`).join('');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th class="p-2 text-center sticky-col sticky-col-1">#</th>
+                        <th class="p-3 text-center sticky-col sticky-col-2">Jugador</th>
+                        <th class="p-3 text-center" data-sort="points">Puntos</th>
+                        <th class="p-3 text-center" data-sort="pg">PG</th>
+                        <th class="p-3 text-center" data-sort="pe">PE</th>
+                        <th class="p-3 text-center" data-sort="pp">PP</th>
+                        <th class="p-3 text-center" data-sort="pj">PJ</th>
+                        <th class="p-3 text-center" data-sort="efectividad">Efectividad</th>
+                        <th class="p-3 text-center" data-sort="chamigos">Chamigo</th>
+                        <th class="p-3 text-center" data-sort="tt">TT</th>
+                        <th class="p-3 text-center" data-sort="ausentes">Ausentismo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rankedPlayers.map((player, index) => `
+                    <tr>
+                        <td class="p-2 text-center sticky-col sticky-col-1">${index + 1}</td>
+                        <td class="p-3 text-center sticky-col sticky-col-2">${player.name}</td>
+                        <td class="p-3 text-center">${player.points}</td><td class="p-3 text-center">${player.pg}</td><td class="p-3 text-center">${player.pe}</td>
+                        <td class="p-3 text-center">${player.pp}</td><td class="p-3 text-center">${player.pj}</td><td class="p-3 text-center">${player.efectividad}%</td>
+                        <td class="p-3 text-center">${player.chamigos}</td><td class="p-3 text-center">${player.tt}</td><td class="p-3 text-center">${player.ausentes}</td>
+                    </tr>`).join('')}
+                </tbody>`;
 
             loadingMessage.classList.add('hidden');
             table.classList.remove('hidden');
+
+            table.querySelectorAll('tbody tr').forEach(row => {
+                row.addEventListener('mouseenter', () => {
+                    row.classList.add('row-hover');
+                });
+                row.addEventListener('mouseleave', () => {
+                    row.classList.remove('row-hover');
+                });
+            });
+            
+            const activeTh = table.querySelector(`thead th[data-sort="${sortCriterion}"]`);
+            if (activeTh) {
+                const icon = document.createElement('i');
+                icon.className = `fas fa-chevron-${sortOrder === 'desc' ? 'down' : 'up'} ml-2`;
+                activeTh.appendChild(icon);
+            }
         }
 
         async function renderEquipos() {
             const statsDisplay = document.getElementById('equipos-stats-display');
             const loadingMessage = document.getElementById('equipos-loading-message');
+            if (!statsDisplay || !loadingMessage) return;
 
             statsDisplay.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
-            statsDisplay.innerHTML = '';
 
             const { teamStats, error } = await fetchAndCalculateStatsForPeriod('equipos-year-select', 'equipos-period-select');
 
             if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
             
-            statsDisplay.innerHTML = `
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.oscurosWins}</span><span class="text-sm uppercase">Oscuros Ganados</span>
-                </div>
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.clarosWins}</span><span class="text-sm uppercase">Claros Ganados</span>
-                </div>
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.empates}</span><span class="text-sm uppercase">Empates</span>
-                </div>
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.suspendidos}</span><span class="text-sm uppercase">Suspendidos</span>
-                </div>
-                <div class="bg-indigo-600 text-white p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]">
-                    <span class="text-3xl font-bold">${teamStats.totalPJMatches}</span><span class="text-sm uppercase">Partidos Jugados</span>
+            const statCard = (value, label, bgColor, textColor = 'var(--button-text-color)') => `
+                <div class="p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]" style="background-color: ${bgColor}; color: ${textColor};">
+                    <span class="text-3xl font-bold">${value}</span><span class="text-sm uppercase mt-1 font-semibold">${label}</span>
                 </div>`;
+            
+            const clarosBgColor = '#E2E8F0';
+            const clarosTextColor = '#1A202C';
+            const empatesBgColor = 'var(--warning-color)';
+
+            statsDisplay.innerHTML = 
+                statCard(teamStats.oscurosWins, 'Oscuros Ganados', 'var(--sidebar-bg)') +
+                statCard(teamStats.clarosWins, 'Claros Ganados', clarosBgColor, clarosTextColor) +
+                statCard(teamStats.empates, 'Empates', empatesBgColor) +
+                statCard(teamStats.suspendidos, 'Suspendidos', 'var(--danger-color)') +
+                statCard(teamStats.totalPJMatches, 'Partidos Jugados', 'var(--accent-color)');
+
             loadingMessage.classList.add('hidden');
             statsDisplay.classList.remove('hidden');
         }
         
-        async function renderFixture() {
+        async function renderFixture(isFilterChange = false) {
             const cardsContainer = document.getElementById('fixture-matches-cards-container');
             const loadingMessage = document.getElementById('fixture-loading-message');
             const year = document.getElementById('fixture-year-select').value;
             const month = document.getElementById('fixture-month-select').value;
+            if (!cardsContainer || !loadingMessage) return;
 
-            cardsContainer.classList.add('hidden');
+            cardsContainer.innerHTML = '';
             loadingMessage.classList.remove('hidden');
-            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando partidos...`;
-            cardsContainer.innerHTML = ''; 
 
             let query = supabaseClient.from('matches').select('*');
-            if (year !== 'all' && month !== 'all') {
-                const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-                const endDate = new Date(year, month, 0).getDate();
-                query = query.gte('match_date', startDate).lte('match_date', `${year}-${String(month).padStart(2, '0')}-${endDate}`);
-            } else if (year !== 'all') {
-                query = query.gte('match_date', `${year}-01-01`).lte('match_date', `${year}-12-31`);
+            
+            if (year && year !== 'all') {
+                if (month && month !== 'all') {
+                    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+                    const endDate = new Date(year, month, 0).getDate();
+                    query = query.gte('match_date', startDate).lte('match_date', `${year}-${String(month).padStart(2, '0')}-${endDate}`);
+                } else {
+                    query = query.gte('match_date', `${year}-01-01`).lte('match_date', `${year}-12-31`);
+                }
             }
 
             const { data: filteredMatches, error } = await query;
@@ -1540,65 +764,71 @@
                 if(isCurrent) currentOrFutureMatchFound = true;
 
                 return `
-                    <div class="fixture-match-item p-2 rounded-lg shadow-sm cursor-pointer transition duration-150 ease-in-out flex justify-center items-center text-center text-sm font-semibold sm:p-4 sm:shadow-md sm:text-base ${isCurrent ? 'bg-gradient-to-r from-blue-600 to-indigo-700 current-match-card-text current-match-card' : 'bg-white text-indigo-700'}" data-match-id="${match.id}">
+                    <div class="fixture-match-item p-2 rounded-lg shadow-sm cursor-pointer transition flex justify-center items-center text-center text-sm font-semibold sm:p-4 sm:shadow-md ${isCurrent ? 'current-match-card' : ''}" data-match-id="${match.id}">
                         ${isCurrent ? 'PARTIDO ACTUAL' : `Partido del ${matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC'})}`}
-                    </div>
-                `;
+                    </div>`;
             }).join('');
 
             cardsContainer.querySelectorAll('.fixture-match-item').forEach(card => card.addEventListener('click', (e) => {
                 cardsContainer.querySelectorAll('.fixture-match-item').forEach(c => c.classList.remove('selected'));
                 e.currentTarget.classList.add('selected');
-                renderFixtureDetails(e.currentTarget.dataset.matchId);
+                renderFixtureDetails(e.currentTarget.dataset.matchId, true);
             }));
 
             loadingMessage.classList.add('hidden');
-            cardsContainer.classList.remove('hidden');
 
-            setTimeout(() => {
-                const currentMatchCard = document.querySelector('#fixture-matches-cards-container .current-match-card');
-                const firstCard = document.querySelector('#fixture-matches-cards-container [data-match-id]');
-                if (currentMatchCard) currentMatchCard.click(); 
-                else if (firstCard) firstCard.click();
-            }, 100);
+            if (!isFilterChange) {
+                setTimeout(() => {
+                    const currentMatchCard = document.querySelector('.current-match-card');
+                    const firstCard = cardsContainer.querySelector('[data-match-id]');
+                    if (currentMatchCard) {
+                        currentMatchCard.classList.add('selected');
+                        renderFixtureDetails(currentMatchCard.dataset.matchId, false);
+                    } else if (firstCard) {
+                        firstCard.classList.add('selected');
+                        renderFixtureDetails(firstCard.dataset.matchId, false);
+                    }
+                }, 100);
+            }
         }
 
-        async function renderFixtureDetails(matchId) {
+        async function renderFixtureDetails(matchId, fromUserClick = false) {
             const { data: match, error } = await supabaseClient.from('matches').select('*').eq('id', matchId).single();
-            if (error || !match) {
-                console.error("Error fetching match details:", error);
-                return;
-            }
+            if (error || !match) { console.error("Error fetching match details:", error); return; }
             
             lastSelectedFixtureMatchId = matchId;
             
             const visualDetailsContainer = document.getElementById('fixture-visual-details-container');
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
-            const collapsibleContent = document.getElementById('fixture-collapsible-content');
+            const collapsibleContent = document.getElementById('fixture-filters-collapsible');
+            const filterToggle = document.getElementById('fixture-filter-toggle');
+            if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
             
-            soccerFieldContainer.querySelectorAll('.player-wrapper, .winner-trophy').forEach(el => el.remove());
+            soccerFieldContainer.innerHTML = `
+                <div class="goal-area top"></div><div class="goal-area bottom"></div>
+                <div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
             ttAttendeesTableBody.innerHTML = '';
 
             const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
             const getPlayerName = id => (allPlayersData.find(p => p.id === id) || {name: 'ID Desconocido'}).name;
             
-            ttAttendeesTableBody.innerHTML = (tt_attendees && tt_attendees.length > 0)
-                ? tt_attendees.map(id => `<tr><td class="py-3 px-3 text-center">${getPlayerName(id)}</td></tr>`).join('')
-                : `<tr><td class="py-3 px-3 text-center" colspan="1">No hay asistentes al TT.</td></tr>`;
+            ttAttendeesTableBody.innerHTML = (Array.isArray(tt_attendees) && tt_attendees.length > 0)
+                ? tt_attendees.map(id => `<tr><td class="p-2 text-center">${getPlayerName(id)}</td></tr>`).join('')
+                : `<tr><td class="p-2 text-center">No hay asistentes al TT.</td></tr>`;
 
             const isHorizontalField = window.innerWidth >= 768;
             soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
-            soccerFieldContainer.querySelectorAll('.goal, .penalty-area, .goal-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
+            soccerFieldContainer.querySelectorAll('.goal-area, .penalty-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
 
             const pos = {
                 v: {
-                    claros: [{ x: 0.5, y: 0.93 }, { x: 0.3, y: 0.79 }, { x: 0.7, y: 0.79 }, { x: 0.35, y: 0.63 }, { x: 0.65, y: 0.58 }],
-                    oscuros: [{ x: 0.5, y: 0.07 }, { x: 0.3, y: 0.21 }, { x: 0.7, y: 0.21 }, { x: 0.35, y: 0.42 }, { x: 0.65, y: 0.37 }]
+                    claros: [{ x: 0.5, y: 0.92 }, { x: 0.25, y: 0.75 }, { x: 0.75, y: 0.75 }, { x: 0.35, y: 0.60 }, { x: 0.65, y: 0.60 }],
+                    oscuros: [{ x: 0.5, y: 0.08 }, { x: 0.25, y: 0.25 }, { x: 0.75, y: 0.25 }, { x: 0.35, y: 0.40 }, { x: 0.65, y: 0.40 }]
                 },
                 h: {
-                    claros: [{ x: 0.92, y: 0.50 }, { x: 0.79, y: 0.20 }, { x: 0.79, y: 0.80 }, { x: 0.60, y: 0.32 }, { x: 0.64, y: 0.68 }],
-                    oscuros: [{ x: 0.08, y: 0.50 }, { x: 0.21, y: 0.20 }, { x: 0.21, y: 0.80 }, { x: 0.42, y: 0.32 }, { x: 0.38, y: 0.68 }]
+                    claros: [{ x: 0.95, y: 0.50 }, { x: 0.75, y: 0.25 }, { x: 0.75, y: 0.75 }, { x: 0.60, y: 0.35 }, { x: 0.60, y: 0.65 }],
+                    oscuros: [{ x: 0.05, y: 0.50 }, { x: 0.25, y: 0.25 }, { x: 0.25, y: 0.75 }, { x: 0.40, y: 0.35 }, { x: 0.40, y: 0.65 }]
                 }
             };
             const currentPos = isHorizontalField ? pos.h : pos.v;
@@ -1614,16 +844,16 @@
 
             const createPlayerMarker = (playerId, team, index) => {
                 const playerWrapper = document.createElement('div');
-                playerWrapper.className = `player-wrapper ${team}`;
-                if(isHorizontalField) playerWrapper.classList.add('horizontal-layout');
+                playerWrapper.className = `player-wrapper absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10`;
                 playerWrapper.style.top = `${currentPos[team][index].y * 100}%`;
                 playerWrapper.style.left = `${currentPos[team][index].x * 100}%`;
                 
-                let markerHTML = `<div class="player-marker ${team}">${parseInt(playerId.replace('J', ''))}`;
+                let markerHTML = `<div class="player-marker ${team} relative w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-center">
+                    ${parseInt(playerId.replace('J', ''))}`;
                 if (chamigosIds.includes(playerId)) {
-                    markerHTML += `<i class="fas fa-star text-yellow-400"></i>`;
+                    markerHTML += `<i class="fas fa-star text-yellow-400 absolute -top-2.5 -right-1 text-lg"></i>`;
                 }
-                markerHTML += `</div><div class="player-name-label">${getPlayerName(playerId)}</div>`;
+                markerHTML += `</div><div class="player-name-label text-xs font-bold px-2 py-0.5 rounded-md">${getPlayerName(playerId)}</div>`;
                 playerWrapper.innerHTML = markerHTML;
                 soccerFieldContainer.appendChild(playerWrapper);
             };
@@ -1633,31 +863,32 @@
             
             if (result && result !== 'Empate' && result !== 'Suspendido') {
                  const trophyDiv = document.createElement('div');
-                 trophyDiv.className = 'winner-trophy';
-                 if(isHorizontalField) trophyDiv.classList.add('horizontal-layout');
+                 trophyDiv.className = 'winner-trophy absolute text-2xl z-20 transform -translate-x-1/2 -translate-y-1/2';
                  trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
                  const trophyPos = {
-                     h: { Claros: { top: '95%', left: '94%'}, Oscuros: { top: '95%', left: '6%'} },
-                     v: { Claros: { top: '96%', left: '94%'}, Oscuros: { top: '6%', left: '94%'} }
+                     h: { Claros: { top: '95%', left: '95%'}, Oscuros: { top: '95%', left: '5%'} },
+                     v: { Claros: { top: '95%', left: '95%'}, Oscuros: { top: '95%', left: '5%'} }
                  };
                  Object.assign(trophyDiv.style, (isHorizontalField ? trophyPos.h : trophyPos.v)[result]);
                  soccerFieldContainer.appendChild(trophyDiv);
             }
             
             visualDetailsContainer.classList.remove('hidden');
-            collapsibleContent.classList.add('hidden');
+            if (collapsibleContent && fromUserClick) {
+                collapsibleContent.classList.add('hidden');
+                filterToggle.classList.remove('visible-content');
+                filterToggle.querySelector('.toggle-icon')?.classList.remove('fa-chevron-up');
+            }
         }
         
         async function renderIndividualStatsTable() {
             const selectedPlayerId = document.getElementById('selected-player-id').value;
             const table = document.getElementById('individual-stats-table');
-            const tableBody = table.querySelector('tbody');
             const loadingMessage = document.getElementById('individual-stats-loading-message');
+            if (!table || !loadingMessage) return;
             
             table.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
-            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Cargando historial...`;
-            tableBody.innerHTML = '';
             
             if(!selectedPlayerId) {
                 loadingMessage.textContent = 'Selecciona un jugador para ver sus estadísticas.';
@@ -1673,74 +904,83 @@
 
             if (!playerStats) { loadingMessage.textContent = 'No se pudieron calcular las estadísticas.'; return; }
             
-            let tableHtml = '';
+            let tableHtml = `
+                <thead>
+                    <tr>
+                        <th class="p-3 text-left pl-4 sticky-col sticky-col-1">Año</th>
+                        <th class="p-3 text-center sticky-col sticky-col-2">Torneo</th>
+                        <th class="p-3 text-center">Puntos</th><th class="p-3 text-center">PG</th><th class="p-3 text-center">PE</th>
+                        <th class="p-3 text-center">PP</th><th class="p-3 text-center">PJ</th><th class="p-3 text-center">Efectividad</th>
+                        <th class="p-3 text-center">Chamigo</th><th class="p-3 text-center">TT</th><th class="p-3 text-center">Ausentismo</th>
+                    </tr>
+                </thead>
+                <tbody>`;
 
             tableHtml += `
-                <tr class="bg-blue-200 font-bold text-indigo-800">
-                    <td class="py-3 px-3 text-left pl-4 sticky-col sticky-col-1"><b>TOTAL</b></td>
-                    <td class="py-3 px-3 text-center sticky-col sticky-col-2"></td>
-                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.points}</td>
-                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.pg}</td>
-                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.pe}</td>
-                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.pp}</td>
-                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.pj}</td>
-                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.efectividad}%</td>
-                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.chamigos}</td>
-                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.tt}</td>
-                    <td class="py-3 px-3 text-center">${playerStats.overallTotal.ausentes}</td>
-                </tr>
-            `;
+                <tr class="font-bold" style="background-color: var(--accent-color); color: var(--button-text-color);">
+                    <td class="p-3 text-left pl-4 sticky-col sticky-col-1"><b>TOTAL</b></td>
+                    <td class="p-3 text-center sticky-col sticky-col-2"></td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.points}</td><td class="p-3 text-center">${playerStats.overallTotal.pg}</td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.pe}</td><td class="p-3 text-center">${playerStats.overallTotal.pp}</td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.pj}</td><td class="p-3 text-center">${playerStats.overallTotal.efectividad}%</td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.chamigos}</td><td class="p-3 text-center">${playerStats.overallTotal.tt}</td>
+                    <td class="p-3 text-center">${playerStats.overallTotal.ausentes}</td>
+                </tr>`;
 
             Object.keys(playerStats.years).sort((a,b) => b-a).forEach(year => {
                 const yearData = playerStats.years[year];
                 if(yearData.total.pj > 0) {
                     tableHtml += `
-                        <tr class="year-total-row bg-gray-200 font-semibold text-gray-700 cursor-pointer" data-year="${year}">
-                            <td class="py-3 px-3 text-left pl-4 sticky-col sticky-col-1"><i class="fas fa-plus-circle toggle-details mr-2 text-indigo-600 dark:text-blue-300"></i><b>${year}</b></td>
-                            <td class="py-3 px-3 text-center sticky-col sticky-col-2"><b>TOTAL AÑO</b></td>
-                            <td class="py-3 px-3 text-center">${yearData.total.points}</td>
-                            <td class="py-3 px-3 text-center">${yearData.total.pg}</td>
-                            <td class="py-3 px-3 text-center">${yearData.total.pe}</td>
-                            <td class="py-3 px-3 text-center">${yearData.total.pp}</td>
-                            <td class="py-3 px-3 text-center">${yearData.total.pj}</td>
-                            <td class="py-3 px-3 text-center">${yearData.total.efectividad}%</td>
-                            <td class="py-3 px-3 text-center">${yearData.total.chamigos}</td>
-                            <td class="py-3 px-3 text-center">${yearData.total.tt}</td>
-                            <td class="py-3 px-3 text-center">${yearData.total.ausentes}</td>
+                        <tr class="font-semibold cursor-pointer" style="background-color: var(--bg-muted);" data-year="${year}">
+                            <td class="p-3 text-left pl-4 sticky-col sticky-col-1"><i class="fas fa-plus-circle toggle-details mr-2 text-accent-color"></i><b>${year}</b></td>
+                            <td class="p-3 text-center sticky-col sticky-col-2"><b>TOTAL AÑO</b></td>
+                            <td class="p-3 text-center">${yearData.total.points}</td><td class="p-3 text-center">${yearData.total.pg}</td>
+                            <td class="p-3 text-center">${yearData.total.pe}</td><td class="p-3 text-center">${yearData.total.pp}</td>
+                            <td class="p-3 text-center">${yearData.total.pj}</td><td class="p-3 text-center">${yearData.total.efectividad}%</td>
+                            <td class="p-3 text-center">${yearData.total.chamigos}</td><td class="p-3 text-center">${yearData.total.tt}</td>
+                            <td class="p-3 text-center">${yearData.total.ausentes}</td>
                         </tr>
                         <tr class="period-details-row hidden" data-year-parent="${year}">
-                            <td class="py-3 px-3 text-left pl-12 sticky-col sticky-col-1"></td>
-                            <td class="py-3 px-3 text-center sticky-col sticky-col-2">Clausura</td>
-                            <td class="py-3 px-3 text-center">${yearData.clausura.points}</td>
-                            <td class="py-3 px-3 text-center">${yearData.clausura.pg}</td>
-                            <td class="py-3 px-3 text-center">${yearData.clausura.pe}</td>
-                            <td class="py-3 px-3 text-center">${yearData.clausura.pp}</td>
-                            <td class="py-3 px-3 text-center">${yearData.clausura.pj}</td>
-                            <td class="py-3 px-3 text-center">${yearData.clausura.efectividad}%</td>
-                            <td class="py-3 px-3 text-center">${yearData.clausura.chamigos}</td>
-                            <td class="py-3 px-3 text-center">${yearData.clausura.tt}</td>
-                            <td class="py-3 px-3 text-center">${yearData.clausura.ausentes}</td>
+                            <td class="p-3 text-left pl-12 sticky-col sticky-col-1"></td><td class="p-3 text-center sticky-col sticky-col-2">Clausura</td>
+                            <td class="p-3 text-center">${yearData.clausura.points}</td><td class="p-3 text-center">${yearData.clausura.pg}</td>
+                            <td class="p-3 text-center">${yearData.clausura.pe}</td><td class="p-3 text-center">${yearData.clausura.pp}</td>
+                            <td class="p-3 text-center">${yearData.clausura.pj}</td><td class="p-3 text-center">${yearData.clausura.efectividad}%</td>
+                            <td class="p-3 text-center">${yearData.clausura.chamigos}</td><td class="p-3 text-center">${yearData.clausura.tt}</td>
+                            <td class="p-3 text-center">${yearData.clausura.ausentes}</td>
                         </tr>
                         <tr class="period-details-row hidden" data-year-parent="${year}">
-                            <td class="py-3 px-3 text-left pl-12 sticky-col sticky-col-1"></td>
-                            <td class="py-3 px-3 text-center sticky-col sticky-col-2">Apertura</td>
-                            <td class="py-3 px-3 text-center">${yearData.apertura.points}</td>
-                            <td class="py-3 px-3 text-center">${yearData.apertura.pg}</td>
-                            <td class="py-3 px-3 text-center">${yearData.apertura.pe}</td>
-                            <td class="py-3 px-3 text-center">${yearData.apertura.pp}</td>
-                            <td class="py-3 px-3 text-center">${yearData.apertura.pj}</td>
-                            <td class="py-3 px-3 text-center">${yearData.apertura.efectividad}%</td>
-                            <td class="py-3 px-3 text-center">${yearData.apertura.chamigos}</td>
-                            <td class="py-3 px-3 text-center">${yearData.apertura.tt}</td>
-                            <td class="py-3 px-3 text-center">${yearData.apertura.ausentes}</td>
-                        </tr>
-                    `;
+                            <td class="p-3 text-left pl-12 sticky-col sticky-col-1"></td><td class="p-3 text-center sticky-col sticky-col-2">Apertura</td>
+                            <td class="p-3 text-center">${yearData.apertura.points}</td><td class="p-3 text-center">${yearData.apertura.pg}</td>
+                            <td class="p-3 text-center">${yearData.apertura.pe}</td><td class="p-3 text-center">${yearData.apertura.pp}</td>
+                            <td class="p-3 text-center">${yearData.apertura.pj}</td><td class="p-3 text-center">${yearData.apertura.efectividad}%</td>
+                            <td class="p-3 text-center">${yearData.apertura.chamigos}</td><td class="p-3 text-center">${yearData.apertura.tt}</td>
+                            <td class="p-3 text-center">${yearData.apertura.ausentes}</td>
+                        </tr>`;
                 }
             });
             
-            tableBody.innerHTML = tableHtml;
+            table.innerHTML = tableHtml + '</tbody>';
             loadingMessage.classList.add('hidden');
             table.classList.remove('hidden');
+
+            table.querySelectorAll('tbody tr').forEach(row => {
+                row.addEventListener('mouseenter', () => {
+                    row.classList.add('row-hover');
+                });
+                row.addEventListener('mouseleave', () => {
+                    row.classList.remove('row-hover');
+                });
+            });
+            
+            table.querySelectorAll('[data-year]').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    const year = row.dataset.year;
+                    const toggleIcon = row.querySelector('.toggle-details');
+                    document.querySelectorAll(`.period-details-row[data-year-parent="${year}"]`).forEach(r => r.classList.toggle('hidden'));
+                    toggleIcon?.classList.toggle('fa-plus-circle');
+                    toggleIcon?.classList.toggle('fa-minus-circle');
+                });
+            });
         }
 
         function calculateIndividualPlayerStats(playerId, matches) {
@@ -1765,6 +1005,9 @@
 
                  if (!playerStats.years[year]) return;
                  
+                 const playerIsInMatch = (team_white_players || []).includes(playerId) || (team_dark_players || []).includes(playerId);
+                 if (!playerIsInMatch) return;
+
                  const statsToUpdate = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
                  
                  if (result !== 'Suspendido') {
@@ -1822,12 +1065,12 @@
             const resultsDiv = document.getElementById('individual-player-results');
             const selectedIdInput = document.getElementById('selected-player-id');
             const clearButton = document.getElementById('clear-player-search');
+            if(!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
 
             const filterAndDisplay = () => {
                 const searchTerm = searchInput.value.toLowerCase();
                 const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm)).sort((a, b) => a.name.localeCompare(b.name));
-                
-                resultsDiv.innerHTML = filtered.map(player => `<div class="p-2 cursor-pointer hover:bg-gray-100" data-player-id="${player.id}">${player.name}</div>`).join('');
+                resultsDiv.innerHTML = filtered.map(player => `<div class="p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
                 resultsDiv.classList.remove('hidden');
             };
 
@@ -1843,22 +1086,16 @@
 
             searchInput.addEventListener('input', filterAndDisplay);
             searchInput.addEventListener('focus', filterAndDisplay);
-            searchInput.addEventListener('blur', () => {
-                setTimeout(() => {
-                    if (!resultsDiv.matches(':hover')) {
-                        resultsDiv.classList.add('hidden');
-                    }
-                }, 150);
-            });
+            searchInput.addEventListener('blur', () => setTimeout(() => resultsDiv.classList.add('hidden'), 150));
 
             clearButton.addEventListener('mousedown', (e) => {
                 e.preventDefault(); 
                 searchInput.value = '';
                 selectedIdInput.value = '';
-                document.getElementById('individual-stats-table').querySelector('tbody').innerHTML = '';
+                document.getElementById('individual-stats-table').innerHTML = '';
                 document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
                 searchInput.focus();
-                filterAndDisplay();
+                filterAndDisplay(); // Show all players again
             });
             
             if(allPlayersData.length > 0) {
@@ -1869,135 +1106,261 @@
                 }
             }
         }
+        
+        // --- FLUJO PRINCIPAL Y NAVEGACIÓN ---
+        
+        function getTabContentHTML(tabId) {
+            const titles = {
+                'leaderboard-content': 'Tabla de Posiciones', 'chamigo-content': 'Chamigo', 'tt-content': 'Tercer Tiempo (TT)',
+                'presentismo-content': 'Presentismo', 'ausentismo-content': 'Ausentismo', 'estadisticas-content': 'Estadísticas',
+                'equipos-content': 'Equipos', 'fixture-content': 'Fixture', 'individual-stats-content': 'Histórico'
+            };
+            const title = titles[tabId] || 'Contenido';
+            
+            let baseHtml = `<div id="${tabId}" class="main-content-container space-y-6">
+                <h2 class="tab-title text-2xl font-bold tracking-tight uppercase text-center">${title}</h2>`;
+            
+            const prefix = tabId.replace('-content', '');
+            
+            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas'].includes(prefix)) {
+                 baseHtml += `
+                    <div id="${prefix}-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
+                        <span>Seleccionar Torneo</span><i class="fas fa-chevron-down toggle-icon"></i>
+                    </div>
+                    <div id="${prefix}-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 hidden items-end">
+                        <button id="${prefix}-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm">Torneo Actual</button>
+                        <div><label for="${prefix}-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="${prefix}-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
+                        <div><label for="${prefix}-period-select" class="block text-sm font-medium mb-1">Torneo:</label><select id="${prefix}-period-select" class="mt-1 block w-full p-2 text-sm shadow-sm"><option value="apertura">Apertura</option><option value="clausura">Clausura</option><option value="total">Totales</option></select></div>
+                    </div>`;
+            }
+            
+            switch(tabId) {
+                case 'leaderboard-content': case 'chamigo-content': case 'tt-content': case 'presentismo-content': case 'ausentismo-content':
+                    baseHtml += `<div class="table-container">
+                                    <p id="${prefix}-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                                    <table id="${prefix}-table" class="hidden"></table>
+                                 </div>`;
+                    break;
+                case 'estadisticas-content':
+                     baseHtml += `
+                        <div class="table-container overflow-x-auto">
+                            <p id="estadisticas-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                            <table id="estadisticas-table" class="hidden"></table>
+                        </div>`;
+                    break;
+                case 'equipos-content':
+                    baseHtml += `<p id="equipos-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                                 <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>`;
+                    break;
+                case 'fixture-content':
+                     baseHtml += `
+                        <div id="fixture-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
+                            <span>Elegir otro partido</span><i class="fas fa-chevron-down toggle-icon"></i>
+                        </div>
+                        <div id="fixture-filters-collapsible" class="hidden space-y-4 pt-4">
+                            <div class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                                <button id="fixture-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm">Torneo Actual</button>
+                                <div><label for="fixture-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="fixture-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
+                                <div><label for="fixture-month-select" class="block text-sm font-medium mb-1">Mes:</label><select id="fixture-month-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
+                            </div>
+                            <p id="fixture-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando partidos...</p>
+                            <h3 class="text-xl font-semibold mb-2">Partidos del Mes</h3>
+                            <div id="fixture-matches-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"></div>
+                        </div>
+                        <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
+                            <div class="md:w-[65%] min-w-0"><div id="soccer-field-container" class="rounded-lg overflow-hidden"></div></div>
+                            <div id="fixture-details-display" class="flex-1 md:w-[35%] p-4 rounded-lg mt-6 md:mt-0">
+                                <h3 class="font-semibold text-center mb-2">Asistentes al TT</h3>
+                                <div class="overflow-x-auto"><table id="tt-attendees-table" class="w-full"><tbody></tbody></table></div>
+                            </div>
+                        </div>`;
+                    break;
+                case 'individual-stats-content':
+                    baseHtml += `
+                        <div class="mb-6">
+                            <label for="individual-player-search" class="block text-sm font-medium mb-1">Buscar Jugador:</label>
+                            <div class="relative">
+                                <input type="text" id="individual-player-search" placeholder="Escribe para buscar..." class="mt-1 block w-full p-2 shadow-sm">
+                                <button id="clear-player-search" class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"><i class="fas fa-times-circle"></i></button>
+                                <div id="individual-player-results" class="absolute z-10 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                            </div>
+                            <input type="hidden" id="selected-player-id">
+                        </div>
+                        <div class="table-container overflow-x-auto">
+                            <p id="individual-stats-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                            <table id="individual-stats-table" class="hidden"></table>
+                        </div>`;
+                    break;
+            }
+            
+            baseHtml += `</div>`;
+            return baseHtml;
+        }
 
-        // --- Event Listeners e Inicialización General ---
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Aplicación LA CLANDE cargada!');
-            hamburgerButton.addEventListener('click', toggleSideMenu);
-            overlay.addEventListener('click', toggleSideMenu);
-            applyInitialResponsiveStyles();
-            initializeApp();
+        function activateTab(tabId) {
+            const filtersBeforeRender = saveFiltersState();
+            DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
+            restoreFiltersState(filtersBeforeRender);
+            
+            DOMElements.tabButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabId);
+            });
+            
+            const renderFunctions = {
+                'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
+                'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
+                'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
+            };
 
-            const individualStatsTableBody = document.querySelector('#individual-stats-table tbody');
-            if (individualStatsTableBody) {
-                individualStatsTableBody.addEventListener('click', (e) => {
-                    const yearRow = e.target.closest('.year-total-row');
-                    if (yearRow) {
-                        const year = yearRow.dataset.year;
-                        const toggleIcon = yearRow.querySelector('.toggle-details');
-                        if (year && toggleIcon) {
-                            const periodRows = document.querySelectorAll(`.period-details-row[data-year-parent="${year}"]`);
-                            periodRows.forEach(row => {
-                                row.classList.toggle('hidden');
-                            });
-                            toggleIcon.classList.toggle('fa-plus-circle');
-                            toggleIcon.classList.toggle('fa-minus-circle');
-                        }
-                    }
+            setupDynamicEventListeners(tabId);
+            
+            if (renderFunctions[tabId]) {
+                renderFunctions[tabId]();
+            }
+            
+            localStorage.setItem('lastActiveTab', tabId);
+            const hash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === tabId);
+            if (hash && window.location.hash !== hash) {
+                history.pushState(null, '', hash);
+            }
+        }
+        
+        function saveFiltersState() {
+            const activeFilters = DOMElements.mainContentArea.querySelectorAll('select, input');
+            const state = {};
+            activeFilters.forEach(el => {
+                if (el.id) {
+                    state[el.id] = el.value;
+                }
+            });
+            return state;
+        }
+
+        function restoreFiltersState(state) {
+            Object.keys(state).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = state[id];
+                }
+            });
+        }
+
+        function setupDynamicEventListeners(tabId) {
+            const prefix = tabId.replace('-content', '');
+            const renderFn = renderFunctions[tabId];
+
+            const filterToggle = document.getElementById(`${prefix}-filter-toggle`);
+            const filtersCollapsible = document.getElementById(`${prefix}-filters-collapsible`);
+            
+            if(filterToggle && filtersCollapsible) {
+                filterToggle.addEventListener('click', () => {
+                    filtersCollapsible.classList.toggle('hidden');
+                    filterToggle.classList.toggle('visible-content');
+                    filterToggle.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-up');
                 });
             }
-        });
-        
-        // --- Lógica UI ---
-        const setupCollapsibleToggle = (toggleId, collapsibleId) => {
-             const toggleButton = document.getElementById(toggleId);
-             const collapsibleContent = document.getElementById(collapsibleId);
-             if(!toggleButton || !collapsibleContent) return;
-             toggleButton.addEventListener('click', () => {
-                 if (toggleId === 'fixture-filter-toggle') {
-                     const detailsVisible = !document.getElementById('fixture-visual-details-container').classList.contains('hidden');
-                     if (detailsVisible) {
-                         document.getElementById('fixture-visual-details-container').classList.add('hidden');
-                         collapsibleContent.classList.remove('hidden');
-                         return;
-                     }
-                 }
-                 
-                 collapsibleContent.classList.toggle('hidden');
-                 toggleButton.classList.toggle('hidden-content');
-                 toggleButton.classList.toggle('visible-content');
-                 const icon = toggleButton.querySelector('.toggle-icon');
-                 if (icon) {
-                     icon.classList.toggle('fa-chevron-down');
-                     icon.classList.toggle('fa-chevron-up');
-                 }
-             });
-        };
-        ['leaderboard-filter-toggle', 'chamigo-filter-toggle', 'tt-filter-toggle', 'presentismo-filter-toggle', 'ausentismo-filter-toggle', 'estadisticas-filter-toggle', 'equipos-filter-toggle'].forEach(id => {
-            setupCollapsibleToggle(id, id.replace('-toggle', 's-collapsible'));
-        });
-        setupCollapsibleToggle('fixture-filter-toggle', 'fixture-collapsible-content');
 
-         const darkModeToggle = document.getElementById('dark-mode-toggle');
-         const darkModeIcon = document.getElementById('dark-mode-icon');
-         function applyTheme(theme) {
-              document.body.classList.toggle('dark-mode', theme === 'dark');
-              if (darkModeIcon) {
-                  darkModeIcon.classList.toggle('fa-sun', theme === 'dark');
-                  darkModeIcon.classList.toggle('fa-moon', theme !== 'dark');
-              }
-              localStorage.setItem('theme', theme);
-         }
-         darkModeToggle.addEventListener('click', () => {
-             applyTheme(document.body.classList.contains('dark-mode') ? 'light' : 'dark');
-         });
-         applyTheme(localStorage.getItem('theme') || 'light');
-        
-        function setTodayFilters(sectionPrefix, isMonthFilter = false) {
-             const today = new Date();
-             const yearSelect = document.getElementById(`${sectionPrefix}-year-select`);
-             const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${sectionPrefix}-month-select`) : document.getElementById(`${sectionPrefix}-period-select`);
-             
-             if(yearSelect) yearSelect.value = today.getFullYear();
-             if(periodOrMonthSelect) {
-                 periodOrMonthSelect.value = isMonthFilter ? today.getMonth() + 1 : (today.getMonth() <= 5 ? 'apertura' : 'clausura');
-             }
-             if(yearSelect) yearSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            if (renderFn && !tabId.startsWith('fixture') && !tabId.startsWith('estadisticas')) {
+                document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => { setTodayFilters(prefix); renderFn(); });
+                document.getElementById(`${prefix}-year-select`)?.addEventListener('change', renderFn);
+                document.getElementById(`${prefix}-period-select`)?.addEventListener('change', renderFn);
+            }
+            if (tabId === 'estadisticas-content') {
+                 const resetAndRender = () => { currentEstadisticasData = []; renderEstadisticas(); };
+                 document.getElementById('estadisticas-hoy-button')?.addEventListener('click', () => { setTodayFilters('estadisticas'); resetAndRender(); });
+                 document.getElementById('estadisticas-year-select')?.addEventListener('change', resetAndRender);
+                 document.getElementById('estadisticas-period-select')?.addEventListener('change', resetAndRender);
+
+                 const table = document.getElementById('estadisticas-table');
+                 table?.addEventListener('click', (e) => {
+                     const th = e.target.closest('th[data-sort]');
+                     if (!th) return;
+                     const newCriterion = th.dataset.sort;
+                     if (estadisticasSortState.criterion === newCriterion) {
+                         estadisticasSortState.order = estadisticasSortState.order === 'desc' ? 'asc' : 'desc';
+                     } else {
+                         estadisticasSortState.criterion = newCriterion;
+                         estadisticasSortState.order = 'desc';
+                     }
+                     renderEstadisticas(true); // Re-render from cache
+                 });
+            }
+            if (tabId === 'fixture-content') {
+                populateYearSelects('fixture-year-select');
+                populateMonthSelects('fixture-month-select');
+                // CORRECCIÓN 1: Se llama a setTodayFilters sin condiciones
+                setTodayFilters('fixture', true);
+                document.getElementById('fixture-hoy-button')?.addEventListener('click', () => { setTodayFilters('fixture', true); renderFixture(true); });
+                document.getElementById('fixture-year-select')?.addEventListener('change', () => renderFixture(true));
+                document.getElementById('fixture-month-select')?.addEventListener('change', () => renderFixture(true));
+            }
+            if (tabId === 'individual-stats-content') {
+                setupPlayerSearch();
+            }
+            if (tabId.includes('content') && !tabId.includes('fixture') && !tabId.includes('individual')) {
+                populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
+            }
         }
         
-        document.querySelectorAll('select[id$="-select"]').forEach(select => {
-            select.addEventListener('change', () => {
-                const tabId = select.closest('.tab-content').id;
+        const renderFunctions = {
+            'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
+            'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
+            'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
+        };
+
+        async function initializeApp() {
+            try {
+                const { data: players, error: pError } = await supabaseClient.from('players').select('*');
+                const { data: matches, error: mError } = await supabaseClient.from('matches').select('match_date');
+
+                if (pError || mError) throw pError || mError;
+                
+                allPlayersData = players;
+                allMatchDates = matches;
+
+                const hash = window.location.hash;
+                const storedTabId = localStorage.getItem('lastActiveTab');
+                let initialTabId = 'leaderboard-content';
+
+                if (hash && hashToTabMap[hash]) {
+                    initialTabId = hashToTabMap[hash];
+                } else if (storedTabId && document.querySelector(`.tab-button[data-tab="${storedTabId}"]`)) {
+                    initialTabId = storedTabId;
+                }
+                
+                activateTab(initialTabId);
+
+            } catch (error) {
+                console.error("Error fatal durante la inicialización:", error);
+                DOMElements.mainContentArea.innerHTML = `<div class="main-content-container text-center text-red-500"><p>Error al cargar datos: ${error.message}</p></div>`;
+            }
+        }
+
+        function init() {
+            console.log('Aplicación LA CLANDE cargada y corregida!');
+            
+            applyTheme(localStorage.getItem('theme') || 'light');
+            
+            DOMElements.darkModeToggle.addEventListener('click', toggleTheme);
+            DOMElements.hamburgerButton.addEventListener('click', toggleSideMenu);
+            DOMElements.overlay.addEventListener('click', toggleSideMenu);
+            window.addEventListener('resize', applyInitialResponsiveStyles);
+            DOMElements.tabButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    activateTab(e.currentTarget.dataset.tab);
+                    if (window.innerWidth < 768) toggleSideMenu();
+                });
+            });
+            window.addEventListener('hashchange', () => {
+                const tabId = hashToTabMap[window.location.hash] || 'leaderboard-content';
                 activateTab(tabId);
             });
-        });
-        
-        document.querySelectorAll('button[id$="-hoy-button"]').forEach(button => {
-            const prefix = button.id.replace('-hoy-button', '');
-            button.addEventListener('click', () => setTodayFilters(prefix, prefix === 'fixture'));
-        });
 
-        window.addEventListener('resize', () => {
-            applyInitialResponsiveStyles();
-            if (document.querySelector('.tab-button.active')?.dataset.tab === 'fixture-content' && lastSelectedFixtureMatchId) {
-                renderFixtureDetails(lastSelectedFixtureMatchId);
-            }
-        });
-        
-        function applyInitialResponsiveStyles() {
-            const isMobile = window.innerWidth < 768;
-            if (hamburgerButton) hamburgerButton.classList.toggle('hidden', !isMobile);
-            if (!isMobile) {
-                if (sideMenu) sideMenu.classList.remove('open');
-                if (overlay) overlay.classList.remove('open');
-                document.body.classList.remove('overflow-hidden');
-            }
+            initializeApp();
         }
-        
-        function toggleSideMenu() {
-            const isMobile = window.innerWidth < 768;
-            if (isMobile) {
-                sideMenu.classList.toggle('open');
-                overlay.classList.toggle('open');
-                document.body.classList.toggle('overflow-hidden'); 
-                
-                if (sideMenu.classList.contains('open')) {
-                    hamburgerButton.classList.add('hidden');
-                } else {
-                    hamburgerButton.classList.remove('hidden');
-                }
-            }
-        }
+
+        init();
+    });
     </script>
 </body>
 </html>
