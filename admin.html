@@ -1178,11 +1178,21 @@
 
                 listContainer.querySelectorAll('.match-item').forEach(item => {
                     const match = AppState.matches.find(m => m.id == item.dataset.matchId);
+                    let hasCompletion = false; // Variable para determinar si el partido está "completo" para esta sección
 
-                    // Determinar si el partido tiene TT o Chamigo asignado
-                    const hasTtAttendees = (match.tt_attendees && match.tt_attendees.length > 0);
-                    const hasChamigoVotes = (match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0);
-                    const hasCompletion = hasTtAttendees || hasChamigoVotes; // Nueva condición
+                    if (prefix === 'results') {
+                        // Para la sección "Resultados": verde si tiene resultado, rojo si no.
+                        hasCompletion = !!match.result;
+                    } else if (prefix === 'chamigo') {
+                        // Para la sección "Chamigo": verde si al menos un jugador tiene un voto, rojo si no.
+                        hasCompletion = (match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0);
+                    } else if (prefix === 'tt') {
+                        // Para la sección "Asistencia TT": verde si al menos un jugador ha asistido, rojo si no.
+                        hasCompletion = (match.tt_attendees && match.tt_attendees.length > 0);
+                    } else {
+                        // Comportamiento por defecto para otras secciones (como 'edit-match') si es necesario
+                        hasCompletion = !!match.result; // Mantener la lógica original o ajustar según necesidad
+                    }
 
                     item.classList.toggle('has-result', hasCompletion);
                     item.classList.toggle('no-result', !hasCompletion);
@@ -1193,11 +1203,6 @@
                         handleMatchSelection(e.currentTarget.dataset.matchId, prefix);
                     });
                 });
-                
-                const firstItem = listContainer.querySelector('.match-item');
-                if (firstItem) {
-                    firstItem.click();
-                }
             };
             
             yearSelect.addEventListener('change', renderList);
@@ -1270,13 +1275,18 @@
         }
 
         async function handleRegisterResult() {
-            const result = document.getElementById('match-result').value;
-            const { error } = await supabase.from('matches').update({ result }).eq('id', AppState.selectedMatchId);
+            let resultValue = document.getElementById('match-result').value;
+            // Si el valor es una cadena vacía, lo convertimos a null antes de enviar a Supabase
+            if (resultValue === "") {
+                resultValue = null;
+            }
+
+            const { error } = await supabase.from('matches').update({ result: resultValue }).eq('id', AppState.selectedMatchId);
             if(error) { showNotification('Error al registrar resultado', 'error'); } 
             else {
                  showNotification('Resultado registrado!', 'success');
                  const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
-                 if (matchInState) matchInState.result = result;
+                 if (matchInState) matchInState.result = resultValue; // Actualiza el estado local también
                  populateMatchFilters('results');
             }
         }
@@ -1350,12 +1360,15 @@
                 if (count > 0) votes[item.dataset.id] = count;
             });
             
-            const { error } = await supabase.from('matches').update({ chamigo_votes: votes }).eq('id', AppState.selectedMatchId);
+            // Si no hay votos, enviamos null; de lo contrario, enviamos el objeto de votos.
+            const chamigoData = Object.keys(votes).length === 0 ? null : votes;
+
+            const { error } = await supabase.from('matches').update({ chamigo_votes: chamigoData }).eq('id', AppState.selectedMatchId);
             if (error) { showNotification('Error al guardar votos de Chamigo', 'error'); } 
             else {
                 showNotification('Votos de Chamigo guardados!', 'success');
                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
-                if (matchInState) matchInState.chamigo_votes = votes;
+                if (matchInState) matchInState.chamigo_votes = chamigoData; // Actualiza el estado local también
             }
         }
         
