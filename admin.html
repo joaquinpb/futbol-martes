@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -176,6 +175,16 @@
             background-color: var(--bg-secondary);
             border-color: var(--border-color);
         }
+
+        /* Estilo para el botón desplegable de la encuesta de WhatsApp */
+        .collapsible-toggle-button {
+            background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover));
+            color: var(--button-text-color);
+            transition: background 0.3s ease;
+        }
+        .collapsible-toggle-button.visible-content {
+            background: linear-gradient(to right, #e53e3e, var(--danger-color)); /* Rojo cuando está desplegado */
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -341,6 +350,7 @@
             userRole: null,
             selectedMatchId: null,
             isInitialized: false,
+            isInitializing: false, // Prevents multiple initializations
             activePlayerElement: null,
         };
 
@@ -856,7 +866,21 @@
                 </div>
                 <button id="register-chamigo-button" class="w-full mt-4 px-6 py-3 button-warning font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                     Registrar Chamigo(s)
-                </button>`;
+                </button>
+                <!-- Nueva sección para la encuesta de WhatsApp -->
+                <div class="mt-6">
+                    <button id="chamigo-whatsapp-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold w-full">
+                        <span>Encuesta Whatsapp</span><i class="fas fa-chevron-down toggle-icon"></i>
+                    </button>
+                    <div id="chamigo-whatsapp-content" class="hidden card rounded-xl shadow-sm p-6 mt-4 space-y-4">
+                        <div class="whatsapp-poll-display whitespace-pre-wrap text-sm" id="whatsapp-poll-text">
+                            <!-- Contenido de la encuesta inyectado aquí -->
+                        </div>
+                        <button id="copy-whatsapp-poll" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition hover:opacity-90">
+                            Copiar al Portapapeles
+                        </button>
+                    </div>
+                </div>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Chamigo', renderMatchSelectionTemplate('chamigo', panelContent));
             populateMatchFilters('chamigo');
         };
@@ -1206,11 +1230,11 @@
                     });
                 });
 
+                // Seleccionar el primer partido automáticamente
                 const firstMatchItem = listContainer.querySelector('.match-item');
                 if (firstMatchItem) {
-                    // Simula un clic en el primer elemento para activarlo y mostrar su panel
-                    firstMatchItem.click();
-                }                
+                    firstMatchItem.click(); 
+                }
             };
             
             yearSelect.addEventListener('change', renderList);
@@ -1251,6 +1275,58 @@
             if (!panel.dataset.listenersAdded) {
                 panel.querySelector('#register-chamigo-button').addEventListener('click', handleRegisterChamigo);
                 panel.dataset.listenersAdded = 'true';
+            }
+
+            // Lógica para la nueva sección de Encuesta Whatsapp
+            const whatsappPollTextDiv = document.getElementById('whatsapp-poll-text');
+            const copyWhatsappPollBtn = document.getElementById('copy-whatsapp-poll');
+            const toggleButton = document.getElementById('chamigo-whatsapp-toggle');
+            const collapsibleContent = document.getElementById('chamigo-whatsapp-content');
+
+            if (whatsappPollTextDiv && copyWhatsappPollBtn && toggleButton && collapsibleContent) {
+                const getPlayerName = id => (AppState.players.find(p => p.id == id) || { name: 'Jugador Desconocido' }).name;
+
+                const clarosPlayersNames = (match.team_white_players || []).map(getPlayerName).join(', ');
+                const oscurosPlayersNames = (match.team_dark_players || []).map(getPlayerName).join(', ');
+
+                let pollText = '';
+                if (oscurosPlayersNames) {
+                    pollText += '*Oscuros*\n' + oscurosPlayersNames + '\n\n';
+                }
+                if (clarosPlayersNames) {
+                    pollText += '*Claros*\n' + clarosPlayersNames;
+                }
+
+                whatsappPollTextDiv.textContent = pollText; // Usar textContent para preservar saltos de línea con whitespace-pre-wrap
+
+                // Configurar botón de copiar
+                copyWhatsappPollBtn.onclick = () => {
+                    const textToCopy = whatsappPollTextDiv.textContent;
+                    // Uso de document.execCommand('copy') para operaciones de portapapeles en iframes
+                    const el = document.createElement('textarea');
+                    el.value = textToCopy;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                    showNotification('Texto copiado al portapapeles!', 'success');
+                };
+
+                // Configurar botón desplegable
+                if (!toggleButton.dataset.listenerAdded) { // Prevenir múltiples listeners
+                    toggleButton.addEventListener('click', () => {
+                        collapsibleContent.classList.toggle('hidden');
+                        toggleButton.classList.toggle('visible-content'); // Para cambio de color
+                        toggleButton.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-up');
+                        toggleButton.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-down');
+                    });
+                    toggleButton.dataset.listenerAdded = 'true';
+                }
+                // Resetear estado del desplegable al seleccionar un nuevo partido
+                collapsibleContent.classList.add('hidden');
+                toggleButton.classList.remove('visible-content');
+                toggleButton.querySelector('.toggle-icon')?.classList.remove('fa-chevron-up');
+                toggleButton.querySelector('.toggle-icon')?.classList.add('fa-chevron-down');
             }
         }
 
