@@ -1178,8 +1178,14 @@
 
                 listContainer.querySelectorAll('.match-item').forEach(item => {
                     const match = AppState.matches.find(m => m.id == item.dataset.matchId);
-                    item.classList.toggle('has-result', !!match.result);
-                    item.classList.toggle('no-result', !match.result);
+
+                    // Determinar si el partido tiene TT o Chamigo asignado
+                    const hasTtAttendees = (match.tt_attendees && match.tt_attendees.length > 0);
+                    const hasChamigoVotes = (match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0);
+                    const hasCompletion = hasTtAttendees || hasChamigoVotes; // Nueva condición
+
+                    item.classList.toggle('has-result', hasCompletion);
+                    item.classList.toggle('no-result', !hasCompletion);
                     
                     item.addEventListener('click', (e) => {
                         listContainer.querySelectorAll('.match-item').forEach(i => i.classList.remove('selected'));
