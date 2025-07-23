@@ -814,8 +814,14 @@
             const getPlayerName = id => (allPlayersData.find(p => p.id === id) || {name: 'ID Desconocido'}).name;
             
             ttAttendeesTableBody.innerHTML = (Array.isArray(tt_attendees) && tt_attendees.length > 0)
-                ? tt_attendees.map(id => `<tr><td class="p-2 text-center">${getPlayerName(id)}</td></tr>`).join('')
-                : `<tr><td class="p-2 text-center">No hay asistentes al TT.</td></tr>`;
+                ? tt_attendees.map((id, index) => `
+                    <tr class="${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'}">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-200">
+                            ${getPlayerName(id)}
+                        </td>
+                    </tr>
+                  `).join('')
+                : `<tr><td class="px-4 py-4 text-center text-sm text-gray-500" colspan="1">No hay asistentes al TT.</td></tr>`;
 
             const isHorizontalField = window.innerWidth >= 768;
             soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
@@ -1171,7 +1177,20 @@
                             <div class="md:w-[65%] min-w-0"><div id="soccer-field-container" class="rounded-lg overflow-hidden"></div></div>
                             <div id="fixture-details-display" class="flex-1 md:w-[35%] p-4 rounded-lg mt-6 md:mt-0">
                                 <h3 class="font-semibold text-center mb-2">Asistentes al TT</h3>
-                                <div class="overflow-x-auto"><table id="tt-attendees-table" class="w-full"><tbody></tbody></table></div>
+                                <div class="overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                                    <table id="tt-attendees-table" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead class="bg-gray-50 dark:bg-gray-800">
+                                            <tr>
+                                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    Jugador
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                                            <!-- Las filas se insertarán aquí con JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>`;
                     break;
