@@ -569,7 +569,8 @@
                     }
                 }
                 navigateTo(initialTab);
-                setupUserMenus(); // MOVED: Call after navigateTo to ensure tab-title exists
+                // setupUserMenus() is now called inside navigateTo after content is rendered
+                // This ensures the header element exists before trying to append the button.
 
             } catch (error) {
                 console.error("Fatal error during admin panel setup:", error);
@@ -783,6 +784,7 @@
             if (typeof renderFunction === 'function') {
                 renderFunction();
                 localStorage.setItem('lastAdminTab', tabId);
+                setupUserMenus(); // MOVED: Call here to ensure it runs on every tab render
             } else {
                 DOMElements.adminContent.innerHTML = `<h1 class="text-2xl font-bold">Contenido para ${tabId} no implementado.</h1>`;
             }
@@ -886,6 +888,14 @@
             // Find the div containing the tab-title, which is always the first child of admin-content-area
             const desktopHeaderContainer = document.querySelector('#admin-content-area > div:first-child'); 
             
+            // Clear existing desktop user menu elements if they were previously created for a different tab
+            if (DOMElements.desktopUserMenuToggle && DOMElements.desktopUserMenuToggle.parentNode) {
+                DOMElements.desktopUserMenuToggle.parentNode.removeChild(DOMElements.desktopUserMenuToggle);
+                DOMElements.desktopUserMenuDropdown.parentNode.removeChild(DOMElements.desktopUserMenuDropdown);
+                DOMElements.desktopUserMenuToggle = null;
+                DOMElements.desktopUserMenuDropdown = null;
+            }
+
             if (desktopHeaderContainer && window.innerWidth >= 768) { // Only for desktop
                 // Ensure the container is relative for absolute positioning of the button/dropdown
                 desktopHeaderContainer.classList.add('relative'); 
@@ -917,12 +927,15 @@
             }
 
             // Mobile User Menu (already in HTML, just attach listeners)
-            if (DOMElements.mobileUserMenuToggle) {
-                DOMElements.mobileUserMenuToggle.addEventListener('click', (e) => {
+            // No need to recreate, just ensure listeners are attached (they are in setupEventListeners)
+            // and visibility is handled. The mobile button is static in HTML.
+            if (DOMElements.mobileUserMenuToggle && !DOMElements.mobileUserMenuToggle.dataset.listenerAdded) {
+                 DOMElements.mobileUserMenuToggle.addEventListener('click', (e) => {
                     e.stopPropagation(); // Prevent document click from closing immediately
                     DOMElements.mobileUserMenuDropdown.classList.toggle('hidden');
                 });
                 DOMElements.mobileUserMenuDropdown.querySelector('#mobile-edit-profile-btn').addEventListener('click', showEditProfileModal);
+                DOMElements.mobileUserMenuToggle.dataset.listenerAdded = 'true'; // Mark as added
             }
         }
 
