@@ -1694,6 +1694,18 @@
             setTimeout(() => {
                 notificationModal.classList.add('hidden');
             }, 3000);
+
+            // Cerrar al clicar fuera del contenido de la notificación
+            const dismissNotification = (e) => {
+                // Si el clic no fue dentro del contenido de la notificación, ocultar
+                if (!notificationContent.contains(e.target)) {
+                    notificationModal.classList.add('hidden');
+                    clearTimeout(timeoutId); // Limpiar el timeout si se cierra manualmente
+                    notificationModal.removeEventListener('click', dismissNotification); // Remover listener para evitar duplicados
+                }
+            };
+            // Añadir listener al modal (que es el overlay)
+            notificationModal.addEventListener('click', dismissNotification);
         }
 
         function showModal(title, message) {
@@ -1703,6 +1715,16 @@
                 DOMElements.modal.classList.remove('hidden');
                 const confirmHandler = () => { cleanup(); resolve(true); };
                 const cancelHandler = () => { cleanup(); resolve(false); };
+
+                // Cerrar al clicar en el overlay
+                const dismissOnOverlayClick = (e) => {
+                    // Si el clic fue en el overlay (el modal mismo), no en el contenido del modal
+                    if (e.target === DOMElements.modal) {
+                        cleanup();
+                        resolve(false); // Se considera como una cancelación
+                    }
+                };
+                
                 const cleanup = () => {
                     DOMElements.modal.classList.add('hidden');
                     DOMElements.modalConfirm.removeEventListener('click', confirmHandler);
