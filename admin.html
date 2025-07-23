@@ -330,7 +330,7 @@
                     <div>
                         <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
                         <div class="relative">
-                            <input type="password" id="password" class="w-full p-2 border rounded-md pr-10" required>
+                            <input type="password" id="password" class="w-full p-2 border rounded-md pr-10" required autocomplete="current-password"> <!-- Added autocomplete -->
                             <button type="button" id="password-toggle" class="absolute inset-y-0 right-0 px-3 flex items-center text-text-secondary">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -397,7 +397,7 @@
                 <div>
                     <label for="profile-password" class="block text-sm font-medium mb-1">Nueva Contraseña (opcional)</label>
                     <div class="relative">
-                        <input type="password" id="profile-password" class="w-full p-2 border rounded-md pr-10" placeholder="Mínimo 8 caracteres">
+                        <input type="password" id="profile-password" class="w-full p-2 border rounded-md pr-10" placeholder="Mínimo 8 caracteres" autocomplete="new-password"> <!-- Added autocomplete -->
                         <button type="button" class="password-toggle absolute inset-y-0 right-0 px-3 flex items-center text-text-secondary">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -406,7 +406,7 @@
                 <div>
                     <label for="profile-confirm-password" class="block text-sm font-medium mb-1">Repetir Contraseña</label>
                     <div class="relative">
-                        <input type="password" id="profile-confirm-password" class="w-full p-2 border rounded-md pr-10">
+                        <input type="password" id="profile-confirm-password" class="w-full p-2 border rounded-md pr-10" autocomplete="new-password"> <!-- Added autocomplete -->
                         <button type="button" class="password-toggle absolute inset-y-0 right-0 px-3 flex items-center text-text-secondary">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -834,7 +834,8 @@
 
             // Player Assignment Modal Listeners
             DOMElements.assignToClarosBtn.addEventListener('click', () => movePlayerToTeam('team-claros'));
-            DOMElements.assignToOscurosBtn.addEventListener(() => movePlayerToTeam('team-oscuros'));
+            // CORRECCIÓN: Añadir 'click' como primer argumento
+            DOMElements.assignToOscurosBtn.addEventListener('click', () => movePlayerToTeam('team-oscuros')); 
             DOMElements.assignModalCancelBtn.addEventListener('click', hidePlayerAssignmentModal);
             DOMElements.playerAssignmentModal.addEventListener('click', (e) => {
                 if (e.target.id === 'player-assignment-modal') {
@@ -882,39 +883,33 @@
         // --- USER PROFILE & EDITING ---
         function setupUserMenus() {
             // Desktop User Menu
-            const desktopHeader = document.querySelector('main').previousElementSibling; // The header above main content
+            const desktopHeader = document.querySelector('.tab-title').closest('div'); // Find the div containing the tab-title
             if (desktopHeader && window.innerWidth >= 768) { // Only for desktop
-                const titleContainer = desktopHeader.querySelector('.tab-title'); // Assuming tab-title is in desktop header
-                if (titleContainer) {
-                    // Create button
-                    DOMElements.desktopUserMenuToggle = document.createElement('button');
-                    DOMElements.desktopUserMenuToggle.id = 'desktop-user-menu-toggle';
-                    DOMElements.desktopUserMenuToggle.className = 'user-menu-button absolute top-1/2 right-4 -translate-y-1/2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-text-secondary';
-                    DOMElements.desktopUserMenuToggle.innerHTML = '<i class="fas fa-user-circle text-lg"></i>';
-                    
-                    // Create dropdown
-                    DOMElements.desktopUserMenuDropdown = document.createElement('div');
-                    DOMElements.desktopUserMenuDropdown.id = 'desktop-user-menu-dropdown';
-                    DOMElements.desktopUserMenuDropdown.className = 'user-menu-dropdown hidden';
-                    DOMElements.desktopUserMenuDropdown.innerHTML = `
-                        <button id="desktop-edit-profile-btn">Editar Perfil</button>
-                        <button class="signout-trigger">Cerrar Sesión</button>
-                    `;
-                    
-                    // Append to a relative container, e.g., the tab-title's parent or the main header
-                    const headerContainer = document.querySelector('#admin-content-area > div:first-child'); // The div containing the tab-title
-                    if (headerContainer) {
-                        headerContainer.classList.add('relative'); // Make it relative for absolute positioning
-                        headerContainer.appendChild(DOMElements.desktopUserMenuToggle);
-                        headerContainer.appendChild(DOMElements.desktopUserMenuDropdown);
-                    }
+                // Create button
+                DOMElements.desktopUserMenuToggle = document.createElement('button');
+                DOMElements.desktopUserMenuToggle.id = 'desktop-user-menu-toggle';
+                DOMElements.desktopUserMenuToggle.className = 'user-menu-button absolute top-1/2 right-4 -translate-y-1/2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-white'; /* text-white for desktop header */
+                DOMElements.desktopUserMenuToggle.innerHTML = '<i class="fas fa-user-circle text-lg"></i>';
+                
+                // Create dropdown
+                DOMElements.desktopUserMenuDropdown = document.createElement('div');
+                DOMElements.desktopUserMenuDropdown.id = 'desktop-user-menu-dropdown';
+                DOMElements.desktopUserMenuDropdown.className = 'user-menu-dropdown hidden';
+                DOMElements.desktopUserMenuDropdown.innerHTML = `
+                    <button id="desktop-edit-profile-btn">Editar Perfil</button>
+                    <button class="signout-trigger">Cerrar Sesión</button>
+                `;
+                
+                // Append to the header container
+                desktopHeader.classList.add('relative'); // Ensure it's relative for absolute positioning
+                desktopHeader.appendChild(DOMElements.desktopUserMenuToggle);
+                desktopHeader.appendChild(DOMElements.desktopUserMenuDropdown);
 
-                    DOMElements.desktopUserMenuToggle.addEventListener('click', (e) => {
-                        e.stopPropagation(); // Prevent document click from closing immediately
-                        DOMElements.desktopUserMenuDropdown.classList.toggle('hidden');
-                    });
-                    DOMElements.desktopUserMenuDropdown.querySelector('#desktop-edit-profile-btn').addEventListener('click', showEditProfileModal);
-                }
+                DOMElements.desktopUserMenuToggle.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent document click from closing immediately
+                    DOMElements.desktopUserMenuDropdown.classList.toggle('hidden');
+                });
+                DOMElements.desktopUserMenuDropdown.querySelector('#desktop-edit-profile-btn').addEventListener('click', showEditProfileModal);
             }
 
             // Mobile User Menu (already in HTML, just attach listeners)
