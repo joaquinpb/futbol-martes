@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -177,7 +176,27 @@
             background-color: var(--bg-secondary);
             border-color: var(--border-color);
         }
+
+        /* Estilo para el botón desplegable de la encuesta de WhatsApp */
+        .collapsible-toggle-button {
+            background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover));
+            color: var(--button-text-color);
+            transition: background 0.3s ease;
+        }
+        .collapsible-toggle-button.visible-content {
+            background: linear-gradient(to right, #e53e3e, var(--danger-color)); /* Rojo cuando está desplegado */
+        }
     </style>
+    <script>
+        // Script para aplicar el tema oscuro inmediatamente y prevenir el "flash"
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 </head>
 <body class="antialiased">
 
@@ -342,6 +361,7 @@
             userRole: null,
             selectedMatchId: null,
             isInitialized: false,
+            isInitializing: false, // Prevents multiple initializations
             activePlayerElement: null,
         };
 
@@ -840,9 +860,6 @@
                         <button id="register-match-button" class="flex-1 px-6 py-3 button-success font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                          Registrar Resultado
                         </button>
-                        <button id="delete-match-button" class="flex-1 px-6 py-3 button-danger font-semibold rounded-lg shadow-md hover:opacity-90 transition">
-                         Eliminar Partido
-                        </button>
                      </div>
                 </div>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Resultados de Partidos', renderMatchSelectionTemplate('results', panelContent));
@@ -857,7 +874,22 @@
                 </div>
                 <button id="register-chamigo-button" class="w-full mt-4 px-6 py-3 button-warning font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                     Registrar Chamigo(s)
-                </button>`;
+                </button>
+                <!-- Nueva sección para la encuesta de WhatsApp -->
+                <div class="mt-6 relative"> <!-- Añadido 'relative' para posicionar el botón de copiar -->
+                    <button id="chamigo-whatsapp-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-center font-semibold w-full relative"> <!-- Añadido 'relative' -->
+                        <span>Encuesta Whatsapp</span>
+                        <i class="fas fa-chevron-down toggle-icon absolute right-3 top-1/2 -translate-y-1/2"></i> <!-- Cambiado a 'absolute' -->
+                    </button>
+                    <div id="chamigo-whatsapp-content" class="hidden card rounded-xl shadow-sm p-6 mt-4 space-y-4 relative"> <!-- Añadido 'relative' para el botón de copiar -->
+                        <button id="copy-whatsapp-poll" class="absolute top-2 right-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-text-secondary">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <div class="whatsapp-poll-display whitespace-pre-wrap text-sm" id="whatsapp-poll-text">
+                            <!-- Contenido de la encuesta inyectado aquí -->
+                        </div>
+                    </div>
+                </div>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Chamigo', renderMatchSelectionTemplate('chamigo', panelContent));
             populateMatchFilters('chamigo');
         };
@@ -1167,6 +1199,8 @@
                     return;
                 }
 
+                filteredMatches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+                
                 listContainer.innerHTML = filteredMatches.map(match => {
                     const d = new Date(match.match_date);
                     const formattedDate = d.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'});
@@ -1179,8 +1213,24 @@
 
                 listContainer.querySelectorAll('.match-item').forEach(item => {
                     const match = AppState.matches.find(m => m.id == item.dataset.matchId);
-                    item.classList.toggle('has-result', !!match.result);
-                    item.classList.toggle('no-result', !match.result);
+                    let hasCompletion = false; // Variable para determinar si el partido está "completo" para esta sección
+
+                    if (prefix === 'results') {
+                        // Para la sección "Resultados": verde si tiene resultado, rojo si no.
+                        hasCompletion = !!match.result;
+                    } else if (prefix === 'chamigo') {
+                        // Para la sección "Chamigo": verde si al menos un jugador tiene un voto, rojo si no.
+                        hasCompletion = (match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0);
+                    } else if (prefix === 'tt') {
+                        // Para la sección "Asistencia TT": verde si al menos un jugador ha asistido, rojo si no.
+                        hasCompletion = (match.tt_attendees && match.tt_attendees.length > 0);
+                    } else {
+                        // Comportamiento por defecto para otras secciones (como 'edit-match') si es necesario
+                        hasCompletion = !!match.result; // Mantener la lógica original o ajustar según necesidad
+                    }
+
+                    item.classList.toggle('has-result', hasCompletion);
+                    item.classList.toggle('no-result', !hasCompletion);
                     
                     item.addEventListener('click', (e) => {
                         listContainer.querySelectorAll('.match-item').forEach(i => i.classList.remove('selected'));
@@ -1188,10 +1238,11 @@
                         handleMatchSelection(e.currentTarget.dataset.matchId, prefix);
                     });
                 });
-                
-                const firstItem = listContainer.querySelector('.match-item');
-                if (firstItem) {
-                    firstItem.click();
+
+                // Seleccionar el primer partido automáticamente
+                const firstMatchItem = listContainer.querySelector('.match-item');
+                if (firstMatchItem) {
+                    firstMatchItem.click(); 
                 }
             };
             
@@ -1223,7 +1274,6 @@
             panel.querySelector('#match-result').value = match.result || '';
             if (!panel.dataset.listenersAdded) {
                 panel.querySelector('#register-match-button').addEventListener('click', handleRegisterResult);
-                panel.querySelector('#delete-match-button').addEventListener('click', handleDeleteMatch);
                 panel.dataset.listenersAdded = 'true';
             }
         }
@@ -1233,6 +1283,58 @@
             if (!panel.dataset.listenersAdded) {
                 panel.querySelector('#register-chamigo-button').addEventListener('click', handleRegisterChamigo);
                 panel.dataset.listenersAdded = 'true';
+            }
+
+            // Lógica para la nueva sección de Encuesta Whatsapp
+            const whatsappPollTextDiv = document.getElementById('whatsapp-poll-text');
+            const copyWhatsappPollBtn = document.getElementById('copy-whatsapp-poll');
+            const toggleButton = document.getElementById('chamigo-whatsapp-toggle');
+            const collapsibleContent = document.getElementById('chamigo-whatsapp-content');
+
+            if (whatsappPollTextDiv && copyWhatsappPollBtn && toggleButton && collapsibleContent) {
+                const getPlayerName = id => (AppState.players.find(p => p.id == id) || { name: 'Jugador Desconocido' }).name;
+
+                const clarosPlayersNames = (match.team_white_players || []).map(getPlayerName).join(', ');
+                const oscurosPlayersNames = (match.team_dark_players || []).map(getPlayerName).join(', ');
+
+                let pollText = '';
+                if (oscurosPlayersNames) {
+                    pollText += '*Oscuros*\n' + oscurosPlayersNames + '\n\n';
+                }
+                if (clarosPlayersNames) {
+                    pollText += '*Claros*\n' + clarosPlayersNames;
+                }
+
+                whatsappPollTextDiv.textContent = pollText; // Usar textContent para preservar saltos de línea con whitespace-pre-wrap
+
+                // Configurar botón de copiar
+                copyWhatsappPollBtn.onclick = () => {
+                    const textToCopy = whatsappPollTextDiv.textContent;
+                    // Uso de document.execCommand('copy') para operaciones de portapapeles en iframes
+                    const el = document.createElement('textarea');
+                    el.value = textToCopy;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                    showNotification('Texto copiado al portapapeles!', 'success');
+                };
+
+                // Configurar botón desplegable
+                if (!toggleButton.dataset.listenerAdded) { // Prevenir múltiples listeners
+                    toggleButton.addEventListener('click', () => {
+                        collapsibleContent.classList.toggle('hidden');
+                        toggleButton.classList.toggle('visible-content'); // Para cambio de color
+                        toggleButton.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-up');
+                        toggleButton.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-down');
+                    });
+                    toggleButton.dataset.listenerAdded = 'true';
+                }
+                // Resetear estado del desplegable al seleccionar un nuevo partido
+                collapsibleContent.classList.add('hidden');
+                toggleButton.classList.remove('visible-content');
+                toggleButton.querySelector('.toggle-icon')?.classList.remove('fa-chevron-up');
+                toggleButton.querySelector('.toggle-icon')?.classList.add('fa-chevron-down');
             }
         }
 
@@ -1265,13 +1367,18 @@
         }
 
         async function handleRegisterResult() {
-            const result = document.getElementById('match-result').value;
-            const { error } = await supabase.from('matches').update({ result }).eq('id', AppState.selectedMatchId);
+            let resultValue = document.getElementById('match-result').value;
+            // Si el valor es una cadena vacía, lo convertimos a null antes de enviar a Supabase
+            if (resultValue === "") {
+                resultValue = null;
+            }
+
+            const { error } = await supabase.from('matches').update({ result: resultValue }).eq('id', AppState.selectedMatchId);
             if(error) { showNotification('Error al registrar resultado', 'error'); } 
             else {
                  showNotification('Resultado registrado!', 'success');
                  const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
-                 if (matchInState) matchInState.result = result;
+                 if (matchInState) matchInState.result = resultValue; // Actualiza el estado local también
                  populateMatchFilters('results');
             }
         }
@@ -1345,12 +1452,16 @@
                 if (count > 0) votes[item.dataset.id] = count;
             });
             
-            const { error } = await supabase.from('matches').update({ chamigo_votes: votes }).eq('id', AppState.selectedMatchId);
+            // Si no hay votos, enviamos null; de lo contrario, enviamos el objeto de votos.
+            const chamigoData = Object.keys(votes).length === 0 ? null : votes;
+
+            const { error } = await supabase.from('matches').update({ chamigo_votes: chamigoData }).eq('id', AppState.selectedMatchId);
             if (error) { showNotification('Error al guardar votos de Chamigo', 'error'); } 
             else {
                 showNotification('Votos de Chamigo guardados!', 'success');
                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
-                if (matchInState) matchInState.chamigo_votes = votes;
+                if (matchInState) matchInState.chamigo_votes = chamigoData;
+                populateMatchFilters('chamigo');
             }
         }
         
@@ -1388,6 +1499,7 @@
                 showNotification('Asistencia a TT guardada!', 'success');
                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
                 if (matchInState) matchInState.tt_attendees = attendees;
+                populateMatchFilters('tt');
             }
         }
         
@@ -1589,6 +1701,18 @@
             setTimeout(() => {
                 notificationModal.classList.add('hidden');
             }, 3000);
+
+            // Cerrar al clicar fuera del contenido de la notificación
+            const dismissNotification = (e) => {
+                // Si el clic no fue dentro del contenido de la notificación, ocultar
+                if (!notificationContent.contains(e.target)) {
+                    notificationModal.classList.add('hidden');
+                    clearTimeout(timeoutId); // Limpiar el timeout si se cierra manualmente
+                    notificationModal.removeEventListener('click', dismissNotification); // Remover listener para evitar duplicados
+                }
+            };
+            // Añadir listener al modal (que es el overlay)
+            notificationModal.addEventListener('click', dismissNotification);
         }
 
         function showModal(title, message) {
@@ -1598,6 +1722,16 @@
                 DOMElements.modal.classList.remove('hidden');
                 const confirmHandler = () => { cleanup(); resolve(true); };
                 const cancelHandler = () => { cleanup(); resolve(false); };
+
+                // Cerrar al clicar en el overlay
+                const dismissOnOverlayClick = (e) => {
+                    // Si el clic fue en el overlay (el modal mismo), no en el contenido del modal
+                    if (e.target === DOMElements.modal) {
+                        cleanup();
+                        resolve(false); // Se considera como una cancelación
+                    }
+                };
+                
                 const cleanup = () => {
                     DOMElements.modal.classList.add('hidden');
                     DOMElements.modalConfirm.removeEventListener('click', confirmHandler);
