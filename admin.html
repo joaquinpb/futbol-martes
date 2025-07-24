@@ -767,41 +767,52 @@
                 ${content}
             </div>`;
 
+        const cardTemplate = (title, body) => `
+            <div class="card rounded-xl shadow-sm overflow-hidden">
+                <h3 class="text-lg font-semibold text-center uppercase tracking-wider p-3 text-gray-800 bg-gray-100 dark:bg-gray-900 dark:text-gray-200">${title}</h3>
+                <div class="p-6">${body}</div>
+            </div>`;
+
         window.render_team_formation = () => {
-            const content = `
-                <div id="team-formation-container" class="flex flex-col lg:grid lg:grid-cols-2 gap-6">
-                    <div class="card rounded-xl shadow-sm p-6 space-y-4">
-                        <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
-                        <div>
-                            <h4 class="font-medium mb-2 text-secondary">Titulares</h4>
-                            <div id="titulares-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
-                        </div>
-                        <div>
-                            <h4 class="font-medium mb-2 text-secondary">Suplentes</h4>
-                            <div id="suplentes-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
-                        </div>
+            const leftCardBody = `
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium mb-2 text-secondary">Titulares</h4>
+                        <div id="titulares-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                     </div>
-                    <div class="card rounded-xl shadow-sm p-6 space-y-4">
-                        <h3 class="text-xl font-semibold">Equipos (<span id="total-selected-players">0</span>/10)</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <h4 class="font-semibold mb-2">Claros (<span id="claros-count">0</span>)</h4>
-                                <div id="team-claros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
-                            </div>
-                             <div>
-                                <h4 class="font-semibold mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
-                                <div id="team-oscuros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-gray-800"></div>
-                            </div>
-                        </div>
-                        <div class="pt-4">
-                            <label for="team-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
-                            <input type="date" id="team-match-date" class="w-full p-2 border rounded-md">
-                        </div>
-                        <button id="save-teams-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                            Guardar Partido
-                        </button>
+                    <div>
+                        <h4 class="font-medium mb-2 text-secondary">Suplentes</h4>
+                        <div id="suplentes-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                     </div>
                 </div>`;
+
+            const rightCardBody = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold mb-2">Claros (<span id="claros-count">0</span>)</h4>
+                            <div id="team-claros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
+                        </div>
+                         <div>
+                            <h4 class="font-semibold mb-2">Oscuros (<span id="oscuros-count">0</span>)</h4>
+                            <div id="team-oscuros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-gray-800"></div>
+                        </div>
+                    </div>
+                    <div class="pt-4">
+                        <label for="team-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
+                        <input type="date" id="team-match-date" class="w-full p-2 border rounded-md">
+                    </div>
+                    <button id="save-teams-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Guardar Partido
+                    </button>
+                </div>`;
+
+            const content = `
+                <div id="team-formation-container" class="flex flex-col lg:grid lg:grid-cols-2 gap-6">
+                    ${cardTemplate('JUGADORES', leftCardBody)}
+                    ${cardTemplate('EQUIPOS (<span id="total-selected-players">0</span>/10)', rightCardBody)}
+                </div>`;
+
             DOMElements.adminContent.innerHTML = tabContentTemplate('Armar Equipos', content);
             
             const titularesDiv = document.getElementById('titulares-players');
@@ -813,33 +824,35 @@
             });
 
             setupPlayerInteractions('team-formation-container');
-            document.getElementById('team-match-date').addEventListener('click', function() {
-                this.showPicker();
-            });
+            document.getElementById('team-match-date').addEventListener('click', function() { this.showPicker(); });
             document.getElementById('team-match-date').addEventListener('change', updateTeamCounts);
             document.getElementById('save-teams-button').addEventListener('click', handleSaveTeams);
         };
 
-        const renderMatchSelectionTemplate = (prefix, panelContent) => `
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-1 card rounded-xl shadow-sm p-6">
-                    <h3 class="text-xl font-semibold mb-4">Seleccionar Partido</h3>
-                    <div class="flex gap-2 mb-4">
-                        <select id="${prefix}-year-select" class="w-full p-2 border rounded-md"></select>
-                        <select id="${prefix}-month-select" class="w-full p-2 border rounded-md"></select>
-                    </div>
-                    <div id="${prefix}-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1 py-1">
-                       <p class="text-secondary">Cargando partidos...</p>
-                    </div>
+        const renderMatchSelectionTemplate = (prefix, panelTitle, panelContent) => {
+            const selectionCardBody = `
+                <div class="flex gap-2 mb-4">
+                    <select id="${prefix}-year-select" class="w-full p-2 border rounded-md"></select>
+                    <select id="${prefix}-month-select" class="w-full p-2 border rounded-md"></select>
                 </div>
-                 <div id="${prefix}-selection-panel" class="lg:col-span-2 card rounded-xl shadow-sm p-6 hidden">
-                    ${panelContent}
-                </div>
-            </div>`;
+                <div id="${prefix}-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1 py-1">
+                   <p class="text-secondary">Cargando partidos...</p>
+                </div>`;
+
+            const content = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1">
+                        ${cardTemplate('PARTIDO', selectionCardBody)}
+                    </div>
+                    <div class="lg:col-span-2" id="${prefix}-panel-container">
+                        ${cardTemplate(panelTitle, panelContent)}
+                    </div>
+                </div>`;
+            return content;
+        };
 
         window.render_match_results = () => {
             const panelContent = `
-                <h3 class="text-xl font-semibold mb-4">Registrar Resultado</h3>
                 <div class="space-y-4">
                      <div>
                         <label class="block text-sm font-medium mb-1">Fecha del Partido</label>
@@ -861,142 +874,140 @@
                         </button>
                      </div>
                 </div>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Resultados de Partidos', renderMatchSelectionTemplate('results', panelContent));
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Resultados de Partidos', renderMatchSelectionTemplate('results', 'RESULTADO', panelContent));
             populateMatchFilters('results');
         };
         
         window.render_chamigo_management = () => {
             const panelContent = `
-                <h3 class="text-xl font-semibold mb-4">Registrar Votos de Chamigo</h3>
                 <div id="chamigo-voting-players" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 max-h-[50vh] overflow-y-auto">
                     <p class="text-secondary col-span-full">Selecciona un partido para cargar los jugadores.</p>
                 </div>
                 <button id="register-chamigo-button" class="w-full mt-4 px-6 py-3 button-warning font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                     Registrar Chamigo(s)
                 </button>
-                <!-- Nueva sección para la encuesta de WhatsApp -->
-                <div class="mt-6 relative"> <!-- Añadido 'relative' para posicionar el botón de copiar -->
-                    <button id="chamigo-whatsapp-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-center font-semibold w-full relative"> <!-- Añadido 'relative' -->
+                <div class="mt-6 relative">
+                    <button id="chamigo-whatsapp-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-center font-semibold w-full relative">
                         <span>Encuesta Whatsapp</span>
-                        <i class="fas fa-chevron-down toggle-icon absolute right-3 top-1/2 -translate-y-1/2"></i> <!-- Cambiado a 'absolute' -->
+                        <i class="fas fa-chevron-down toggle-icon absolute right-3 top-1/2 -translate-y-1/2"></i>
                     </button>
-                    <div id="chamigo-whatsapp-content" class="hidden card rounded-xl shadow-sm p-6 mt-4 space-y-4 relative"> <!-- Añadido 'relative' para el botón de copiar -->
+                    <div id="chamigo-whatsapp-content" class="hidden card rounded-xl shadow-sm p-6 mt-4 space-y-4 relative">
                         <button id="copy-whatsapp-poll" class="absolute top-2 right-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-text-secondary">
                             <i class="fas fa-copy"></i>
                         </button>
-                        <div class="whatsapp-poll-display whitespace-pre-wrap text-sm" id="whatsapp-poll-text">
-                            <!-- Contenido de la encuesta inyectado aquí -->
-                        </div>
+                        <div class="whatsapp-poll-display whitespace-pre-wrap text-sm" id="whatsapp-poll-text"></div>
                     </div>
                 </div>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Chamigo', renderMatchSelectionTemplate('chamigo', panelContent));
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Chamigo', renderMatchSelectionTemplate('chamigo', 'VOTOS CHAMIGO', panelContent));
             populateMatchFilters('chamigo');
         };
 
         window.render_tt_attendance = () => {
              const panelContent = `
-                <h3 class="text-xl font-semibold mb-4">Registrar Asistencia a Tercer Tiempo</h3>
                 <div id="tt-attendance-players" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4 max-h-[50vh] overflow-y-auto">
                     <p class="text-secondary col-span-full">Selecciona un partido para cargar los jugadores.</p>
                 </div>
                 <button id="register-tt-button" class="w-full mt-4 px-6 py-3 button-purple font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                     Registrar Asistencia
                 </button>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Asistencia a TT', renderMatchSelectionTemplate('tt', panelContent));
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Asistencia a TT', renderMatchSelectionTemplate('tt', 'ASISTENCIA TT', panelContent));
             populateMatchFilters('tt');
         };
 
         window.render_edit_match = () => {
-            const panelContent = `
-                <div id="edit-match-content" class="flex flex-col lg:grid lg:grid-cols-2 gap-6">
-                    <div class="card rounded-xl shadow-sm p-6 space-y-4">
-                        <h3 class="text-xl font-semibold">Jugadores Disponibles</h3>
-                        <div>
-                            <h4 class="font-medium mb-2 text-secondary">Titulares</h4>
-                            <div id="edit-titulares-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
-                        </div>
-                        <div>
-                            <h4 class="font-medium mb-2 text-secondary">Suplentes</h4>
-                            <div id="edit-suplentes-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
-                        </div>
+            const leftCardBody = `
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium mb-2 text-secondary">Titulares</h4>
+                        <div id="edit-titulares-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                     </div>
-                    <div class="card rounded-xl shadow-sm p-6 space-y-4">
-                        <h3 class="text-xl font-semibold">Equipos del Partido</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <h4 class="font-semibold mb-2">Claros</h4>
-                                <div id="edit-team-claros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
-                            </div>
-                             <div>
-                                <h4 class="font-semibold mb-2">Oscuros</h4>
-                                <div id="edit-team-oscuros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-gray-800"></div>
-                            </div>
-                        </div>
-                        <div class="pt-4">
-                            <label for="edit-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
-                            <input type="date" id="edit-match-date" class="w-full p-2 border rounded-md">
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                            <button id="update-match-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition">
-                                Actualizar Partido
-                            </button>
-                            <button id="delete-match-from-edit-button" class="w-full px-6 py-3 button-danger font-semibold rounded-lg shadow-md transition">
-                                Eliminar Partido
-                            </button>
-                        </div>
+                    <div>
+                        <h4 class="font-medium mb-2 text-secondary">Suplentes</h4>
+                        <div id="edit-suplentes-players" class="player-list-container border border-border-color rounded-lg p-3 flex flex-wrap gap-2 min-h-[120px]"></div>
                     </div>
                 </div>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Editar Partido', renderMatchSelectionTemplate('edit', panelContent));
+            const rightCardBody = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-semibold mb-2">Claros</h4>
+                            <div id="edit-team-claros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-white dark:bg-gray-200"></div>
+                        </div>
+                         <div>
+                            <h4 class="font-semibold mb-2">Oscuros</h4>
+                            <div id="edit-team-oscuros" class="border border-border-color rounded-lg p-3 flex flex-wrap content-start gap-2 min-h-[180px] bg-gray-800"></div>
+                        </div>
+                    </div>
+                    <div class="pt-4">
+                        <label for="edit-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
+                        <input type="date" id="edit-match-date" class="w-full p-2 border rounded-md">
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                        <button id="update-match-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition">
+                            Actualizar Partido
+                        </button>
+                        <button id="delete-match-from-edit-button" class="w-full px-6 py-3 button-danger font-semibold rounded-lg shadow-md transition">
+                            Eliminar Partido
+                        </button>
+                    </div>
+                </div>`;
+
+            const panelContent = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    ${cardTemplate('JUGADORES', leftCardBody)}
+                    ${cardTemplate('EQUIPOS', rightCardBody)}
+                </div>`;
+            DOMElements.adminContent.innerHTML = tabContentTemplate('Editar Partido', renderMatchSelectionTemplate('edit', ' ', panelContent));
+            document.querySelector('#edit-panel-container > .card > h3').remove();
             populateMatchFilters('edit');
         };
 
         window.render_players_management = () => {
+            const formBody = `
+                <form id="player-form" class="space-y-4">
+                    <input type="hidden" id="player-id">
+                    <div>
+                        <label for="player-name" class="block text-sm font-medium mb-1">Nombre</label>
+                        <input type="text" id="player-name" class="w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="player-status" class="block text-sm font-medium mb-1">Estado</label>
+                        <select id="player-status" class="w-full p-2 border rounded-md">
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="player-role" class="block text-sm font-medium mb-1">Rol</label>
+                        <select id="player-role" class="w-full p-2 border rounded-md">
+                            <option value="Titular">Titular</option>
+                            <option value="Suplente">Suplente</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
+                        <button type="button" id="clear-player-form-button" class="flex-1 px-4 py-2 button-secondary font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
+                    </div>
+                </form>`;
+            const listBody = `
+                <div class="overflow-x-auto max-h-[60vh]">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs uppercase bg-muted">
+                            <tr>
+                                <th class="p-4">ID</th>
+                                <th class="p-4">Nombre</th>
+                                <th class="p-4">Estado</th>
+                                <th class="p-4">Rol</th>
+                            </tr>
+                        </thead>
+                        <tbody id="players-list-admin"></tbody>
+                    </table>
+                </div>`;
+
             const content = `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-1 card rounded-xl shadow-sm p-6">
-                        <h3 class="text-xl font-semibold mb-4">Añadir/Modificar Jugador</h3>
-                        <form id="player-form" class="space-y-4">
-                            <input type="hidden" id="player-id">
-                            <div>
-                                <label for="player-name" class="block text-sm font-medium mb-1">Nombre</label>
-                                <input type="text" id="player-name" class="w-full p-2 border rounded-md" required>
-                            </div>
-                            <div>
-                                <label for="player-status" class="block text-sm font-medium mb-1">Estado</label>
-                                <select id="player-status" class="w-full p-2 border rounded-md">
-                                    <option value="Activo">Activo</option>
-                                    <option value="Inactivo">Inactivo</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="player-role" class="block text-sm font-medium mb-1">Rol</label>
-                                <select id="player-role" class="w-full p-2 border rounded-md">
-                                    <option value="Titular">Titular</option>
-                                    <option value="Suplente">Suplente</option>
-                                </select>
-                            </div>
-                            <div class="flex gap-3 pt-2">
-                                <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
-                                <button type="button" id="clear-player-form-button" class="flex-1 px-4 py-2 button-secondary font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="lg:col-span-2 card rounded-xl shadow-sm p-6">
-                        <h3 class="text-xl font-semibold mb-4">Listado de Jugadores</h3>
-                        <div class="overflow-x-auto max-h-[60vh]">
-                            <table class="w-full text-sm text-left">
-                                <thead class="text-xs uppercase bg-muted">
-                                    <tr>
-                                        <th class="p-4">ID</th>
-                                        <th class="p-4">Nombre</th>
-                                        <th class="p-4">Estado</th>
-                                        <th class="p-4">Rol</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="players-list-admin"></tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <div class="lg:col-span-1">${cardTemplate('JUGADOR', formBody)}</div>
+                    <div class="lg:col-span-2">${cardTemplate('JUGADORES', listBody)}</div>
                 </div>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Jugadores', content);
             renderPlayersListAdmin();
@@ -1005,48 +1016,46 @@
         };
         
         window.render_user_management = () => {
-             const content = `
+             const formBody = `
+                <form id="user-form" class="space-y-4">
+                    <input type="hidden" id="user-id">
+                    <div>
+                        <label for="user-email" class="block text-sm font-medium mb-1">Email</label>
+                        <input type="email" id="user-email" class="w-full p-2 border rounded-md" readonly>
+                    </div>
+                    <div>
+                        <label for="user-name" class="block text-sm font-medium mb-1">Nombre</label>
+                        <input type="text" id="user-name" class="w-full p-2 border rounded-md">
+                    </div>
+                    <div>
+                        <label for="user-role" class="block text-sm font-medium mb-1">Rol</label>
+                        <select id="user-role" class="w-full p-2 border rounded-md">
+                            <option value="Operador">Operador</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
+                        <button type="button" id="clear-user-form-button" class="flex-1 px-4 py-2 button-secondary font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
+                    </div>
+                </form>`;
+            const listBody = `
+                <div class="overflow-x-auto max-h-[60vh]">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs uppercase bg-muted">
+                            <tr>
+                                <th class="p-4">Email</th>
+                                <th class="p-4">Nombre</th>
+                                <th class="p-4">Rol</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-list-admin"></tbody>
+                    </table>
+                </div>`;
+            const content = `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-1 card rounded-xl shadow-sm p-6">
-                        <h3 class="text-xl font-semibold mb-4">Editar Usuario</h3>
-                        <form id="user-form" class="space-y-4">
-                            <input type="hidden" id="user-id">
-                            <div>
-                                <label for="user-email" class="block text-sm font-medium mb-1">Email</label>
-                                <input type="email" id="user-email" class="w-full p-2 border rounded-md" readonly>
-                            </div>
-                            <div>
-                                <label for="user-name" class="block text-sm font-medium mb-1">Nombre</label>
-                                <input type="text" id="user-name" class="w-full p-2 border rounded-md">
-                            </div>
-                            <div>
-                                <label for="user-role" class="block text-sm font-medium mb-1">Rol</label>
-                                <select id="user-role" class="w-full p-2 border rounded-md">
-                                    <option value="Operador">Operador</option>
-                                    <option value="Admin">Admin</option>
-                                </select>
-                            </div>
-                            <div class="flex gap-3 pt-2">
-                                <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
-                                <button type="button" id="clear-user-form-button" class="flex-1 px-4 py-2 button-secondary font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="lg:col-span-2 card rounded-xl shadow-sm p-6">
-                        <h3 class="text-xl font-semibold mb-4">Listado de Usuarios</h3>
-                        <div class="overflow-x-auto max-h-[60vh]">
-                            <table class="w-full text-sm text-left">
-                                <thead class="text-xs uppercase bg-muted">
-                                    <tr>
-                                        <th class="p-4">Email</th>
-                                        <th class="p-4">Nombre</th>
-                                        <th class="p-4">Rol</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="users-list-admin"></tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <div class="lg:col-span-1">${cardTemplate('USUARIO', formBody)}</div>
+                    <div class="lg:col-span-2">${cardTemplate('USUARIOS', listBody)}</div>
                 </div>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Usuarios', content);
             renderUsersListAdmin();
@@ -1071,7 +1080,7 @@
                 if (!playerEl) return;
                 const playerId = playerEl.dataset.id;
                 const player = AppState.players.find(p => p.id == playerId);
-                const isEditMode = containerId === 'edit-match-content';
+                const isEditMode = containerId.includes('edit');
 
                 const suplentesList = document.getElementById(isEditMode ? 'edit-suplentes-players' : 'suplentes-players');
                 const titularesList = document.getElementById(isEditMode ? 'edit-titulares-players' : 'titulares-players');
@@ -1115,7 +1124,7 @@
         function movePlayerToTeam(teamId) {
             if (!AppState.activePlayerElement) return;
             
-            const isEditMode = AppState.activePlayerElement.closest('#edit-match-content');
+            const isEditMode = !!AppState.activePlayerElement.closest('#edit-match-content');
             const finalTeamId = isEditMode ? `edit-${teamId}` : teamId;
             
             const teamContainer = document.getElementById(finalTeamId);
@@ -1136,7 +1145,7 @@
 
             document.getElementById('claros-count').textContent = clarosCount;
             document.getElementById('oscuros-count').textContent = oscurosCount;
-            document.getElementById('total-selected-players').textContent = clarosCount + oscurosCount;
+            document.querySelector('#total-selected-players').textContent = clarosCount + oscurosCount;
             
             document.getElementById('save-teams-button').disabled = !(clarosCount === 5 && oscurosCount === 5 && matchDate);
         }
@@ -1194,9 +1203,11 @@
                 
                 if (filteredMatches.length === 0) {
                     listContainer.innerHTML = '<p class="text-secondary p-2">No hay partidos para este mes.</p>';
-                    document.getElementById(`${prefix}-selection-panel`).classList.add('hidden');
+                    document.getElementById(`${prefix}-panel-container`).classList.add('hidden');
                     return;
                 }
+                
+                document.getElementById(`${prefix}-panel-container`).classList.remove('hidden');
 
                 filteredMatches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
                 
@@ -1212,20 +1223,16 @@
 
                 listContainer.querySelectorAll('.match-item').forEach(item => {
                     const match = AppState.matches.find(m => m.id == item.dataset.matchId);
-                    let hasCompletion = false; // Variable para determinar si el partido está "completo" para esta sección
+                    let hasCompletion = false;
 
                     if (prefix === 'results') {
-                        // Para la sección "Resultados": verde si tiene resultado, rojo si no.
                         hasCompletion = !!match.result;
                     } else if (prefix === 'chamigo') {
-                        // Para la sección "Chamigo": verde si al menos un jugador tiene un voto, rojo si no.
                         hasCompletion = (match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0);
                     } else if (prefix === 'tt') {
-                        // Para la sección "Asistencia TT": verde si al menos un jugador ha asistido, rojo si no.
                         hasCompletion = (match.tt_attendees && match.tt_attendees.length > 0);
                     } else {
-                        // Comportamiento por defecto para otras secciones (como 'edit-match') si es necesario
-                        hasCompletion = !!match.result; // Mantener la lógica original o ajustar según necesidad
+                        hasCompletion = !!match.result;
                     }
 
                     item.classList.toggle('has-result', hasCompletion);
@@ -1238,7 +1245,6 @@
                     });
                 });
 
-                // Seleccionar el primer partido automáticamente
                 const firstMatchItem = listContainer.querySelector('.match-item');
                 if (firstMatchItem) {
                     firstMatchItem.click(); 
@@ -1255,8 +1261,8 @@
             const match = AppState.matches.find(m => m.id == matchId);
             if (!match) return;
             
-            const panel = document.getElementById(`${prefix}-selection-panel`);
-            panel.classList.remove('hidden');
+            const panelContainer = document.getElementById(`${prefix}-panel-container`);
+            panelContainer.classList.remove('hidden');
 
             const handlerMap = {
                 'results': setupResultsPanel,
@@ -1265,7 +1271,7 @@
                 'edit': setupEditMatchPanel,
             };
 
-            if(handlerMap[prefix]) handlerMap[prefix](panel, match);
+            if(handlerMap[prefix]) handlerMap[prefix](panelContainer, match);
         }
         
         function setupResultsPanel(panel, match) {
@@ -1284,7 +1290,6 @@
                 panel.dataset.listenersAdded = 'true';
             }
 
-            // Lógica para la nueva sección de Encuesta Whatsapp
             const whatsappPollTextDiv = document.getElementById('whatsapp-poll-text');
             const copyWhatsappPollBtn = document.getElementById('copy-whatsapp-poll');
             const toggleButton = document.getElementById('chamigo-whatsapp-toggle');
@@ -1304,12 +1309,10 @@
                     pollText += '*Claros*\n' + clarosPlayersNames;
                 }
 
-                whatsappPollTextDiv.textContent = pollText; // Usar textContent para preservar saltos de línea con whitespace-pre-wrap
+                whatsappPollTextDiv.textContent = pollText;
 
-                // Configurar botón de copiar
                 copyWhatsappPollBtn.onclick = () => {
                     const textToCopy = whatsappPollTextDiv.textContent;
-                    // Uso de document.execCommand('copy') para operaciones de portapapeles en iframes
                     const el = document.createElement('textarea');
                     el.value = textToCopy;
                     document.body.appendChild(el);
@@ -1319,17 +1322,15 @@
                     showNotification('Texto copiado al portapapeles!', 'success');
                 };
 
-                // Configurar botón desplegable
-                if (!toggleButton.dataset.listenerAdded) { // Prevenir múltiples listeners
+                if (!toggleButton.dataset.listenerAdded) {
                     toggleButton.addEventListener('click', () => {
                         collapsibleContent.classList.toggle('hidden');
-                        toggleButton.classList.toggle('visible-content'); // Para cambio de color
+                        toggleButton.classList.toggle('visible-content');
                         toggleButton.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-up');
                         toggleButton.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-down');
                     });
                     toggleButton.dataset.listenerAdded = 'true';
                 }
-                // Resetear estado del desplegable al seleccionar un nuevo partido
                 collapsibleContent.classList.add('hidden');
                 toggleButton.classList.remove('visible-content');
                 toggleButton.querySelector('.toggle-icon')?.classList.remove('fa-chevron-up');
@@ -1351,7 +1352,6 @@
             const updateBtn = panel.querySelector('#update-match-button');
             const deleteBtn = panel.querySelector('#delete-match-from-edit-button');
 
-            // Remove old listeners before adding new ones to prevent duplicates
             const newUpdateBtn = updateBtn.cloneNode(true);
             updateBtn.parentNode.replaceChild(newUpdateBtn, updateBtn);
             newUpdateBtn.addEventListener('click', handleUpdateMatch);
@@ -1367,7 +1367,6 @@
 
         async function handleRegisterResult() {
             let resultValue = document.getElementById('match-result').value;
-            // Si el valor es una cadena vacía, lo convertimos a null antes de enviar a Supabase
             if (resultValue === "") {
                 resultValue = null;
             }
@@ -1377,7 +1376,7 @@
             else {
                  showNotification('Resultado registrado!', 'success');
                  const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
-                 if (matchInState) matchInState.result = resultValue; // Actualiza el estado local también
+                 if (matchInState) matchInState.result = resultValue;
                  populateMatchFilters('results');
             }
         }
@@ -1390,7 +1389,7 @@
                 else {
                     showNotification('Partido eliminado.', 'success');
                     AppState.matches = AppState.matches.filter(m => m.id != AppState.selectedMatchId);
-                    document.getElementById('results-selection-panel').classList.add('hidden');
+                    document.getElementById('results-panel-container').classList.add('hidden');
                     populateMatchFilters('results');
                 }
             }
@@ -1404,7 +1403,7 @@
                 else {
                     showNotification('Partido eliminado.', 'success');
                     AppState.matches = AppState.matches.filter(m => m.id != AppState.selectedMatchId);
-                    document.getElementById('edit-selection-panel').classList.add('hidden');
+                    document.getElementById('edit-panel-container').classList.add('hidden');
                     populateMatchFilters('edit');
                 }
             }
@@ -1451,7 +1450,6 @@
                 if (count > 0) votes[item.dataset.id] = count;
             });
             
-            // Si no hay votos, enviamos null; de lo contrario, enviamos el objeto de votos.
             const chamigoData = Object.keys(votes).length === 0 ? null : votes;
 
             const { error } = await supabase.from('matches').update({ chamigo_votes: chamigoData }).eq('id', AppState.selectedMatchId);
@@ -1676,11 +1674,9 @@
             navigateTo(tabToRender);
         }
 
-        // MEJORA: Nueva función de notificación centralizada
         function showNotification(message, type = 'success') {
             const { notificationModal, notificationContent, notificationIcon, notificationMessage } = DOMElements;
             
-            // Configurar contenido y estilo
             notificationMessage.textContent = message;
             notificationContent.classList.remove('bg-success-color', 'bg-danger-color', 'bg-warning-color');
             notificationIcon.classList.remove('fa-check-circle', 'fa-exclamation-triangle', 'fa-times-circle');
@@ -1688,29 +1684,24 @@
             if (type === 'success') {
                 notificationContent.classList.add('bg-success-color');
                 notificationIcon.classList.add('fa-check-circle');
-            } else { // 'error' o 'warning'
+            } else {
                 notificationContent.classList.add('bg-danger-color');
                 notificationIcon.classList.add('fa-times-circle');
             }
 
-            // Mostrar modal
             notificationModal.classList.remove('hidden');
 
-            // Ocultar después de 3 segundos
             setTimeout(() => {
                 notificationModal.classList.add('hidden');
             }, 3000);
 
-            // Cerrar al clicar fuera del contenido de la notificación
             const dismissNotification = (e) => {
-                // Si el clic no fue dentro del contenido de la notificación, ocultar
                 if (!notificationContent.contains(e.target)) {
                     notificationModal.classList.add('hidden');
-                    clearTimeout(timeoutId); // Limpiar el timeout si se cierra manualmente
-                    notificationModal.removeEventListener('click', dismissNotification); // Remover listener para evitar duplicados
+                    clearTimeout(timeoutId);
+                    notificationModal.removeEventListener('click', dismissNotification);
                 }
             };
-            // Añadir listener al modal (que es el overlay)
             notificationModal.addEventListener('click', dismissNotification);
         }
 
@@ -1722,12 +1713,10 @@
                 const confirmHandler = () => { cleanup(); resolve(true); };
                 const cancelHandler = () => { cleanup(); resolve(false); };
 
-                // Cerrar al clicar en el overlay
                 const dismissOnOverlayClick = (e) => {
-                    // Si el clic fue en el overlay (el modal mismo), no en el contenido del modal
                     if (e.target === DOMElements.modal) {
                         cleanup();
-                        resolve(false); // Se considera como una cancelación
+                        resolve(false);
                     }
                 };
                 
