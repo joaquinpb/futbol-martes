@@ -226,8 +226,7 @@
 
         <!-- Main content -->
         <div class="flex-1 flex flex-col relative">
-            <!-- HEADER CORREGIDO -->
-            <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary text-text-primary md:hidden sticky top-0 z-30">
+            <header class="flex items-center justify-between p-4 border-b border-border-color bg-secondary text-text-primary dark:bg-sidebar-bg dark:text-sidebar-text md:hidden sticky top-0 z-30">
                 <div class="w-10">
                      <button id="mobile-menu-toggle" class="p-2 rounded-md -ml-2">
                         <i class="fas fa-bars text-lg"></i>
@@ -338,13 +337,13 @@
     
     <!-- Modal para Cambiar Nombre -->
     <div id="change-name-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4 modal-open">
-        <div class="bg-white dark:bg-gray-800 card rounded-lg shadow-xl max-w-sm w-full p-6">
+        <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
             <h3 class="text-lg font-semibold mb-4">Cambiar Nombre</h3>
             <form id="change-name-form">
                 <label for="new-user-name" class="block text-sm font-medium mb-1">Nuevo nombre de usuario</label>
                 <input type="text" id="new-user-name" class="w-full p-2 border rounded-md mb-4" required>
                 <div class="flex justify-end space-x-3">
-                    <button type="button" id="change-name-cancel" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition">Cancelar</button>
+                    <button type="button" id="change-name-cancel" class="px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
                     <button type="submit" class="px-4 py-2 button-primary font-semibold rounded-md hover:opacity-90 transition">Guardar</button>
                 </div>
             </form>
@@ -353,7 +352,7 @@
 
     <!-- Modal para Cambiar Contraseña -->
     <div id="change-password-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4 modal-open">
-        <div class="bg-white dark:bg-gray-800 card rounded-lg shadow-xl max-w-sm w-full p-6">
+        <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
             <h3 class="text-lg font-semibold mb-4">Cambiar Contraseña</h3>
             <form id="change-password-form" class="space-y-4">
                 <div>
@@ -366,7 +365,7 @@
                 </div>
                  <p id="password-change-status" class="text-center text-danger-color h-5"></p>
                 <div class="flex justify-end space-x-3 pt-2">
-                    <button type="button" id="change-password-cancel" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition">Cancelar</button>
+                    <button type="button" id="change-password-cancel" class="px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
                     <button type="submit" class="px-4 py-2 button-primary font-semibold rounded-md hover:opacity-90 transition">Guardar</button>
                 </div>
             </form>
@@ -572,8 +571,12 @@
             toggleButtons.forEach(btn => {
                 if (btn) {
                     const icon = btn.querySelector('i');
+                    const span = btn.querySelector('span');
                     icon.classList.toggle('fa-moon', !isDark);
                     icon.classList.toggle('fa-sun', isDark);
+                    if (span) {
+                        span.textContent = isDark ? 'Modo Claro' : 'Modo Oscuro';
+                    }
                 }
             });
         }
@@ -750,7 +753,6 @@
                 }
             });
 
-            // Listener de click externo para cerrar menús
             document.addEventListener('click', (e) => {
                 const openDropdown = document.querySelector('.user-menu-dropdown:not(.hidden)');
                 if (openDropdown && !e.target.closest('.user-menu-button') && !e.target.closest('.user-menu-dropdown')) {
@@ -772,15 +774,21 @@
             DOMElements.assignToOscurosBtn.addEventListener('click', () => movePlayerToTeam('team-oscuros'));
             DOMElements.assignModalCancelBtn.addEventListener('click', hidePlayerAssignmentModal);
             DOMElements.playerAssignmentModal.addEventListener('click', (e) => {
-                if (e.target.id === 'player-assignment-modal') {
-                    hidePlayerAssignmentModal();
-                }
+                if (e.target.id === 'player-assignment-modal') hidePlayerAssignmentModal();
             });
 
             DOMElements.changeNameForm.addEventListener('submit', handleUpdateName);
             DOMElements.changePasswordForm.addEventListener('submit', handleUpdatePassword);
             document.getElementById('change-name-cancel').addEventListener('click', hideChangeNameModal);
             document.getElementById('change-password-cancel').addEventListener('click', hideChangePasswordModal);
+
+            // Listener para cerrar modales con click en overlay
+            DOMElements.changeNameModal.addEventListener('click', (e) => {
+                if (e.target.id === 'change-name-modal') hideChangeNameModal();
+            });
+            DOMElements.changePasswordModal.addEventListener('click', (e) => {
+                if (e.target.id === 'change-password-modal') hideChangePasswordModal();
+            });
         }
 
         async function handleLogin(e) {
@@ -801,7 +809,6 @@
             }
         }
         
-        // tabContentTemplate CORREGIDO
         const tabContentTemplate = (title, content) => `
             <div class="space-y-6">
                 <div class="relative flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg">
@@ -820,7 +827,6 @@
                 <div class="p-6">${body}</div>
             </div>`;
         
-        // setupUserMenu CORREGIDO
         function setupUserMenu() {
             const desktopContainer = document.getElementById('user-menu-container');
             const mobileContainer = document.getElementById('mobile-user-menu-container');
@@ -846,7 +852,6 @@
                 </div>
             `;
 
-            // Renderizar menú de escritorio
             desktopContainer.innerHTML = `
                 <button class="user-menu-button flex items-center gap-2 p-2 rounded-full hover:bg-white/20 transition-colors">
                     <span class="font-semibold text-sm hidden sm:inline truncate max-w-[100px] text-white">${userName}</span>
@@ -855,7 +860,6 @@
                 ${dropdownHTML}
             `;
 
-            // Renderizar menú móvil
             mobileContainer.innerHTML = `
                 <button class="user-menu-button flex items-center">
                      <i class="fas fa-user-circle text-2xl"></i>
@@ -863,7 +867,6 @@
                 ${dropdownHTML}
             `;
 
-            // Event listeners
             document.querySelectorAll('.user-menu-button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     e.stopPropagation();
