@@ -969,7 +969,7 @@
                     </div>
                     <div class="flex gap-3 pt-2">
                         <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
-                        <button type="button" id="clear-player-form-button" class="flex-1 px-4 py-2 button-secondary font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
+                        <button type="button" id="delete-player-button" class="flex-1 px-4 py-2 button-danger font-semibold rounded-lg shadow-md hover:opacity-90">Eliminar</button>
                     </div>
                 </form>`;
             const listBody = `
@@ -995,7 +995,7 @@
             DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Jugadores', content);
             renderPlayersListAdmin();
             document.getElementById('player-form').addEventListener('submit', handleSavePlayer);
-            document.getElementById('clear-player-form-button').addEventListener('click', clearPlayerForm);
+            document.getElementById('delete-player-button').addEventListener('click', handleDeletePlayer);
         };
         
         window.render_user_management = () => {
@@ -1530,6 +1530,32 @@
                 showNotification('Jugador guardado exitosamente.', 'success');
                 await refreshDataAndRender('players-management');
                 clearPlayerForm();
+            }
+        }
+
+        async function handleDeletePlayer() {
+            const id = document.getElementById('player-id').value;
+            if (!id) {
+                showNotification('Por favor, selecciona un jugador de la lista para eliminarlo.', 'warning');
+                return;
+            }
+        
+            const player = AppState.players.find(p => p.id === id);
+            const confirmed = await showModal(
+                'Confirmar Eliminación', 
+                `¿Estás seguro de que quieres eliminar a ${player ? player.name : 'este jugador'}? Esta acción no se puede deshacer.`
+            );
+        
+            if (confirmed) {
+                const { error } = await supabase.from('players').delete().eq('id', id);
+        
+                if (error) {
+                    showNotification(`Error al eliminar jugador: ${error.message}`, 'error');
+                } else {
+                    showNotification('Jugador eliminado exitosamente.', 'success');
+                    await refreshDataAndRender('players-management');
+                    clearPlayerForm();
+                }
             }
         }
 
