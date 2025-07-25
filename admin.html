@@ -76,7 +76,6 @@
         }
         
         /* --- CORRECCIÓN DEFINITIVA PARA INPUTS EN MODO OSCURO --- */
-        /* 1. Estilo base para todos los inputs en modo oscuro */
         html.dark input, 
         html.dark select {
             background-color: #1f2937 !important; /* var(--bg-secondary) */
@@ -85,16 +84,14 @@
             border-color: #374151 !important; /* var(--border-color) */
         }
 
-        /* 2. Anulación específica para el estado de autofill/autocorrector */
         html.dark input:-webkit-autofill,
         html.dark input:-webkit-autofill:hover,
         html.dark input:-webkit-autofill:focus,
         html.dark input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important; /* Sombra interna con el color de fondo */
-            -webkit-text-fill-color: #f9fafb !important; /* Color del texto */
+            -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important;
+            -webkit-text-fill-color: #f9fafb !important;
         }
         /* --- FIN DE LA CORRECCIÓN --- */
-
 
         input[readonly] {
             background-color: var(--bg-muted) !important;
@@ -973,6 +970,10 @@
                     </div>
                 </form>`;
             const listBody = `
+                <div class="mb-4 relative">
+                    <input type="text" id="player-search-input" placeholder="Buscar por nombre..." class="w-full p-2 pl-10 border rounded-md">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
                 <div class="overflow-x-auto max-h-[60vh]">
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs uppercase bg-muted">
@@ -993,7 +994,12 @@
                     <div class="lg:col-span-2">${cardTemplate('JUGADORES', listBody)}</div>
                 </div>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Jugadores', content);
+            
             renderPlayersListAdmin();
+            
+            document.getElementById('player-search-input').addEventListener('input', (e) => {
+                renderPlayersListAdmin(e.target.value);
+            });
             document.getElementById('player-form').addEventListener('submit', handleSavePlayer);
             document.getElementById('delete-player-button').addEventListener('click', handleDeletePlayer);
         };
@@ -1023,6 +1029,10 @@
                     </div>
                 </form>`;
             const listBody = `
+                <div class="mb-4 relative">
+                    <input type="text" id="user-search-input" placeholder="Buscar por nombre o email..." class="w-full p-2 pl-10 border rounded-md">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
                 <div class="overflow-x-auto max-h-[60vh]">
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs uppercase bg-muted">
@@ -1041,7 +1051,12 @@
                     <div class="lg:col-span-2">${cardTemplate('USUARIOS', listBody)}</div>
                 </div>`;
             DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Usuarios', content);
+            
             renderUsersListAdmin();
+
+            document.getElementById('user-search-input').addEventListener('input', (e) => {
+                renderUsersListAdmin(e.target.value);
+            });
             document.getElementById('user-form').addEventListener('submit', handleSaveUser);
             document.getElementById('clear-user-form-button').addEventListener('click', clearUserForm);
         };
@@ -1362,20 +1377,6 @@
             }
         }
         
-        async function handleDeleteMatch() {
-            const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
-            if (confirmed) {
-                const { error } = await supabase.from('matches').delete().eq('id', AppState.selectedMatchId);
-                if(error) { showNotification('Error al eliminar partido', 'error'); } 
-                else {
-                    showNotification('Partido eliminado.', 'success');
-                    AppState.matches = AppState.matches.filter(m => m.id != AppState.selectedMatchId);
-                    document.getElementById('results-panel-container').classList.add('hidden');
-                    populateMatchFilters('results');
-                }
-            }
-        }
-
         async function handleDeleteMatchFromEdit() {
             const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
             if (confirmed) {
@@ -1481,9 +1482,14 @@
             }
         }
         
-        function renderPlayersListAdmin() {
+        function renderPlayersListAdmin(searchTerm = '') {
             const tableBody = document.getElementById('players-list-admin');
-            tableBody.innerHTML = AppState.players.map(p => `
+            const normalizedSearch = searchTerm.toLowerCase();
+            const filteredPlayers = AppState.players.filter(p => 
+                p.name.toLowerCase().includes(normalizedSearch)
+            );
+
+            tableBody.innerHTML = filteredPlayers.map(p => `
                 <tr class="selectable-row border-b border-border-color cursor-pointer" data-player-id="${p.id}">
                     <td class="p-4">${p.id}</td><td class="p-4">${p.name}</td>
                     <td class="p-4">${p.status}</td><td class="p-4">${p.role}</td>
@@ -1539,16 +1545,16 @@
                 showNotification('Por favor, selecciona un jugador de la lista para eliminarlo.', 'warning');
                 return;
             }
-        
+
             const player = AppState.players.find(p => p.id === id);
             const confirmed = await showModal(
                 'Confirmar Eliminación', 
                 `¿Estás seguro de que quieres eliminar a ${player ? player.name : 'este jugador'}? Esta acción no se puede deshacer.`
             );
-        
+
             if (confirmed) {
                 const { error } = await supabase.from('players').delete().eq('id', id);
-        
+
                 if (error) {
                     showNotification(`Error al eliminar jugador: ${error.message}`, 'error');
                 } else {
@@ -1559,9 +1565,15 @@
             }
         }
 
-        function renderUsersListAdmin() {
+        function renderUsersListAdmin(searchTerm = '') {
             const tableBody = document.getElementById('users-list-admin');
-            tableBody.innerHTML = AppState.users.map(u => `
+            const normalizedSearch = searchTerm.toLowerCase();
+            const filteredUsers = AppState.users.filter(u =>
+                (u.name && u.name.toLowerCase().includes(normalizedSearch)) ||
+                u.email.toLowerCase().includes(normalizedSearch)
+            );
+
+            tableBody.innerHTML = filteredUsers.map(u => `
                 <tr class="selectable-row border-b border-border-color cursor-pointer" data-user-id="${u.id}">
                     <td class="p-4">${u.email}</td>
                     <td class="p-4">${u.name || 'N/A'}</td>
