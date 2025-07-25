@@ -226,19 +226,23 @@
 
         <!-- Main content -->
         <div class="flex-1 flex flex-col relative">
-            <header class="flex items-center justify-between p-4 border-b border-border-color bg-white text-gray-800 dark:bg-gray-800 dark:text-white md:hidden sticky top-0 z-30">
+            <!-- 1. HEADER MODIFICADO -->
+            <header class="flex items-center justify-between p-4 border-b border-border-color bg-white dark:bg-gray-800 md:hidden sticky top-0 z-30">
                 <div class="w-10">
                      <button id="mobile-menu-toggle" class="p-2 rounded-md -ml-2">
-                        <i class="fas fa-bars text-lg"></i>
+                        <i class="fas fa-bars text-lg text-text-primary"></i>
                     </button>
                 </div>
                 <div class="flex-1 text-center">
                     <a href="#" class="text-xl font-bold flex items-center gap-2 justify-center">
                         <span class="text-2xl">⚽</span>
-                        <span>LA CLANDE</span>
+                        <span class="text-text-primary">LA CLANDE</span>
                     </a>
                 </div>
-                <div class="w-10"></div>
+                <!-- Contenedor para el botón de usuario en móvil -->
+                <div id="mobile-user-menu-container" class="w-10 relative flex justify-end items-center">
+                    <!-- El menú de usuario para móvil se insertará aquí -->
+                </div>
             </header>
             
             <main class="bg-primary p-4 sm:p-6 lg:p-8">
@@ -748,14 +752,11 @@
                 }
             });
 
-            // Close user menu dropdown when clicking outside
+            // 2. LISTENER DE CLICK EXTERNO MODIFICADO
             document.addEventListener('click', (e) => {
-                const dropdown = document.getElementById('user-menu-dropdown');
-                const button = document.getElementById('user-menu-button');
-                if (dropdown && !dropdown.classList.contains('hidden')) {
-                    if (!button?.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                    }
+                const openDropdown = document.querySelector('.user-menu-dropdown:not(.hidden)');
+                if (openDropdown && !e.target.closest('.user-menu-button') && !e.target.closest('.user-menu-dropdown')) {
+                    openDropdown.classList.add('hidden');
                 }
             });
 
@@ -802,14 +803,15 @@
                 loginButton.textContent = 'Entrar';
             }
         }
-
+        
+        // 3. tabContentTemplate MODIFICADO
         const tabContentTemplate = (title, content) => `
             <div class="space-y-6">
                 <div class="relative flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 text-white shadow-lg">
                     <div class="w-16 md:w-40"></div> <!-- Spacer -->
                     <h1 class="flex-1 text-2xl font-bold tracking-tight uppercase text-center">${title}</h1>
-                    <div id="user-menu-container" class="relative w-16 md:w-40 flex justify-end">
-                        <!-- El menú de usuario se inserta aquí -->
+                    <div id="user-menu-container" class="relative w-16 md:w-40 hidden md:flex justify-end">
+                        <!-- El menú de usuario de escritorio se inserta aquí -->
                     </div>
                 </div>
                 ${content}
@@ -821,26 +823,24 @@
                 <div class="p-6">${body}</div>
             </div>`;
         
-        // --- NUEVO: Funciones de Menú y Modales de Usuario ---
+        // 4. setupUserMenu MODIFICADO COMPLETAMENTE
         function setupUserMenu() {
-            const container = document.getElementById('user-menu-container');
-            if (!container) return;
+            const desktopContainer = document.getElementById('user-menu-container');
+            const mobileContainer = document.getElementById('mobile-user-menu-container');
+            
+            if (!desktopContainer || !mobileContainer) return;
 
             const userName = AppState.userName || 'Usuario';
             const userEmail = AppState.userEmail || 'email@example.com';
             
-            container.innerHTML = `
-                <button id="user-menu-button" class="flex items-center gap-2 p-2 rounded-full hover:bg-white/20 transition-colors">
-                    <span class="font-semibold text-sm hidden sm:inline truncate max-w-[100px]">${userName}</span>
-                    <i class="fas fa-user-circle text-2xl"></i>
-                </button>
-                <div id="user-menu-dropdown" class="card hidden absolute right-0 mt-12 w-56 rounded-md shadow-lg py-1 text-sm z-50">
+            const dropdownHTML = `
+                <div class="user-menu-dropdown card hidden absolute right-0 mt-2 w-56 rounded-md shadow-lg py-1 text-sm z-50">
                     <div class="px-4 py-2 border-b border-border-color">
-                        <p class="font-semibold truncate">${userName}</p>
+                        <p class="font-semibold truncate text-text-primary">${userName}</p>
                         <p class="text-xs text-text-secondary truncate">${userEmail}</p>
                     </div>
-                    <a href="#" id="change-name-trigger" class="block px-4 py-2 hover:bg-bg-muted">Cambiar nombre</a>
-                    <a href="#" id="change-password-trigger" class="block px-4 py-2 hover:bg-bg-muted">Cambiar contraseña</a>
+                    <a href="#" class="change-name-trigger block px-4 py-2 hover:bg-bg-muted text-text-primary">Cambiar nombre</a>
+                    <a href="#" class="change-password-trigger block px-4 py-2 hover:bg-bg-muted text-text-primary">Cambiar contraseña</a>
                     <div class="border-t border-border-color my-1"></div>
                     <a href="#" class="signout-trigger flex items-center gap-2 px-4 py-2 hover:bg-bg-muted text-danger-color">
                         <i class="fas fa-sign-out-alt"></i>
@@ -849,21 +849,49 @@
                 </div>
             `;
 
-            document.getElementById('user-menu-button').addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.getElementById('user-menu-dropdown').classList.toggle('hidden');
+            // Renderizar menú de escritorio (con texto)
+            desktopContainer.innerHTML = `
+                <button class="user-menu-button flex items-center gap-2 p-2 rounded-full hover:bg-white/20 transition-colors">
+                    <span class="font-semibold text-sm hidden sm:inline truncate max-w-[100px]">${userName}</span>
+                    <i class="fas fa-user-circle text-2xl"></i>
+                </button>
+                ${dropdownHTML}
+            `;
+
+            // Renderizar menú móvil (solo ícono)
+            mobileContainer.innerHTML = `
+                <button class="user-menu-button flex items-center text-text-primary">
+                     <i class="fas fa-user-circle text-2xl"></i>
+                </button>
+                ${dropdownHTML}
+            `;
+
+            // Event listeners (usando clases para que funcionen en ambos menús)
+            document.querySelectorAll('.user-menu-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Cierra otros menús antes de abrir el actual
+                    document.querySelectorAll('.user-menu-dropdown').forEach(d => {
+                        if (d !== button.nextElementSibling) d.classList.add('hidden');
+                    });
+                    button.nextElementSibling.classList.toggle('hidden');
+                });
             });
 
-            document.getElementById('change-name-trigger').addEventListener('click', (e) => {
-                e.preventDefault();
-                document.getElementById('user-menu-dropdown').classList.add('hidden');
-                showChangeNameModal();
+            document.querySelectorAll('.change-name-trigger').forEach(trigger => {
+                trigger.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    trigger.closest('.user-menu-dropdown').classList.add('hidden');
+                    showChangeNameModal();
+                });
             });
-
-            document.getElementById('change-password-trigger').addEventListener('click', (e) => {
-                e.preventDefault();
-                document.getElementById('user-menu-dropdown').classList.add('hidden');
-                showChangePasswordModal();
+            
+            document.querySelectorAll('.change-password-trigger').forEach(trigger => {
+                 trigger.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    trigger.closest('.user-menu-dropdown').classList.add('hidden');
+                    showChangePasswordModal();
+                });
             });
         }
 
