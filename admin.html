@@ -226,17 +226,17 @@
 
         <!-- Main content -->
         <div class="flex-1 flex flex-col relative">
-            <!-- 1. HEADER MODIFICADO -->
-            <header class="flex items-center justify-between p-4 border-b border-border-color bg-white dark:bg-gray-800 md:hidden sticky top-0 z-30">
+            <!-- HEADER CORREGIDO -->
+            <header class="flex items-center justify-between p-4 border-b border-transparent bg-sidebar-bg text-white md:hidden sticky top-0 z-30">
                 <div class="w-10">
                      <button id="mobile-menu-toggle" class="p-2 rounded-md -ml-2">
-                        <i class="fas fa-bars text-lg text-text-primary"></i>
+                        <i class="fas fa-bars text-lg"></i>
                     </button>
                 </div>
                 <div class="flex-1 text-center">
                     <a href="#" class="text-xl font-bold flex items-center gap-2 justify-center">
                         <span class="text-2xl">⚽</span>
-                        <span class="text-text-primary">LA CLANDE</span>
+                        <span>LA CLANDE</span>
                     </a>
                 </div>
                 <div id="mobile-user-menu-container" class="w-10 relative flex justify-end items-center">
@@ -441,7 +441,6 @@
             notificationContent: document.getElementById('notification-content'),
             notificationIcon: document.getElementById('notification-icon'),
             notificationMessage: document.getElementById('notification-message'),
-            // NUEVO: Modales de usuario
             changeNameModal: document.getElementById('change-name-modal'),
             changePasswordModal: document.getElementById('change-password-modal'),
             changeNameForm: document.getElementById('change-name-form'),
@@ -751,7 +750,7 @@
                 }
             });
 
-            // 2. LISTENER DE CLICK EXTERNO MODIFICADO
+            // Listener de click externo para cerrar menús
             document.addEventListener('click', (e) => {
                 const openDropdown = document.querySelector('.user-menu-dropdown:not(.hidden)');
                 if (openDropdown && !e.target.closest('.user-menu-button') && !e.target.closest('.user-menu-dropdown')) {
@@ -778,7 +777,6 @@
                 }
             });
 
-            // NUEVO: Listeners para modales de usuario
             DOMElements.changeNameForm.addEventListener('submit', handleUpdateName);
             DOMElements.changePasswordForm.addEventListener('submit', handleUpdatePassword);
             document.getElementById('change-name-cancel').addEventListener('click', hideChangeNameModal);
@@ -803,7 +801,6 @@
             }
         }
         
-        // 3. tabContentTemplate MODIFICADO
         const tabContentTemplate = (title, content) => `
             <div class="space-y-6">
                 <div class="relative flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 text-white shadow-lg">
@@ -822,7 +819,7 @@
                 <div class="p-6">${body}</div>
             </div>`;
         
-        // 4. setupUserMenu MODIFICADO COMPLETAMENTE
+        // FUNCIÓN setupUserMenu CORREGIDA
         function setupUserMenu() {
             const desktopContainer = document.getElementById('user-menu-container');
             const mobileContainer = document.getElementById('mobile-user-menu-container');
@@ -833,7 +830,7 @@
             const userEmail = AppState.userEmail || 'email@example.com';
             
             const dropdownHTML = `
-                <div class="user-menu-dropdown card hidden origin-top-right absolute right-0 top-full mt-2 w-56 rounded-md shadow-lg py-1 text-sm z-50">
+                <div class="user-menu-dropdown card hidden origin-top-right absolute right-0 top-full mt-2 w-56 rounded-md shadow-lg py-1 text-sm z-50 text-text-primary">
                     <div class="px-4 py-2 border-b border-border-color">
                         <p class="font-semibold truncate text-text-primary">${userName}</p>
                         <p class="text-xs text-text-secondary truncate">${userEmail}</p>
@@ -848,7 +845,7 @@
                 </div>
             `;
 
-            // Renderizar menú de escritorio (con texto)
+            // Renderizar menú de escritorio
             desktopContainer.innerHTML = `
                 <button class="user-menu-button flex items-center gap-2 p-2 rounded-full hover:bg-white/20 transition-colors">
                     <span class="font-semibold text-sm hidden sm:inline truncate max-w-[100px]">${userName}</span>
@@ -857,19 +854,18 @@
                 ${dropdownHTML}
             `;
 
-            // Renderizar menú móvil (solo ícono)
+            // Renderizar menú móvil
             mobileContainer.innerHTML = `
-                <button class="user-menu-button flex items-center text-text-primary">
+                <button class="user-menu-button flex items-center">
                      <i class="fas fa-user-circle text-2xl"></i>
                 </button>
                 ${dropdownHTML}
             `;
 
-            // Event listeners (usando clases para que funcionen en ambos menús)
+            // Event listeners
             document.querySelectorAll('.user-menu-button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    // Cierra otros menús antes de abrir el actual
                     document.querySelectorAll('.user-menu-dropdown').forEach(d => {
                         if (d !== button.nextElementSibling) d.classList.add('hidden');
                     });
