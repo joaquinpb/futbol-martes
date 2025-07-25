@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -76,12 +75,26 @@
             color: var(--text-primary);
         }
         
-        html.dark input, html.dark select {
-             background-color: var(--bg-secondary) !important;
-             color: var(--text-primary) !important;
-             -webkit-text-fill-color: var(--text-primary) !important;
-             -webkit-box-shadow: 0 0 0 30px var(--bg-secondary) inset !important;
+        /* --- CORRECCIÓN DEFINITIVA PARA INPUTS EN MODO OSCURO --- */
+        /* 1. Estilo base para todos los inputs en modo oscuro */
+        html.dark input, 
+        html.dark select {
+            background-color: #1f2937 !important; /* var(--bg-secondary) */
+            color: #f9fafb !important; /* var(--text-primary) */
+            -webkit-text-fill-color: #f9fafb !important;
+            border-color: #374151 !important; /* var(--border-color) */
         }
+
+        /* 2. Anulación específica para el estado de autofill/autocorrector */
+        html.dark input:-webkit-autofill,
+        html.dark input:-webkit-autofill:hover,
+        html.dark input:-webkit-autofill:focus,
+        html.dark input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important; /* Sombra interna con el color de fondo */
+            -webkit-text-fill-color: #f9fafb !important; /* Color del texto */
+        }
+        /* --- FIN DE LA CORRECCIÓN --- */
+
 
         input[readonly] {
             background-color: var(--bg-muted) !important;
@@ -157,7 +170,6 @@
         .button-purple { background-color: #9333ea; color: var(--button-text-color); }
         .button-purple:hover { background-color: #7e22ce; }
 
-        /* MEJORA: Clases para el fondo de las notificaciones */
         .bg-success-color { background-color: var(--success-color); }
         .bg-danger-color { background-color: var(--danger-color); }
         .bg-warning-color { background-color: var(--warning-color); }
@@ -171,28 +183,17 @@
             border-color: var(--border-color);
         }
 
-        /* Estilo para el botón desplegable de la encuesta de WhatsApp */
         .collapsible-toggle-button {
             background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover));
             color: var(--button-text-color);
             transition: background 0.3s ease;
         }
         .collapsible-toggle-button.visible-content {
-            background: linear-gradient(to right, #e53e3e, var(--danger-color)); /* Rojo cuando está desplegado */
-        }
-
-        /* REGLA ESPECÍFICA PARA EL LOGIN EN MODO OSCURO */
-        html.dark #auth-container input:-webkit-autofill,
-        html.dark #auth-container input:-webkit-autofill:hover,
-        html.dark #auth-container input:-webkit-autofill:focus,
-        html.dark #auth-container input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px var(--bg-secondary) inset !important;
-            -webkit-text-fill-color: var(--text-primary) !important;
+            background: linear-gradient(to right, #e53e3e, var(--danger-color));
         }
         
     </style>
     <script>
-        // Script para aplicar el tema oscuro inmediatamente y prevenir el "flash"
         (function() {
             const savedTheme = localStorage.getItem('theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -216,7 +217,6 @@
             </div>
             
             <nav id="main-nav" class="flex-1 px-4 space-y-2 overflow-y-auto">
-                <!-- Desktop nav items will be injected by JS -->
             </nav>
 
             <div class="px-4 py-4 mt-auto">
@@ -233,7 +233,6 @@
 
         <!-- Main content -->
         <div class="flex-1 flex flex-col relative">
-            <!-- Header for Mobile (Sticky) -->
             <header class="flex items-center justify-between p-4 border-b border-border-color bg-white text-gray-800 dark:bg-gray-800 dark:text-white md:hidden sticky top-0 z-30">
                 <div class="w-10">
                      <button id="mobile-menu-toggle" class="p-2 rounded-md -ml-2">
@@ -246,31 +245,24 @@
                         <span>LA CLANDE</span>
                     </a>
                 </div>
-                <div class="w-10"></div> <!-- Spacer -->
+                <div class="w-10"></div>
             </header>
             
             <main class="bg-primary p-4 sm:p-6 lg:p-8">
                 <div id="admin-content-area" class="max-w-7xl mx-auto">
-                    <!-- Loading State -->
                     <div id="loading-container" class="flex items-center justify-center h-64">
                         <i class="fas fa-spinner fa-spin text-4xl text-accent-color"></i>
                     </div>
-
-                    <!-- Main Admin Content (hidden by default) -->
                     <div id="admin-content" class="hidden">
-                        <!-- Tab contents will be injected here -->
                     </div>
                 </div>
             </main>
         </div>
     </div>
     
-    <!-- Mobile Menu (now outside the main flow, controlled by overlay) -->
     <div id="mobile-menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
     <div id="mobile-menu" class="hidden fixed top-0 left-0 h-full w-64 bg-secondary shadow-xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out">
-        <!-- Mobile menu content injected here -->
     </div>
-
 
     <!-- Authentication Container -->
     <div id="auth-container" class="hidden fixed inset-0 z-50 flex items-center justify-center login-bg">
@@ -314,7 +306,6 @@
         </div>
     </div>
     
-    <!-- MEJORA: Nuevo Modal de Notificación Centrado -->
     <div id="notification-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-[100] p-4">
         <div id="notification-content" class="flex items-center gap-4 text-white font-semibold p-6 rounded-lg shadow-xl max-w-sm w-full">
             <i id="notification-icon" class="fas fa-2x"></i>
@@ -322,7 +313,6 @@
         </div>
     </div>
 
-    <!-- Main Confirmation Modal -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
         <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
             <h3 class="text-lg font-semibold mb-2" id="modal-title">Confirmar Acción</h3>
@@ -334,7 +324,6 @@
         </div>
     </div>
 
-    <!-- Player Assignment Modal -->
     <div id="player-assignment-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
         <div class="card rounded-lg shadow-xl max-w-xs w-full p-6 text-center">
             <h3 class="text-lg font-semibold mb-2" id="assign-modal-title">Asignar Jugador</h3>
@@ -347,10 +336,8 @@
         </div>
     </div>
 
-    <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Main Admin Script -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- CONFIG & STATE ---
@@ -365,7 +352,7 @@
             userRole: null,
             selectedMatchId: null,
             isInitialized: false,
-            isInitializing: false, // Prevents multiple initializations
+            isInitializing: false,
             activePlayerElement: null,
         };
 
@@ -386,7 +373,6 @@
             ]
         };
 
-        // --- DOM ELEMENTS ---
         const DOMElements = {
             body: document.body,
             appContainer: document.getElementById('app-container'),
@@ -401,26 +387,22 @@
             desktopDarkModeToggle: document.getElementById('desktop-dark-mode-toggle'),
             loginDarkModeToggle: document.getElementById('login-dark-mode-toggle'),
             authStatus: document.getElementById('auth-status'),
-            // Confirmation Modal
             modal: document.getElementById('custom-confirm-modal'),
             modalTitle: document.getElementById('modal-title'),
             modalMessage: document.getElementById('modal-message'),
             modalConfirm: document.getElementById('modal-confirm-button'),
             modalCancel: document.getElementById('modal-cancel-button'),
-            // Player Assignment Modal
             playerAssignmentModal: document.getElementById('player-assignment-modal'),
             assignModalPlayerName: document.getElementById('assign-modal-player-name'),
             assignToClarosBtn: document.getElementById('assign-to-claros'),
             assignToOscurosBtn: document.getElementById('assign-to-oscuros'),
             assignModalCancelBtn: document.getElementById('assign-modal-cancel'),
-            // Notification Modal
             notificationModal: document.getElementById('notification-modal'),
             notificationContent: document.getElementById('notification-content'),
             notificationIcon: document.getElementById('notification-icon'),
             notificationMessage: document.getElementById('notification-message'),
         };
 
-        // --- INITIALIZATION ---
         function init() {
             setupTheme();
             setupEventListeners();
@@ -513,7 +495,6 @@
             DOMElements.authStatus.textContent = '';
         }
 
-        // --- UI & THEME ---
         function setupTheme() {
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
@@ -696,7 +677,6 @@
             }
         }
 
-        // --- EVENT LISTENERS & AUTH ---
         function openMobileMenu() {
             DOMElements.mobileMenuOverlay.classList.remove('hidden');
             DOMElements.mobileMenu.classList.remove('hidden');
@@ -734,7 +714,6 @@
                 });
             }
 
-            // Player Assignment Modal Listeners
             DOMElements.assignToClarosBtn.addEventListener('click', () => movePlayerToTeam('team-claros'));
             DOMElements.assignToOscurosBtn.addEventListener('click', () => movePlayerToTeam('team-oscuros'));
             DOMElements.assignModalCancelBtn.addEventListener('click', hidePlayerAssignmentModal);
@@ -763,7 +742,6 @@
             }
         }
 
-        // --- RENDER FUNCTIONS FOR TABS ---
         const tabContentTemplate = (title, content) => `
             <div class="space-y-6">
                 <div class="p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 text-white shadow-lg">
@@ -1068,7 +1046,6 @@
             document.getElementById('clear-user-form-button').addEventListener('click', clearUserForm);
         };
 
-        // --- TEAM FORMATION & EDIT MATCH LOGIC (REUSABLE) ---
         function createPlayerElement(player) {
             const el = document.createElement('div');
             el.className = 'player-element flex-grow-0 text-sm font-medium px-3 py-1.5 rounded-full shadow-sm';
@@ -1181,7 +1158,6 @@
             }
         }
         
-        // --- OTHER TAB LOGIC ---
         function populateMatchFilters(prefix) {
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
@@ -1735,7 +1711,6 @@
             });
         }
 
-        // --- RUN APP ---
         init();
     });
     </script>
