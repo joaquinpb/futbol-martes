@@ -191,6 +191,20 @@
         .collapsible-toggle-button.visible-content {
             background: linear-gradient(to right, #e53e3e, var(--danger-color));
         }
+
+        /* --- CORRECCIÓN DE EFECTO HOVER --- */
+        /* Resaltado para el menú lateral (que siempre es oscuro) */
+        .nav-link:not(.active):hover {
+            background-color: var(--sidebar-hover-bg);
+        }
+        
+        /* Resaltado para los items del menú de usuario */
+        .dropdown-item:hover {
+            background-color: #f3f4f6; /* Un gris claro para el tema light */
+        }
+        html.dark .dropdown-item:hover {
+            background-color: #374151; /* Un gris más notorio para el tema dark */
+        }
         
     </style>
     <script>
@@ -272,7 +286,6 @@
             </div>
             <div class="card rounded-xl shadow-lg p-8 relative">
                 <div class="absolute top-4 right-4">
-                    <!-- AÑADIDO: Clase 'theme-toggle-button' para unificar el control del tema -->
                     <button id="login-dark-mode-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 theme-toggle-button">
                         <i class="fas fa-moon text-lg text-text-secondary"></i>
                     </button>
@@ -547,7 +560,6 @@
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 applyTheme(prefersDark ? 'dark' : 'light');
             }
-            // MODIFICADO: Se usa un único event listener delegado para todos los botones de tema
             document.body.addEventListener('click', e => {
                 if (e.target.closest('.theme-toggle-button')) {
                     toggleTheme();
@@ -562,7 +574,6 @@
 
         function updateThemeToggleIcons() {
             const isDark = document.documentElement.classList.contains('dark');
-            // MODIFICADO: Selector unificado para todos los botones de tema
             const toggleButtons = document.querySelectorAll('.theme-toggle-button');
 
             toggleButtons.forEach(btn => {
@@ -597,7 +608,7 @@
                     <span class="px-4 text-xs font-semibold uppercase text-gray-400">Principal</span>
                     <div class="mt-2 space-y-1">
                         ${NAV_ITEMS.main.map(item => `
-                            <a href="#" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200">
+                            <a href="#" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
                                 <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
                             </a>`).join('')}
                     </div>
@@ -609,7 +620,7 @@
                         <span class="px-4 text-xs font-semibold uppercase text-gray-400">Administración</span>
                         <div class="mt-2 space-y-1">
                             ${NAV_ITEMS.admin.map(item => `
-                                <a href="#" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200">
+                                <a href="#" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
                                     <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
                                 </a>`).join('')}
                         </div>
@@ -621,7 +632,7 @@
                     <span class="px-4 text-xs font-semibold uppercase text-gray-400">Enlaces</span>
                     <div class="mt-2 space-y-1">
                         ${NAV_ITEMS.links.map(item => `
-                            <a href="${item.href}" target="_blank" rel="noopener noreferrer" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-sidebar-hover-bg transition-colors duration-200">
+                            <a href="${item.href}" target="_blank" rel="noopener noreferrer" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
                                 <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
                             </a>`).join('')}
                     </div>
@@ -673,7 +684,6 @@
                         </a>
                     </div>
                     <div class="border-t border-border-color my-1"></div>
-                    <!-- AÑADIDO: Clase 'theme-toggle-button' para unificar el control del tema -->
                     <button id="mobile-dark-mode-toggle" class="theme-toggle-button w-full flex items-center gap-3 px-2 py-2 text-left text-text-secondary rounded-md hover:bg-bg-muted">
                         <i class="fas fa-moon w-5 text-center"></i>
                         <span>Modo Oscuro</span>
@@ -833,22 +843,22 @@
             const userName = AppState.userName || 'Usuario';
             const userEmail = AppState.userEmail || 'email@example.com';
             
-            // MODIFICADO: Se añade el botón de cambio de tema al menú de usuario
+            // MODIFICADO: Se añade la clase .dropdown-item a los elementos interactivos
             const dropdownHTML = `
                 <div class="user-menu-dropdown card hidden origin-top-right absolute right-0 top-full mt-2 w-56 rounded-md shadow-lg py-1 text-sm z-50">
                     <div class="px-4 py-2 border-b border-border-color">
                         <p class="font-semibold truncate text-text-primary">${userName}</p>
                         <p class="text-xs text-text-secondary truncate">${userEmail}</p>
                     </div>
-                    <a href="#" class="change-name-trigger block px-4 py-2 hover:bg-bg-muted text-text-primary">Cambiar nombre</a>
-                    <a href="#" class="change-password-trigger block px-4 py-2 hover:bg-bg-muted text-text-primary">Cambiar contraseña</a>
+                    <a href="#" class="change-name-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar nombre</a>
+                    <a href="#" class="change-password-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar contraseña</a>
                     <div class="border-t border-border-color my-1"></div>
-                    <button class="theme-toggle-button w-full text-left flex items-center gap-2 px-4 py-2 hover:bg-bg-muted text-text-primary">
+                    <button class="theme-toggle-button dropdown-item w-full text-left flex items-center gap-2 px-4 py-2 text-text-primary">
                         <i class="fas fa-moon w-5 text-center"></i>
                         <span>Modo Oscuro</span>
                     </button>
                     <div class="border-t border-border-color my-1"></div>
-                    <a href="#" class="signout-trigger flex items-center gap-2 px-4 py-2 hover:bg-bg-muted text-danger-color">
+                    <a href="#" class="signout-trigger dropdown-item flex items-center gap-2 px-4 py-2 text-danger-color">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Cerrar Sesión</span>
                     </a>
@@ -896,7 +906,6 @@
                 });
             });
             
-            // Se actualizan los íconos del tema después de crear el menú
             updateThemeToggleIcons();
         }
 
