@@ -537,7 +537,6 @@
             }
         }
         
-        // CORREGIDO: Lógica de Realtime mejorada para manejar los datos de forma más inteligente.
         function setupRealtimeSubscriptions() {
             if (AppState.realtimeChannel) {
                 return; 
@@ -1479,8 +1478,9 @@
                 showNotification('Por favor, selecciona la fecha del partido.', 'warning');
                 return;
             }
-            const teamWhitePlayers = Array.from(document.getElementById('team-claros').children).map(el => parseInt(el.dataset.id));
-            const teamDarkPlayers = Array.from(document.getElementById('team-oscuros').children).map(el => parseInt(el.dataset.id));
+            // CORREGIDO: Se elimina parseInt para manejar IDs como texto.
+            const teamWhitePlayers = Array.from(document.getElementById('team-claros').children).map(el => el.dataset.id);
+            const teamDarkPlayers = Array.from(document.getElementById('team-oscuros').children).map(el => el.dataset.id);
 
             const { data, error } = await supabase.from('matches').insert([{ 
                 match_date: matchDate,
@@ -1790,7 +1790,8 @@
             });
         }
         async function handleRegisterTt() {
-            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => parseInt(el.dataset.id));
+            // CORREGIDO: Se elimina parseInt para manejar IDs como texto.
+            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
             const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
             if (error) { showNotification('Error al guardar asistencia a TT', 'error'); } 
             else {
@@ -1975,8 +1976,9 @@
         }
         async function handleUpdateMatch() {
             const newDate = document.getElementById('edit-match-date').value;
-            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => parseInt(el.dataset.id));
-            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => parseInt(el.dataset.id));
+            // CORREGIDO: Se elimina parseInt para manejar IDs como texto.
+            const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
+            const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => el.dataset.id);
             
             if (newTeamWhite.length + newTeamDark.length !== 10) {
                 showNotification('Deben haber 10 jugadores en total para conformar los equipos.', 'warning');
@@ -2061,3 +2063,6 @@
     </script>
 </body>
 </html>
+```
+
+Ahora sí, con ambos archivos actualizados y la configuración de "Publications" en Supabase revisada, la aplicación debería funcionar de manera fluida y correcta. ¡Probalo y me dec
