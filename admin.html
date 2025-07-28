@@ -402,7 +402,6 @@
             isInitialized: false,
             isInitializing: false,
             activePlayerElement: null,
-            // NUEVO: Variable para almacenar las suscripciones de Realtime
             realtimeChannel: null
         };
 
@@ -464,7 +463,6 @@
                 } 
                 else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
                     showLoginScreen();
-                    // NUEVO: Limpiar las suscripciones al cerrar sesión
                     if (AppState.realtimeChannel) {
                         supabase.removeChannel(AppState.realtimeChannel);
                         AppState.realtimeChannel = null;
@@ -511,7 +509,6 @@
 
                 setupUI();
                 
-                // NUEVO: Configurar las suscripciones de Realtime después de cargar los datos iniciales
                 setupRealtimeSubscriptions();
                 
                 const savedTab = localStorage.getItem('lastAdminTab');
@@ -540,10 +537,10 @@
             }
         }
         
-        // NUEVO: Función para configurar las suscripciones de Realtime
+        // CORREGIDO: Lógica de Realtime mejorada para manejar los datos de forma más inteligente.
         function setupRealtimeSubscriptions() {
             if (AppState.realtimeChannel) {
-                return; // Evitar suscribirse múltiples veces
+                return; 
             }
             
             console.log('Setting up Realtime subscriptions...');
@@ -551,12 +548,24 @@
             const handleChanges = (payload) => {
                 console.log('Change received!', payload);
                 const { table, eventType, new: newRecord, old: oldRecord } = payload;
+                
                 let dataArray;
+                let sortNeeded = false;
 
                 switch(table) {
                     case 'players': dataArray = AppState.players; break;
-                    case 'matches': dataArray = AppState.matches; break;
-                    case 'profiles': dataArray = AppState.users; break;
+                    case 'matches': dataArray = AppState.matches; sortNeeded = true; break;
+                    case 'profiles': 
+                        if (eventType === 'UPDATE' && AppState.userRole === 'Admin') {
+                            const userIndex = AppState.users.findIndex(u => u.id === newRecord.id);
+                            if (userIndex !== -1) {
+                                AppState.users[userIndex].name = newRecord.name;
+                                AppState.users[userIndex].role = newRecord.role;
+                                const currentTab = localStorage.getItem('lastAdminTab');
+                                if (currentTab === 'user-management') navigateTo(currentTab);
+                            }
+                        }
+                        return;
                     default: return;
                 }
 
@@ -573,12 +582,10 @@
                     if (index !== -1) dataArray.splice(index, 1);
                 }
                 
-                // Reordenar partidos por fecha después de cualquier cambio
-                if (table === 'matches') {
+                if (sortNeeded) {
                     AppState.matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
                 }
 
-                // Refrescar la vista actual para mostrar los datos actualizados
                 const currentTab = localStorage.getItem('lastAdminTab');
                 if (currentTab) {
                     navigateTo(currentTab);
@@ -588,25 +595,14 @@
             AppState.realtimeChannel = supabase.channel('public:admin_changes')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
-                    // Lógica especial para perfiles, ya que la estructura de AppState.users es diferente
-                    const { new: newProfile } = payload;
-                    const userIndex = AppState.users.findIndex(u => u.id === newProfile.id);
-                    if (userIndex !== -1) {
-                        AppState.users[userIndex].name = newProfile.name;
-                        AppState.users[userIndex].role = newProfile.role;
-                        const currentTab = localStorage.getItem('lastAdminTab');
-                        if (currentTab === 'user-management') {
-                            navigateTo(currentTab);
-                        }
-                    }
-                })
-                .subscribe((status) => {
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, handleChanges)
+                .subscribe((status, err) => {
                     if (status === 'SUBSCRIBED') {
                         console.log('Realtime channel subscribed successfully!');
                     }
                     if (status === 'CHANNEL_ERROR') {
-                        console.error('Realtime channel error.');
+                        console.error('Realtime channel error:', err);
+                        showNotification('Error de conexión en tiempo real.', 'error');
                     }
                 });
         }
@@ -1498,8 +1494,9 @@
                 showNotification(`Error al crear el partido: ${error.message}`, 'error');
             } else {
                 showNotification('Partido creado exitosamente!', 'success');
-                // MODIFICADO: No es necesario actualizar AppState manualmente, Realtime lo hará.
-                // Simplemente re-renderizamos la vista.
+                // CORREGIDO: Actualizar el estado local inmediatamente para respuesta instantánea.
+                AppState.matches.unshift(data);
+                AppState.matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
                 await navigateTo('team-formation');
             }
         }
@@ -1695,7 +1692,10 @@
             if(error) { showNotification('Error al registrar resultado', 'error'); } 
             else {
                  showNotification('Resultado registrado!', 'success');
-                 // MODIFICADO: No es necesario actualizar AppState manualmente
+                 // CORREGIDO: Actualizar el estado local inmediatamente.
+                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
+                 if (matchInState) matchInState.result = resultValue;
+                 populateMatchFilters('results');
             }
         }
         async function handleDeleteMatchFromEdit() {
@@ -1705,7 +1705,8 @@
                 if(error) { showNotification('Error al eliminar partido', 'error'); } 
                 else {
                     showNotification('Partido eliminado.', 'success');
-                    // MODIFICADO: No es necesario actualizar AppState manualmente
+                    // CORREGIDO: Actualizar el estado local inmediatamente.
+                    AppState.matches = AppState.matches.filter(m => m.id != AppState.selectedMatchId);
                     document.getElementById('edit-panel-container').classList.add('hidden');
                     populateMatchFilters('edit');
                 }
@@ -1757,7 +1758,10 @@
             if (error) { showNotification('Error al guardar votos de Chamigo', 'error'); } 
             else {
                 showNotification('Votos de Chamigo guardados!', 'success');
-                // MODIFICADO: No es necesario actualizar AppState manualmente
+                // CORREGIDO: Actualizar el estado local inmediatamente.
+                const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
+                if (matchInState) matchInState.chamigo_votes = chamigoData;
+                populateMatchFilters('chamigo');
             }
         }
         function renderTtAttendancePlayers(match) {
@@ -1791,7 +1795,10 @@
             if (error) { showNotification('Error al guardar asistencia a TT', 'error'); } 
             else {
                 showNotification('Asistencia a TT guardada!', 'success');
-                // MODIFICADO: No es necesario actualizar AppState manualmente
+                // CORREGIDO: Actualizar el estado local inmediatamente.
+                const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
+                if (matchInState) matchInState.tt_attendees = attendees;
+                populateMatchFilters('tt');
             }
         }
         function renderPlayersListAdmin(searchTerm = '') {
@@ -1843,7 +1850,14 @@
                 showNotification(`Error al guardar jugador: ${error.message}`, 'error');
             } else {
                 showNotification('Jugador guardado exitosamente.', 'success');
-                // MODIFICADO: No es necesario el refreshDataAndRender
+                // CORREGIDO: Actualizar el estado local inmediatamente.
+                if (id) {
+                    const index = AppState.players.findIndex(p => p.id == id);
+                    if (index !== -1) AppState.players[index] = data;
+                } else {
+                    AppState.players.push(data);
+                }
+                renderPlayersListAdmin();
                 clearPlayerForm();
             }
         }
@@ -1867,7 +1881,9 @@
                     showNotification(`Error al eliminar jugador: ${error.message}`, 'error');
                 } else {
                     showNotification('Jugador eliminado exitosamente.', 'success');
-                     // MODIFICADO: No es necesario el refreshDataAndRender
+                     // CORREGIDO: Actualizar el estado local inmediatamente.
+                    AppState.players = AppState.players.filter(p => p.id != id);
+                    renderPlayersListAdmin();
                     clearPlayerForm();
                 }
             }
@@ -1918,7 +1934,7 @@
             if (error) { showNotification(`Error al guardar usuario: ${error.message}`, 'error'); }
             else {
                 showNotification('Usuario guardado.', 'success');
-                // MODIFICADO: No es necesario el refreshDataAndRender
+                // El Realtime handler se encargará de actualizar la UI para todos los clientes
                 clearUserForm();
             }
         }
@@ -1967,24 +1983,22 @@
                 return;
             }
 
-            const { error } = await supabase.from('matches').update({
+            const { data, error } = await supabase.from('matches').update({
                 match_date: newDate,
                 team_white_players: newTeamWhite,
                 team_dark_players: newTeamDark
-            }).eq('id', AppState.selectedMatchId);
+            }).eq('id', AppState.selectedMatchId).select().single();
             
             if (error) { showNotification('Error al actualizar el partido.', 'error'); }
             else {
                 showNotification('Partido actualizado.', 'success');
-                // MODIFICADO: No es necesario el refreshDataAndRender
+                // CORREGIDO: Actualizar el estado local inmediatamente.
+                const index = AppState.matches.findIndex(m => m.id == data.id);
+                if (index !== -1) AppState.matches[index] = data;
+                populateMatchFilters('edit');
             }
         }
         
-        // MODIFICADO: La función refreshDataAndRender ya no es necesaria, Realtime se encarga de mantener los datos actualizados.
-        /*
-        async function refreshDataAndRender(tabToRender) { ... }
-        */
-
         function showNotification(message, type = 'success') {
             const { notificationModal, notificationContent, notificationIcon, notificationMessage } = DOMElements;
             
@@ -2002,7 +2016,7 @@
 
             notificationModal.classList.remove('hidden');
 
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
                 notificationModal.classList.add('hidden');
             }, 3000);
 
