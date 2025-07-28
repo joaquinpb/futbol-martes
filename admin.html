@@ -1679,7 +1679,7 @@
                 resultValue = null;
             }
 
-            const { error } = await supabase.from('matches').update({ result: resultValue }).eq('id', AppState.selectedMatchId);
+            const { error } = await supabase.from('matches').update({ result: resultValue }).eq('id', parseInt(AppState.selectedMatchId, 10));
             if(error) { showNotification('Error al registrar resultado', 'error'); } 
             else {
                  showNotification('Resultado registrado!', 'success');
@@ -1689,7 +1689,7 @@
         async function handleDeleteMatchFromEdit() {
             const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
             if (confirmed) {
-                const { error } = await supabase.from('matches').delete().eq('id', AppState.selectedMatchId);
+                const { error } = await supabase.from('matches').delete().eq('id', parseInt(AppState.selectedMatchId, 10));
                 if(error) { showNotification('Error al eliminar partido', 'error'); } 
                 else {
                     showNotification('Partido eliminado.', 'success');
@@ -1742,9 +1742,9 @@
             const chamigoData = Object.keys(votes).length === 0 ? null : votes;
 
             // --- CORRECCIÓN APLICADA ---
-            // Se cambia la actualización directa por una llamada a la función RPC que creaste.
+            // Se convierte el ID del partido a número para que coincida con el tipo 'bigint' de la función RPC.
             const { error } = await supabase.rpc('update_chamigo_votes', {
-                match_id_param: AppState.selectedMatchId,
+                match_id_param: parseInt(AppState.selectedMatchId, 10),
                 chamigo_votes_param: chamigoData
             });
 
@@ -1788,9 +1788,9 @@
             const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
 
             // --- CORRECCIÓN APLICADA ---
-            // Se cambia la actualización directa por una llamada a la función RPC que creaste.
+            // Se convierte el ID del partido a número para que coincida con el tipo 'bigint' de la función RPC.
             const { error } = await supabase.rpc('update_tt_attendance', {
-                match_id_param: AppState.selectedMatchId,
+                match_id_param: parseInt(AppState.selectedMatchId, 10),
                 tt_attendees_param: attendees
             });
 
@@ -1981,7 +1981,7 @@
                 match_date: newDate,
                 team_white_players: newTeamWhite,
                 team_dark_players: newTeamDark
-            }).eq('id', AppState.selectedMatchId);
+            }).eq('id', parseInt(AppState.selectedMatchId, 10));
             
             if (error) { showNotification('Error al actualizar el partido.', 'error'); }
             else {
