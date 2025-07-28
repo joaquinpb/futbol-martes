@@ -537,7 +537,6 @@
             }
         }
         
-        // CORREGIDO: Lógica de Realtime simplificada para ser la única fuente de verdad.
         function setupRealtimeSubscriptions() {
             if (AppState.realtimeChannel) {
                 return; 
@@ -558,7 +557,6 @@
                 }
 
                 if (eventType === 'INSERT') {
-                    // Prevenir duplicados si el evento llega muy rápido
                     if (!dataArray.some(item => item.id === newRecord.id)) {
                         dataArray.push(newRecord);
                     }
@@ -567,7 +565,6 @@
                     if (index !== -1) {
                         dataArray[index] = newRecord;
                     } else {
-                        // Si no lo encuentra (caso raro), lo agrega
                         dataArray.push(newRecord);
                     }
                 } else if (eventType === 'DELETE') {
@@ -1475,27 +1472,25 @@
                 showNotification('Por favor, selecciona la fecha del partido.', 'warning');
                 return;
             }
-            // CORREGIDO: Se elimina parseInt para manejar IDs como texto.
+
             const teamWhitePlayers = Array.from(document.getElementById('team-claros').children).map(el => el.dataset.id);
             const teamDarkPlayers = Array.from(document.getElementById('team-oscuros').children).map(el => el.dataset.id);
 
-            // CORREGIDO: Se quita el .select() para no esperar la respuesta, Realtime se encargará.
-            const { error } = await supabase.from('matches').insert([{ 
-                match_date: matchDate,
-                team_white_players: teamWhitePlayers,
-                team_dark_players: teamDarkPlayers,
-                chamigo_votes: {},
-                tt_attendees: []
-            }]);
+            const { error } = await supabase.rpc('create_new_match', {
+                match_date_param: matchDate,
+                team_white_players_param: teamWhitePlayers,
+                team_dark_players_param: teamDarkPlayers
+            });
 
             if (error) {
                 showNotification(`Error al crear el partido: ${error.message}`, 'error');
+                console.error('Error RPC:', error);
             } else {
                 showNotification('Partido creado exitosamente!', 'success');
-                // CORREGIDO: Solo se re-renderiza para limpiar el formulario. El dato nuevo llegará por Realtime.
                 await navigateTo('team-formation');
             }
         }
+
         function populateMatchFilters(prefix) {
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
@@ -1736,6 +1731,7 @@
                 container.appendChild(playerDiv);
             });
         }
+        
         async function handleRegisterChamigo() {
             const votes = {};
             document.querySelectorAll('.chamigo-player-item').forEach(item => {
@@ -1745,13 +1741,23 @@
             
             const chamigoData = Object.keys(votes).length === 0 ? null : votes;
 
-            const { error } = await supabase.from('matches').update({ chamigo_votes: chamigoData }).eq('id', AppState.selectedMatchId);
-            if (error) { showNotification('Error al guardar votos de Chamigo', 'error'); } 
+            // --- CORRECCIÓN APLICADA ---
+            // Se cambia la actualización directa por una llamada a la función RPC que creaste.
+            const { error } = await supabase.rpc('update_chamigo_votes', {
+                match_id_param: AppState.selectedMatchId,
+                chamigo_votes_param: chamigoData
+            });
+
+            if (error) { 
+                showNotification('Error al guardar votos de Chamigo', 'error'); 
+                console.error('Error RPC (Chamigo):', error);
+            } 
             else {
                 showNotification('Votos de Chamigo guardados!', 'success');
                 // La UI se actualizará vía Realtime
             }
         }
+
         function renderTtAttendancePlayers(match) {
             const container = document.getElementById('tt-attendance-players');
             container.innerHTML = '';
@@ -1777,15 +1783,27 @@
                 container.appendChild(playerDiv);
             });
         }
+        
         async function handleRegisterTt() {
             const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
-            const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
-            if (error) { showNotification('Error al guardar asistencia a TT', 'error'); } 
+
+            // --- CORRECCIÓN APLICADA ---
+            // Se cambia la actualización directa por una llamada a la función RPC que creaste.
+            const { error } = await supabase.rpc('update_tt_attendance', {
+                match_id_param: AppState.selectedMatchId,
+                tt_attendees_param: attendees
+            });
+
+            if (error) { 
+                showNotification('Error al guardar asistencia a TT', 'error');
+                console.error('Error RPC (TT):', error);
+            } 
             else {
                 showNotification('Asistencia a TT guardada!', 'success');
                 // La UI se actualizará vía Realtime
             }
         }
+
         function renderPlayersListAdmin(searchTerm = '') {
             const tableBody = document.getElementById('players-list-admin');
             const normalizedSearch = searchTerm.toLowerCase();
