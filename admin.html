@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -999,9 +998,24 @@
                 hideChangePasswordModal();
             }
         }
+        
+        // --- MODIFICADO: Nueva función auxiliar para insertar jugadores alfabéticamente ---
+        function insertPlayerAlphabetically(playerEl, listEl) {
+            const playerName = playerEl.textContent;
+            let inserted = false;
+            for (const child of listEl.children) {
+                if (playerName.localeCompare(child.textContent) < 0) {
+                    listEl.insertBefore(playerEl, child);
+                    inserted = true;
+                    break;
+                }
+            }
+            if (!inserted) {
+                listEl.appendChild(playerEl);
+            }
+        }
 
-
-        // --- Renderizado de Secciones (sin cambios, omitido por brevedad) ---
+        // --- Renderizado de Secciones ---
         window.render_team_formation = () => {
             const leftCardBody = `
                 <div class="space-y-4">
@@ -1046,7 +1060,12 @@
             
             const titularesDiv = document.getElementById('titulares-players');
             const suplentesDiv = document.getElementById('suplentes-players');
-            AppState.players.filter(p => p.status === 'Activo').forEach(player => {
+            
+            // MODIFICADO: Ordenar jugadores alfabéticamente antes de mostrarlos
+            const activePlayers = AppState.players.filter(p => p.status === 'Activo');
+            activePlayers.sort((a, b) => a.name.localeCompare(b.name));
+
+            activePlayers.forEach(player => {
                 const playerEl = createPlayerElement(player);
                 if (player.role === 'Titular') titularesDiv.appendChild(playerEl);
                 else suplentesDiv.appendChild(playerEl);
@@ -1321,11 +1340,12 @@
 
                 const suplentesList = document.getElementById(isEditMode ? 'edit-suplentes-players' : 'suplentes-players');
                 const titularesList = document.getElementById(isEditMode ? 'edit-titulares-players' : 'titulares-players');
-
+                
+                // MODIFICADO: Usar la nueva función para insertar alfabéticamente
                 if (player && player.role === 'Suplente') {
-                    suplentesList.appendChild(playerEl);
+                    insertPlayerAlphabetically(playerEl, suplentesList);
                 } else if (player) {
-                    titularesList.appendChild(playerEl);
+                    insertPlayerAlphabetically(playerEl, titularesList);
                 }
                 if (!isEditMode) updateTeamCounts();
             };
