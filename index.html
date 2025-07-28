@@ -324,6 +324,63 @@
     
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- INICIO: GESTIÓN DE SESIÓN DE FILTROS ---
+        const FilterSessionManager = {
+            SESSION_KEY: 'laClandeFilterSession',
+            TIMEOUT_MS: 10 * 60 * 1000, // 10 minutos
+
+            getSession: function() {
+                const sessionData = localStorage.getItem(this.SESSION_KEY);
+                if (!sessionData) return null;
+                try {
+                    return JSON.parse(sessionData);
+                } catch (e) {
+                    console.error("Error parsing filter session", e);
+                    return null;
+                }
+            },
+
+            isExpired: function(session) {
+                if (!session || !session.lastActivity) return true;
+                const now = new Date().getTime();
+                return (now - session.lastActivity) > this.TIMEOUT_MS;
+            },
+
+            startOrResume: function() {
+                const session = this.getSession();
+                if (this.isExpired(session)) {
+                    this.clear();
+                    return null;
+                }
+                return session.filters;
+            },
+
+            update: function(filters) {
+                // Solo actualiza si hay filtros para no sobreescribir con un objeto vacío al inicio
+                if (!filters || Object.keys(filters).length === 0) {
+                    const existingSession = this.getSession();
+                     if (existingSession) { // Si existe una sesión, solo actualiza el timestamp
+                        const sessionData = {
+                            filters: existingSession.filters,
+                            lastActivity: new Date().getTime()
+                        };
+                        localStorage.setItem(this.SESSION_KEY, JSON.stringify(sessionData));
+                    }
+                    return;
+                }
+                const sessionData = {
+                    filters: filters,
+                    lastActivity: new Date().getTime()
+                };
+                localStorage.setItem(this.SESSION_KEY, JSON.stringify(sessionData));
+            },
+
+            clear: function() {
+                localStorage.removeItem(this.SESSION_KEY);
+            }
+        };
+        // --- FIN: GESTIÓN DE SESIÓN DE FILTROS ---
+
         // --- CONFIGURACIÓN Y VARIABLES GLOBALES ---
         const SUPABASE_URL = 'https://ccvfhajwlfhnrmftqpxs.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjdmZoYWp3bGZobnJtZnRxcHhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyMTQyMDksImV4cCI6MjA2ODc5MDIwOX0._7seIybO8-cvmj0qd4a86Cht63Yl2Y0OPGSenEv9emk';
@@ -333,6 +390,7 @@
         let allMatchDates = [];
         let lastSelectedFixtureMatchId = null;
         let currentEstadisticasData = []; // Cache para datos de estadísticas
+        let globalFilterState = {}; // Almacena el estado actual de los filtros
 
         let estadisticasSortState = { criterion: 'points', order: 'desc' };
 
@@ -421,9 +479,20 @@
             const yearSelect = document.getElementById(yearSelectId);
             const periodSelect = document.getElementById(periodSelectId);
             if (!periodSelect || !yearSelect) return;
-            
-            if (!yearSelect.value || yearSelect.value === 'all' || !periodSelect.value) {
-                setTodayFilters(yearSelectId.replace('-year-select', ''));
+
+            // Lógica modificada para usar el estado global de filtros
+            if (globalFilterState.year && globalFilterState.period) {
+                if (Array.from(yearSelect.options).some(opt => opt.value === globalFilterState.year)) {
+                    yearSelect.value = globalFilterState.year;
+                }
+                periodSelect.value = globalFilterState.period;
+            } else {
+                // Si no hay estado global, establece a "hoy" y actualiza el estado global
+                const prefix = yearSelectId.replace('-year-select', '');
+                setTodayFilters(prefix);
+                globalFilterState.year = yearSelect.value;
+                globalFilterState.period = periodSelect.value;
+                FilterSessionManager.update(globalFilterState);
             }
         }
 
@@ -1215,9 +1284,8 @@
         }
 
         function activateTab(tabId) {
-            const filtersBeforeRender = saveFiltersState();
+            // Se eliminó la lógica de save/restore state, ahora se usa globalFilterState
             DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
-            restoreFiltersState(filtersBeforeRender);
             
             DOMElements.tabButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
@@ -1241,26 +1309,6 @@
                 history.pushState(null, '', hash);
             }
         }
-        
-        function saveFiltersState() {
-            const activeFilters = DOMElements.mainContentArea.querySelectorAll('select, input');
-            const state = {};
-            activeFilters.forEach(el => {
-                if (el.id) {
-                    state[el.id] = el.value;
-                }
-            });
-            return state;
-        }
-
-        function restoreFiltersState(state) {
-            Object.keys(state).forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.value = state[id];
-                }
-            });
-        }
 
         function setupDynamicEventListeners(tabId) {
             const prefix = tabId.replace('-content', '');
@@ -1277,17 +1325,52 @@
                 });
             }
 
-            if (renderFn && !tabId.startsWith('fixture') && !tabId.startsWith('estadisticas')) {
-                document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => { setTodayFilters(prefix); renderFn(); });
-                document.getElementById(`${prefix}-year-select`)?.addEventListener('change', renderFn);
-                document.getElementById(`${prefix}-period-select`)?.addEventListener('change', renderFn);
-            }
-            if (tabId === 'estadisticas-content') {
-                 const resetAndRender = () => { currentEstadisticasData = []; renderEstadisticas(); };
-                 document.getElementById('estadisticas-hoy-button')?.addEventListener('click', () => { setTodayFilters('estadisticas'); resetAndRender(); });
-                 document.getElementById('estadisticas-year-select')?.addEventListener('change', resetAndRender);
-                 document.getElementById('estadisticas-period-select')?.addEventListener('change', resetAndRender);
+            // Manejador de cambio de filtro centralizado
+            const handleFilterChange = () => {
+                const yearSelect = document.getElementById(`${prefix}-year-select`);
+                const periodSelect = document.getElementById(`${prefix}-period-select`);
+                const monthSelect = document.getElementById(`${prefix}-month-select`);
 
+                if (yearSelect) globalFilterState.year = yearSelect.value;
+                if (periodSelect) globalFilterState.period = periodSelect.value;
+                if (monthSelect) {
+                    // Asegurarse de no guardar "period" si estamos en una pestaña con "month"
+                    delete globalFilterState.period;
+                    globalFilterState.month = monthSelect.value;
+                } else if (periodSelect) {
+                    // Asegurarse de no guardar "month" si estamos en una pestaña con "period"
+                    delete globalFilterState.month;
+                }
+
+                FilterSessionManager.update(globalFilterState);
+
+                // Re-renderizar la pestaña actual
+                if (renderFn) {
+                    if (prefix === 'estadisticas') {
+                        currentEstadisticasData = []; // Limpiar caché para forzar recálculo
+                        renderEstadisticas();
+                    } else if (prefix === 'fixture') {
+                        renderFixture(true);
+                    } else {
+                        renderFn();
+                    }
+                }
+            };
+
+            // Asignar listeners
+            document.getElementById(`${prefix}-year-select`)?.addEventListener('change', handleFilterChange);
+            document.getElementById(`${prefix}-period-select`)?.addEventListener('change', handleFilterChange);
+            document.getElementById(`${prefix}-month-select`)?.addEventListener('change', handleFilterChange);
+
+            // Lógica del botón "Hoy"
+            document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => {
+                const isMonthFilter = prefix === 'fixture';
+                setTodayFilters(prefix, isMonthFilter); // Esto actualiza el DOM
+                handleFilterChange(); // Esto actualiza el estado global y renderiza
+            });
+
+            // Lógica específica de la pestaña de Estadísticas (ordenamiento)
+            if (tabId === 'estadisticas-content') {
                  const table = document.getElementById('estadisticas-table');
                  table?.addEventListener('click', (e) => {
                      const th = e.target.closest('th[data-sort]');
@@ -1302,19 +1385,30 @@
                      renderEstadisticas(true);
                  });
             }
-            if (tabId === 'fixture-content') {
-                populateYearSelects('fixture-year-select');
-                populateMonthSelects('fixture-month-select');
-                setTodayFilters('fixture', true);
-                document.getElementById('fixture-hoy-button')?.addEventListener('click', () => { setTodayFilters('fixture', true); renderFixture(true); });
-                document.getElementById('fixture-year-select')?.addEventListener('change', () => renderFixture(true));
-                document.getElementById('fixture-month-select')?.addEventListener('change', () => renderFixture(true));
+            
+            // Lógica para poblar los filtros al cargar la pestaña
+            if (tabId.includes('content') && !tabId.includes('individual')) {
+                const isMonthFilter = prefix === 'fixture';
+                if (isMonthFilter) {
+                    populateYearSelects('fixture-year-select');
+                    populateMonthSelects('fixture-month-select');
+                    
+                    if (globalFilterState.year && globalFilterState.month) {
+                        document.getElementById('fixture-year-select').value = globalFilterState.year;
+                        document.getElementById('fixture-month-select').value = globalFilterState.month;
+                    } else {
+                        setTodayFilters('fixture', true);
+                        globalFilterState.year = document.getElementById('fixture-year-select').value;
+                        globalFilterState.month = document.getElementById('fixture-month-select').value;
+                        FilterSessionManager.update(globalFilterState);
+                    }
+                } else {
+                    populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
+                }
             }
+            
             if (tabId === 'individual-stats-content') {
                 setupPlayerSearch();
-            }
-            if (tabId.includes('content') && !tabId.includes('fixture') && !tabId.includes('individual')) {
-                populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
             }
         }
         
@@ -1353,8 +1447,22 @@
         }
 
         function init() {
-            console.log('Aplicación LA CLANDE cargada y corregida!');
+            console.log('Aplicación LA CLANDE cargada y con sesión de filtros implementada.');
             
+            // --- INICIO: Lógica de Sesión ---
+            const sessionFilters = FilterSessionManager.startOrResume();
+            if (sessionFilters) {
+                globalFilterState = sessionFilters;
+            }
+
+            // Eventos para mantener la sesión activa
+            ['click', 'scroll', 'keydown'].forEach(eventType => {
+                window.addEventListener(eventType, () => {
+                    FilterSessionManager.update(globalFilterState); 
+                }, true);
+            });
+            // --- FIN: Lógica de Sesión ---
+
             applyTheme(localStorage.getItem('theme') || 'light');
             
             DOMElements.darkModeToggle.addEventListener('click', toggleTheme);
