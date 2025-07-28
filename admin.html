@@ -537,6 +537,7 @@
             }
         }
         
+        // CORREGIDO: Lógica de Realtime más robusta para evitar duplicados y bucles.
         function setupRealtimeSubscriptions() {
             if (AppState.realtimeChannel) {
                 return; 
@@ -549,52 +550,49 @@
                 const { table, eventType, new: newRecord, old: oldRecord } = payload;
                 
                 let dataArray;
-                let sortNeeded = false;
+                let needsUpdate = false;
 
                 switch(table) {
                     case 'players': dataArray = AppState.players; break;
-                    case 'matches': dataArray = AppState.matches; sortNeeded = true; break;
-                    case 'profiles': 
-                        if (eventType === 'UPDATE' && AppState.userRole === 'Admin') {
-                            const userIndex = AppState.users.findIndex(u => u.id === newRecord.id);
-                            if (userIndex !== -1) {
-                                AppState.users[userIndex].name = newRecord.name;
-                                AppState.users[userIndex].role = newRecord.role;
-                                const currentTab = localStorage.getItem('lastAdminTab');
-                                if (currentTab === 'user-management') navigateTo(currentTab);
-                            }
-                        }
-                        return;
+                    case 'matches': dataArray = AppState.matches; break;
                     default: return;
                 }
 
                 if (eventType === 'INSERT') {
-                    dataArray.push(newRecord);
-                }
-                else if (eventType === 'UPDATE') {
+                    // Solo agregar si no existe para evitar duplicados del cliente que origina la acción.
+                    if (!dataArray.some(item => item.id === newRecord.id)) {
+                        dataArray.push(newRecord);
+                        needsUpdate = true;
+                    }
+                } else if (eventType === 'UPDATE') {
                     const index = dataArray.findIndex(item => item.id === newRecord.id);
-                    if (index !== -1) dataArray[index] = newRecord;
-                }
-                else if (eventType === 'DELETE') {
+                    if (index !== -1) {
+                        dataArray[index] = newRecord;
+                        needsUpdate = true;
+                    }
+                } else if (eventType === 'DELETE') {
                     const idToDelete = oldRecord.id;
                     const index = dataArray.findIndex(item => item.id === idToDelete);
-                    if (index !== -1) dataArray.splice(index, 1);
-                }
-                
-                if (sortNeeded) {
-                    AppState.matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+                    if (index !== -1) {
+                        dataArray.splice(index, 1);
+                        needsUpdate = true;
+                    }
                 }
 
-                const currentTab = localStorage.getItem('lastAdminTab');
-                if (currentTab) {
-                    navigateTo(currentTab);
+                if (needsUpdate) {
+                    if (table === 'matches') {
+                        AppState.matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+                    }
+                    const currentTab = localStorage.getItem('lastAdminTab');
+                    if (currentTab) {
+                        navigateTo(currentTab);
+                    }
                 }
             };
 
             AppState.realtimeChannel = supabase.channel('public:admin_changes')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, handleChanges)
                 .subscribe((status, err) => {
                     if (status === 'SUBSCRIBED') {
                         console.log('Realtime channel subscribed successfully!');
@@ -1495,8 +1493,10 @@
             } else {
                 showNotification('Partido creado exitosamente!', 'success');
                 // CORREGIDO: Actualizar el estado local inmediatamente para respuesta instantánea.
-                AppState.matches.unshift(data);
-                AppState.matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+                if (data) {
+                    AppState.matches.unshift(data);
+                    AppState.matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+                }
                 await navigateTo('team-formation');
             }
         }
@@ -2063,6 +2063,3 @@
     </script>
 </body>
 </html>
-```
-
-Ahora sí, con ambos archivos actualizados y la configuración de "Publications" en Supabase revisada, la aplicación debería funcionar de manera fluida y correcta. ¡Probalo y me dec
