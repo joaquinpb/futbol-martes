@@ -192,18 +192,22 @@
             background: linear-gradient(to right, #e53e3e, var(--danger-color));
         }
 
-        /* --- CORRECCIÓN DE EFECTO HOVER --- */
-        /* Resaltado para el menú lateral (que siempre es oscuro) */
-        .nav-link:not(.active):hover {
-            background-color: var(--sidebar-hover-bg);
+        /* --- CORRECCIÓN DE EFECTO HOVER (DEFINITIVO) --- */
+
+        /* -- TEMA CLARO -- */
+        html:not(.dark) .nav-link:not(.active):hover {
+            background-color: #e5e7eb; /* Color de resaltado para el sidebar (gris-200) */
         }
-        
-        /* Resaltado para los items del menú de usuario */
-        .dropdown-item:hover {
-            background-color: #f3f4f6; /* Un gris claro para el tema light */
+        html:not(.dark) .dropdown-item:hover {
+            background-color: #e5e7eb; /* Mismo color para el menú de usuario (gris-200) */
+        }
+
+        /* -- TEMA OSCURO -- */
+        html.dark .nav-link:not(.active):hover {
+            background-color: var(--sidebar-hover-bg); /* Color oscuro para el sidebar */
         }
         html.dark .dropdown-item:hover {
-            background-color: #374151; /* Un gris más notorio para el tema dark */
+            background-color: #374151; /* Color oscuro para el menú de usuario */
         }
         
     </style>
@@ -222,7 +226,7 @@
     <!-- Main Application Container -->
     <div id="app-container" class="flex min-h-screen hidden">
         <!-- Sidebar for Desktop -->
-        <aside id="sidebar" class="w-64 bg-sidebar-bg text-sidebar-text flex-col hidden md:flex">
+        <aside id="sidebar" class="w-64 flex-col hidden md:flex">
             <div class="px-6 py-4 flex items-center">
                 <a href="#" class="text-xl font-bold flex items-center gap-2">
                     <span class="text-2xl">⚽</span>
@@ -233,8 +237,6 @@
             <nav id="main-nav" class="flex-1 px-4 space-y-2 overflow-y-auto">
                 <!-- Los enlaces de navegación se insertan aquí con JS -->
             </nav>
-
-            <!-- El botón de modo oscuro fue movido al menú de usuario -->
         </aside>
 
         <!-- Main content -->
@@ -595,6 +597,18 @@
             document.documentElement.classList.toggle('dark', theme === 'dark');
             localStorage.setItem('theme', theme);
             updateThemeToggleIcons();
+
+            // MODIFICADO: Lógica para cambiar el tema del sidebar
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                if (theme === 'dark') {
+                    sidebar.classList.add('bg-sidebar-bg', 'text-sidebar-text');
+                    sidebar.classList.remove('bg-secondary', 'text-text-primary', 'border-r', 'border-border-color');
+                } else {
+                    sidebar.classList.remove('bg-sidebar-bg', 'text-sidebar-text');
+                    sidebar.classList.add('bg-secondary', 'text-text-primary', 'border-r', 'border-border-color');
+                }
+            }
         }
 
         function setupUI() {
@@ -843,7 +857,6 @@
             const userName = AppState.userName || 'Usuario';
             const userEmail = AppState.userEmail || 'email@example.com';
             
-            // MODIFICADO: Se añade la clase .dropdown-item a los elementos interactivos
             const dropdownHTML = `
                 <div class="user-menu-dropdown card hidden origin-top-right absolute right-0 top-full mt-2 w-56 rounded-md shadow-lg py-1 text-sm z-50">
                     <div class="px-4 py-2 border-b border-border-color">
