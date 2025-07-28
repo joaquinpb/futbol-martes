@@ -367,7 +367,6 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let allPlayersData = [];
-        // MODIFICADO: Ahora `allMatchesData` contendrá todos los datos de los partidos, no solo las fechas.
         let allMatchesData = [];
         let lastSelectedFixtureMatchId = null;
         let currentEstadisticasData = []; 
@@ -431,7 +430,6 @@
         function populateYearSelects(selectId) {
             const yearSelect = document.getElementById(selectId);
             if (!yearSelect) return;
-            // MODIFICADO: Usa allMatchesData en lugar de allMatchDates
             const years = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
             
             const currentValue = yearSelect.value;
@@ -484,7 +482,6 @@
              }
         }
 
-        // MODIFICADO: La función ahora usa los datos locales (allMatchesData) en lugar de hacer una nueva consulta a la DB.
         function calculateStatsForPeriod(yearSelectId, periodSelectId) {
             const selectedYear = document.getElementById(yearSelectId)?.value;
             const selectedPeriod = document.getElementById(periodSelectId)?.value;
@@ -582,7 +579,6 @@
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Calculando...`;
             
-            // MODIFICADO: Usa la función sincrónica
             const { players, error } = calculateStatsForPeriod(`${section}-year-select`, `${section}-period-select`);
             
             if (error) {
@@ -834,7 +830,6 @@
         }
 
         function renderFixtureDetails(matchId, fromUserClick = false) {
-            // MODIFICADO: Busca el partido en los datos locales en lugar de hacer una nueva consulta
             const match = allMatchesData.find(m => m.id == matchId);
             if (!match) { console.error("Match details not found locally for ID:", matchId); return; }
             
@@ -1364,29 +1359,40 @@
             'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
         };
 
-        // NUEVO: Función para configurar las suscripciones de Realtime
+        // CORREGIDO: Lógica de Realtime mejorada.
         function setupRealtimeSubscriptions() {
             console.log('Setting up Realtime subscriptions for stats page...');
             
-            const handleChanges = async (payload) => {
+            const handleChanges = (payload) => {
                 console.log('Change received on stats page!', payload);
-                const { table, eventType } = payload;
+                const { table, eventType, new: newRecord, old: oldRecord } = payload;
                 
-                // Un cambio en cualquiera de las tablas requiere recargar todos los datos para recalcular las estadísticas.
-                // Esto es más simple y robusto que intentar parchear los datos calculados.
-                const { data: players, error: pError } = await supabaseClient.from('players').select('*');
-                // MODIFICADO: Ahora traemos todos los datos de los partidos
-                const { data: matches, error: mError } = await supabaseClient.from('matches').select('*');
+                let dataArray;
+                let sortNeeded = false;
 
-                if (pError || mError) {
-                    console.error("Error reloading data after realtime event:", pError || mError);
-                    return;
+                switch(table) {
+                    case 'players': dataArray = allPlayersData; break;
+                    case 'matches': dataArray = allMatchesData; sortNeeded = true; break;
+                    default: return;
+                }
+
+                if (eventType === 'INSERT') {
+                    dataArray.push(newRecord);
+                }
+                else if (eventType === 'UPDATE') {
+                    const index = dataArray.findIndex(item => item.id === newRecord.id);
+                    if (index !== -1) dataArray[index] = newRecord;
+                }
+                else if (eventType === 'DELETE') {
+                    const idToDelete = oldRecord.id;
+                    const index = dataArray.findIndex(item => item.id === idToDelete);
+                    if (index !== -1) dataArray.splice(index, 1);
                 }
                 
-                allPlayersData = players;
-                allMatchesData = matches;
-                
-                // Refrescar la vista actual para mostrar los datos actualizados
+                if (sortNeeded) {
+                    allMatchesData.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+                }
+
                 const activeTabButton = document.querySelector('.tab-button.active');
                 if (activeTabButton) {
                     const tabId = activeTabButton.dataset.tab;
@@ -1400,9 +1406,12 @@
             const channel = supabaseClient.channel('public:stats_changes')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
-                .subscribe((status) => {
+                .subscribe((status, err) => {
                     if (status === 'SUBSCRIBED') {
                         console.log('Stats page subscribed to Realtime channel!');
+                    }
+                     if (status === 'CHANNEL_ERROR') {
+                        console.error('Realtime channel error:', err);
                     }
                 });
         }
@@ -1410,15 +1419,13 @@
         async function initializeApp() {
             try {
                 const { data: players, error: pError } = await supabaseClient.from('players').select('*');
-                // MODIFICADO: Traer todos los datos de los partidos desde el inicio
                 const { data: matches, error: mError } = await supabaseClient.from('matches').select('*');
 
                 if (pError || mError) throw pError || mError;
                 
                 allPlayersData = players;
-                allMatchesData = matches;
+                allMatchesData = matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
 
-                // NUEVO: Iniciar las suscripciones de Realtime
                 setupRealtimeSubscriptions();
 
                 const hash = window.location.hash;
