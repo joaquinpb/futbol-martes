@@ -340,7 +340,8 @@
             <p class="text-secondary mb-6" id="assign-modal-player-name">Nombre del Jugador</p>
             <div class="flex flex-col space-y-3">
                 <button id="assign-to-claros" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-100 text-black font-semibold rounded-md hover:opacity-90 transition">Mover a Claros</button>
-                <button id="assign-to-oscuros" class="w-full px-4 py-2 bg-gray-800 text-white font-semibold rounded-md hover:opacity-90 transition">Mover a Oscuros</button>
+                <!-- CHANGE: Improved contrast for dark mode -->
+                <button id="assign-to-oscuros" class="w-full px-4 py-2 bg-gray-900 border border-gray-700 text-white font-semibold rounded-md hover:bg-gray-700 transition">Mover a Oscuros</button>
                 <button id="assign-modal-cancel" class="mt-4 text-sm text-secondary hover:underline">Cancelar</button>
             </div>
         </div>
@@ -1285,6 +1286,16 @@
                         <label for="edit-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
                         <input type="date" id="edit-match-date" class="w-full p-2 border rounded-md">
                     </div>
+                    <div>
+                        <label for="edit-match-result" class="block text-sm font-medium mb-1">Resultado</label>
+                        <select id="edit-match-result" class="w-full p-2 border rounded-md">
+                             <option value="">Seleccionar resultado</option>
+                             <option value="Claros">Claros</option>
+                             <option value="Oscuros">Oscuros</option>
+                             <option value="Empate">Empate</option>
+                             <option value="Suspendido">Suspendido</option>
+                        </select>
+                     </div>
                     <div class="flex flex-col sm:flex-row gap-4 pt-4">
                         <button id="update-match-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition">
                             Actualizar Partido
@@ -1533,7 +1544,6 @@
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
             
-            // FIX: Use getUTCFullYear to avoid timezone issues when creating the year list
             const years = [...new Set(AppState.matches.map(m => new Date(m.match_date).getUTCFullYear()))].sort((a,b) => b-a);
             yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
             
@@ -1542,7 +1552,6 @@
             
             const mostRecentMatchDate = AppState.matches.length > 0 ? new Date(AppState.matches[0].match_date) : new Date();
             
-            // FIX: Use getUTCFullYear and getUTCMonth for setting the initial filter values
             if (years.includes(mostRecentMatchDate.getUTCFullYear())) yearSelect.value = mostRecentMatchDate.getUTCFullYear();
             monthSelect.value = mostRecentMatchDate.getUTCMonth();
 
@@ -1551,7 +1560,6 @@
                 const selectedYear = yearSelect.value;
                 const selectedMonth = monthSelect.value;
                 const filteredMatches = AppState.matches.filter(m => {
-                    // FIX: Use getUTCFullYear and getUTCMonth for filtering to prevent timezone shifts
                     const d = new Date(m.match_date);
                     return d.getUTCFullYear() == selectedYear && d.getUTCMonth() == selectedMonth;
                 });
@@ -1568,7 +1576,6 @@
                 
                 listContainer.innerHTML = filteredMatches.map(match => {
                     const d = new Date(match.match_date);
-                    // Using timeZone: 'UTC' here ensures the displayed date is correct and not shifted by local timezone.
                     const formattedDate = d.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'});
                     return `
                         <div class="match-item border-l-4 p-3 rounded-r-lg cursor-pointer transition" data-match-id="${match.id}">
@@ -1699,6 +1706,9 @@
         }
         function setupEditMatchPanel(panel, match) {
             renderEditMatchPlayers(match);
+            
+            // CHANGE: Populate the new result dropdown
+            panel.querySelector('#edit-match-result').value = match.result || '';
             
             const updateBtn = panel.querySelector('#update-match-button');
             const deleteBtn = panel.querySelector('#delete-match-from-edit-button');
@@ -2009,21 +2019,34 @@
             const newDate = document.getElementById('edit-match-date').value;
             const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
             const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => el.dataset.id);
+            let newResult = document.getElementById('edit-match-result').value;
+            if (newResult === "") {
+                newResult = null;
+            }
             
             if (newTeamWhite.length + newTeamDark.length !== 10) {
                 showNotification('Deben haber 10 jugadores en total para conformar los equipos.', 'warning');
                 return;
             }
 
-            const { error } = await supabase.rpc('update_match_teams', {
-                match_id_param: AppState.selectedMatchId,
-                new_date_param: newDate,
-                new_team_white_param: newTeamWhite,
-                new_team_dark_param: newTeamDark
-            });
+            // CHANGE: Run both updates concurrently
+            const [teamsResult, resultResult] = await Promise.all([
+                supabase.rpc('update_match_teams', {
+                    match_id_param: AppState.selectedMatchId,
+                    new_date_param: newDate,
+                    new_team_white_param: newTeamWhite,
+                    new_team_dark_param: newTeamDark
+                }),
+                supabase.rpc('update_match_result', {
+                    match_id_param: AppState.selectedMatchId,
+                    new_result: newResult
+                })
+            ]);
+
+            const error = teamsResult.error || resultResult.error;
             
             if (error) { 
-                showNotification('Error al actualizar el partido.', 'error');
+                showNotification(`Error al actualizar el partido: ${error.message}`, 'error');
                 console.error('Error RPC (Update Match):', error);
             }
             else {
