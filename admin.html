@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -192,22 +193,18 @@
             background: linear-gradient(to right, #e53e3e, var(--danger-color));
         }
 
-        /* --- CORRECCIÓN DE EFECTO HOVER (DEFINITIVO) --- */
-
-        /* -- TEMA CLARO -- */
         html:not(.dark) .nav-link:not(.active):hover {
-            background-color: #e5e7eb; /* Color de resaltado para el sidebar (gris-200) */
+            background-color: #e5e7eb;
         }
         html:not(.dark) .dropdown-item:hover {
-            background-color: #e5e7eb; /* Mismo color para el menú de usuario (gris-200) */
+            background-color: #e5e7eb;
         }
 
-        /* -- TEMA OSCURO -- */
         html.dark .nav-link:not(.active):hover {
-            background-color: var(--sidebar-hover-bg); /* Color oscuro para el sidebar */
+            background-color: var(--sidebar-hover-bg);
         }
         html.dark .dropdown-item:hover {
-            background-color: #374151; /* Color oscuro para el menú de usuario */
+            background-color: #374151;
         }
         
     </style>
@@ -344,7 +341,8 @@
             <p class="text-secondary mb-6" id="assign-modal-player-name">Nombre del Jugador</p>
             <div class="flex flex-col space-y-3">
                 <button id="assign-to-claros" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-100 text-black font-semibold rounded-md hover:opacity-90 transition">Mover a Claros</button>
-                <button id="assign-to-oscuros" class="w-full px-4 py-2 bg-gray-800 text-white font-semibold rounded-md hover:opacity-90 transition">Mover a Oscuros</button>
+                <!-- CHANGE: Improved contrast for dark mode -->
+                <button id="assign-to-oscuros" class="w-full px-4 py-2 bg-gray-900 border border-gray-700 text-white font-semibold rounded-md hover:bg-gray-700 transition">Mover a Oscuros</button>
                 <button id="assign-modal-cancel" class="mt-4 text-sm text-secondary hover:underline">Cancelar</button>
             </div>
         </div>
@@ -406,6 +404,8 @@
             isInitialized: false,
             isInitializing: false,
             activePlayerElement: null,
+            realtimeChannel: null,
+            heartbeatInterval: null
         };
 
         const NAV_ITEMS = {
@@ -466,6 +466,11 @@
                 } 
                 else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
                     showLoginScreen();
+                    if (AppState.realtimeChannel) {
+                        supabase.removeChannel(AppState.realtimeChannel);
+                        AppState.realtimeChannel = null;
+                        clearInterval(AppState.heartbeatInterval);
+                    }
                 }
             });
         }
@@ -508,6 +513,8 @@
 
                 setupUI();
                 
+                setupRealtimeSubscriptions();
+                
                 const savedTab = localStorage.getItem('lastAdminTab');
                 const allNavItems = [...NAV_ITEMS.main, ...NAV_ITEMS.admin];
                 const isValidTab = allNavItems.some(item => item.id === savedTab);
@@ -532,6 +539,106 @@
                 AppState.isInitialized = true;
                 window.scrollTo(0, 0);
             }
+        }
+        
+        function setupRealtimeSubscriptions() {
+            // Si ya existe un canal, lo removemos para empezar de cero.
+            if (AppState.realtimeChannel) {
+                supabase.removeChannel(AppState.realtimeChannel);
+                AppState.realtimeChannel = null;
+            }
+            // Detenemos cualquier heartbeat anterior.
+            clearInterval(AppState.heartbeatInterval);
+            
+            console.log('Setting up Realtime subscriptions...');
+
+            const handleChanges = (payload) => {
+                console.log('Change received!', payload);
+                const { table, eventType, new: newRecord, old: oldRecord } = payload;
+                
+                let dataArray;
+                
+                switch(table) {
+                    case 'players': dataArray = AppState.players; break;
+                    case 'matches': dataArray = AppState.matches; break;
+                    case 'profiles': dataArray = AppState.users; break;
+                    default: return;
+                }
+
+                if (eventType === 'INSERT') {
+                    if (!dataArray.some(item => item.id === newRecord.id)) {
+                        dataArray.push(newRecord);
+                    }
+                } else if (eventType === 'UPDATE') {
+                    const index = dataArray.findIndex(item => item.id === newRecord.id);
+                    if (index !== -1) {
+                        dataArray[index] = { ...dataArray[index], ...newRecord };
+                    } else {
+                        dataArray.push(newRecord);
+                    }
+                } else if (eventType === 'DELETE') {
+                    const idToDelete = oldRecord.id;
+                    const index = dataArray.findIndex(item => item.id === idToDelete);
+                    if (index !== -1) {
+                        dataArray.splice(index, 1);
+                    }
+                }
+
+                if (table === 'matches') {
+                    AppState.matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+                }
+                
+                const currentTab = localStorage.getItem('lastAdminTab');
+                if (currentTab) {
+                    navigateTo(currentTab);
+                }
+            };
+            
+            const channel = supabase.channel('public:admin_changes', {
+                config: {
+                    broadcast: { ack: true }
+                }
+            });
+
+            const startHeartbeat = () => {
+                clearInterval(AppState.heartbeatInterval);
+                AppState.heartbeatInterval = setInterval(() => {
+                    if (channel.state === 'joined') {
+                        channel.send({
+                            type: 'broadcast',
+                            event: 'heartbeat',
+                            payload: { message: 'alive' },
+                        });
+                        console.log('Realtime heartbeat sent.');
+                    }
+                }, 30000);
+            };
+
+            const stopHeartbeat = () => {
+                clearInterval(AppState.heartbeatInterval);
+            };
+
+            channel
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, handleChanges)
+                .subscribe((status, err) => {
+                    console.log(`Realtime status: ${status}`);
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Realtime channel subscribed successfully!');
+                        startHeartbeat();
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        console.error(`Realtime channel issue: ${status}`, err);
+                        stopHeartbeat();
+                        // Intentamos reconectar después de 5 segundos
+                        setTimeout(() => setupRealtimeSubscriptions(), 5000); 
+                    } else if (status === 'CLOSED') {
+                        console.warn('Realtime channel closed.');
+                        stopHeartbeat();
+                    }
+                });
+
+            AppState.realtimeChannel = channel;
         }
         
         function showLoginScreen() {
@@ -598,7 +705,6 @@
             localStorage.setItem('theme', theme);
             updateThemeToggleIcons();
 
-            // MODIFICADO: Lógica para cambiar el tema del sidebar
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
                 if (theme === 'dark') {
@@ -999,7 +1105,6 @@
             }
         }
         
-        // --- MODIFICADO: Nueva función auxiliar para insertar jugadores alfabéticamente ---
         function insertPlayerAlphabetically(playerEl, listEl) {
             const playerName = playerEl.textContent;
             let inserted = false;
@@ -1061,7 +1166,6 @@
             const titularesDiv = document.getElementById('titulares-players');
             const suplentesDiv = document.getElementById('suplentes-players');
             
-            // MODIFICADO: Ordenar jugadores alfabéticamente antes de mostrarlos
             const activePlayers = AppState.players.filter(p => p.status === 'Activo');
             activePlayers.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -1185,6 +1289,16 @@
                         <label for="edit-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
                         <input type="date" id="edit-match-date" class="w-full p-2 border rounded-md">
                     </div>
+                    <div>
+                        <label for="edit-match-result" class="block text-sm font-medium mb-1">Resultado</label>
+                        <select id="edit-match-result" class="w-full p-2 border rounded-md">
+                             <option value="">Seleccionar resultado</option>
+                             <option value="Claros">Claros</option>
+                             <option value="Oscuros">Oscuros</option>
+                             <option value="Empate">Empate</option>
+                             <option value="Suspendido">Suspendido</option>
+                        </select>
+                     </div>
                     <div class="flex flex-col sm:flex-row gap-4 pt-4">
                         <button id="update-match-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition">
                             Actualizar Partido
@@ -1196,7 +1310,7 @@
                 </div>`;
 
             const panelContent = `
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div id="edit-match-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     ${cardTemplate('JUGADORES', leftCardBody)}
                     ${cardTemplate('EQUIPOS', rightCardBody)}
                 </div>`;
@@ -1286,7 +1400,7 @@
                     </div>
                     <div class="flex gap-3 pt-2">
                         <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
-                        <button type="button" id="clear-user-form-button" class="flex-1 px-4 py-2 button-secondary font-semibold rounded-lg shadow-md hover:opacity-90">Limpiar</button>
+                        <button type="button" id="clear-user-form-button" class="flex-1 px-4 py-2 bg-gray-400 text-gray-800 hover:bg-gray-500 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500 font-semibold rounded-lg shadow-md transition">Limpiar</button>
                     </div>
                 </form>`;
             const listBody = `
@@ -1341,7 +1455,6 @@
                 const suplentesList = document.getElementById(isEditMode ? 'edit-suplentes-players' : 'suplentes-players');
                 const titularesList = document.getElementById(isEditMode ? 'edit-titulares-players' : 'titulares-players');
                 
-                // MODIFICADO: Usar la nueva función para insertar alfabéticamente
                 if (player && player.role === 'Suplente') {
                     insertPlayerAlphabetically(playerEl, suplentesList);
                 } else if (player) {
@@ -1380,7 +1493,7 @@
         function movePlayerToTeam(teamId) {
             if (!AppState.activePlayerElement) return;
             
-            const isEditMode = !!AppState.activePlayerElement.closest('#edit-match-content');
+            const isEditMode = !!AppState.activePlayerElement.closest('#edit-match-container');
             const finalTeamId = isEditMode ? `edit-${teamId}` : teamId;
             
             const teamContainer = document.getElementById(finalTeamId);
@@ -1404,36 +1517,37 @@
             
             document.getElementById('save-teams-button').disabled = !(clarosCount === 5 && oscurosCount === 5 && matchDate);
         }
+        
         async function handleSaveTeams() {
             const matchDate = document.getElementById('team-match-date').value;
             if (!matchDate) { 
                 showNotification('Por favor, selecciona la fecha del partido.', 'warning');
                 return;
             }
+
             const teamWhitePlayers = Array.from(document.getElementById('team-claros').children).map(el => el.dataset.id);
             const teamDarkPlayers = Array.from(document.getElementById('team-oscuros').children).map(el => el.dataset.id);
 
-            const { data, error } = await supabase.from('matches').insert([{ 
-                match_date: matchDate,
-                team_white_players: teamWhitePlayers,
-                team_dark_players: teamDarkPlayers,
-                chamigo_votes: {},
-                tt_attendees: []
-            }]).select().single();
+            const { error } = await supabase.rpc('create_new_match', {
+                match_date_param: matchDate,
+                team_white_players_param: teamWhitePlayers,
+                team_dark_players_param: teamDarkPlayers
+            });
 
             if (error) {
                 showNotification(`Error al crear el partido: ${error.message}`, 'error');
+                console.error('Error RPC:', error);
             } else {
                 showNotification('Partido creado exitosamente!', 'success');
-                AppState.matches.unshift(data);
                 await navigateTo('team-formation');
             }
         }
+
         function populateMatchFilters(prefix) {
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
             
-            const years = [...new Set(AppState.matches.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a);
+            const years = [...new Set(AppState.matches.map(m => new Date(m.match_date).getUTCFullYear()))].sort((a,b) => b-a);
             yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
             
             const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -1441,8 +1555,8 @@
             
             const mostRecentMatchDate = AppState.matches.length > 0 ? new Date(AppState.matches[0].match_date) : new Date();
             
-            if (years.includes(mostRecentMatchDate.getFullYear())) yearSelect.value = mostRecentMatchDate.getFullYear();
-            monthSelect.value = mostRecentMatchDate.getMonth();
+            if (years.includes(mostRecentMatchDate.getUTCFullYear())) yearSelect.value = mostRecentMatchDate.getUTCFullYear();
+            monthSelect.value = mostRecentMatchDate.getUTCMonth();
 
             const renderList = () => {
                 const listContainer = document.getElementById(`${prefix}-list`);
@@ -1450,7 +1564,7 @@
                 const selectedMonth = monthSelect.value;
                 const filteredMatches = AppState.matches.filter(m => {
                     const d = new Date(m.match_date);
-                    return d.getFullYear() == selectedYear && d.getMonth() == selectedMonth;
+                    return d.getUTCFullYear() == selectedYear && d.getUTCMonth() == selectedMonth;
                 });
                 
                 if (filteredMatches.length === 0) {
@@ -1596,6 +1710,9 @@
         function setupEditMatchPanel(panel, match) {
             renderEditMatchPlayers(match);
             
+            // CHANGE: Populate the new result dropdown
+            panel.querySelector('#edit-match-result').value = match.result || '';
+            
             const updateBtn = panel.querySelector('#update-match-button');
             const deleteBtn = panel.querySelector('#delete-match-from-edit-button');
 
@@ -1616,26 +1733,25 @@
             if (resultValue === "") {
                 resultValue = null;
             }
-
-            const { error } = await supabase.from('matches').update({ result: resultValue }).eq('id', AppState.selectedMatchId);
-            if(error) { showNotification('Error al registrar resultado', 'error'); } 
+            const { error } = await supabase.rpc('update_match_result', {
+                match_id_param: AppState.selectedMatchId,
+                new_result: resultValue
+            });
+            if(error) { showNotification('Error al registrar resultado', 'error'); console.error(error); } 
             else {
                  showNotification('Resultado registrado!', 'success');
-                 const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
-                 if (matchInState) matchInState.result = resultValue;
-                 populateMatchFilters('results');
             }
         }
         async function handleDeleteMatchFromEdit() {
             const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
             if (confirmed) {
-                const { error } = await supabase.from('matches').delete().eq('id', AppState.selectedMatchId);
-                if(error) { showNotification('Error al eliminar partido', 'error'); } 
+                const { error } = await supabase.rpc('delete_match_by_id', {
+                    match_id_param: AppState.selectedMatchId
+                });
+                if(error) { showNotification('Error al eliminar partido', 'error'); console.error(error); } 
                 else {
                     showNotification('Partido eliminado.', 'success');
-                    AppState.matches = AppState.matches.filter(m => m.id != AppState.selectedMatchId);
                     document.getElementById('edit-panel-container').classList.add('hidden');
-                    populateMatchFilters('edit');
                 }
             }
         }
@@ -1672,6 +1788,7 @@
                 container.appendChild(playerDiv);
             });
         }
+        
         async function handleRegisterChamigo() {
             const votes = {};
             document.querySelectorAll('.chamigo-player-item').forEach(item => {
@@ -1681,15 +1798,20 @@
             
             const chamigoData = Object.keys(votes).length === 0 ? null : votes;
 
-            const { error } = await supabase.from('matches').update({ chamigo_votes: chamigoData }).eq('id', AppState.selectedMatchId);
-            if (error) { showNotification('Error al guardar votos de Chamigo', 'error'); } 
+            const { error } = await supabase.rpc('update_chamigo_votes', {
+                match_id_param: AppState.selectedMatchId,
+                chamigo_votes_param: chamigoData
+            });
+
+            if (error) { 
+                showNotification('Error al guardar votos de Chamigo', 'error'); 
+                console.error('Error RPC (Chamigo):', error);
+            } 
             else {
                 showNotification('Votos de Chamigo guardados!', 'success');
-                const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
-                if (matchInState) matchInState.chamigo_votes = chamigoData;
-                populateMatchFilters('chamigo');
             }
         }
+
         function renderTtAttendancePlayers(match) {
             const container = document.getElementById('tt-attendance-players');
             container.innerHTML = '';
@@ -1715,17 +1837,24 @@
                 container.appendChild(playerDiv);
             });
         }
+        
         async function handleRegisterTt() {
             const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
-            const { error } = await supabase.from('matches').update({ tt_attendees: attendees }).eq('id', AppState.selectedMatchId);
-            if (error) { showNotification('Error al guardar asistencia a TT', 'error'); } 
+
+            const { error } = await supabase.rpc('update_tt_attendance', {
+                match_id_param: AppState.selectedMatchId,
+                tt_attendees_param: attendees
+            });
+
+            if (error) { 
+                showNotification('Error al guardar asistencia a TT', 'error');
+                console.error('Error RPC (TT):', error);
+            } 
             else {
                 showNotification('Asistencia a TT guardada!', 'success');
-                const matchInState = AppState.matches.find(m => m.id == AppState.selectedMatchId);
-                if (matchInState) matchInState.tt_attendees = attendees;
-                populateMatchFilters('tt');
             }
         }
+
         function renderPlayersListAdmin(searchTerm = '') {
             const tableBody = document.getElementById('players-list-admin');
             const normalizedSearch = searchTerm.toLowerCase();
@@ -1768,14 +1897,14 @@
             };
 
             const { data, error } = id
-                ? await supabase.from('players').update(playerData).eq('id', id).select().single()
-                : await supabase.from('players').insert(playerData).select().single();
+                ? await supabase.from('players').update(playerData).eq('id', id)
+                : await supabase.from('players').insert(playerData);
 
             if (error) {
                 showNotification(`Error al guardar jugador: ${error.message}`, 'error');
             } else {
                 showNotification('Jugador guardado exitosamente.', 'success');
-                await refreshDataAndRender('players-management');
+                // La UI se actualizará vía Realtime
                 clearPlayerForm();
             }
         }
@@ -1786,7 +1915,7 @@
                 return;
             }
 
-            const player = AppState.players.find(p => p.id === id);
+            const player = AppState.players.find(p => p.id == id);
             const confirmed = await showModal(
                 'Confirmar Eliminación', 
                 `¿Estás seguro de que quieres eliminar a ${player ? player.name : 'este jugador'}? Esta acción no se puede deshacer.`
@@ -1799,7 +1928,7 @@
                     showNotification(`Error al eliminar jugador: ${error.message}`, 'error');
                 } else {
                     showNotification('Jugador eliminado exitosamente.', 'success');
-                    await refreshDataAndRender('players-management');
+                     // La UI se actualizará vía Realtime
                     clearPlayerForm();
                 }
             }
@@ -1850,7 +1979,7 @@
             if (error) { showNotification(`Error al guardar usuario: ${error.message}`, 'error'); }
             else {
                 showNotification('Usuario guardado.', 'success');
-                await refreshDataAndRender('user-management');
+                // El Realtime handler se encargará de actualizar la UI para todos los clientes
                 clearUserForm();
             }
         }
@@ -1887,44 +2016,47 @@
                 if (player) teamOscurosDiv.appendChild(createPlayerElement(player));
             });
             
-            setupPlayerInteractions('edit-match-content');
+            setupPlayerInteractions('edit-match-container');
         }
         async function handleUpdateMatch() {
             const newDate = document.getElementById('edit-match-date').value;
             const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
             const newTeamDark = Array.from(document.getElementById('edit-team-oscuros').children).map(el => el.dataset.id);
+            let newResult = document.getElementById('edit-match-result').value;
+            if (newResult === "") {
+                newResult = null;
+            }
             
             if (newTeamWhite.length + newTeamDark.length !== 10) {
                 showNotification('Deben haber 10 jugadores en total para conformar los equipos.', 'warning');
                 return;
             }
 
-            const { error } = await supabase.from('matches').update({
-                match_date: newDate,
-                team_white_players: newTeamWhite,
-                team_dark_players: newTeamDark
-            }).eq('id', AppState.selectedMatchId);
+            // CHANGE: Run both updates concurrently
+            const [teamsResult, resultResult] = await Promise.all([
+                supabase.rpc('update_match_teams', {
+                    match_id_param: AppState.selectedMatchId,
+                    new_date_param: newDate,
+                    new_team_white_param: newTeamWhite,
+                    new_team_dark_param: newTeamDark
+                }),
+                supabase.rpc('update_match_result', {
+                    match_id_param: AppState.selectedMatchId,
+                    new_result: newResult
+                })
+            ]);
+
+            const error = teamsResult.error || resultResult.error;
             
-            if (error) { showNotification('Error al actualizar el partido.', 'error'); }
+            if (error) { 
+                showNotification(`Error al actualizar el partido: ${error.message}`, 'error');
+                console.error('Error RPC (Update Match):', error);
+            }
             else {
                 showNotification('Partido actualizado.', 'success');
-                await refreshDataAndRender('edit-match');
             }
         }
-        async function refreshDataAndRender(tabToRender) {
-            const { data: players, pError } = await supabase.from('players').select('*').order('id');
-            if (!pError) AppState.players = players;
-            
-            const { data: matches, mError } = await supabase.from('matches').select('*').order('match_date', { ascending: false });
-            if (!mError) AppState.matches = matches;
-
-            if(AppState.userRole === 'Admin') {
-                const { data: users, uError } = await supabase.rpc('get_all_users_with_roles');
-                if (!uError) AppState.users = users;
-            }
-            
-            await navigateTo(tabToRender);
-        }
+        
         function showNotification(message, type = 'success') {
             const { notificationModal, notificationContent, notificationIcon, notificationMessage } = DOMElements;
             
@@ -1942,7 +2074,7 @@
 
             notificationModal.classList.remove('hidden');
 
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
                 notificationModal.classList.add('hidden');
             }, 3000);
 
