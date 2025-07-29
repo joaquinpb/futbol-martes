@@ -402,7 +402,8 @@
             isInitialized: false,
             isInitializing: false,
             activePlayerElement: null,
-            realtimeChannel: null
+            realtimeChannel: null,
+            heartbeatInterval: null
         };
 
         const NAV_ITEMS = {
@@ -466,6 +467,7 @@
                     if (AppState.realtimeChannel) {
                         supabase.removeChannel(AppState.realtimeChannel);
                         AppState.realtimeChannel = null;
+                        clearInterval(AppState.heartbeatInterval);
                     }
                 }
             });
@@ -543,6 +545,8 @@
                 supabase.removeChannel(AppState.realtimeChannel);
                 AppState.realtimeChannel = null;
             }
+            // Detenemos cualquier heartbeat anterior.
+            clearInterval(AppState.heartbeatInterval);
             
             console.log('Setting up Realtime subscriptions...');
 
@@ -587,22 +591,15 @@
                 }
             };
             
-            // Creamos el canal con una configuración para recibir confirmaciones (ack)
             const channel = supabase.channel('public:admin_changes', {
                 config: {
-                    broadcast: {
-                        ack: true
-                    }
+                    broadcast: { ack: true }
                 }
             });
 
-            // Lógica de Heartbeat (Latido)
-            let heartbeatInterval;
             const startHeartbeat = () => {
-                // Limpiamos cualquier intervalo anterior para evitar duplicados
-                clearInterval(heartbeatInterval);
-                heartbeatInterval = setInterval(() => {
-                    // Solo enviamos el latido si el canal está conectado
+                clearInterval(AppState.heartbeatInterval);
+                AppState.heartbeatInterval = setInterval(() => {
                     if (channel.state === 'joined') {
                         channel.send({
                             type: 'broadcast',
@@ -611,11 +608,11 @@
                         });
                         console.log('Realtime heartbeat sent.');
                     }
-                }, 30000); // Enviamos un latido cada 30 segundos
+                }, 30000);
             };
 
             const stopHeartbeat = () => {
-                clearInterval(heartbeatInterval);
+                clearInterval(AppState.heartbeatInterval);
             };
 
             channel
@@ -623,29 +620,17 @@
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
                 .subscribe((status, err) => {
                     console.log(`Realtime status: ${status}`);
-                    switch (status) {
-                        case 'SUBSCRIBED':
-                            console.log('Realtime channel subscribed successfully!');
-                            startHeartbeat();
-                            break;
-                        case 'CHANNEL_ERROR':
-                            console.error('Realtime channel error:', err);
-                            showNotification('Error de conexión en tiempo real. Intentando reconectar...', 'error');
-                            stopHeartbeat();
-                            // Intentamos reconectar después de 5 segundos
-                            setTimeout(() => channel.subscribe(), 5000); 
-                            break;
-                        case 'TIMED_OUT':
-                            console.warn('Realtime channel timed out. Reconnecting...');
-                            stopHeartbeat();
-                            // Intentamos reconectar después de 5 segundos
-                            setTimeout(() => channel.subscribe(), 5000); 
-                            break;
-                        case 'CLOSED':
-                             console.warn('Realtime channel closed.');
-                            stopHeartbeat();
-                            // Opcional: podrías intentar reconectar aquí también si es necesario
-                            break;
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Realtime channel subscribed successfully!');
+                        startHeartbeat();
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        console.error(`Realtime channel issue: ${status}`, err);
+                        stopHeartbeat();
+                        // Intentamos reconectar después de 5 segundos
+                        setTimeout(() => setupRealtimeSubscriptions(), 5000); 
+                    } else if (status === 'CLOSED') {
+                        console.warn('Realtime channel closed.');
+                        stopHeartbeat();
                     }
                 });
 
