@@ -213,6 +213,45 @@
         html.dark .sidebar-group-header {
             background-color: #111827;
         }
+
+        /* --- INICIO: Estilos para el Dashboard --- */
+        .nav-link-dashboard {
+            background: linear-gradient(to right, var(--warning-color), #f97316); /* Naranja/Amarillo */
+            color: var(--button-text-color) !important;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .nav-link-dashboard:hover {
+            opacity: 0.9;
+        }
+        html.dark .nav-link-dashboard {
+            background: linear-gradient(to right, #d97706, #ea580c);
+        }
+
+        .dashboard-section-trigger {
+            transition: all 0.3s ease;
+            border-left-width: 4px;
+            border-left-color: var(--text-secondary);
+        }
+        .dashboard-section-trigger.completed {
+            background-color: #dcfce7; /* Verde claro */
+            border-left-color: var(--success-color);
+        }
+        html.dark .dashboard-section-trigger.completed {
+            background-color: #166534; /* Verde oscuro */
+        }
+        .dashboard-section-trigger.pending {
+             border-left-color: var(--danger-color);
+        }
+
+        .dashboard-section-content {
+            display: none;
+            background-color: var(--bg-muted);
+        }
+        .dashboard-section-content.open {
+            display: block;
+        }
+        /* --- FIN: Estilos para el Dashboard --- */
     </style>
     <script>
         (function() {
@@ -360,7 +399,6 @@
             <p class="text-secondary mb-6" id="assign-modal-player-name">Nombre del Jugador</p>
             <div class="flex flex-col space-y-3">
                 <button id="assign-to-claros" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-100 text-black font-semibold rounded-md hover:opacity-90 transition">Mover a Claros</button>
-                <!-- CHANGE: Improved contrast for dark mode -->
                 <button id="assign-to-oscuros" class="w-full px-4 py-2 bg-gray-900 border border-gray-700 text-white font-semibold rounded-md hover:bg-gray-700 transition">Mover a Oscuros</button>
                 <button id="assign-modal-cancel" class="mt-4 text-sm text-secondary hover:underline">Cancelar</button>
             </div>
@@ -435,6 +473,9 @@
         };
 
         const NAV_ITEMS = {
+            dashboard: [
+                { id: 'dashboard', name: 'Dashboard', icon: 'fa-tachometer-alt' }
+            ],
             main: [
                 { id: 'team-formation', name: 'Armar Equipos', icon: 'fa-users-cog' },
                 { id: 'match-results', name: 'Resultados', icon: 'fa-trophy' },
@@ -542,9 +583,9 @@
                 setupRealtimeSubscriptions();
                 
                 const savedTab = localStorage.getItem('lastAdminTab');
-                const allNavItems = [...NAV_ITEMS.main, ...NAV_ITEMS.admin];
+                const allNavItems = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin];
                 const isValidTab = allNavItems.some(item => item.id === savedTab);
-                let initialTab = NAV_ITEMS.main[0].id;
+                let initialTab = NAV_ITEMS.dashboard[0].id; // El dashboard es ahora el default
 
                 if (isValidTab) {
                     const isAdminTab = NAV_ITEMS.admin.some(item => item.id === savedTab);
@@ -568,12 +609,10 @@
         }
         
         function setupRealtimeSubscriptions() {
-            // Si ya existe un canal, lo removemos para empezar de cero.
             if (AppState.realtimeChannel) {
                 supabase.removeChannel(AppState.realtimeChannel);
                 AppState.realtimeChannel = null;
             }
-            // Detenemos cualquier heartbeat anterior.
             clearInterval(AppState.heartbeatInterval);
             
             console.log('Setting up Realtime subscriptions...');
@@ -656,7 +695,6 @@
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                         console.error(`Realtime channel issue: ${status}`, err);
                         stopHeartbeat();
-                        // Intentamos reconectar después de 5 segundos
                         setTimeout(() => setupRealtimeSubscriptions(), 5000); 
                     } else if (status === 'CLOSED') {
                         console.warn('Realtime channel closed.');
@@ -750,7 +788,13 @@
         }
         
         function setupDesktopNav() {
-            let navHtml = `
+            let dashboardLink = NAV_ITEMS.dashboard.map(item => `
+                <a href="#" data-tab="${item.id}" class="nav-link nav-link-dashboard w-full text-left flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-colors duration-200">
+                    <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
+                </a>
+            `).join('');
+
+            let navHtml = `${dashboardLink}
                 <div>
                     <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
                         <span class="flex items-center gap-3"><i class="fas fa-cogs w-5 text-center"></i>Principal</span>
@@ -811,12 +855,19 @@
                     icon?.classList.toggle('rotate-180');
                 });
             });
-            // Open the first section by default
+            
             DOMElements.mainNav.querySelector('.collapsible-content').classList.remove('hidden');
             DOMElements.mainNav.querySelector('.collapsible-trigger i.fa-chevron-down').classList.add('rotate-180');
         }
         
         function setupMobileMenu() {
+            const dashboardLinkMobile = NAV_ITEMS.dashboard.map(item => `
+                <li>
+                    <a href="#" data-tab="${item.id}" class="nav-link nav-link-dashboard block px-4 py-3 rounded-md mb-2">
+                        ${item.name}
+                    </a>
+                </li>`).join('');
+
             const adminItemsHtml = AppState.userRole === 'Admin' ? `
                 <div class="mt-2">
                     <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
@@ -834,6 +885,7 @@
                     <button id="close-mobile-menu" class="p-2 -mr-2"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="p-2 space-y-1">
+                    <ul>${dashboardLinkMobile}</ul>
                     <div>
                         <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
                             <span class="flex items-center gap-3"><i class="fas fa-cogs w-5 text-center"></i>Principal</span>
@@ -883,9 +935,8 @@
                 link.classList.toggle('active', link.dataset.tab === tabId);
             });
             
-            // Update desktop header title
             const desktopTitleEl = document.getElementById('desktop-header-title');
-            const allNavItems = [...NAV_ITEMS.main, ...NAV_ITEMS.admin];
+            const allNavItems = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin];
             const currentItem = allNavItems.find(item => item.id === tabId);
             if (desktopTitleEl && currentItem) {
                 desktopTitleEl.textContent = currentItem.name;
@@ -938,11 +989,10 @@
             const passwordToggle = document.getElementById('password-toggle');
             if (passwordToggle && passwordInput) {
                 passwordToggle.addEventListener('click', () => {
-                    if (passwordInput.getAttribute('type') === 'password') {
-                        passwordInput.setAttribute('type', 'text');
-                        passwordToggle.querySelector('i').classList.remove('fa-eye');
-                        passwordToggle.querySelector('i').classList.add('fa-eye-slash');
-                    }
+                    const isPassword = passwordInput.getAttribute('type') === 'password';
+                    passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                    passwordToggle.querySelector('i').classList.toggle('fa-eye');
+                    passwordToggle.querySelector('i').classList.toggle('fa-eye-slash');
                 });
                 passwordInput.addEventListener('blur', () => {
                     passwordInput.setAttribute('type', 'password');
@@ -951,26 +1001,24 @@
                 });
             }
             
-            // Event listeners for the new password modal toggles
             document.querySelectorAll('.password-modal-toggle').forEach(toggle => {
                 const passwordInput = toggle.previousElementSibling;
-                if (passwordInput) {
+                const icon = toggle.querySelector('i');
+                if (passwordInput && icon) {
                     toggle.addEventListener('click', () => {
-                        if (passwordInput.getAttribute('type') === 'password') {
-                            passwordInput.setAttribute('type', 'text');
-                            toggle.querySelector('i').classList.remove('fa-eye');
-                            toggle.querySelector('i').classList.add('fa-eye-slash');
-                        }
+                        const isPassword = passwordInput.getAttribute('type') === 'password';
+                        passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                        icon.classList.toggle('fa-eye');
+                        icon.classList.toggle('fa-eye-slash');
                     });
 
                     passwordInput.addEventListener('blur', () => {
                         passwordInput.setAttribute('type', 'password');
-                        toggle.querySelector('i').classList.add('fa-eye');
-                        toggle.querySelector('i').classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                        icon.classList.remove('fa-eye-slash');
                     });
                 }
             });
-
 
             DOMElements.assignToClarosBtn.addEventListener('click', () => movePlayerToTeam('team-claros'));
             DOMElements.assignToOscurosBtn.addEventListener('click', () => movePlayerToTeam('team-oscuros'));
@@ -1121,7 +1169,6 @@
         function hideChangePasswordModal() {
             DOMElements.changePasswordModal.classList.add('hidden');
             DOMElements.body.classList.remove('modal-open');
-            // Reset fields to be safe
             const newPassInput = document.getElementById('new-password-modal-input');
             const confirmPassInput = document.getElementById('confirm-new-password-modal-input');
             newPassInput.setAttribute('type', 'password');
@@ -1159,7 +1206,7 @@
             e.preventDefault();
             const newPassword = document.getElementById('new-password-modal-input').value;
             const confirmPassword = document.getElementById('confirm-new-password-modal-input').value;
-        
+
             if (newPassword.length < 8) {
                 showNotification('La contraseña debe tener al menos 8 caracteres.', 'error');
                 return;
@@ -1168,21 +1215,16 @@
                 showNotification('Las contraseñas no coinciden.', 'error');
                 return;
             }
-        
+
             const { error } = await supabase.auth.updateUser({ password: newPassword });
-        
+
             if (error) {
-                // --- INICIO DE LA MODIFICACIÓN ---
-                // Verificamos si el mensaje de error de Supabase se refiere a una contraseña débil.
                 if (error.message.toLowerCase().includes('password should contain') || error.message.includes('weak password')) {
-                     // Creamos un mensaje más amigable y legible en español.
                      const friendlyMessage = '<strong>La contraseña no es segura.</strong><br>Debe incluir mayúsculas, minúsculas, números y al menos un símbolo.';
                      showNotification(friendlyMessage, 'error');
                 } else {
-                     // Si es otro tipo de error, lo mostramos tal cual.
                      showNotification(`Error: ${error.message}`, 'error');
                 }
-                // --- FIN DE LA MODIFICACIÓN ---
             } else {
                 showNotification('Contraseña actualizada con éxito.', 'success');
                 hideChangePasswordModal();
@@ -1205,6 +1247,156 @@
         }
 
         // --- Renderizado de Secciones ---
+
+        window.render_dashboard = () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let targetMatch = AppState.matches
+                .filter(m => new Date(m.match_date + 'T00:00:00') >= today)
+                .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))[0];
+
+            if (!targetMatch) {
+                targetMatch = AppState.matches.find(m => !m.result || !m.chamigo_votes || (m.tt_attendees || []).length === 0);
+            }
+            
+            if (!targetMatch && AppState.matches.length > 0) {
+                targetMatch = AppState.matches[0];
+            }
+            
+            if (!targetMatch) {
+                DOMElements.adminContent.innerHTML = `<div class="card rounded-xl shadow-sm p-6 text-center"><h1 class="text-xl font-bold">No hay partidos cargados en el sistema.</h1></div>`;
+                return;
+            }
+
+            AppState.selectedMatchId = targetMatch.id;
+            const matchDate = new Date(targetMatch.match_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            const resultadoContent = `
+                <div class="p-4 space-y-4">
+                    <label for="dashboard-match-result" class="block text-sm font-medium mb-1">Resultado del Partido</label>
+                    <select id="dashboard-match-result" class="w-full p-2 border rounded-md">
+                         <option value="">Seleccionar resultado</option>
+                         <option value="Claros">Claros</option>
+                         <option value="Oscuros">Oscuros</option>
+                         <option value="Empate">Empate</option>
+                         <option value="Suspendido">Suspendido</option>
+                    </select>
+                    <button id="dashboard-register-result" class="w-full px-6 py-2 button-success font-semibold rounded-lg">Guardar Resultado</button>
+                </div>`;
+                
+            const chamigoContent = `
+                <div class="p-4 space-y-4">
+                    <div id="dashboard-chamigo-players" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2"></div>
+                    <button id="dashboard-register-chamigo" class="w-full px-6 py-2 button-warning font-semibold rounded-lg">Guardar Votos Chamigo</button>
+                </div>`;
+
+            const ttContent = `
+                <div class="p-4 space-y-4">
+                    <div id="dashboard-tt-players" class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto pr-2"></div>
+                    <button id="dashboard-register-tt" class="w-full px-6 py-2 button-purple font-semibold rounded-lg">Guardar Asistencia TT</button>
+                </div>`;
+
+            const content = `
+                <div class="card rounded-xl shadow-sm p-6">
+                    <div class="text-center border-b border-border-color pb-4 mb-4">
+                        <h1 class="text-2xl font-bold">Acciones para el partido del</h1>
+                        <p class="text-lg font-semibold text-accent-color">${matchDate}</p>
+                    </div>
+                    <div id="dashboard-container" class="space-y-3">
+                        <div class="dashboard-section">
+                            <button class="dashboard-section-trigger w-full flex justify-between items-center p-4 rounded-lg font-semibold text-left">
+                                <span id="resultado-status"></span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dashboard-section-content border border-t-0 rounded-b-lg">${resultadoContent}</div>
+                        </div>
+                        <div class="dashboard-section">
+                            <button class="dashboard-section-trigger w-full flex justify-between items-center p-4 rounded-lg font-semibold text-left">
+                                <span id="chamigo-status"></span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dashboard-section-content border border-t-0 rounded-b-lg">${chamigoContent}</div>
+                        </div>
+                        <div class="dashboard-section">
+                            <button class="dashboard-section-trigger w-full flex justify-between items-center p-4 rounded-lg font-semibold text-left">
+                                <span id="tt-status"></span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dashboard-section-content border border-t-0 rounded-b-lg">${ttContent}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            DOMElements.adminContent.innerHTML = content;
+
+            const setupDashboardSection = (setupFn) => setupFn();
+
+            setupDashboardSection(() => { // Resultado
+                const trigger = document.getElementById('resultado-status').parentElement;
+                const select = document.getElementById('dashboard-match-result');
+                select.value = targetMatch.result || '';
+                document.getElementById('resultado-status').textContent = targetMatch.result ? `Resultado: ${targetMatch.result}` : 'Cargar Resultado';
+                trigger.classList.toggle('completed', !!targetMatch.result);
+                trigger.classList.toggle('pending', !targetMatch.result);
+                document.getElementById('dashboard-register-result').addEventListener('click', () => {
+                    document.getElementById('match-result').value = select.value;
+                    handleRegisterResult();
+                });
+            });
+
+            setupDashboardSection(() => { // Chamigo
+                const trigger = document.getElementById('chamigo-status').parentElement;
+                const hasVotes = targetMatch.chamigo_votes && Object.keys(targetMatch.chamigo_votes).length > 0;
+                document.getElementById('chamigo-status').textContent = hasVotes ? 'Votos de Chamigo Cargados' : 'Cargar Votos de Chamigo';
+                trigger.classList.toggle('completed', hasVotes);
+                trigger.classList.toggle('pending', !hasVotes);
+                
+                const dashboardContainer = document.getElementById('dashboard-chamigo-players');
+                renderChamigoVotingPlayers(targetMatch, dashboardContainer);
+
+                document.getElementById('dashboard-register-chamigo').addEventListener('click', () => {
+                    const votes = {};
+                    dashboardContainer.querySelectorAll('.chamigo-player-item').forEach(item => {
+                        const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
+                        if (count > 0) votes[item.dataset.id] = count;
+                    });
+                    handleRegisterChamigo(votes);
+                });
+            });
+
+            setupDashboardSection(() => { // TT
+                const trigger = document.getElementById('tt-status').parentElement;
+                const hasAttendees = targetMatch.tt_attendees && targetMatch.tt_attendees.length > 0;
+                document.getElementById('tt-status').textContent = hasAttendees ? `Asistencia TT: ${targetMatch.tt_attendees.length} Jugadores` : 'Cargar Asistencia TT';
+                trigger.classList.toggle('completed', hasAttendees);
+                trigger.classList.toggle('pending', !hasAttendees);
+                
+                const dashboardContainer = document.getElementById('dashboard-tt-players');
+                renderTtAttendancePlayers(targetMatch, dashboardContainer);
+
+                document.getElementById('dashboard-register-tt').addEventListener('click', () => {
+                    const attendees = Array.from(dashboardContainer.querySelectorAll('.selected')).map(el => el.dataset.id);
+                    handleRegisterTt(attendees);
+                });
+            });
+
+            document.querySelectorAll('.dashboard-section-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    const content = trigger.nextElementSibling;
+                    const icon = trigger.querySelector('i');
+                    document.querySelectorAll('.dashboard-section-content.open').forEach(openContent => {
+                        if (openContent !== content) {
+                            openContent.classList.remove('open');
+                            openContent.previousElementSibling.querySelector('i').classList.remove('rotate-180');
+                        }
+                    });
+                    content.classList.toggle('open');
+                    icon.classList.toggle('rotate-180');
+                });
+            });
+        };
+
         window.render_team_formation = () => {
             const leftCardBody = `
                 <div class="space-y-4">
@@ -1731,9 +1923,16 @@
             }
         }
         function setupChamigoPanel(panel, match) {
-            renderChamigoVotingPlayers(match);
+            renderChamigoVotingPlayers(match, panel.querySelector('#chamigo-voting-players'));
             if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#register-chamigo-button').addEventListener('click', handleRegisterChamigo);
+                panel.querySelector('#register-chamigo-button').addEventListener('click', () => {
+                    const votes = {};
+                    panel.querySelectorAll('.chamigo-player-item').forEach(item => {
+                        const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
+                        if (count > 0) votes[item.dataset.id] = count;
+                    });
+                    handleRegisterChamigo(votes);
+                });
                 panel.dataset.listenersAdded = 'true';
             }
 
@@ -1785,16 +1984,18 @@
             }
         }
         function setupTtPanel(panel, match) {
-            renderTtAttendancePlayers(match);
+            renderTtAttendancePlayers(match, panel.querySelector('#tt-attendance-players'));
             if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#register-tt-button').addEventListener('click', handleRegisterTt);
+                panel.querySelector('#register-tt-button').addEventListener('click', () => {
+                    const attendees = Array.from(panel.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
+                    handleRegisterTt(attendees);
+                });
                 panel.dataset.listenersAdded = 'true';
             }
         }
         function setupEditMatchPanel(panel, match) {
             renderEditMatchPlayers(match);
             
-            // CHANGE: Populate the new result dropdown
             panel.querySelector('#edit-match-result').value = match.result || '';
             
             const updateBtn = panel.querySelector('#update-match-button');
@@ -1813,7 +2014,7 @@
             });
         }
         async function handleRegisterResult() {
-            let resultValue = document.getElementById('match-result').value;
+            let resultValue = document.getElementById('match-result')?.value ?? document.getElementById('dashboard-match-result')?.value;
             if (resultValue === "") {
                 resultValue = null;
             }
@@ -1839,8 +2040,8 @@
                 }
             }
         }
-        function renderChamigoVotingPlayers(match) {
-            const container = document.getElementById('chamigo-voting-players');
+        function renderChamigoVotingPlayers(match, container) {
+            if (!container) return;
             container.innerHTML = '';
             const playerIDs = [...new Set([...(match.team_white_players||[]), ...(match.team_dark_players||[])])];
             const currentVotes = match.chamigo_votes || {};
@@ -1873,13 +2074,7 @@
             });
         }
         
-        async function handleRegisterChamigo() {
-            const votes = {};
-            document.querySelectorAll('.chamigo-player-item').forEach(item => {
-                const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
-                if (count > 0) votes[item.dataset.id] = count;
-            });
-            
+        async function handleRegisterChamigo(votes) {
             const chamigoData = Object.keys(votes).length === 0 ? null : votes;
 
             const { error } = await supabase.rpc('update_chamigo_votes', {
@@ -1896,8 +2091,8 @@
             }
         }
 
-        function renderTtAttendancePlayers(match) {
-            const container = document.getElementById('tt-attendance-players');
+        function renderTtAttendancePlayers(match, container) {
+            if (!container) return;
             container.innerHTML = '';
             const activePlayers = AppState.players.filter(p => p.status === 'Activo');
             const existingAttendees = match.tt_attendees || [];
@@ -1922,9 +2117,7 @@
             });
         }
         
-        async function handleRegisterTt() {
-            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
-
+        async function handleRegisterTt(attendees) {
             const { error } = await supabase.rpc('update_tt_attendance', {
                 match_id_param: AppState.selectedMatchId,
                 tt_attendees_param: attendees
@@ -1988,7 +2181,6 @@
                 showNotification(`Error al guardar jugador: ${error.message}`, 'error');
             } else {
                 showNotification('Jugador guardado exitosamente.', 'success');
-                // La UI se actualizará vía Realtime
                 clearPlayerForm();
             }
         }
@@ -2012,7 +2204,6 @@
                     showNotification(`Error al eliminar jugador: ${error.message}`, 'error');
                 } else {
                     showNotification('Jugador eliminado exitosamente.', 'success');
-                     // La UI se actualizará vía Realtime
                     clearPlayerForm();
                 }
             }
@@ -2063,7 +2254,6 @@
             if (error) { showNotification(`Error al guardar usuario: ${error.message}`, 'error'); }
             else {
                 showNotification('Usuario guardado.', 'success');
-                // El Realtime handler se encargará de actualizar la UI para todos los clientes
                 clearUserForm();
             }
         }
@@ -2116,7 +2306,6 @@
                 return;
             }
 
-            // CHANGE: Run both updates concurrently
             const [teamsResult, resultResult] = await Promise.all([
                 supabase.rpc('update_match_teams', {
                     match_id_param: AppState.selectedMatchId,
@@ -2144,12 +2333,10 @@
         function showNotification(message, type = 'success') {
             const { notificationModal, notificationContent, notificationIcon, notificationMessage } = DOMElements;
             
-            // Cambiamos textContent por innerHTML para permitir formato HTML en el mensaje.
             notificationMessage.innerHTML = message;
-            
             notificationContent.classList.remove('bg-success-color', 'bg-danger-color', 'bg-warning-color');
             notificationIcon.classList.remove('fa-check-circle', 'fa-exclamation-triangle', 'fa-times-circle');
-        
+
             if (type === 'success') {
                 notificationContent.classList.add('bg-success-color');
                 notificationIcon.classList.add('fa-check-circle');
@@ -2157,13 +2344,13 @@
                 notificationContent.classList.add('bg-danger-color');
                 notificationIcon.classList.add('fa-times-circle');
             }
-        
+
             notificationModal.classList.remove('hidden');
-        
+
             const timeoutId = setTimeout(() => {
                 notificationModal.classList.add('hidden');
             }, 3000);
-        
+
             const dismissNotification = (e) => {
                 if (!notificationContent.contains(e.target)) {
                     notificationModal.classList.add('hidden');
@@ -2173,7 +2360,6 @@
             };
             notificationModal.addEventListener('click', dismissNotification);
         }
-        
         function showModal(title, message) {
             return new Promise(resolve => {
                 DOMElements.modalTitle.textContent = title;
