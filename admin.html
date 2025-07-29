@@ -206,6 +206,13 @@
             background-color: #374151;
         }
         
+        .sidebar-group-header {
+            background-color: var(--bg-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+        html.dark .sidebar-group-header {
+            background-color: #111827;
+        }
     </style>
     <script>
         (function() {
@@ -222,7 +229,7 @@
     <!-- Main Application Container -->
     <div id="app-container" class="flex min-h-screen hidden">
         <!-- Sidebar for Desktop -->
-        <aside id="sidebar" class="w-64 flex-col hidden md:flex">
+        <aside id="sidebar" class="w-64 flex-col hidden md:flex shrink-0">
             <div class="px-6 py-4 flex items-center">
                 <a href="#" class="text-xl font-bold flex items-center gap-2">
                     <span class="text-2xl">⚽</span>
@@ -235,9 +242,10 @@
             </nav>
         </aside>
 
-        <!-- Main content -->
-        <div class="flex-1 flex flex-col relative">
-            <header class="flex items-center justify-between p-4 border-b border-border-color text-text-primary dark:text-sidebar-text md:hidden sticky top-0 z-30">
+        <!-- Main content wrapper -->
+        <div class="flex-1 flex flex-col h-screen">
+            <!-- Mobile Header -->
+            <header class="flex items-center justify-between p-4 border-b border-border-color md:hidden sticky top-0 z-30 bg-secondary dark:bg-sidebar-bg">
                 <div class="w-10">
                      <button id="mobile-menu-toggle" class="p-2 rounded-md -ml-2">
                         <i class="fas fa-bars text-lg"></i>
@@ -254,6 +262,18 @@
                 </div>
             </header>
             
+            <!-- Desktop Header -->
+            <header class="hidden md:flex items-center justify-between p-4 border-b border-border-color bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg shrink-0">
+                <div class="w-1/3"></div> <!-- Spacer -->
+                <div class="w-1/3 text-center text-2xl font-bold text-white uppercase tracking-wider">
+                    <span id="desktop-header-title"></span>
+                </div>
+                <div id="user-menu-container" class="w-1/3 relative flex justify-end">
+                    <!-- El menú de usuario para desktop se insertará aquí -->
+                </div>
+            </header>
+
+            <!-- Main content -->
             <main class="flex-1 bg-primary p-4 sm:p-6 lg:p-8 overflow-y-auto">
                 <div id="admin-content-area" class="max-w-7xl mx-auto">
                     <div id="loading-container" class="flex items-center justify-center h-64">
@@ -717,13 +737,17 @@
         function setupUI() {
             setupDesktopNav();
             setupMobileMenu();
+            setupUserMenu();
         }
         
         function setupDesktopNav() {
             let navHtml = `
                 <div>
-                    <span class="px-4 text-xs font-semibold uppercase text-gray-400">Principal</span>
-                    <div class="mt-2 space-y-1">
+                    <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                        <span class="flex items-center gap-3"><i class="fas fa-cogs w-5 text-center"></i>Principal</span>
+                        <i class="fas fa-chevron-down transform transition-transform"></i>
+                    </button>
+                    <div class="collapsible-content mt-1 space-y-1 pl-4">
                         ${NAV_ITEMS.main.map(item => `
                             <a href="#" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
                                 <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
@@ -733,9 +757,12 @@
             
             if (AppState.userRole === 'Admin') {
                 navHtml += `
-                    <div class="mt-6" data-role="Admin">
-                        <span class="px-4 text-xs font-semibold uppercase text-gray-400">Administración</span>
-                        <div class="mt-2 space-y-1">
+                    <div class="mt-2" data-role="Admin">
+                        <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                            <span class="flex items-center gap-3"><i class="fas fa-user-shield w-5 text-center"></i>Administración</span>
+                            <i class="fas fa-chevron-down transform transition-transform"></i>
+                        </button>
+                        <div class="collapsible-content hidden mt-1 space-y-1 pl-4">
                             ${NAV_ITEMS.admin.map(item => `
                                 <a href="#" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
                                     <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
@@ -745,9 +772,12 @@
             }
 
             navHtml += `
-                <div class="mt-6">
-                    <span class="px-4 text-xs font-semibold uppercase text-gray-400">Enlaces</span>
-                    <div class="mt-2 space-y-1">
+                <div class="mt-2">
+                     <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                        <span class="flex items-center gap-3"><i class="fas fa-link w-5 text-center"></i>Enlaces</span>
+                        <i class="fas fa-chevron-down transform transition-transform"></i>
+                    </button>
+                    <div class="collapsible-content hidden mt-1 space-y-1 pl-4">
                         ${NAV_ITEMS.links.map(item => `
                             <a href="${item.href}" target="_blank" rel="noopener noreferrer" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
                                 <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
@@ -757,16 +787,37 @@
 
             DOMElements.mainNav.innerHTML = navHtml;
             
-            document.querySelectorAll('#main-nav .nav-link').forEach(link => {
+            DOMElements.mainNav.querySelectorAll('.nav-link[data-tab]').forEach(link => {
                 link.addEventListener('click', async (e) => {
                     e.preventDefault();
                     await navigateTo(e.currentTarget.dataset.tab);
                 });
             });
+
+            DOMElements.mainNav.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    const content = trigger.nextElementSibling;
+                    const icon = trigger.querySelector('i.fa-chevron-down');
+                    content.classList.toggle('hidden');
+                    icon?.classList.toggle('rotate-180');
+                });
+            });
+            // Open the first section by default
+            DOMElements.mainNav.querySelector('.collapsible-content').classList.remove('hidden');
+            DOMElements.mainNav.querySelector('.collapsible-trigger i.fa-chevron-down').classList.add('rotate-180');
         }
         
         function setupMobileMenu() {
-            const adminItemsHtml = AppState.userRole === 'Admin' ? NAV_ITEMS.admin.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-text-secondary hover:bg-bg-muted rounded-md">${item.name}</a></li>`).join('') : '';
+            const adminItemsHtml = AppState.userRole === 'Admin' ? `
+                <div class="mt-2">
+                    <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                        <span class="flex items-center gap-3"><i class="fas fa-user-shield w-5 text-center"></i>Administración</span>
+                        <i class="fas fa-chevron-down transform transition-transform"></i>
+                    </button>
+                    <ul class="collapsible-content hidden mt-1 space-y-1 pl-4">
+                        ${NAV_ITEMS.admin.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2.5 rounded-md">${item.name}</a></li>`).join('')}
+                    </ul>
+                </div>` : '';
 
             const menuHtml = `
                 <div class="p-4 flex justify-between items-center border-b border-border-color">
@@ -775,46 +826,29 @@
                 </div>
                 <div class="p-2 space-y-1">
                     <div>
-                        <button id="mobile-main-trigger" class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold text-text-primary rounded-md hover:bg-bg-muted">
-                            <span>Principal</span>
-                            <i class="fas fa-chevron-down transform transition-transform"></i>
+                        <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                            <span class="flex items-center gap-3"><i class="fas fa-cogs w-5 text-center"></i>Principal</span>
+                            <i class="fas fa-chevron-down transform transition-transform rotate-180"></i>
                         </button>
-                        <ul id="mobile-main-content" class="collapsible-content mt-1 space-y-1 pl-4">
-                            ${NAV_ITEMS.main.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2 text-sm text-text-secondary hover:bg-bg-muted rounded-md">${item.name}</a></li>`).join('')}
+                        <ul class="collapsible-content mt-1 space-y-1 pl-4">
+                            ${NAV_ITEMS.main.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2.5 rounded-md">${item.name}</a></li>`).join('')}
                         </ul>
                     </div>
-                    ${AppState.userRole === 'Admin' ? `
-                    <div>
-                        <button class="collapsible-trigger w-full flex justify-between items-center px-2 py-2 text-left font-semibold text-text-primary rounded-md hover:bg-bg-muted">
-                            <span>Administración</span>
+                    ${adminItemsHtml}
+                    <div class="mt-2">
+                         <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                            <span class="flex items-center gap-3"><i class="fas fa-link w-5 text-center"></i>Enlaces</span>
                             <i class="fas fa-chevron-down transform transition-transform"></i>
                         </button>
                         <ul class="collapsible-content hidden mt-1 space-y-1 pl-4">
-                            ${adminItemsHtml}
+                            ${NAV_ITEMS.links.map(item => `<li><a href="${item.href}" target="_blank" rel="noopener noreferrer" class="nav-link block px-4 py-2.5 rounded-md">${item.name}</a></li>`).join('')}
                         </ul>
-                    </div>` : ''}
-                    <div class="border-t border-border-color my-1"></div>
-                    <div>
-                        <a href="${NAV_ITEMS.links[0].href}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center gap-3 px-2 py-2 text-left font-semibold text-text-primary rounded-md hover:bg-bg-muted">
-                            <i class="fas ${NAV_ITEMS.links[0].icon} w-5 text-center"></i>
-                            <span>${NAV_ITEMS.links[0].name}</span>
-                        </a>
                     </div>
-                    <div class="border-t border-border-color my-1"></div>
-                    <button id="mobile-dark-mode-toggle" class="theme-toggle-button w-full flex items-center gap-3 px-2 py-2 text-left text-text-secondary rounded-md hover:bg-bg-muted">
-                        <i class="fas fa-moon w-5 text-center"></i>
-                        <span>Modo Oscuro</span>
-                    </button>
                 </div>
             `;
             DOMElements.mobileMenu.innerHTML = menuHtml;
             
-            const mainContent = document.getElementById('mobile-main-content');
-            const mainTriggerIcon = document.getElementById('mobile-main-trigger').querySelector('i');
-            mainContent.classList.remove('hidden');
-            mainTriggerIcon.classList.add('rotate-180');
-            
-            DOMElements.mobileMenu.querySelectorAll('.nav-link').forEach(link => {
+            DOMElements.mobileMenu.querySelectorAll('.nav-link[data-tab]').forEach(link => {
                 link.addEventListener('click', async e => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -826,15 +860,13 @@
             DOMElements.mobileMenu.querySelectorAll('.collapsible-trigger').forEach(trigger => {
                 trigger.addEventListener('click', () => {
                     const content = trigger.nextElementSibling;
-                    const icon = trigger.querySelector('i');
+                    const icon = trigger.querySelector('i.fa-chevron-down');
                     content.classList.toggle('hidden');
-                    icon.classList.toggle('rotate-180');
+                    icon?.classList.toggle('rotate-180');
                 });
             });
             
             document.getElementById('close-mobile-menu').addEventListener('click', closeMobileMenu);
-            
-            updateThemeToggleIcons();
         }
         
         async function navigateTo(tabId) {
@@ -842,13 +874,20 @@
                 link.classList.toggle('active', link.dataset.tab === tabId);
             });
             
+            // Update desktop header title
+            const desktopTitleEl = document.getElementById('desktop-header-title');
+            const allNavItems = [...NAV_ITEMS.main, ...NAV_ITEMS.admin];
+            const currentItem = allNavItems.find(item => item.id === tabId);
+            if (desktopTitleEl && currentItem) {
+                desktopTitleEl.textContent = currentItem.name;
+            }
+
             const renderFunction = window[`render_${tabId.replace(/-/g, '_')}`];
             if (typeof renderFunction === 'function') {
                 renderFunction();
                 localStorage.setItem('lastAdminTab', tabId);
-                setupUserMenu();
             } else {
-                DOMElements.adminContent.innerHTML = `<h1 class="text-2xl font-bold">Contenido para ${tabId} no implementado.</h1>`;
+                DOMElements.adminContent.innerHTML = `<div class="card rounded-xl shadow-sm p-6"><h1 class="text-2xl font-bold">Contenido para ${tabId} no implementado.</h1></div>`;
             }
         }
 
@@ -934,17 +973,6 @@
             }
         }
         
-        const tabContentTemplate = (title, content) => `
-            <div class="space-y-6">
-                <div class="relative flex items-center justify-center md:justify-between p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg">
-                    <div class="w-16 md:w-40 hidden md:block"></div>
-                    <h1 class="flex-1 text-2xl font-bold tracking-tight uppercase text-center text-white">${title}</h1>
-                    <div id="user-menu-container" class="relative w-16 md:w-40 hidden md:flex justify-end">
-                    </div>
-                </div>
-                ${content}
-            </div>`;
-
         const cardTemplate = (title, body) => `
             <div class="card rounded-xl shadow-sm overflow-hidden">
                 <h3 class="text-lg font-semibold text-center uppercase tracking-wider p-3 text-gray-800 bg-gray-200 dark:bg-gray-900 dark:text-gray-200">${title}</h3>
@@ -1158,7 +1186,7 @@
                     ${cardTemplate('EQUIPOS (<span id="total-selected-players">0</span>/10)', rightCardBody)}
                 </div>`;
 
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Armar Equipos', content);
+            DOMElements.adminContent.innerHTML = content;
             
             const titularesDiv = document.getElementById('titulares-players');
             const suplentesDiv = document.getElementById('suplentes-players');
@@ -1221,7 +1249,7 @@
                         </button>
                      </div>
                 </div>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Resultados de Partidos', renderMatchSelectionTemplate('results', 'RESULTADO', panelContent));
+            DOMElements.adminContent.innerHTML = renderMatchSelectionTemplate('results', 'RESULTADO', panelContent);
             populateMatchFilters('results');
         };
         window.render_chamigo_management = () => {
@@ -1244,7 +1272,7 @@
                         <div class="whatsapp-poll-display whitespace-pre-wrap text-sm" id="whatsapp-poll-text"></div>
                     </div>
                 </div>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Chamigo', renderMatchSelectionTemplate('chamigo', 'VOTOS CHAMIGO', panelContent));
+            DOMElements.adminContent.innerHTML = renderMatchSelectionTemplate('chamigo', 'VOTOS CHAMIGO', panelContent);
             populateMatchFilters('chamigo');
         };
         window.render_tt_attendance = () => {
@@ -1255,7 +1283,7 @@
                 <button id="register-tt-button" class="w-full mt-4 px-6 py-3 button-purple font-semibold rounded-lg shadow-md hover:opacity-90 transition">
                     Registrar Asistencia
                 </button>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Asistencia a TT', renderMatchSelectionTemplate('tt', 'ASISTENCIA TT', panelContent));
+            DOMElements.adminContent.innerHTML = renderMatchSelectionTemplate('tt', 'ASISTENCIA TT', panelContent);
             populateMatchFilters('tt');
         };
         window.render_edit_match = () => {
@@ -1311,7 +1339,7 @@
                     ${cardTemplate('JUGADORES', leftCardBody)}
                     ${cardTemplate('EQUIPOS', rightCardBody)}
                 </div>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Editar Partido', renderMatchSelectionTemplate('edit', ' ', panelContent));
+            DOMElements.adminContent.innerHTML = renderMatchSelectionTemplate('edit', ' ', panelContent);
             document.querySelector('#edit-panel-container > .card > h3').remove();
             populateMatchFilters('edit');
         };
@@ -1366,7 +1394,7 @@
                     <div class="lg:col-span-1">${cardTemplate('JUGADOR', formBody)}</div>
                     <div class="lg:col-span-2">${cardTemplate('JUGADORES', listBody)}</div>
                 </div>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Jugadores', content);
+            DOMElements.adminContent.innerHTML = content;
             
             renderPlayersListAdmin();
             
@@ -1422,7 +1450,7 @@
                     <div class="lg:col-span-1">${cardTemplate('USUARIO', formBody)}</div>
                     <div class="lg:col-span-2">${cardTemplate('USUARIOS', listBody)}</div>
                 </div>`;
-            DOMElements.adminContent.innerHTML = tabContentTemplate('Gestión de Usuarios', content);
+            DOMElements.adminContent.innerHTML = content;
             
             renderUsersListAdmin();
 
