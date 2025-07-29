@@ -538,8 +538,10 @@
         }
         
         function setupRealtimeSubscriptions() {
+            // Si ya existe un canal, lo removemos para empezar de cero.
             if (AppState.realtimeChannel) {
-                return; 
+                supabase.removeChannel(AppState.realtimeChannel);
+                AppState.realtimeChannel = null;
             }
             
             console.log('Setting up Realtime subscriptions...');
@@ -584,19 +586,70 @@
                     navigateTo(currentTab);
                 }
             };
+            
+            // Creamos el canal con una configuración para recibir confirmaciones (ack)
+            const channel = supabase.channel('public:admin_changes', {
+                config: {
+                    broadcast: {
+                        ack: true
+                    }
+                }
+            });
 
-            AppState.realtimeChannel = supabase.channel('public:admin_changes')
+            // Lógica de Heartbeat (Latido)
+            let heartbeatInterval;
+            const startHeartbeat = () => {
+                // Limpiamos cualquier intervalo anterior para evitar duplicados
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = setInterval(() => {
+                    // Solo enviamos el latido si el canal está conectado
+                    if (channel.state === 'joined') {
+                        channel.send({
+                            type: 'broadcast',
+                            event: 'heartbeat',
+                            payload: { message: 'alive' },
+                        });
+                        console.log('Realtime heartbeat sent.');
+                    }
+                }, 30000); // Enviamos un latido cada 30 segundos
+            };
+
+            const stopHeartbeat = () => {
+                clearInterval(heartbeatInterval);
+            };
+
+            channel
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
                 .subscribe((status, err) => {
-                    if (status === 'SUBSCRIBED') {
-                        console.log('Realtime channel subscribed successfully!');
-                    }
-                    if (status === 'CHANNEL_ERROR') {
-                        console.error('Realtime channel error:', err);
-                        showNotification('Error de conexión en tiempo real.', 'error');
+                    console.log(`Realtime status: ${status}`);
+                    switch (status) {
+                        case 'SUBSCRIBED':
+                            console.log('Realtime channel subscribed successfully!');
+                            startHeartbeat();
+                            break;
+                        case 'CHANNEL_ERROR':
+                            console.error('Realtime channel error:', err);
+                            showNotification('Error de conexión en tiempo real. Intentando reconectar...', 'error');
+                            stopHeartbeat();
+                            // Intentamos reconectar después de 5 segundos
+                            setTimeout(() => channel.subscribe(), 5000); 
+                            break;
+                        case 'TIMED_OUT':
+                            console.warn('Realtime channel timed out. Reconnecting...');
+                            stopHeartbeat();
+                            // Intentamos reconectar después de 5 segundos
+                            setTimeout(() => channel.subscribe(), 5000); 
+                            break;
+                        case 'CLOSED':
+                             console.warn('Realtime channel closed.');
+                            stopHeartbeat();
+                            // Opcional: podrías intentar reconectar aquí también si es necesario
+                            break;
                     }
                 });
+
+            AppState.realtimeChannel = channel;
         }
         
         function showLoginScreen() {
