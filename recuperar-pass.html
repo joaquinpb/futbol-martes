@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -137,14 +138,13 @@
     </div>
 
     <!-- Supabase Client -->
+    <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- CONFIGURACIÓN DE SUPABASE ---
-        const SUPABASE_URL = 'https://ezoqqzequstrzemlbsoa.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b3FxemVxdXN0cnplbWxic29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3Mjc4MzEsImV4cCI6MjA2ODMwMzgzMX0.v_i5kI1dXB4FEt-f8I6Fe5MetcktYnOyt7809un0VlQ';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
         // --- ELEMENTOS DEL DOM ---
         const requestResetContainer = document.getElementById('request-reset-container');
@@ -178,11 +178,22 @@
 
         // --- LÓGICA DE VISIBILIDAD DE CONTRASEÑA ---
         document.querySelectorAll('.password-toggle').forEach(toggle => {
+            const passwordInput = toggle.previousElementSibling;
+            const icon = toggle.querySelector('i');
+        
+            // Evento para mostrar/ocultar al hacer clic en el ojo
             toggle.addEventListener('click', () => {
-                const passwordInput = toggle.previousElementSibling;
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                toggle.querySelector('i').classList.toggle('fa-eye-slash');
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                icon.classList.toggle('fa-eye');
+                icon.classList.toggle('fa-eye-slash');
+            });
+        
+            // Evento para ocultar la contraseña cuando el campo pierde el foco
+            passwordInput.addEventListener('blur', () => {
+                passwordInput.setAttribute('type', 'password');
+                icon.classList.add('fa-eye');
+                icon.classList.remove('fa-eye-slash');
             });
         });
 
@@ -220,29 +231,35 @@
             const confirmPassword = document.getElementById('confirm-password').value;
             
             updateMessage.style.color = 'var(--danger-color)';
-
+        
             if (newPassword.length < 8) {
                 updateMessage.textContent = 'La contraseña debe tener al menos 8 caracteres.';
                 return;
             }
-
+        
             if (newPassword !== confirmPassword) {
                 updateMessage.textContent = 'Las contraseñas no coinciden.';
                 return;
             }
-
+        
             updateMessage.textContent = 'Guardando...';
             updateMessage.style.color = 'var(--text-secondary)';
-
+        
             const { data, error } = await supabase.auth.updateUser({
                 password: newPassword
             });
-
+        
             if (error) {
-                updateMessage.textContent = error.message.includes('weak password') 
-                    ? 'La contraseña debe contener 8 caracteres y al menos una letra mayúscula y una minúscula, un número y un caracter especial' 
-                    : `Error: ${error.message}`;
+                // --- INICIO DE LA MODIFICACIÓN ---
                 updateMessage.style.color = 'var(--danger-color)';
+                // Verificamos si el error es por contraseña débil.
+                if (error.message.toLowerCase().includes('password should contain') || error.message.includes('weak password')) {
+                    updateMessage.textContent = 'La contraseña no es segura. Debe incluir mayúsculas, minúsculas, números y un símbolo.';
+                } else {
+                    // Mostramos otros errores directamente.
+                    updateMessage.textContent = `Error: ${error.message}`;
+                }
+                // --- FIN DE LA MODIFICACIÓN ---
             } else {
                 updateMessage.textContent = '¡Contraseña actualizada! Redirigiendo al login...';
                 updateMessage.style.color = 'var(--success-color)';
