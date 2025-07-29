@@ -219,29 +219,35 @@
             const confirmPassword = document.getElementById('confirm-password').value;
             
             updateMessage.style.color = 'var(--danger-color)';
-
+        
             if (newPassword.length < 8) {
                 updateMessage.textContent = 'La contraseña debe tener al menos 8 caracteres.';
                 return;
             }
-
+        
             if (newPassword !== confirmPassword) {
                 updateMessage.textContent = 'Las contraseñas no coinciden.';
                 return;
             }
-
+        
             updateMessage.textContent = 'Guardando...';
             updateMessage.style.color = 'var(--text-secondary)';
-
+        
             const { data, error } = await supabase.auth.updateUser({
                 password: newPassword
             });
-
+        
             if (error) {
-                updateMessage.textContent = error.message.includes('weak password') 
-                    ? 'La contraseña debe contener 8 caracteres y al menos una letra mayúscula y una minúscula, un número y un caracter especial' 
-                    : `Error: ${error.message}`;
+                // --- INICIO DE LA MODIFICACIÓN ---
                 updateMessage.style.color = 'var(--danger-color)';
+                // Verificamos si el error es por contraseña débil.
+                if (error.message.toLowerCase().includes('password should contain') || error.message.includes('weak password')) {
+                    updateMessage.textContent = 'La contraseña no es segura. Debe incluir mayúsculas, minúsculas, números y un símbolo.';
+                } else {
+                    // Mostramos otros errores directamente.
+                    updateMessage.textContent = `Error: ${error.message}`;
+                }
+                // --- FIN DE LA MODIFICACIÓN ---
             } else {
                 updateMessage.textContent = '¡Contraseña actualizada! Redirigiendo al login...';
                 updateMessage.style.color = 'var(--success-color)';
