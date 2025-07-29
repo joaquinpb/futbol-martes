@@ -387,11 +387,21 @@
             <form id="change-password-form" class="space-y-4">
                 <div>
                     <label for="new-password-modal-input" class="block text-sm font-medium mb-1">Nueva Contraseña</label>
-                    <input type="password" id="new-password-modal-input" class="w-full p-2 border rounded-md" required placeholder="Mínimo 8 caracteres">
+                    <div class="relative">
+                        <input type="password" id="new-password-modal-input" class="w-full p-2 border rounded-md pr-10" required placeholder="Mínimo 8 caracteres">
+                        <button type="button" class="password-modal-toggle absolute inset-y-0 right-0 px-3 flex items-center text-text-secondary">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <label for="confirm-new-password-modal-input" class="block text-sm font-medium mb-1">Confirmar Nueva Contraseña</label>
-                    <input type="password" id="confirm-new-password-modal-input" class="w-full p-2 border rounded-md" required>
+                    <div class="relative">
+                        <input type="password" id="confirm-new-password-modal-input" class="w-full p-2 border rounded-md pr-10" required>
+                        <button type="button" class="password-modal-toggle absolute inset-y-0 right-0 px-3 flex items-center text-text-secondary">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="flex justify-end space-x-3 pt-2">
                     <button type="button" id="change-password-cancel" class="px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
@@ -927,8 +937,6 @@
             const passwordInput = document.getElementById('password');
             const passwordToggle = document.getElementById('password-toggle');
             if (passwordToggle && passwordInput) {
-                // Esta función ahora solo muestra la contraseña.
-                // Ya no la vuelve a ocultar con un segundo clic.
                 passwordToggle.addEventListener('click', () => {
                     if (passwordInput.getAttribute('type') === 'password') {
                         passwordInput.setAttribute('type', 'text');
@@ -936,14 +944,33 @@
                         passwordToggle.querySelector('i').classList.add('fa-eye-slash');
                     }
                 });
-
-                // Adicionalmente, ocultamos la contraseña cuando el campo pierde el foco.
                 passwordInput.addEventListener('blur', () => {
                     passwordInput.setAttribute('type', 'password');
                     passwordToggle.querySelector('i').classList.add('fa-eye');
                     passwordToggle.querySelector('i').classList.remove('fa-eye-slash');
                 });
             }
+            
+            // Event listeners for the new password modal toggles
+            document.querySelectorAll('.password-modal-toggle').forEach(toggle => {
+                const passwordInput = toggle.previousElementSibling;
+                if (passwordInput) {
+                    toggle.addEventListener('click', () => {
+                        if (passwordInput.getAttribute('type') === 'password') {
+                            passwordInput.setAttribute('type', 'text');
+                            toggle.querySelector('i').classList.remove('fa-eye');
+                            toggle.querySelector('i').classList.add('fa-eye-slash');
+                        }
+                    });
+
+                    passwordInput.addEventListener('blur', () => {
+                        passwordInput.setAttribute('type', 'password');
+                        toggle.querySelector('i').classList.add('fa-eye');
+                        toggle.querySelector('i').classList.remove('fa-eye-slash');
+                    });
+                }
+            });
+
 
             DOMElements.assignToClarosBtn.addEventListener('click', () => movePlayerToTeam('team-claros'));
             DOMElements.assignToOscurosBtn.addEventListener('click', () => movePlayerToTeam('team-oscuros'));
@@ -979,14 +1006,12 @@
                 password: passwordInput.value 
             });
 
-            // Este bloque se ejecuta después del intento de login
             if (error) {
                 DOMElements.authStatus.textContent = 'Email o contraseña incorrectos.';
                 loginButton.disabled = false;
                 loginButton.textContent = 'Entrar';
             }
 
-            // Siempre ocultamos la contraseña y reseteamos el ícono después del intento.
             passwordInput.setAttribute('type', 'password');
             if (passwordToggle) {
                 passwordToggle.querySelector('i').classList.add('fa-eye');
@@ -1096,6 +1121,15 @@
         function hideChangePasswordModal() {
             DOMElements.changePasswordModal.classList.add('hidden');
             DOMElements.body.classList.remove('modal-open');
+            // Reset fields to be safe
+            const newPassInput = document.getElementById('new-password-modal-input');
+            const confirmPassInput = document.getElementById('confirm-new-password-modal-input');
+            newPassInput.setAttribute('type', 'password');
+            confirmPassInput.setAttribute('type', 'password');
+            document.querySelectorAll('.password-modal-toggle i').forEach(icon => {
+                icon.classList.add('fa-eye');
+                icon.classList.remove('fa-eye-slash');
+            });
         }
 
         async function handleUpdateName(e) {
@@ -1138,7 +1172,6 @@
             const { error } = await supabase.auth.updateUser({ password: newPassword });
 
             if (error) {
-                // AQUÍ ESTÁ LA MAGIA: Traducimos el error de Supabase a un mensaje más amigable.
                 const friendlyMessage = error.message.includes('weak password') 
                     ? 'Contraseña débil. Debe incluir mayúsculas, minúsculas, números y al menos un símbolo.'
                     : `Error: ${error.message}`;
