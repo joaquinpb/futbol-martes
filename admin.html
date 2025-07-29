@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -214,6 +213,29 @@
         html.dark .sidebar-group-header {
             background-color: #111827;
         }
+
+        /* --- INICIO: Estilos para el Dashboard --- */
+        .nav-link-dashboard {
+            background: linear-gradient(to right, var(--warning-color), #f97316); /* Naranja/Amarillo */
+            color: var(--button-text-color) !important;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .nav-link-dashboard:hover {
+            opacity: 0.9;
+        }
+        html.dark .nav-link-dashboard {
+            background: linear-gradient(to right, #d97706, #ea580c);
+        }
+        
+        .dashboard-card-body p {
+            min-height: 40px; /* Asegura altura consistente */
+        }
+        
+        #dashboard-modal-content {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        /* --- FIN: Estilos para el Dashboard --- */
     </style>
     <script>
         (function() {
@@ -361,7 +383,6 @@
             <p class="text-secondary mb-6" id="assign-modal-player-name">Nombre del Jugador</p>
             <div class="flex flex-col space-y-3">
                 <button id="assign-to-claros" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-100 text-black font-semibold rounded-md hover:opacity-90 transition">Mover a Claros</button>
-                <!-- CHANGE: Improved contrast for dark mode -->
                 <button id="assign-to-oscuros" class="w-full px-4 py-2 bg-gray-900 border border-gray-700 text-white font-semibold rounded-md hover:bg-gray-700 transition">Mover a Oscuros</button>
                 <button id="assign-modal-cancel" class="mt-4 text-sm text-secondary hover:underline">Cancelar</button>
             </div>
@@ -412,6 +433,24 @@
         </div>
     </div>
 
+    <!-- Generic Dashboard Modal -->
+    <div id="dashboard-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
+        <div class="card rounded-lg shadow-xl max-w-lg w-full transform transition-all scale-95 opacity-0" id="dashboard-modal-content">
+            <div class="flex justify-between items-center p-4 border-b border-border-color">
+                <h3 class="text-xl font-semibold" id="dashboard-modal-title"></h3>
+                <button id="dashboard-modal-close" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 max-h-[70vh] overflow-y-auto" id="dashboard-modal-body">
+                <!-- Dynamic content goes here -->
+            </div>
+            <div class="p-4 bg-muted flex justify-end space-x-3" id="dashboard-modal-footer">
+                <!-- Dynamic buttons go here -->
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -436,6 +475,9 @@
         };
 
         const NAV_ITEMS = {
+            dashboard: [
+                { id: 'dashboard', name: 'Dashboard', icon: 'fa-tachometer-alt' }
+            ],
             main: [
                 { id: 'team-formation', name: 'Armar Equipos', icon: 'fa-users-cog' },
                 { id: 'match-results', name: 'Resultados', icon: 'fa-trophy' },
@@ -482,6 +524,12 @@
             changePasswordModal: document.getElementById('change-password-modal'),
             changeNameForm: document.getElementById('change-name-form'),
             changePasswordForm: document.getElementById('change-password-form'),
+            dashboardModal: document.getElementById('dashboard-modal'),
+            dashboardModalContent: document.getElementById('dashboard-modal-content'),
+            dashboardModalTitle: document.getElementById('dashboard-modal-title'),
+            dashboardModalBody: document.getElementById('dashboard-modal-body'),
+            dashboardModalFooter: document.getElementById('dashboard-modal-footer'),
+            dashboardModalClose: document.getElementById('dashboard-modal-close'),
         };
 
         function init() {
@@ -543,9 +591,9 @@
                 setupRealtimeSubscriptions();
                 
                 const savedTab = localStorage.getItem('lastAdminTab');
-                const allNavItems = [...NAV_ITEMS.main, ...NAV_ITEMS.admin];
+                const allNavItems = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin];
                 const isValidTab = allNavItems.some(item => item.id === savedTab);
-                let initialTab = NAV_ITEMS.main[0].id;
+                let initialTab = NAV_ITEMS.dashboard[0].id; // El dashboard es ahora el default
 
                 if (isValidTab) {
                     const isAdminTab = NAV_ITEMS.admin.some(item => item.id === savedTab);
@@ -569,12 +617,10 @@
         }
         
         function setupRealtimeSubscriptions() {
-            // Si ya existe un canal, lo removemos para empezar de cero.
             if (AppState.realtimeChannel) {
                 supabase.removeChannel(AppState.realtimeChannel);
                 AppState.realtimeChannel = null;
             }
-            // Detenemos cualquier heartbeat anterior.
             clearInterval(AppState.heartbeatInterval);
             
             console.log('Setting up Realtime subscriptions...');
@@ -657,7 +703,6 @@
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                         console.error(`Realtime channel issue: ${status}`, err);
                         stopHeartbeat();
-                        // Intentamos reconectar después de 5 segundos
                         setTimeout(() => setupRealtimeSubscriptions(), 5000); 
                     } else if (status === 'CLOSED') {
                         console.warn('Realtime channel closed.');
@@ -751,7 +796,13 @@
         }
         
         function setupDesktopNav() {
-            let navHtml = `
+            let dashboardLink = NAV_ITEMS.dashboard.map(item => `
+                <a href="#" data-tab="${item.id}" class="nav-link nav-link-dashboard w-full text-left flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-colors duration-200">
+                    <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
+                </a>
+            `).join('');
+
+            let navHtml = `${dashboardLink}
                 <div>
                     <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
                         <span class="flex items-center gap-3"><i class="fas fa-cogs w-5 text-center"></i>Principal</span>
@@ -812,12 +863,19 @@
                     icon?.classList.toggle('rotate-180');
                 });
             });
-            // Open the first section by default
+            
             DOMElements.mainNav.querySelector('.collapsible-content').classList.remove('hidden');
             DOMElements.mainNav.querySelector('.collapsible-trigger i.fa-chevron-down').classList.add('rotate-180');
         }
         
         function setupMobileMenu() {
+            const dashboardLinkMobile = NAV_ITEMS.dashboard.map(item => `
+                <li>
+                    <a href="#" data-tab="${item.id}" class="nav-link nav-link-dashboard block px-4 py-3 rounded-md mb-2">
+                        ${item.name}
+                    </a>
+                </li>`).join('');
+
             const adminItemsHtml = AppState.userRole === 'Admin' ? `
                 <div class="mt-2">
                     <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
@@ -835,6 +893,7 @@
                     <button id="close-mobile-menu" class="p-2 -mr-2"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="p-2 space-y-1">
+                    <ul>${dashboardLinkMobile}</ul>
                     <div>
                         <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
                             <span class="flex items-center gap-3"><i class="fas fa-cogs w-5 text-center"></i>Principal</span>
@@ -884,9 +943,8 @@
                 link.classList.toggle('active', link.dataset.tab === tabId);
             });
             
-            // Update desktop header title
             const desktopTitleEl = document.getElementById('desktop-header-title');
-            const allNavItems = [...NAV_ITEMS.main, ...NAV_ITEMS.admin];
+            const allNavItems = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin];
             const currentItem = allNavItems.find(item => item.id === tabId);
             if (desktopTitleEl && currentItem) {
                 desktopTitleEl.textContent = currentItem.name;
@@ -939,11 +997,10 @@
             const passwordToggle = document.getElementById('password-toggle');
             if (passwordToggle && passwordInput) {
                 passwordToggle.addEventListener('click', () => {
-                    if (passwordInput.getAttribute('type') === 'password') {
-                        passwordInput.setAttribute('type', 'text');
-                        passwordToggle.querySelector('i').classList.remove('fa-eye');
-                        passwordToggle.querySelector('i').classList.add('fa-eye-slash');
-                    }
+                    const isPassword = passwordInput.getAttribute('type') === 'password';
+                    passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                    passwordToggle.querySelector('i').classList.toggle('fa-eye');
+                    passwordToggle.querySelector('i').classList.toggle('fa-eye-slash');
                 });
                 passwordInput.addEventListener('blur', () => {
                     passwordInput.setAttribute('type', 'password');
@@ -952,26 +1009,24 @@
                 });
             }
             
-            // Event listeners for the new password modal toggles
             document.querySelectorAll('.password-modal-toggle').forEach(toggle => {
                 const passwordInput = toggle.previousElementSibling;
-                if (passwordInput) {
+                const icon = toggle.querySelector('i');
+                if (passwordInput && icon) {
                     toggle.addEventListener('click', () => {
-                        if (passwordInput.getAttribute('type') === 'password') {
-                            passwordInput.setAttribute('type', 'text');
-                            toggle.querySelector('i').classList.remove('fa-eye');
-                            toggle.querySelector('i').classList.add('fa-eye-slash');
-                        }
+                        const isPassword = passwordInput.getAttribute('type') === 'password';
+                        passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                        icon.classList.toggle('fa-eye');
+                        icon.classList.toggle('fa-eye-slash');
                     });
 
                     passwordInput.addEventListener('blur', () => {
                         passwordInput.setAttribute('type', 'password');
-                        toggle.querySelector('i').classList.add('fa-eye');
-                        toggle.querySelector('i').classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                        icon.classList.remove('fa-eye-slash');
                     });
                 }
             });
-
 
             DOMElements.assignToClarosBtn.addEventListener('click', () => movePlayerToTeam('team-claros'));
             DOMElements.assignToOscurosBtn.addEventListener('click', () => movePlayerToTeam('team-oscuros'));
@@ -1122,7 +1177,6 @@
         function hideChangePasswordModal() {
             DOMElements.changePasswordModal.classList.add('hidden');
             DOMElements.body.classList.remove('modal-open');
-            // Reset fields to be safe
             const newPassInput = document.getElementById('new-password-modal-input');
             const confirmPassInput = document.getElementById('confirm-new-password-modal-input');
             newPassInput.setAttribute('type', 'password');
@@ -1160,7 +1214,7 @@
             e.preventDefault();
             const newPassword = document.getElementById('new-password-modal-input').value;
             const confirmPassword = document.getElementById('confirm-new-password-modal-input').value;
-        
+
             if (newPassword.length < 8) {
                 showNotification('La contraseña debe tener al menos 8 caracteres.', 'error');
                 return;
@@ -1169,21 +1223,16 @@
                 showNotification('Las contraseñas no coinciden.', 'error');
                 return;
             }
-        
+
             const { error } = await supabase.auth.updateUser({ password: newPassword });
-        
+
             if (error) {
-                // --- INICIO DE LA MODIFICACIÓN ---
-                // Verificamos si el mensaje de error de Supabase se refiere a una contraseña débil.
                 if (error.message.toLowerCase().includes('password should contain') || error.message.includes('weak password')) {
-                     // Creamos un mensaje más amigable y legible en español.
                      const friendlyMessage = '<strong>La contraseña no es segura.</strong><br>Debe incluir mayúsculas, minúsculas, números y al menos un símbolo.';
                      showNotification(friendlyMessage, 'error');
                 } else {
-                     // Si es otro tipo de error, lo mostramos tal cual.
                      showNotification(`Error: ${error.message}`, 'error');
                 }
-                // --- FIN DE LA MODIFICACIÓN ---
             } else {
                 showNotification('Contraseña actualizada con éxito.', 'success');
                 hideChangePasswordModal();
@@ -1206,6 +1255,205 @@
         }
 
         // --- Renderizado de Secciones ---
+
+        window.render_dashboard = () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let targetMatch = AppState.matches
+                .filter(m => new Date(m.match_date + 'T00:00:00') >= today)
+                .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))[0];
+
+            if (!targetMatch) {
+                targetMatch = AppState.matches.find(m => !m.result || !m.chamigo_votes || (m.tt_attendees || []).length === 0);
+            }
+            
+            if (!targetMatch && AppState.matches.length > 0) {
+                targetMatch = AppState.matches[0];
+            }
+            
+            if (!targetMatch) {
+                DOMElements.adminContent.innerHTML = `<div class="card rounded-xl shadow-sm p-6 text-center"><h1 class="text-xl font-bold">No hay partidos cargados en el sistema.</h1></div>`;
+                return;
+            }
+
+            AppState.selectedMatchId = targetMatch.id;
+            const matchDate = new Date(targetMatch.match_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            const content = `
+                <div class="mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
+                    <p class="text-gray-500 dark:text-gray-400">Acciones pendientes para el partido del ${matchDate}</p>
+                </div>
+                <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards will be inserted here by JS -->
+                </div>
+            `;
+            DOMElements.adminContent.innerHTML = content;
+
+            const grid = document.getElementById('dashboard-grid');
+            
+            grid.innerHTML += createDashboardCard({ id: 'resultado', icon: 'fa-trophy', title: 'Resultado del Partido', match: targetMatch });
+            grid.innerHTML += createDashboardCard({ id: 'chamigo', icon: 'fa-star', title: 'Votos Chamigo', match: targetMatch });
+            grid.innerHTML += createDashboardCard({ id: 'tt', icon: 'fa-beer', title: 'Asistencia TT', match: targetMatch });
+            
+            setupDashboardEventListeners();
+        };
+
+        function createDashboardCard({ id, icon, title, match }) {
+            const getPlayerName = pid => (AppState.players.find(p => p.id == pid) || { name: '?' }).name;
+            let status = 'pending';
+            let summary = 'Datos pendientes de carga';
+            let buttonText = 'Cargar';
+            let buttonClass = 'button-primary';
+
+            if (id === 'resultado') {
+                if (match.result) {
+                    status = 'completed';
+                    summary = `Resultado: <strong>${match.result}</strong>`;
+                    buttonText = 'Editar';
+                    buttonClass = 'button-secondary';
+                }
+            } else if (id === 'chamigo') {
+                const hasVotes = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
+                if (hasVotes) {
+                    status = 'completed';
+                    const votesArray = Object.entries(match.chamigo_votes);
+                    const maxVotes = Math.max(...votesArray.map(([, v]) => v));
+                    const chamigoNames = votesArray.filter(([, v]) => v === maxVotes).map(([pid]) => getPlayerName(pid)).join(', ');
+                    summary = `Chamigo(s): <strong>${chamigoNames}</strong>`;
+                    buttonText = 'Editar';
+                    buttonClass = 'button-secondary';
+                }
+            } else if (id === 'tt') {
+                const hasAttendees = match.tt_attendees && match.tt_attendees.length > 0;
+                if (hasAttendees) {
+                    status = 'completed';
+                    const attendeeNames = match.tt_attendees.map(getPlayerName);
+                    if (attendeeNames.length > 3) {
+                         summary = `<strong>${attendeeNames.slice(0, 3).join(', ')}</strong> y ${attendeeNames.length - 3} más.`;
+                    } else {
+                         summary = `Asistentes: <strong>${attendeeNames.join(', ')}</strong>`;
+                    }
+                    buttonText = 'Editar';
+                    buttonClass = 'button-secondary';
+                }
+            }
+
+            return `
+                <div class="dashboard-card card rounded-xl shadow-lg flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-l-4 ${status === 'completed' ? 'border-success-color' : 'border-danger-color'}">
+                    <div class="dashboard-card-header p-4 flex items-center gap-4 border-b border-border-color">
+                        <i class="fas ${icon} text-2xl ${status === 'completed' ? 'text-success-color' : 'text-danger-color'}"></i>
+                        <div>
+                            <h3 class="font-bold text-lg">${title}</h3>
+                            <span class="status-badge text-xs font-bold py-1 px-2 rounded-full ${status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">${status === 'completed' ? 'Completado' : 'Pendiente'}</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card-body p-4 flex-grow">
+                        <p class="text-secondary text-sm">${summary}</p>
+                    </div>
+                    <div class="dashboard-card-footer p-4 bg-muted mt-auto">
+                        <button data-action="${id}" class="w-full py-2 font-semibold rounded-lg shadow-md transition ${buttonClass}">${buttonText}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setupDashboardEventListeners() {
+            document.getElementById('dashboard-grid').addEventListener('click', (e) => {
+                const button = e.target.closest('button[data-action]');
+                if (!button) return;
+
+                const action = button.dataset.action;
+                const match = AppState.matches.find(m => m.id === AppState.selectedMatchId);
+
+                if (action === 'resultado') openResultadoModal(match);
+                else if (action === 'chamigo') openChamigoModal(match);
+                else if (action === 'tt') openTtModal(match);
+            });
+
+            DOMElements.dashboardModalClose.addEventListener('click', closeDashboardModal);
+            DOMElements.dashboardModal.addEventListener('click', (e) => {
+                if (e.target.id === 'dashboard-modal') closeDashboardModal();
+            });
+        }
+
+        function openDashboardModal() {
+            DOMElements.dashboardModal.classList.remove('hidden');
+            DOMElements.body.classList.add('modal-open');
+            setTimeout(() => {
+                DOMElements.dashboardModalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function closeDashboardModal() {
+            DOMElements.dashboardModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                DOMElements.dashboardModal.classList.add('hidden');
+                DOMElements.body.classList.remove('modal-open');
+                DOMElements.dashboardModalBody.innerHTML = '';
+                DOMElements.dashboardModalFooter.innerHTML = '';
+            }, 200);
+        }
+
+        function openResultadoModal(match) {
+            DOMElements.dashboardModalTitle.textContent = 'Registrar Resultado';
+            DOMElements.dashboardModalBody.innerHTML = `
+                <label for="modal-match-result" class="block text-sm font-medium mb-1">Resultado del Partido</label>
+                <select id="modal-match-result" class="w-full p-2 border rounded-md">
+                     <option value="">Seleccionar resultado</option>
+                     <option value="Claros">Claros</option>
+                     <option value="Oscuros">Oscuros</option>
+                     <option value="Empate">Empate</option>
+                     <option value="Suspendido">Suspendido</option>
+                </select>
+            `;
+            document.getElementById('modal-match-result').value = match.result || '';
+            
+            DOMElements.dashboardModalFooter.innerHTML = `<button id="modal-save-result" class="px-6 py-2 button-success font-semibold rounded-lg">Guardar</button>`;
+            document.getElementById('modal-save-result').addEventListener('click', async () => {
+                const newValue = document.getElementById('modal-match-result').value;
+                await handleRegisterResult(newValue);
+                closeDashboardModal();
+            });
+
+            openDashboardModal();
+        }
+
+        function openChamigoModal(match) {
+            DOMElements.dashboardModalTitle.textContent = 'Registrar Votos de Chamigo';
+            DOMElements.dashboardModalBody.innerHTML = `<div id="modal-chamigo-players" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>`;
+            renderChamigoVotingPlayers(match, document.getElementById('modal-chamigo-players'));
+            
+            DOMElements.dashboardModalFooter.innerHTML = `<button id="modal-save-chamigo" class="px-6 py-2 button-warning font-semibold rounded-lg">Guardar Votos</button>`;
+            document.getElementById('modal-save-chamigo').addEventListener('click', async () => {
+                const votes = {};
+                document.querySelectorAll('#modal-chamigo-players .chamigo-player-item').forEach(item => {
+                    const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
+                    if (count > 0) votes[item.dataset.id] = count;
+                });
+                await handleRegisterChamigo(votes);
+                closeDashboardModal();
+            });
+
+            openDashboardModal();
+        }
+
+        function openTtModal(match) {
+            DOMElements.dashboardModalTitle.textContent = 'Registrar Asistencia a TT';
+            DOMElements.dashboardModalBody.innerHTML = `<div id="modal-tt-players" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>`;
+            renderTtAttendancePlayers(match, document.getElementById('modal-tt-players'));
+
+            DOMElements.dashboardModalFooter.innerHTML = `<button id="modal-save-tt" class="px-6 py-2 button-purple font-semibold rounded-lg">Guardar Asistencia</button>`;
+            document.getElementById('modal-save-tt').addEventListener('click', async () => {
+                const attendees = Array.from(document.querySelectorAll('#modal-tt-players .selected')).map(el => el.dataset.id);
+                await handleRegisterTt(attendees);
+                closeDashboardModal();
+            });
+
+            openDashboardModal();
+        }
+
         window.render_team_formation = () => {
             const leftCardBody = `
                 <div class="space-y-4">
@@ -1725,16 +1973,24 @@
         }
         function setupResultsPanel(panel, match) {
             panel.querySelector('#match-date').value = match.match_date;
-            panel.querySelector('#match-result').value = match.result || '';
+            const resultSelect = panel.querySelector('#match-result');
+            resultSelect.value = match.result || '';
             if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#register-match-button').addEventListener('click', handleRegisterResult);
+                panel.querySelector('#register-match-button').addEventListener('click', () => handleRegisterResult(resultSelect.value));
                 panel.dataset.listenersAdded = 'true';
             }
         }
         function setupChamigoPanel(panel, match) {
-            renderChamigoVotingPlayers(match);
+            renderChamigoVotingPlayers(match, panel.querySelector('#chamigo-voting-players'));
             if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#register-chamigo-button').addEventListener('click', handleRegisterChamigo);
+                panel.querySelector('#register-chamigo-button').addEventListener('click', () => {
+                    const votes = {};
+                    panel.querySelectorAll('.chamigo-player-item').forEach(item => {
+                        const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
+                        if (count > 0) votes[item.dataset.id] = count;
+                    });
+                    handleRegisterChamigo(votes);
+                });
                 panel.dataset.listenersAdded = 'true';
             }
 
@@ -1786,16 +2042,18 @@
             }
         }
         function setupTtPanel(panel, match) {
-            renderTtAttendancePlayers(match);
+            renderTtAttendancePlayers(match, panel.querySelector('#tt-attendance-players'));
             if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#register-tt-button').addEventListener('click', handleRegisterTt);
+                panel.querySelector('#register-tt-button').addEventListener('click', () => {
+                    const attendees = Array.from(panel.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
+                    handleRegisterTt(attendees);
+                });
                 panel.dataset.listenersAdded = 'true';
             }
         }
         function setupEditMatchPanel(panel, match) {
             renderEditMatchPlayers(match);
             
-            // CHANGE: Populate the new result dropdown
             panel.querySelector('#edit-match-result').value = match.result || '';
             
             const updateBtn = panel.querySelector('#update-match-button');
@@ -1813,8 +2071,7 @@
                 this.showPicker();
             });
         }
-        async function handleRegisterResult() {
-            let resultValue = document.getElementById('match-result').value;
+        async function handleRegisterResult(resultValue) {
             if (resultValue === "") {
                 resultValue = null;
             }
@@ -1840,8 +2097,8 @@
                 }
             }
         }
-        function renderChamigoVotingPlayers(match) {
-            const container = document.getElementById('chamigo-voting-players');
+        function renderChamigoVotingPlayers(match, container) {
+            if (!container) return;
             container.innerHTML = '';
             const playerIDs = [...new Set([...(match.team_white_players||[]), ...(match.team_dark_players||[])])];
             const currentVotes = match.chamigo_votes || {};
@@ -1874,13 +2131,7 @@
             });
         }
         
-        async function handleRegisterChamigo() {
-            const votes = {};
-            document.querySelectorAll('.chamigo-player-item').forEach(item => {
-                const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
-                if (count > 0) votes[item.dataset.id] = count;
-            });
-            
+        async function handleRegisterChamigo(votes) {
             const chamigoData = Object.keys(votes).length === 0 ? null : votes;
 
             const { error } = await supabase.rpc('update_chamigo_votes', {
@@ -1897,8 +2148,8 @@
             }
         }
 
-        function renderTtAttendancePlayers(match) {
-            const container = document.getElementById('tt-attendance-players');
+        function renderTtAttendancePlayers(match, container) {
+            if (!container) return;
             container.innerHTML = '';
             const activePlayers = AppState.players.filter(p => p.status === 'Activo');
             const existingAttendees = match.tt_attendees || [];
@@ -1923,9 +2174,7 @@
             });
         }
         
-        async function handleRegisterTt() {
-            const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
-
+        async function handleRegisterTt(attendees) {
             const { error } = await supabase.rpc('update_tt_attendance', {
                 match_id_param: AppState.selectedMatchId,
                 tt_attendees_param: attendees
@@ -1989,7 +2238,6 @@
                 showNotification(`Error al guardar jugador: ${error.message}`, 'error');
             } else {
                 showNotification('Jugador guardado exitosamente.', 'success');
-                // La UI se actualizará vía Realtime
                 clearPlayerForm();
             }
         }
@@ -2013,7 +2261,6 @@
                     showNotification(`Error al eliminar jugador: ${error.message}`, 'error');
                 } else {
                     showNotification('Jugador eliminado exitosamente.', 'success');
-                     // La UI se actualizará vía Realtime
                     clearPlayerForm();
                 }
             }
@@ -2064,7 +2311,6 @@
             if (error) { showNotification(`Error al guardar usuario: ${error.message}`, 'error'); }
             else {
                 showNotification('Usuario guardado.', 'success');
-                // El Realtime handler se encargará de actualizar la UI para todos los clientes
                 clearUserForm();
             }
         }
@@ -2117,7 +2363,6 @@
                 return;
             }
 
-            // CHANGE: Run both updates concurrently
             const [teamsResult, resultResult] = await Promise.all([
                 supabase.rpc('update_match_teams', {
                     match_id_param: AppState.selectedMatchId,
@@ -2145,12 +2390,10 @@
         function showNotification(message, type = 'success') {
             const { notificationModal, notificationContent, notificationIcon, notificationMessage } = DOMElements;
             
-            // Cambiamos textContent por innerHTML para permitir formato HTML en el mensaje.
             notificationMessage.innerHTML = message;
-            
             notificationContent.classList.remove('bg-success-color', 'bg-danger-color', 'bg-warning-color');
             notificationIcon.classList.remove('fa-check-circle', 'fa-exclamation-triangle', 'fa-times-circle');
-        
+
             if (type === 'success') {
                 notificationContent.classList.add('bg-success-color');
                 notificationIcon.classList.add('fa-check-circle');
@@ -2158,13 +2401,13 @@
                 notificationContent.classList.add('bg-danger-color');
                 notificationIcon.classList.add('fa-times-circle');
             }
-        
+
             notificationModal.classList.remove('hidden');
-        
+
             const timeoutId = setTimeout(() => {
                 notificationModal.classList.add('hidden');
             }, 3000);
-        
+
             const dismissNotification = (e) => {
                 if (!notificationContent.contains(e.target)) {
                     notificationModal.classList.add('hidden');
@@ -2174,7 +2417,6 @@
             };
             notificationModal.addEventListener('click', dismissNotification);
         }
-        
         function showModal(title, message) {
             return new Promise(resolve => {
                 DOMElements.modalTitle.textContent = title;
