@@ -393,7 +393,6 @@
                     <label for="confirm-new-password-modal-input" class="block text-sm font-medium mb-1">Confirmar Nueva Contraseña</label>
                     <input type="password" id="confirm-new-password-modal-input" class="w-full p-2 border rounded-md" required>
                 </div>
-                 <p id="password-change-status" class="text-center text-danger-color h-5"></p>
                 <div class="flex justify-end space-x-3 pt-2">
                     <button type="button" id="change-password-cancel" class="px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
                     <button type="submit" class="px-4 py-2 button-primary font-semibold rounded-md hover:opacity-90 transition">Guardar</button>
@@ -1127,25 +1126,24 @@
             e.preventDefault();
             const newPassword = document.getElementById('new-password-modal-input').value;
             const confirmPassword = document.getElementById('confirm-new-password-modal-input').value;
-            const statusEl = document.getElementById('password-change-status');
-
-            statusEl.textContent = '';
 
             if (newPassword.length < 8) {
-                statusEl.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+                showNotification('La contraseña debe tener al menos 8 caracteres.', 'error');
                 return;
             }
             if (newPassword !== confirmPassword) {
-                statusEl.textContent = 'Las contraseñas no coinciden.';
+                showNotification('Las contraseñas no coinciden.', 'error');
                 return;
             }
 
             const { error } = await supabase.auth.updateUser({ password: newPassword });
 
             if (error) {
-                 statusEl.textContent = error.message.includes('weak password') 
+                // Traducimos el error de Supabase a un mensaje más amigable
+                const friendlyMessage = error.message.includes('weak password') 
                     ? 'Contraseña débil. Usar mayúsculas, números y símbolos.'
                     : `Error: ${error.message}`;
+                showNotification(friendlyMessage, 'error');
             } else {
                 showNotification('Contraseña actualizada con éxito.', 'success');
                 hideChangePasswordModal();
