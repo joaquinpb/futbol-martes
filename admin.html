@@ -1306,21 +1306,21 @@
                     <div id="dashboard-container" class="space-y-3">
                         <div class="dashboard-section">
                             <button class="dashboard-section-trigger w-full flex justify-between items-center p-4 rounded-lg font-semibold text-left">
-                                <span id="resultado-status"></span>
+                                <span id="resultado-status" class="truncate"></span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <div class="dashboard-section-content border border-t-0 rounded-b-lg">${resultadoContent}</div>
                         </div>
                         <div class="dashboard-section">
                             <button class="dashboard-section-trigger w-full flex justify-between items-center p-4 rounded-lg font-semibold text-left">
-                                <span id="chamigo-status"></span>
+                                <span id="chamigo-status" class="truncate"></span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <div class="dashboard-section-content border border-t-0 rounded-b-lg">${chamigoContent}</div>
                         </div>
                         <div class="dashboard-section">
                             <button class="dashboard-section-trigger w-full flex justify-between items-center p-4 rounded-lg font-semibold text-left">
-                                <span id="tt-status"></span>
+                                <span id="tt-status" class="truncate"></span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
                             <div class="dashboard-section-content border border-t-0 rounded-b-lg">${ttContent}</div>
@@ -1330,57 +1330,66 @@
             `;
             DOMElements.adminContent.innerHTML = content;
 
-            const setupDashboardSection = (setupFn) => setupFn();
+            const getPlayerName = id => (AppState.players.find(p => p.id == id) || { name: 'Desconocido' }).name;
 
-            setupDashboardSection(() => { // Resultado
-                const trigger = document.getElementById('resultado-status').parentElement;
-                const select = document.getElementById('dashboard-match-result');
-                select.value = targetMatch.result || '';
-                document.getElementById('resultado-status').textContent = targetMatch.result ? `Resultado: ${targetMatch.result}` : 'Cargar Resultado';
-                trigger.classList.toggle('completed', !!targetMatch.result);
-                trigger.classList.toggle('pending', !targetMatch.result);
-                document.getElementById('dashboard-register-result').addEventListener('click', () => {
-                    document.getElementById('match-result').value = select.value;
-                    handleRegisterResult();
-                });
+            // --- SECCIÓN RESULTADO ---
+            const resultadoTrigger = document.getElementById('resultado-status').parentElement;
+            const resultadoSelect = document.getElementById('dashboard-match-result');
+            resultadoSelect.value = targetMatch.result || '';
+            document.getElementById('resultado-status').textContent = targetMatch.result ? `Resultado: ${targetMatch.result}` : 'Cargar Resultado';
+            resultadoTrigger.classList.toggle('completed', !!targetMatch.result);
+            resultadoTrigger.classList.toggle('pending', !targetMatch.result);
+            document.getElementById('dashboard-register-result').addEventListener('click', () => {
+                handleRegisterResult(resultadoSelect.value);
             });
 
-            setupDashboardSection(() => { // Chamigo
-                const trigger = document.getElementById('chamigo-status').parentElement;
-                const hasVotes = targetMatch.chamigo_votes && Object.keys(targetMatch.chamigo_votes).length > 0;
-                document.getElementById('chamigo-status').textContent = hasVotes ? 'Votos de Chamigo Cargados' : 'Cargar Votos de Chamigo';
-                trigger.classList.toggle('completed', hasVotes);
-                trigger.classList.toggle('pending', !hasVotes);
-                
-                const dashboardContainer = document.getElementById('dashboard-chamigo-players');
-                renderChamigoVotingPlayers(targetMatch, dashboardContainer);
-
-                document.getElementById('dashboard-register-chamigo').addEventListener('click', () => {
-                    const votes = {};
-                    dashboardContainer.querySelectorAll('.chamigo-player-item').forEach(item => {
-                        const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
-                        if (count > 0) votes[item.dataset.id] = count;
-                    });
-                    handleRegisterChamigo(votes);
+            // --- SECCIÓN CHAMIGO ---
+            const chamigoTrigger = document.getElementById('chamigo-status').parentElement;
+            const hasVotes = targetMatch.chamigo_votes && Object.keys(targetMatch.chamigo_votes).length > 0;
+            let chamigoText = 'Cargar Votos de Chamigo';
+            if (hasVotes) {
+                const votesArray = Object.entries(targetMatch.chamigo_votes);
+                const maxVotes = Math.max(...votesArray.map(([, v]) => v));
+                const chamigoNames = votesArray.filter(([, v]) => v === maxVotes).map(([id]) => getPlayerName(id)).join(', ');
+                chamigoText = `Chamigo: ${chamigoNames}`;
+            }
+            document.getElementById('chamigo-status').textContent = chamigoText;
+            chamigoTrigger.classList.toggle('completed', hasVotes);
+            chamigoTrigger.classList.toggle('pending', !hasVotes);
+            const chamigoContainer = document.getElementById('dashboard-chamigo-players');
+            renderChamigoVotingPlayers(targetMatch, chamigoContainer);
+            document.getElementById('dashboard-register-chamigo').addEventListener('click', () => {
+                const votes = {};
+                chamigoContainer.querySelectorAll('.chamigo-player-item').forEach(item => {
+                    const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
+                    if (count > 0) votes[item.dataset.id] = count;
                 });
+                handleRegisterChamigo(votes);
             });
 
-            setupDashboardSection(() => { // TT
-                const trigger = document.getElementById('tt-status').parentElement;
-                const hasAttendees = targetMatch.tt_attendees && targetMatch.tt_attendees.length > 0;
-                document.getElementById('tt-status').textContent = hasAttendees ? `Asistencia TT: ${targetMatch.tt_attendees.length} Jugadores` : 'Cargar Asistencia TT';
-                trigger.classList.toggle('completed', hasAttendees);
-                trigger.classList.toggle('pending', !hasAttendees);
-                
-                const dashboardContainer = document.getElementById('dashboard-tt-players');
-                renderTtAttendancePlayers(targetMatch, dashboardContainer);
-
-                document.getElementById('dashboard-register-tt').addEventListener('click', () => {
-                    const attendees = Array.from(dashboardContainer.querySelectorAll('.selected')).map(el => el.dataset.id);
-                    handleRegisterTt(attendees);
-                });
+            // --- SECCIÓN TT ---
+            const ttTrigger = document.getElementById('tt-status').parentElement;
+            const hasAttendees = targetMatch.tt_attendees && targetMatch.tt_attendees.length > 0;
+            let ttText = 'Cargar Asistencia TT';
+            if (hasAttendees) {
+                const attendeeNames = targetMatch.tt_attendees.map(getPlayerName);
+                if (attendeeNames.length > 2) {
+                    ttText = `TT: ${attendeeNames.slice(0, 2).join(', ')} y ${attendeeNames.length - 2} más`;
+                } else {
+                    ttText = `TT: ${attendeeNames.join(', ')}`;
+                }
+            }
+            document.getElementById('tt-status').textContent = ttText;
+            ttTrigger.classList.toggle('completed', hasAttendees);
+            ttTrigger.classList.toggle('pending', !hasAttendees);
+            const ttContainer = document.getElementById('dashboard-tt-players');
+            renderTtAttendancePlayers(targetMatch, ttContainer);
+            document.getElementById('dashboard-register-tt').addEventListener('click', () => {
+                const attendees = Array.from(ttContainer.querySelectorAll('.selected')).map(el => el.dataset.id);
+                handleRegisterTt(attendees);
             });
 
+            // Lógica de Acordeón
             document.querySelectorAll('.dashboard-section-trigger').forEach(trigger => {
                 trigger.addEventListener('click', () => {
                     const content = trigger.nextElementSibling;
@@ -1916,9 +1925,10 @@
         }
         function setupResultsPanel(panel, match) {
             panel.querySelector('#match-date').value = match.match_date;
-            panel.querySelector('#match-result').value = match.result || '';
+            const resultSelect = panel.querySelector('#match-result');
+            resultSelect.value = match.result || '';
             if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#register-match-button').addEventListener('click', handleRegisterResult);
+                panel.querySelector('#register-match-button').addEventListener('click', () => handleRegisterResult(resultSelect.value));
                 panel.dataset.listenersAdded = 'true';
             }
         }
@@ -2013,8 +2023,7 @@
                 this.showPicker();
             });
         }
-        async function handleRegisterResult() {
-            let resultValue = document.getElementById('match-result')?.value ?? document.getElementById('dashboard-match-result')?.value;
+        async function handleRegisterResult(resultValue) {
             if (resultValue === "") {
                 resultValue = null;
             }
