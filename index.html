@@ -64,7 +64,6 @@
 
         @media (min-width: 768px) {
             body { display: flex; }
-            main { flex-grow: 1; overflow-y: auto; height: 100vh; }
         }
         
         .main-content-container {
@@ -284,7 +283,7 @@
 </head>
 <body class="antialiased min-h-screen">
 
-    <!-- Header para móvil (replicado de admin.html) -->
+    <!-- Header para móvil -->
     <header class="sticky top-0 z-30 flex items-center justify-between p-4 md:hidden">
         <div class="w-10">
             <button id="hamburger-button" class="p-2 rounded-md -ml-2 text-text-primary">
@@ -304,17 +303,14 @@
         </div>
     </header>
     
-    <!-- Menú lateral rediseñado -->
-    <!-- Menú lateral rediseñado y CORREGIDO -->
+    <!-- Menú lateral -->
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 transform -translate-x-full transition-transform duration-300 ease-in-out md:transform-none md:relative md:w-64 flex flex-col">
         <div class="px-6 py-4 flex items-center">
             <a href="#" class="text-xl font-bold flex items-center gap-2">
                 <span class="text-2xl">⚽</span>
                 <span>LA CLANDE</span>
             </a>
-            <button id="dark-mode-toggle" class="p-2 w-10 h-10 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none transition-colors duration-150 ease-in-out flex items-center justify-center ml-auto">
-                <i class="fas fa-moon text-lg"></i>
-            </button>
+            <!-- Botón de tema oscuro ELIMINADO de aquí -->
         </div>
         
         <div class="flex-1 px-4 space-y-2 overflow-y-auto">
@@ -325,7 +321,6 @@
                     <i class="fas fa-chevron-down transform transition-transform"></i>
                 </button>
                 <div class="collapsible-content mt-1 space-y-1 pl-4">
-                    <!-- CORRECCIÓN: Se añadieron los href correctos -->
                     <a href="#leaderboard" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="leaderboard-content"><i class="fas fa-trophy w-5 text-center"></i>Posiciones</a>
                     <a href="#chamigo" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="chamigo-content"><i class="fas fa-star w-5 text-center"></i>Chamigo</a>
                     <a href="#tt" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="tt-content"><i class="fas fa-beer w-5 text-center"></i>TT</a>
@@ -353,7 +348,6 @@
             <div class="mt-6">
                 <span class="px-4 text-xs font-semibold uppercase text-gray-400">Panel</span>
                 <div class="mt-2 space-y-1">
-                    <!-- FIX: Added target="_blank" to open in a new tab -->
                     <a href="admin.html" target="_blank" rel="noopener noreferrer" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
                         <i class="fas fa-user-shield w-5 text-center"></i><span>Admin</span>
                     </a>
@@ -363,8 +357,25 @@
     </nav>
     <div id="overlay" class="hidden md:hidden"></div>
 
-    <main class="flex-1 p-4 sm:p-6 lg:p-8">
-    </main>
+    <!-- Contenedor principal que envuelve el header de escritorio y el main content -->
+    <div class="flex-1 flex flex-col h-screen">
+        <!-- Header para Escritorio (NUEVO) -->
+        <header class="hidden md:flex items-center justify-between p-4 border-b border-border-color bg-secondary shrink-0">
+            <div class="text-xl font-bold text-text-primary">
+                <span id="desktop-header-title"></span>
+            </div>
+            <div>
+                <button id="dark-mode-toggle-desktop" class="p-2 w-10 h-10 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-text-primary">
+                   <i class="fas fa-moon text-lg"></i>
+               </button>
+            </div>
+       </header>
+
+        <!-- El contenido principal ahora es scrollable por sí mismo -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        </main>
+    </div>
+
 
     <!-- CORRECCIÓN: Se mueven los scripts al final del body y en el orden correcto -->
     <script src="config.js"></script>
@@ -458,8 +469,8 @@
             hamburgerButton: document.getElementById('hamburger-button'),
             sideMenu: document.getElementById('side-menu'),
             overlay: document.getElementById('overlay'),
-            darkModeToggle: document.getElementById('dark-mode-toggle'),
             darkModeToggleMobile: document.getElementById('dark-mode-toggle-mobile'),
+            darkModeToggleDesktop: document.getElementById('dark-mode-toggle-desktop'), // Nuevo
             mainContentArea: document.querySelector('main'),
             tabButtons: document.querySelectorAll('.tab-button'),
             collapsibleTriggers: document.querySelectorAll('.collapsible-trigger'),
@@ -476,7 +487,11 @@
             localStorage.setItem('theme', theme);
             
             const isDark = theme === 'dark';
-            const icons = [DOMElements.darkModeToggle.querySelector('i'), DOMElements.darkModeToggleMobile.querySelector('i')];
+            // Actualiza ambos íconos
+            const icons = [
+                DOMElements.darkModeToggleMobile.querySelector('i'),
+                DOMElements.darkModeToggleDesktop.querySelector('i')
+            ];
             
             icons.forEach(icon => {
                 if (icon) {
@@ -1034,7 +1049,6 @@
                 return;
             }
 
-            // --- FIX: Corrected the parameter name in the RPC call ---
             const { data: matches, error } = await supabaseClient.rpc('get_player_matches', { player_id_to_find: selectedPlayerId });
 
             if(error) { 
@@ -1251,7 +1265,8 @@
             const title = titles[tabId] || 'Contenido';
             
             let baseHtml = `<div id="${tabId}" class="main-content-container space-y-6">
-                <div class="relative flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg">
+                <!-- Este header ahora se oculta en desktop -->
+                <div class="relative flex md:hidden items-center justify-center p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg">
                     <h1 class="flex-1 text-2xl font-bold tracking-tight uppercase text-center text-white">${title}</h1>
                 </div>`;
             
@@ -1338,6 +1353,16 @@
         }
 
         function activateTab(tabId) {
+            const titles = {
+                'leaderboard-content': 'Posiciones', 'chamigo-content': 'Chamigo', 'tt-content': 'Tercer Tiempo (TT)',
+                'presentismo-content': 'Presentismo', 'ausentismo-content': 'Ausentismo', 'estadisticas-content': 'Estadísticas',
+                'equipos-content': 'Equipos', 'fixture-content': 'Fixture', 'individual-stats-content': 'Histórico'
+            };
+            const desktopTitleEl = document.getElementById('desktop-header-title');
+            if (desktopTitleEl) {
+                desktopTitleEl.textContent = titles[tabId] || 'Estadísticas';
+            }
+
             DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
             
             DOMElements.tabButtons.forEach(btn => {
@@ -1589,8 +1614,8 @@
             
             applyInitialResponsiveStyles();
             applyTheme(localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-            DOMElements.darkModeToggle.addEventListener('click', toggleTheme);
             DOMElements.darkModeToggleMobile.addEventListener('click', toggleTheme);
+            DOMElements.darkModeToggleDesktop.addEventListener('click', toggleTheme); // Nuevo listener
             
             DOMElements.hamburgerButton.addEventListener('click', openSideMenu);
             DOMElements.overlay.addEventListener('click', closeSideMenu);
