@@ -15,6 +15,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
 
     <style>
+        /* --- INICIO: Estilos replicados de admin.html --- */
         :root {
             --bg-primary: #f4f7fe;
             --bg-secondary: #ffffff;
@@ -44,6 +45,7 @@
             --bg-primary: #030712;
             --bg-secondary: #1f2937;
             --bg-muted: #111827;
+            --sidebar-bg: #1f2937; /* Sidebar en modo oscuro es ligeramente más claro que el fondo */
             --text-primary: #f9fafb;
             --text-secondary: #d1d5db;
             --text-muted: #9ca3af;
@@ -51,6 +53,7 @@
             --accent-color: #6366f1;
             --accent-color-hover: #818cf8;
         }
+        /* --- FIN: Estilos replicados de admin.html --- */
 
         body {
             font-family: 'Inter', sans-serif;
@@ -62,7 +65,6 @@
 
         @media (min-width: 768px) {
             body { display: flex; }
-            main { flex-grow: 1; overflow-y: auto; height: 100vh; }
         }
         
         .main-content-container {
@@ -73,7 +75,7 @@
             padding: 1.5rem;
         }
         @media (max-width: 767px) {
-            .main-content-container { margin-top: 3rem; }
+            .main-content-container { margin-top: 1rem; }
         }
 
         input, select {
@@ -88,20 +90,35 @@
         label { color: var(--text-secondary); }
 
         #side-menu {
-            background-color: var(--sidebar-bg);
-            color: var(--sidebar-text);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
             transition: transform 0.3s ease-in-out;
             z-index: 40;
+            border-right: 1px solid var(--border-color);
         }
-        #side-menu.open { transform: translateX(0); }
+        html.dark #side-menu {
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+        }
+        
         #side-menu .tab-button.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); font-weight: 600; }
-        #side-menu .tab-button:hover:not(.active) { background-color: var(--sidebar-hover-bg); }
-        #dark-mode-toggle { background-color: var(--sidebar-hover-bg); }
-        #overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); z-index: 30; }
-        #hamburger-button { background-color: var(--accent-color); position: fixed; z-index: 50; }
+        
+        html:not(.dark) #side-menu .tab-button:hover:not(.active) { background-color: #eef2ff; }
+        html.dark #side-menu .tab-button:hover:not(.active) { background-color: var(--sidebar-hover-bg); }
 
+        #overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); z-index: 30; }
+        
+        /* Estilo del Header Móvil (replicado de admin.html) */
+        header.md\:hidden {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        html.dark header.md\:hidden {
+            background-color: #111827; /* Un color de cabecera oscuro consistente */
+        }
+        
         @media (min-width: 768px) {
-            #side-menu { position: relative; transform: translateX(0); flex-shrink: 0; height: 100vh; border-right: 1px solid var(--border-color); }
+            #side-menu { position: relative; transform: translateX(0); flex-shrink: 0; height: 100vh; }
             #hamburger-button, #overlay { display: none !important; }
         }
 
@@ -128,7 +145,7 @@
             border-bottom: 2px solid var(--border-color);
         }
         html.dark thead th {
-            background-color: var(--sidebar-bg);
+            background-color: #111827; /* Un poco más oscuro para la cabecera de la tabla */
         }
         thead th[data-sort] { cursor: pointer; transition: background-color 0.2s; }
         thead th[data-sort]:hover { background-color: var(--border-color); }
@@ -142,15 +159,15 @@
             transition: background-color 150ms ease-in-out;
         }
         
-        tbody tr:nth-child(odd) { background-color: #f3f4f6; }
-        tbody tr:nth-child(even) { background-color: #f9fafb; }
+        tbody tr:nth-child(odd) { background-color: var(--bg-secondary); }
+        tbody tr:nth-child(even) { background-color: var(--bg-muted); }
         
         html.dark tbody tr:nth-child(odd) { background-color: #1f2937; }
-        html.dark tbody tr:nth-child(even) { background-color: #374151; }
+        html.dark tbody tr:nth-child(even) { background-color: #111827; }
 
         tbody tr:hover td,
         tbody tr:hover td.sticky-col {
-            background-color: var(--border-color);
+            background-color: #eef2ff;
         }
         html.dark tbody tr:hover td,
         html.dark tbody tr:hover td.sticky-col {
@@ -161,25 +178,27 @@
         .sticky-col {
             position: sticky;
             z-index: 5;
-            background-color: #f9fafb;
+            background-color: var(--bg-muted);
         }
         tbody tr:nth-child(odd) .sticky-col {
-            background-color: #f3f4f6;
+            background-color: var(--bg-secondary);
         }
         html.dark .sticky-col {
-            background-color: #374151;
+            background-color: #111827;
         }
         html.dark tbody tr:nth-child(odd) .sticky-col {
             background-color: #1f2937;
         }
         
+        #individual-stats-table tr.font-bold td,
         #individual-stats-table tr.font-bold td.sticky-col {
-            background-color: var(--accent-color);
+            background-color: var(--accent-color) !important;
+            color: var(--button-text-color);
         }
         
         #individual-stats-table tr.font-bold:hover td,
         #individual-stats-table tr.font-bold:hover td.sticky-col {
-            background-color: var(--accent-color);
+            background-color: var(--accent-color-hover) !important;
         }
 
         #estadisticas-table .sticky-col-1, #individual-stats-table .sticky-col-1 { left: 0; }
@@ -187,13 +206,6 @@
         #individual-stats-table .sticky-col-2 { left: 90px; }
         thead th.sticky-col { z-index: 15; }
         
-        .tab-title {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover));
-            color: var(--button-text-color);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
-        }
         .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
         .button-primary:hover { background-color: var(--accent-color-hover); }
         .collapsible-toggle-button { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); }
@@ -258,58 +270,156 @@
         ::-webkit-scrollbar-thumb:hover { background: #555; }
         html.dark ::-webkit-scrollbar-thumb { background: #555; }
         html.dark ::-webkit-scrollbar-thumb:hover { background: #888; }
+        
+        /* --- NUEVOS ESTILOS --- */
+        .sidebar-group-header {
+            background-color: var(--bg-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+        html.dark .sidebar-group-header {
+            background-color: #111827;
+        }
+        .fixture-header {
+            background-color: var(--warning-color);
+            color: var(--button-text-color);
+            font-weight: 600;
+        }
+        .fixture-header:hover {
+            opacity: 0.9;
+        }
+        html.dark .fixture-header {
+            background-color: #d97706;
+        }
+        .fixture-header.active { /* Asegura que el color se mantenga al estar activo */
+             background-color: var(--warning-color) !important;
+             opacity: 1 !important;
+        }
+        html.dark .fixture-header.active {
+            background-color: #d97706 !important;
+        }
     </style>
+    <script>
+        // Script de inicialización del tema (de admin.html)
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 </head>
 <body class="antialiased min-h-screen">
 
-    <header class="fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-4 md:hidden" style="background-color: #111827;">
-
-        <button id="hamburger-button" class="p-2.5 rounded-md text-white flex-shrink-0">
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        </button>
-    
-        <div class="flex-1 min-w-0 px-2 text-center">
-            <h1 class="text-3xl font-bold text-white truncate">
-                LA CLANDE ⚽
-            </h1>
+    <!-- Header para móvil -->
+    <header class="sticky top-0 z-30 flex items-center justify-between p-4 md:hidden">
+        <div class="w-10">
+            <button id="hamburger-button" class="p-2 rounded-md -ml-2 text-text-primary">
+                <i class="fas fa-bars text-lg"></i>
+            </button>
         </div>
-    
-    </header>
-    
-    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 transform -translate-x-full md:transform-none md:relative md:w-64 flex flex-col">
-        <div class="p-4 pt-8 md:pt-4 flex items-center justify-center mb-4">
-            <h1 class="text-3xl font-extrabold text-white flex items-center gap-2"><span class="text-4xl">⚽</span>LA CLANDE</h1>
+        <div class="flex-1 text-center">
+            <a href="#" class="text-xl font-bold flex items-center gap-2 justify-center">
+                <span class="text-2xl">⚽</span>
+                <span>LA CLANDE</span>
+            </a>
         </div>
-        <div class="flex items-center justify-between px-6 py-2 mb-1">
-            <h2 class="text-lg font-semibold flex items-center gap-2 uppercase tracking-wider text-gray-400">
-                <i class="fas fa-bars"></i><span>Menú</span>
-            </h2>
-            <button id="dark-mode-toggle" class="p-2 w-10 h-10 rounded-full hover:bg-sidebar-hover-bg focus:outline-none transition-colors duration-150 ease-in-out flex items-center justify-center">
+        <div class="w-10 flex justify-end items-center">
+             <button id="dark-mode-toggle-mobile" class="p-2 rounded-full text-text-primary">
                 <i class="fas fa-moon text-lg"></i>
             </button>
         </div>
-        <div class="flex flex-col flex-1 overflow-y-auto mt-2">
-             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="leaderboard-content"><i class="fas fa-trophy w-5 text-center"></i>Tabla de Posiciones</button>
-             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="chamigo-content"><i class="fas fa-star w-5 text-center"></i>Chamigo</button>
-             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="tt-content"><i class="fas fa-beer w-5 text-center"></i>TT</button>
-             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="presentismo-content"><i class="fas fa-check-circle w-5 text-center"></i>Presentismo</button>
-             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="ausentismo-content"><i class="fas fa-times-circle w-5 text-center"></i>Ausentismo</button>
-             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="estadisticas-content"><i class="fas fa-chart-bar w-5 text-center"></i>Estadísticas</button>
-             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="equipos-content"><i class="fas fa-futbol w-5 text-center"></i>Equipos</button>
-             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</button>
-             <button class="tab-button py-3 px-6 text-left font-medium flex items-center gap-3" data-tab="individual-stats-content"><i class="fas fa-history w-5 text-center"></i>Histórico</button>
+    </header>
+    
+    <!-- Menú lateral -->
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 transform -translate-x-full transition-transform duration-300 ease-in-out md:transform-none md:relative md:w-64 flex flex-col">
+        <div class="px-6 py-4 flex items-center">
+            <a href="#" class="text-xl font-bold flex items-center gap-2">
+                <span class="text-2xl">⚽</span>
+                <span>LA CLANDE</span>
+            </a>
+        </div>
+        
+        <div class="flex-1 px-4 space-y-2 overflow-y-auto">
+            <!-- Sección Vista Celular -->
+            <div>
+                <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                    <span class="flex items-center gap-3"><i class="fas fa-mobile-alt w-5 text-center"></i>Vista Celular</span>
+                    <i class="fas fa-chevron-down transform transition-transform"></i>
+                </button>
+                <div class="collapsible-content mt-1 space-y-1 pl-4">
+                    <a href="#leaderboard" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="leaderboard-content"><i class="fas fa-trophy w-5 text-center"></i>Posiciones</a>
+                    <a href="#chamigo" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="chamigo-content"><i class="fas fa-star w-5 text-center"></i>Chamigo</a>
+                    <a href="#tt" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="tt-content"><i class="fas fa-beer w-5 text-center"></i>TT</a>
+                    <a href="#presentismo" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="presentismo-content"><i class="fas fa-check-circle w-5 text-center"></i>Presentismo</a>
+                    <a href="#ausentismo" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="ausentismo-content"><i class="fas fa-times-circle w-5 text-center"></i>Ausentismo</a>
+                    <a href="#equipos" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="equipos-content"><i class="fas fa-futbol w-5 text-center"></i>Equipos</a>
+                </div>
+            </div>
+
+            <!-- Enlace Fixture (MODIFICADO) -->
+            <a href="#fixture" class="tab-button fixture-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200 mt-2" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</a>
+
+            <!-- Sección Vista PC -->
+            <div class="mt-2">
+                <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                    <span class="flex items-center gap-3"><i class="fas fa-laptop w-5 text-center"></i>Vista PC</span>
+                    <i class="fas fa-chevron-down transform transition-transform"></i>
+                </button>
+                <div class="collapsible-content hidden mt-1 space-y-1 pl-4">
+                    <a href="#estadisticas" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="estadisticas-content"><i class="fas fa-chart-bar w-5 text-center"></i>Estadísticas</a>
+                    <a href="#individual-stats" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="individual-stats-content"><i class="fas fa-history w-5 text-center"></i>Histórico</a>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <span class="px-4 text-xs font-semibold uppercase text-gray-400">Panel</span>
+                <div class="mt-2 space-y-1">
+                    <a href="admin.html" target="_blank" rel="noopener noreferrer" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
+                        <i class="fas fa-user-shield w-5 text-center"></i><span>Admin</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </nav>
     <div id="overlay" class="hidden md:hidden"></div>
 
-    <main class="flex-1 p-4 sm:p-6 lg:p-8">
-    </main>
+    <!-- Contenedor principal que envuelve el header de escritorio y el main content -->
+    <div class="flex-1 flex flex-col h-screen">
+        <!-- Header para Escritorio (MODIFICADO) -->
+        <header class="hidden md:flex items-center justify-between p-4 border-b border-border-color bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg shrink-0">
+            <div class="w-10"></div> <!-- Espaciador izquierdo -->
+            <div class="flex-1 text-center text-2xl font-bold text-white uppercase tracking-wider">
+                <span id="desktop-header-title"></span>
+            </div>
+            <div class="w-10">
+                <button id="dark-mode-toggle-desktop" class="p-2 w-10 h-10 rounded-full hover:bg-white/20 text-white">
+                   <i class="fas fa-moon text-lg"></i>
+               </button>
+            </div>
+       </header>
 
+        <!-- El contenido principal ahora es scrollable por sí mismo -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        </main>
+    </div>
+
+
+    <!-- CORRECCIÓN: Se mueven los scripts al final del body y en el orden correcto -->
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
+    // Se envuelve todo el código en un listener para asegurar que el DOM esté cargado
     document.addEventListener('DOMContentLoaded', () => {
+        
+        // Se verifica que las variables de config.js existan antes de inicializar Supabase
+        if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
+            console.error("Error: Las variables de configuración de Supabase no están definidas. Asegúrate de que config.js se cargue correctamente.");
+            document.querySelector('main').innerHTML = `<div class="main-content-container text-center text-red-500"><p>Error de configuración. No se pudo conectar a la base de datos.</p></div>`;
+            return; // Detiene la ejecución si no hay configuración
+        }
+
         const FilterSessionManager = {
             SESSION_KEY: 'laClandeFilterSession',
             TIMEOUT_MS: 10 * 60 * 1000, 
@@ -376,14 +486,22 @@
 
         let estadisticasSortState = { criterion: 'points', order: 'desc' };
 
+        const renderFunctions = {
+            'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
+            'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
+            'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
+        };
+
         const DOMElements = {
             body: document.body,
             hamburgerButton: document.getElementById('hamburger-button'),
             sideMenu: document.getElementById('side-menu'),
             overlay: document.getElementById('overlay'),
-            darkModeToggle: document.getElementById('dark-mode-toggle'),
+            darkModeToggleMobile: document.getElementById('dark-mode-toggle-mobile'),
+            darkModeToggleDesktop: document.getElementById('dark-mode-toggle-desktop'), // Nuevo
             mainContentArea: document.querySelector('main'),
             tabButtons: document.querySelectorAll('.tab-button'),
+            collapsibleTriggers: document.querySelectorAll('.collapsible-trigger'),
         };
 
         const hashToTabMap = {
@@ -395,11 +513,21 @@
         function applyTheme(theme) {
             document.documentElement.classList.toggle('dark', theme === 'dark');
             localStorage.setItem('theme', theme);
-            const icon = DOMElements.darkModeToggle.querySelector('i');
-            if (icon) {
-                icon.classList.toggle('fa-sun', theme === 'dark');
-                icon.classList.toggle('fa-moon', theme !== 'dark');
-            }
+            
+            const isDark = theme === 'dark';
+            // Actualiza ambos íconos
+            const icons = [
+                DOMElements.darkModeToggleMobile.querySelector('i'),
+                DOMElements.darkModeToggleDesktop.querySelector('i')
+            ];
+            
+            icons.forEach(icon => {
+                if (icon) {
+                    icon.classList.toggle('fa-sun', isDark);
+                    icon.classList.toggle('fa-moon', !isDark);
+                }
+            });
+
             if (document.querySelector('.tab-button.active')?.dataset.tab === 'fixture-content' && lastSelectedFixtureMatchId) {
                 renderFixtureDetails(lastSelectedFixtureMatchId);
             }
@@ -409,18 +537,28 @@
             const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
             applyTheme(newTheme);
         }
+        
+        function openSideMenu() {
+            DOMElements.overlay.classList.remove('hidden');
+            DOMElements.sideMenu.classList.remove('-translate-x-full');
+            DOMElements.sideMenu.classList.add('translate-x-0');
+            DOMElements.body.classList.add('overflow-hidden');
+        }
 
-        function toggleSideMenu() {
-            DOMElements.sideMenu.classList.toggle('open');
-            DOMElements.overlay.classList.toggle('hidden');
-            DOMElements.body.classList.toggle('overflow-hidden');
+        function closeSideMenu() {
+            DOMElements.sideMenu.classList.add('-translate-x-full');
+            DOMElements.sideMenu.classList.remove('translate-x-0');
+            DOMElements.overlay.classList.add('hidden');
+            DOMElements.body.classList.remove('overflow-hidden');
         }
 
         function applyInitialResponsiveStyles() {
              if (window.innerWidth >= 768) {
-                DOMElements.sideMenu.classList.remove('open');
+                DOMElements.sideMenu.classList.remove('-translate-x-full', 'translate-x-0');
                 DOMElements.overlay.classList.add('hidden');
                 DOMElements.body.classList.remove('overflow-hidden');
+            } else {
+                DOMElements.sideMenu.classList.add('-translate-x-full');
             }
         }
         
@@ -761,7 +899,7 @@
             const empatesBgColor = 'var(--warning-color)';
 
             statsDisplay.innerHTML = 
-                statCard(teamStats.oscurosWins, 'Oscuros Ganados', 'var(--sidebar-bg)') +
+                statCard(teamStats.oscurosWins, 'Oscuros Ganados', '#1a202c') +
                 statCard(teamStats.clarosWins, 'Claros Ganados', clarosBgColor, clarosTextColor) +
                 statCard(teamStats.empates, 'Empates', empatesBgColor) +
                 statCard(teamStats.suspendidos, 'Suspendidos', 'var(--danger-color)') +
@@ -941,7 +1079,11 @@
 
             const { data: matches, error } = await supabaseClient.rpc('get_player_matches', { player_id_to_find: selectedPlayerId });
 
-            if(error) { loadingMessage.textContent = 'Error al cargar el historial del jugador.'; return; }
+            if(error) { 
+                console.error("Error fetching player matches:", error);
+                loadingMessage.textContent = 'Error al cargar el historial del jugador.'; 
+                return; 
+            }
             if (!matches || matches.length === 0) { loadingMessage.textContent = 'Este jugador no tiene partidos registrados.'; return; }
 
             const playerStats = calculateIndividualPlayerStats(selectedPlayerId, matches);
@@ -961,7 +1103,7 @@
                 <tbody>`;
 
             tableHtml += `
-                <tr class="font-bold" style="background-color: var(--accent-color); color: var(--button-text-color);">
+                <tr class="font-bold">
                     <td class="p-3 text-left pl-4 sticky-col sticky-col-1"><b>TOTAL</b></td>
                     <td class="p-3 text-center sticky-col sticky-col-2"></td>
                     <td class="p-3 text-center">${playerStats.overallTotal.points}</td><td class="p-3 text-center">${playerStats.overallTotal.pg}</td>
@@ -1144,14 +1286,17 @@
         
         function getTabContentHTML(tabId) {
             const titles = {
-                'leaderboard-content': 'Tabla de Posiciones', 'chamigo-content': 'Chamigo', 'tt-content': 'Tercer Tiempo (TT)',
+                'leaderboard-content': 'Posiciones', 'chamigo-content': 'Chamigo', 'tt-content': 'Tercer Tiempo (TT)',
                 'presentismo-content': 'Presentismo', 'ausentismo-content': 'Ausentismo', 'estadisticas-content': 'Estadísticas',
                 'equipos-content': 'Equipos', 'fixture-content': 'Fixture', 'individual-stats-content': 'Histórico'
             };
             const title = titles[tabId] || 'Contenido';
             
             let baseHtml = `<div id="${tabId}" class="main-content-container space-y-6">
-                <h2 class="tab-title text-2xl font-bold tracking-tight uppercase text-center">${title}</h2>`;
+                <!-- Este header ahora se oculta en desktop -->
+                <div class="relative flex md:hidden items-center justify-center p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg">
+                    <h1 class="flex-1 text-2xl font-bold tracking-tight uppercase text-center text-white">${title}</h1>
+                </div>`;
             
             const prefix = tabId.replace('-content', '');
             
@@ -1236,18 +1381,22 @@
         }
 
         function activateTab(tabId) {
+            const titles = {
+                'leaderboard-content': 'Posiciones', 'chamigo-content': 'Chamigo', 'tt-content': 'Tercer Tiempo (TT)',
+                'presentismo-content': 'Presentismo', 'ausentismo-content': 'Ausentismo', 'estadisticas-content': 'Estadísticas',
+                'equipos-content': 'Equipos', 'fixture-content': 'Fixture', 'individual-stats-content': 'Histórico'
+            };
+            const desktopTitleEl = document.getElementById('desktop-header-title');
+            if (desktopTitleEl) {
+                desktopTitleEl.textContent = titles[tabId] || 'Estadísticas';
+            }
+
             DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
             
             DOMElements.tabButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
             });
             
-            const renderFunctions = {
-                'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
-                'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
-                'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
-            };
-
             setupDynamicEventListeners(tabId);
             
             if (renderFunctions[tabId]) {
@@ -1355,14 +1504,7 @@
             }
         }
         
-        const renderFunctions = {
-            'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
-            'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
-            'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
-        };
-
         function setupRealtimeSubscriptions() {
-            // Si ya existe un canal, lo eliminamos para evitar duplicados y detenemos el heartbeat.
             if (statsChannel) {
                 supabaseClient.removeChannel(statsChannel);
                 statsChannel = null;
@@ -1413,16 +1555,14 @@
                 }
             };
 
-            // Creamos el nuevo canal con configuración de broadcast para el heartbeat
             statsChannel = supabaseClient.channel('public:stats_changes', {
                 config: {
                     broadcast: { ack: true }
                 }
             });
 
-            // Función para iniciar el envío de latidos
             const startHeartbeat = () => {
-                clearInterval(heartbeatInterval); // Limpiamos cualquier intervalo anterior
+                clearInterval(heartbeatInterval); 
                 heartbeatInterval = setInterval(() => {
                     if (statsChannel.state === 'joined') {
                         statsChannel.send({
@@ -1432,10 +1572,9 @@
                         });
                         console.log('Stats page heartbeat sent.');
                     }
-                }, 30000); // Cada 30 segundos
+                }, 30000); 
             };
 
-            // Función para detener el envío de latidos
             const stopHeartbeat = () => {
                 clearInterval(heartbeatInterval);
             };
@@ -1447,11 +1586,10 @@
                     console.log(`Stats page Realtime status: ${status}`);
                     if (status === 'SUBSCRIBED') {
                         console.log('Stats page subscribed to Realtime channel!');
-                        startHeartbeat(); // Inicia el heartbeat al conectarse
+                        startHeartbeat(); 
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                         console.error(`Stats page Realtime issue: ${status}`, err);
                         stopHeartbeat();
-                        // Intenta reconectar después de 5 segundos
                         setTimeout(setupRealtimeSubscriptions, 5000);
                     } else if (status === 'CLOSED') {
                         console.warn('Stats page Realtime channel closed.');
@@ -1501,23 +1639,52 @@
                     FilterSessionManager.update(globalFilterState); 
                 }, true);
             });
-
-            applyTheme(localStorage.getItem('theme') || 'light');
             
-            DOMElements.darkModeToggle.addEventListener('click', toggleTheme);
-            DOMElements.hamburgerButton.addEventListener('click', toggleSideMenu);
-            DOMElements.overlay.addEventListener('click', toggleSideMenu);
+            applyInitialResponsiveStyles();
+            applyTheme(localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+            DOMElements.darkModeToggleMobile.addEventListener('click', toggleTheme);
+            DOMElements.darkModeToggleDesktop.addEventListener('click', toggleTheme); // Nuevo listener
+            
+            DOMElements.hamburgerButton.addEventListener('click', openSideMenu);
+            DOMElements.overlay.addEventListener('click', closeSideMenu);
             window.addEventListener('resize', applyInitialResponsiveStyles);
+            
             DOMElements.tabButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
-                    activateTab(e.currentTarget.dataset.tab);
-                    if (window.innerWidth < 768) toggleSideMenu();
+                    e.stopPropagation();
+                    const tabId = e.currentTarget.dataset.tab;
+                    if (tabId) { 
+                        activateTab(tabId);
+                        if (window.innerWidth < 768) closeSideMenu();
+                    }
                 });
             });
             window.addEventListener('hashchange', () => {
                 const tabId = hashToTabMap[window.location.hash] || 'leaderboard-content';
                 activateTab(tabId);
             });
+
+            DOMElements.collapsibleTriggers.forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    const content = trigger.nextElementSibling;
+                    const icon = trigger.querySelector('i.fa-chevron-down');
+                    content.classList.toggle('hidden');
+                    icon?.classList.toggle('rotate-180');
+                });
+            });
+
+            // Desplegar la sección "Vista Celular" por defecto al cargar la página
+            const celularTrigger = DOMElements.collapsibleTriggers[0]; // El primer desplegable es "Vista Celular"
+            if (celularTrigger) {
+                const content = celularTrigger.nextElementSibling;
+                const icon = celularTrigger.querySelector('i.fa-chevron-down');
+                
+                // Se asegura de que el estado inicial sea el correcto: contenido visible y flecha hacia arriba
+                if (content && icon) {
+                    content.classList.remove('hidden'); // Quita 'hidden' si existiera
+                    icon.classList.add('rotate-180');   // Gira la flecha
+                }
+            }
 
             initializeApp();
         }
