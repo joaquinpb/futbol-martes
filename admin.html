@@ -1159,7 +1159,7 @@
             e.preventDefault();
             const newPassword = document.getElementById('new-password-modal-input').value;
             const confirmPassword = document.getElementById('confirm-new-password-modal-input').value;
-
+        
             if (newPassword.length < 8) {
                 showNotification('La contraseña debe tener al menos 8 caracteres.', 'error');
                 return;
@@ -1168,14 +1168,21 @@
                 showNotification('Las contraseñas no coinciden.', 'error');
                 return;
             }
-
+        
             const { error } = await supabase.auth.updateUser({ password: newPassword });
-
+        
             if (error) {
-                const friendlyMessage = error.message.includes('weak password') 
-                    ? 'Contraseña débil. Debe incluir mayúsculas, minúsculas, números y al menos un símbolo.'
-                    : `Error: ${error.message}`;
-                showNotification(friendlyMessage, 'error');
+                // --- INICIO DE LA MODIFICACIÓN ---
+                // Verificamos si el mensaje de error de Supabase se refiere a una contraseña débil.
+                if (error.message.toLowerCase().includes('password should contain') || error.message.includes('weak password')) {
+                     // Creamos un mensaje más amigable y legible en español.
+                     const friendlyMessage = '<strong>La contraseña no es segura.</strong><br>Debe incluir mayúsculas, minúsculas, números y al menos un símbolo.';
+                     showNotification(friendlyMessage, 'error');
+                } else {
+                     // Si es otro tipo de error, lo mostramos tal cual.
+                     showNotification(`Error: ${error.message}`, 'error');
+                }
+                // --- FIN DE LA MODIFICACIÓN ---
             } else {
                 showNotification('Contraseña actualizada con éxito.', 'success');
                 hideChangePasswordModal();
@@ -2137,10 +2144,12 @@
         function showNotification(message, type = 'success') {
             const { notificationModal, notificationContent, notificationIcon, notificationMessage } = DOMElements;
             
-            notificationMessage.textContent = message;
+            // Cambiamos textContent por innerHTML para permitir formato HTML en el mensaje.
+            notificationMessage.innerHTML = message;
+            
             notificationContent.classList.remove('bg-success-color', 'bg-danger-color', 'bg-warning-color');
             notificationIcon.classList.remove('fa-check-circle', 'fa-exclamation-triangle', 'fa-times-circle');
-
+        
             if (type === 'success') {
                 notificationContent.classList.add('bg-success-color');
                 notificationIcon.classList.add('fa-check-circle');
@@ -2148,13 +2157,13 @@
                 notificationContent.classList.add('bg-danger-color');
                 notificationIcon.classList.add('fa-times-circle');
             }
-
+        
             notificationModal.classList.remove('hidden');
-
+        
             const timeoutId = setTimeout(() => {
                 notificationModal.classList.add('hidden');
             }, 3000);
-
+        
             const dismissNotification = (e) => {
                 if (!notificationContent.contains(e.target)) {
                     notificationModal.classList.add('hidden');
@@ -2164,6 +2173,7 @@
             };
             notificationModal.addEventListener('click', dismissNotification);
         }
+        
         function showModal(title, message) {
             return new Promise(resolve => {
                 DOMElements.modalTitle.textContent = title;
