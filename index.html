@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1034,9 +1033,14 @@
                 return;
             }
 
-            const { data: matches, error } = await supabaseClient.rpc('get_player_matches', { p_id: selectedPlayerId });
+            // --- FIX: Corrected the parameter name in the RPC call ---
+            const { data: matches, error } = await supabaseClient.rpc('get_player_matches', { player_id_to_find: selectedPlayerId });
 
-            if(error) { loadingMessage.textContent = 'Error al cargar el historial del jugador.'; return; }
+            if(error) { 
+                console.error("Error fetching player matches:", error);
+                loadingMessage.textContent = 'Error al cargar el historial del jugador.'; 
+                return; 
+            }
             if (!matches || matches.length === 0) { loadingMessage.textContent = 'Este jugador no tiene partidos registrados.'; return; }
 
             const playerStats = calculateIndividualPlayerStats(selectedPlayerId, matches);
