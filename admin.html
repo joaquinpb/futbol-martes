@@ -560,6 +560,7 @@
                 switch(table) {
                     case 'players': dataArray = AppState.players; break;
                     case 'matches': dataArray = AppState.matches; break;
+                    case 'profiles': dataArray = AppState.users; break;
                     default: return;
                 }
 
@@ -570,7 +571,7 @@
                 } else if (eventType === 'UPDATE') {
                     const index = dataArray.findIndex(item => item.id === newRecord.id);
                     if (index !== -1) {
-                        dataArray[index] = newRecord;
+                        dataArray[index] = { ...dataArray[index], ...newRecord };
                     } else {
                         dataArray.push(newRecord);
                     }
@@ -619,6 +620,7 @@
             channel
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, handleChanges)
                 .subscribe((status, err) => {
                     console.log(`Realtime status: ${status}`);
                     if (status === 'SUBSCRIBED') {
