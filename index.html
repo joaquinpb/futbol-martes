@@ -625,40 +625,50 @@
         function calculateStatsForPeriod(yearSelectId, periodSelectId) {
             const selectedYear = document.getElementById(yearSelectId)?.value;
             const selectedPeriod = document.getElementById(periodSelectId)?.value;
-
-            let filteredMatches = allMatchesData;
+        
+            let timeFilteredMatches = allMatchesData;
             if (selectedYear && selectedYear !== 'all') {
-                filteredMatches = filteredMatches.filter(match => {
+                timeFilteredMatches = timeFilteredMatches.filter(match => {
                     const matchYear = parseDate(match.match_date).getFullYear();
                     return matchYear == selectedYear;
                 });
-
+        
                 if (selectedPeriod && selectedPeriod !== 'total') {
-                    filteredMatches = filteredMatches.filter(match => {
+                    timeFilteredMatches = timeFilteredMatches.filter(match => {
                         const month = parseDate(match.match_date).getMonth(); // 0-11
                         const period = (month <= 5) ? 'apertura' : 'clausura';
                         return period === selectedPeriod;
                     });
                 }
             }
-
+        
+            // --- INICIO DE LA MODIFICACIÓN ---
+            // Filtramos para procesar únicamente los partidos que tienen un resultado.
+            const filteredMatches = timeFilteredMatches.filter(match => match.result);
+            // --- FIN DE LA MODIFICACIÓN ---
+        
             const playerStats = {};
             allPlayersData.forEach(player => {
                 playerStats[player.id] = { name: player.name, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player.id };
             });
-
+        
             let clarosWins = 0, oscurosWins = 0, empates = 0, suspendidos = 0, totalPJMatches = 0;
+            // Usamos la lista de partidos ya filtrada.
             (filteredMatches || []).forEach(match => {
                 const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
                 const allPlayersInMatch = [...new Set([...(team_white_players || []), ...(team_dark_players || [])])];
+                
+                // Este contador ahora solo se incrementará para partidos con resultado.
                 if (result !== 'Suspendido') totalPJMatches++;
                 else suspendidos++;
+        
                 allPlayersInMatch.forEach(pId => {
                     if (playerStats[pId]) {
                         if (result === 'Claros' && (team_white_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
                         else if (result === 'Oscuros' && (team_dark_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
                         else if (result === 'Empate') { playerStats[pId].points += 1; playerStats[pId].pe++; }
                         else if (result !== 'Suspendido') { playerStats[pId].pp++; }
+                        // Los Partidos Jugados (PJ) solo se suman si el partido no fue suspendido.
                         if (result !== 'Suspendido') playerStats[pId].pj++;
                     }
                 });
@@ -687,9 +697,10 @@
                 } else {
                     player.efectividad = "0.00";
                 }
+                // El cálculo de ausentes ahora es correcto porque se basa en el total de partidos con resultado.
                 player.ausentes = Math.max(0, totalPJMatches - player.pj);
             });
-
+        
             let playersToShow;
             if (selectedYear && selectedYear !== 'all') {
                 const yearlyMatches = allMatchesData.filter(m => parseDate(m.match_date).getFullYear() == selectedYear);
@@ -702,7 +713,7 @@
             } else {
                 playersToShow = Object.values(playerStats).filter(p => p.pj > 0);
             }
-
+        
             return {
                 players: playersToShow,
                 teamStats: { clarosWins, oscurosWins, empates, suspendidos, totalPJMatches },
@@ -1160,10 +1171,10 @@
             });
         }
 
-        function calculateIndividualPlayerStats(playerId, matches) {
+        function calculateIndividualPlayerStats(playerId, allPlayerMatches) {
             const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }};
-            const allYearsInMatches = [...new Set(matches.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
-
+            const allYearsInMatches = [...new Set(allPlayerMatches.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
+        
             allYearsInMatches.forEach(year => {
                 playerStats.years[year] = {
                     apertura: { name: 'Apertura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
@@ -1172,19 +1183,22 @@
                 };
             });
             
-            matches.forEach(match => {
+            // --- INICIO DE LA MODIFICACIÓN ---
+            // Iteramos sobre todos los partidos del jugador, pero solo procesamos estadísticas si tienen resultado.
+            allPlayerMatches.forEach(match => {
                  const { match_date, team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
-                 if (!match_date) return;
-
+                 // Si no hay resultado, saltamos este partido para los cálculos de PJ, PG, etc.
+                 if (!result || !match_date) return;
+        
                  const matchDate = parseDate(match_date);
                  const year = matchDate.getFullYear();
                  const period = matchDate.getMonth() <= 5 ? 'apertura' : 'clausura';
-
+        
                  if (!playerStats.years[year]) return;
                  
                  const playerIsInMatch = (team_white_players || []).includes(playerId) || (team_dark_players || []).includes(playerId);
                  if (!playerIsInMatch) return;
-
+        
                  const statsToUpdate = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
                  
                  if (result !== 'Suspendido') {
@@ -1194,7 +1208,7 @@
                      else if (result === 'Empate') statsToUpdate.forEach(s => { s.points += 1; s.pe++; });
                      else statsToUpdate.forEach(s => s.pp++);
                  }
-
+        
                  if (chamigo_votes) {
                      const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
                      if (votosArray.length > 0) {
@@ -1208,32 +1222,35 @@
                      statsToUpdate.forEach(s => s.tt++);
                  }
             });
-
+        
             allYearsInMatches.forEach(year => {
                 const yearData = playerStats.years[year];
                 ['apertura', 'clausura', 'total'].forEach(periodType => {
                     const stats = yearData[periodType];
-                    const totalMatchesInPeriod = matches.filter(m => {
-                        if (!m.match_date) return false;
+                    // Para calcular ausentes, contamos el total de partidos CON RESULTADO en el período.
+                    const totalMatchesInPeriod = allPlayerMatches.filter(m => {
+                        if (!m.match_date || !m.result || m.result === 'Suspendido') return false;
                         const d = parseDate(m.match_date);
                         const p = d.getMonth() <= 5 ? 'apertura' : 'clausura';
                         const y = d.getFullYear();
-                        if (periodType === 'total') return y === year && m.result !== 'Suspendido';
-                        return y === year && p === periodType && m.result !== 'Suspendido';
+                        if (periodType === 'total') return y === year;
+                        return y === year && p === periodType;
                     }).length;
-
+        
                     const maxPoints = stats.pj * 3;
                     stats.efectividad = maxPoints > 0 ? ((stats.points / maxPoints) * 100).toFixed(2) : "0.00";
                     stats.ausentes = Math.max(0, totalMatchesInPeriod - stats.pj);
                 });
             });
-
-            const totalNonSuspendedMatches = matches.filter(m => m.result !== 'Suspendido').length;
+        
+            // Hacemos lo mismo para el total general.
+            const totalNonSuspendedMatches = allPlayerMatches.filter(m => m.result && m.result !== 'Suspendido').length;
             const overall = playerStats.overallTotal;
             const maxTotalPoints = overall.pj * 3;
             overall.efectividad = maxTotalPoints > 0 ? ((overall.points / maxTotalPoints) * 100).toFixed(2) : "0.00";
             overall.ausentes = Math.max(0, totalNonSuspendedMatches - overall.pj);
-
+            // --- FIN DE LA MODIFICACIÓN ---
+        
             return playerStats;
         }
 
