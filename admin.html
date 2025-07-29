@@ -1678,25 +1678,24 @@
             if (resultValue === "") {
                 resultValue = null;
             }
-            // --- CORRECCIÓN FINAL ---
-            // Se eliminó parseInt(). El ID se pasa como texto (UUID).
-            const { error } = await supabase.from('matches').update({ result: resultValue }).eq('id', AppState.selectedMatchId);
+            const { error } = await supabase.rpc('update_match_result', {
+                match_id_param: AppState.selectedMatchId,
+                new_result: resultValue
+            });
             if(error) { showNotification('Error al registrar resultado', 'error'); console.error(error); } 
             else {
                  showNotification('Resultado registrado!', 'success');
-                 // La UI se actualizará vía Realtime
             }
         }
         async function handleDeleteMatchFromEdit() {
             const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
             if (confirmed) {
-                // --- CORRECCIÓN FINAL ---
-                // Se eliminó parseInt(). El ID se pasa como texto (UUID).
-                const { error } = await supabase.from('matches').delete().eq('id', AppState.selectedMatchId);
+                const { error } = await supabase.rpc('delete_match_by_id', {
+                    match_id_param: AppState.selectedMatchId
+                });
                 if(error) { showNotification('Error al eliminar partido', 'error'); console.error(error); } 
                 else {
                     showNotification('Partido eliminado.', 'success');
-                    // La UI se actualizará vía Realtime
                     document.getElementById('edit-panel-container').classList.add('hidden');
                 }
             }
@@ -1744,8 +1743,6 @@
             
             const chamigoData = Object.keys(votes).length === 0 ? null : votes;
 
-            // --- CORRECCIÓN FINAL ---
-            // Se eliminó parseInt(). El ID se pasa como texto (UUID).
             const { error } = await supabase.rpc('update_chamigo_votes', {
                 match_id_param: AppState.selectedMatchId,
                 chamigo_votes_param: chamigoData
@@ -1757,7 +1754,6 @@
             } 
             else {
                 showNotification('Votos de Chamigo guardados!', 'success');
-                // La UI se actualizará vía Realtime
             }
         }
 
@@ -1790,8 +1786,6 @@
         async function handleRegisterTt() {
             const attendees = Array.from(document.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
 
-            // --- CORRECCIÓN FINAL ---
-            // Se eliminó parseInt(). El ID se pasa como texto (UUID).
             const { error } = await supabase.rpc('update_tt_attendance', {
                 match_id_param: AppState.selectedMatchId,
                 tt_attendees_param: attendees
@@ -1803,7 +1797,6 @@
             } 
             else {
                 showNotification('Asistencia a TT guardada!', 'success');
-                // La UI se actualizará vía Realtime
             }
         }
 
@@ -1980,18 +1973,19 @@
                 return;
             }
 
-            // --- CORRECCIÓN FINAL ---
-            // Se eliminó parseInt(). El ID se pasa como texto (UUID).
-            const { error } = await supabase.from('matches').update({
-                match_date: newDate,
-                team_white_players: newTeamWhite,
-                team_dark_players: newTeamDark
-            }).eq('id', AppState.selectedMatchId);
+            const { error } = await supabase.rpc('update_match_teams', {
+                match_id_param: AppState.selectedMatchId,
+                new_date_param: newDate,
+                new_team_white_param: newTeamWhite,
+                new_team_dark_param: newTeamDark
+            });
             
-            if (error) { showNotification('Error al actualizar el partido.', 'error'); }
+            if (error) { 
+                showNotification('Error al actualizar el partido.', 'error');
+                console.error('Error RPC (Update Match):', error);
+            }
             else {
                 showNotification('Partido actualizado.', 'success');
-                // La UI se actualizará vía Realtime
             }
         }
         
