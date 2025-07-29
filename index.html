@@ -371,7 +371,8 @@
         let lastSelectedFixtureMatchId = null;
         let currentEstadisticasData = []; 
         let globalFilterState = {}; 
-        let statsChannel = null; // Variable para gestionar el canal de realtime
+        let statsChannel = null;
+        let heartbeatInterval = null;
 
         let estadisticasSortState = { criterion: 'points', order: 'desc' };
 
@@ -1361,11 +1362,12 @@
         };
 
         function setupRealtimeSubscriptions() {
-            // Si ya existe un canal, lo eliminamos para evitar duplicados
+            // Si ya existe un canal, lo eliminamos para evitar duplicados y detenemos el heartbeat.
             if (statsChannel) {
                 supabaseClient.removeChannel(statsChannel);
                 statsChannel = null;
             }
+            clearInterval(heartbeatInterval);
             
             console.log('Setting up Realtime subscriptions for stats page...');
             
@@ -1411,22 +1413,49 @@
                 }
             };
 
-            // Creamos el nuevo canal y lo asignamos a nuestra variable
-            statsChannel = supabaseClient.channel('public:stats_changes')
+            // Creamos el nuevo canal con configuración de broadcast para el heartbeat
+            statsChannel = supabaseClient.channel('public:stats_changes', {
+                config: {
+                    broadcast: { ack: true }
+                }
+            });
+
+            // Función para iniciar el envío de latidos
+            const startHeartbeat = () => {
+                clearInterval(heartbeatInterval); // Limpiamos cualquier intervalo anterior
+                heartbeatInterval = setInterval(() => {
+                    if (statsChannel.state === 'joined') {
+                        statsChannel.send({
+                            type: 'broadcast',
+                            event: 'heartbeat',
+                            payload: { message: 'alive' },
+                        });
+                        console.log('Stats page heartbeat sent.');
+                    }
+                }, 30000); // Cada 30 segundos
+            };
+
+            // Función para detener el envío de latidos
+            const stopHeartbeat = () => {
+                clearInterval(heartbeatInterval);
+            };
+
+            statsChannel
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
                 .subscribe((status, err) => {
+                    console.log(`Stats page Realtime status: ${status}`);
                     if (status === 'SUBSCRIBED') {
                         console.log('Stats page subscribed to Realtime channel!');
-                    }
-                     if (status === 'CHANNEL_ERROR') {
-                        console.error('Realtime channel error:', err);
-                        console.log('Attempting to reconnect in 5 seconds...');
+                        startHeartbeat(); // Inicia el heartbeat al conectarse
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        console.error(`Stats page Realtime issue: ${status}`, err);
+                        stopHeartbeat();
+                        // Intenta reconectar después de 5 segundos
                         setTimeout(setupRealtimeSubscriptions, 5000);
-                    }
-                    if (status === 'TIMED_OUT') {
-                        console.warn('Realtime channel timed out. Attempting to reconnect in 5 seconds...');
-                        setTimeout(setupRealtimeSubscriptions, 5000);
+                    } else if (status === 'CLOSED') {
+                        console.warn('Stats page Realtime channel closed.');
+                        stopHeartbeat();
                     }
                 });
         }
