@@ -227,29 +227,13 @@
         html.dark .nav-link-dashboard {
             background: linear-gradient(to right, #d97706, #ea580c);
         }
-
-        .dashboard-section-trigger {
-            transition: all 0.3s ease;
-            border-left-width: 4px;
-            border-left-color: var(--text-secondary);
+        
+        .dashboard-card-body p {
+            min-height: 40px; /* Asegura altura consistente */
         }
-        .dashboard-section-trigger.completed {
-            background-color: #dcfce7; /* Verde claro */
-            border-left-color: var(--success-color);
-        }
-        html.dark .dashboard-section-trigger.completed {
-            background-color: #166534; /* Verde oscuro */
-        }
-        .dashboard-section-trigger.pending {
-             border-left-color: var(--danger-color);
-        }
-
-        .dashboard-section-content {
-            display: none;
-            background-color: var(--bg-muted);
-        }
-        .dashboard-section-content.open {
-            display: block;
+        
+        #dashboard-modal-content {
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
         /* --- FIN: Estilos para el Dashboard --- */
     </style>
@@ -449,6 +433,24 @@
         </div>
     </div>
 
+    <!-- Generic Dashboard Modal -->
+    <div id="dashboard-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
+        <div class="card rounded-lg shadow-xl max-w-lg w-full transform transition-all scale-95 opacity-0" id="dashboard-modal-content">
+            <div class="flex justify-between items-center p-4 border-b border-border-color">
+                <h3 class="text-xl font-semibold" id="dashboard-modal-title"></h3>
+                <button id="dashboard-modal-close" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 max-h-[70vh] overflow-y-auto" id="dashboard-modal-body">
+                <!-- Dynamic content goes here -->
+            </div>
+            <div class="p-4 bg-muted flex justify-end space-x-3" id="dashboard-modal-footer">
+                <!-- Dynamic buttons go here -->
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -522,6 +524,12 @@
             changePasswordModal: document.getElementById('change-password-modal'),
             changeNameForm: document.getElementById('change-name-form'),
             changePasswordForm: document.getElementById('change-password-form'),
+            dashboardModal: document.getElementById('dashboard-modal'),
+            dashboardModalContent: document.getElementById('dashboard-modal-content'),
+            dashboardModalTitle: document.getElementById('dashboard-modal-title'),
+            dashboardModalBody: document.getElementById('dashboard-modal-body'),
+            dashboardModalFooter: document.getElementById('dashboard-modal-footer'),
+            dashboardModalClose: document.getElementById('dashboard-modal-close'),
         };
 
         function init() {
@@ -1272,139 +1280,179 @@
             AppState.selectedMatchId = targetMatch.id;
             const matchDate = new Date(targetMatch.match_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-            const resultadoContent = `
-                <div class="p-4 space-y-4">
-                    <label for="dashboard-match-result" class="block text-sm font-medium mb-1">Resultado del Partido</label>
-                    <select id="dashboard-match-result" class="w-full p-2 border rounded-md">
-                         <option value="">Seleccionar resultado</option>
-                         <option value="Claros">Claros</option>
-                         <option value="Oscuros">Oscuros</option>
-                         <option value="Empate">Empate</option>
-                         <option value="Suspendido">Suspendido</option>
-                    </select>
-                    <button id="dashboard-register-result" class="w-full px-6 py-2 button-success font-semibold rounded-lg">Guardar Resultado</button>
-                </div>`;
-                
-            const chamigoContent = `
-                <div class="p-4 space-y-4">
-                    <div id="dashboard-chamigo-players" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2"></div>
-                    <button id="dashboard-register-chamigo" class="w-full px-6 py-2 button-warning font-semibold rounded-lg">Guardar Votos Chamigo</button>
-                </div>`;
-
-            const ttContent = `
-                <div class="p-4 space-y-4">
-                    <div id="dashboard-tt-players" class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto pr-2"></div>
-                    <button id="dashboard-register-tt" class="w-full px-6 py-2 button-purple font-semibold rounded-lg">Guardar Asistencia TT</button>
-                </div>`;
-
             const content = `
-                <div class="card rounded-xl shadow-sm p-6">
-                    <div class="text-center border-b border-border-color pb-4 mb-4">
-                        <h1 class="text-2xl font-bold">Acciones para el partido del</h1>
-                        <p class="text-lg font-semibold text-accent-color">${matchDate}</p>
-                    </div>
-                    <div id="dashboard-container" class="space-y-3">
-                        <div class="dashboard-section">
-                            <button class="dashboard-section-trigger w-full flex justify-between items-center p-4 rounded-lg font-semibold text-left">
-                                <span id="resultado-status" class="truncate"></span>
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dashboard-section-content border border-t-0 rounded-b-lg">${resultadoContent}</div>
-                        </div>
-                        <div class="dashboard-section">
-                            <button class="dashboard-section-trigger w-full flex justify-between items-center p-4 rounded-lg font-semibold text-left">
-                                <span id="chamigo-status" class="truncate"></span>
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dashboard-section-content border border-t-0 rounded-b-lg">${chamigoContent}</div>
-                        </div>
-                        <div class="dashboard-section">
-                            <button class="dashboard-section-trigger w-full flex justify-between items-center p-4 rounded-lg font-semibold text-left">
-                                <span id="tt-status" class="truncate"></span>
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dashboard-section-content border border-t-0 rounded-b-lg">${ttContent}</div>
-                        </div>
-                    </div>
+                <div class="mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
+                    <p class="text-gray-500 dark:text-gray-400">Acciones pendientes para el partido del ${matchDate}</p>
+                </div>
+                <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards will be inserted here by JS -->
                 </div>
             `;
             DOMElements.adminContent.innerHTML = content;
 
-            const getPlayerName = id => (AppState.players.find(p => p.id == id) || { name: 'Desconocido' }).name;
+            const grid = document.getElementById('dashboard-grid');
+            
+            grid.innerHTML += createDashboardCard({ id: 'resultado', icon: 'fa-trophy', title: 'Resultado del Partido', match: targetMatch });
+            grid.innerHTML += createDashboardCard({ id: 'chamigo', icon: 'fa-star', title: 'Votos Chamigo', match: targetMatch });
+            grid.innerHTML += createDashboardCard({ id: 'tt', icon: 'fa-beer', title: 'Asistencia TT', match: targetMatch });
+            
+            setupDashboardEventListeners();
+        };
 
-            // --- SECCIÓN RESULTADO ---
-            const resultadoTrigger = document.getElementById('resultado-status').parentElement;
-            const resultadoSelect = document.getElementById('dashboard-match-result');
-            resultadoSelect.value = targetMatch.result || '';
-            document.getElementById('resultado-status').textContent = targetMatch.result ? `Resultado: ${targetMatch.result}` : 'Cargar Resultado';
-            resultadoTrigger.classList.toggle('completed', !!targetMatch.result);
-            resultadoTrigger.classList.toggle('pending', !targetMatch.result);
-            document.getElementById('dashboard-register-result').addEventListener('click', () => {
-                handleRegisterResult(resultadoSelect.value);
+        function createDashboardCard({ id, icon, title, match }) {
+            const getPlayerName = pid => (AppState.players.find(p => p.id == pid) || { name: '?' }).name;
+            let status = 'pending';
+            let summary = 'Datos pendientes de carga';
+            let buttonText = 'Cargar';
+            let buttonClass = 'button-primary';
+
+            if (id === 'resultado') {
+                if (match.result) {
+                    status = 'completed';
+                    summary = `Resultado: <strong>${match.result}</strong>`;
+                    buttonText = 'Editar';
+                    buttonClass = 'button-secondary';
+                }
+            } else if (id === 'chamigo') {
+                const hasVotes = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
+                if (hasVotes) {
+                    status = 'completed';
+                    const votesArray = Object.entries(match.chamigo_votes);
+                    const maxVotes = Math.max(...votesArray.map(([, v]) => v));
+                    const chamigoNames = votesArray.filter(([, v]) => v === maxVotes).map(([pid]) => getPlayerName(pid)).join(', ');
+                    summary = `Chamigo(s): <strong>${chamigoNames}</strong>`;
+                    buttonText = 'Editar';
+                    buttonClass = 'button-secondary';
+                }
+            } else if (id === 'tt') {
+                const hasAttendees = match.tt_attendees && match.tt_attendees.length > 0;
+                if (hasAttendees) {
+                    status = 'completed';
+                    const attendeeNames = match.tt_attendees.map(getPlayerName);
+                    if (attendeeNames.length > 3) {
+                         summary = `<strong>${attendeeNames.slice(0, 3).join(', ')}</strong> y ${attendeeNames.length - 3} más.`;
+                    } else {
+                         summary = `Asistentes: <strong>${attendeeNames.join(', ')}</strong>`;
+                    }
+                    buttonText = 'Editar';
+                    buttonClass = 'button-secondary';
+                }
+            }
+
+            return `
+                <div class="dashboard-card card rounded-xl shadow-lg flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-l-4 ${status === 'completed' ? 'border-success-color' : 'border-danger-color'}">
+                    <div class="dashboard-card-header p-4 flex items-center gap-4 border-b border-border-color">
+                        <i class="fas ${icon} text-2xl ${status === 'completed' ? 'text-success-color' : 'text-danger-color'}"></i>
+                        <div>
+                            <h3 class="font-bold text-lg">${title}</h3>
+                            <span class="status-badge text-xs font-bold py-1 px-2 rounded-full ${status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">${status === 'completed' ? 'Completado' : 'Pendiente'}</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card-body p-4 flex-grow">
+                        <p class="text-secondary text-sm">${summary}</p>
+                    </div>
+                    <div class="dashboard-card-footer p-4 bg-muted mt-auto">
+                        <button data-action="${id}" class="w-full py-2 font-semibold rounded-lg shadow-md transition ${buttonClass}">${buttonText}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setupDashboardEventListeners() {
+            document.getElementById('dashboard-grid').addEventListener('click', (e) => {
+                const button = e.target.closest('button[data-action]');
+                if (!button) return;
+
+                const action = button.dataset.action;
+                const match = AppState.matches.find(m => m.id === AppState.selectedMatchId);
+
+                if (action === 'resultado') openResultadoModal(match);
+                else if (action === 'chamigo') openChamigoModal(match);
+                else if (action === 'tt') openTtModal(match);
             });
 
-            // --- SECCIÓN CHAMIGO ---
-            const chamigoTrigger = document.getElementById('chamigo-status').parentElement;
-            const hasVotes = targetMatch.chamigo_votes && Object.keys(targetMatch.chamigo_votes).length > 0;
-            let chamigoText = 'Cargar Votos de Chamigo';
-            if (hasVotes) {
-                const votesArray = Object.entries(targetMatch.chamigo_votes);
-                const maxVotes = Math.max(...votesArray.map(([, v]) => v));
-                const chamigoNames = votesArray.filter(([, v]) => v === maxVotes).map(([id]) => getPlayerName(id)).join(', ');
-                chamigoText = `Chamigo: ${chamigoNames}`;
-            }
-            document.getElementById('chamigo-status').textContent = chamigoText;
-            chamigoTrigger.classList.toggle('completed', hasVotes);
-            chamigoTrigger.classList.toggle('pending', !hasVotes);
-            const chamigoContainer = document.getElementById('dashboard-chamigo-players');
-            renderChamigoVotingPlayers(targetMatch, chamigoContainer);
-            document.getElementById('dashboard-register-chamigo').addEventListener('click', () => {
+            DOMElements.dashboardModalClose.addEventListener('click', closeDashboardModal);
+            DOMElements.dashboardModal.addEventListener('click', (e) => {
+                if (e.target.id === 'dashboard-modal') closeDashboardModal();
+            });
+        }
+
+        function openDashboardModal() {
+            DOMElements.dashboardModal.classList.remove('hidden');
+            DOMElements.body.classList.add('modal-open');
+            setTimeout(() => {
+                DOMElements.dashboardModalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function closeDashboardModal() {
+            DOMElements.dashboardModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                DOMElements.dashboardModal.classList.add('hidden');
+                DOMElements.body.classList.remove('modal-open');
+                DOMElements.dashboardModalBody.innerHTML = '';
+                DOMElements.dashboardModalFooter.innerHTML = '';
+            }, 200);
+        }
+
+        function openResultadoModal(match) {
+            DOMElements.dashboardModalTitle.textContent = 'Registrar Resultado';
+            DOMElements.dashboardModalBody.innerHTML = `
+                <label for="modal-match-result" class="block text-sm font-medium mb-1">Resultado del Partido</label>
+                <select id="modal-match-result" class="w-full p-2 border rounded-md">
+                     <option value="">Seleccionar resultado</option>
+                     <option value="Claros">Claros</option>
+                     <option value="Oscuros">Oscuros</option>
+                     <option value="Empate">Empate</option>
+                     <option value="Suspendido">Suspendido</option>
+                </select>
+            `;
+            document.getElementById('modal-match-result').value = match.result || '';
+            
+            DOMElements.dashboardModalFooter.innerHTML = `<button id="modal-save-result" class="px-6 py-2 button-success font-semibold rounded-lg">Guardar</button>`;
+            document.getElementById('modal-save-result').addEventListener('click', async () => {
+                const newValue = document.getElementById('modal-match-result').value;
+                await handleRegisterResult(newValue);
+                closeDashboardModal();
+            });
+
+            openDashboardModal();
+        }
+
+        function openChamigoModal(match) {
+            DOMElements.dashboardModalTitle.textContent = 'Registrar Votos de Chamigo';
+            DOMElements.dashboardModalBody.innerHTML = `<div id="modal-chamigo-players" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>`;
+            renderChamigoVotingPlayers(match, document.getElementById('modal-chamigo-players'));
+            
+            DOMElements.dashboardModalFooter.innerHTML = `<button id="modal-save-chamigo" class="px-6 py-2 button-warning font-semibold rounded-lg">Guardar Votos</button>`;
+            document.getElementById('modal-save-chamigo').addEventListener('click', async () => {
                 const votes = {};
-                chamigoContainer.querySelectorAll('.chamigo-player-item').forEach(item => {
+                document.querySelectorAll('#modal-chamigo-players .chamigo-player-item').forEach(item => {
                     const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
                     if (count > 0) votes[item.dataset.id] = count;
                 });
-                handleRegisterChamigo(votes);
+                await handleRegisterChamigo(votes);
+                closeDashboardModal();
             });
 
-            // --- SECCIÓN TT ---
-            const ttTrigger = document.getElementById('tt-status').parentElement;
-            const hasAttendees = targetMatch.tt_attendees && targetMatch.tt_attendees.length > 0;
-            let ttText = 'Cargar Asistencia TT';
-            if (hasAttendees) {
-                const attendeeNames = targetMatch.tt_attendees.map(getPlayerName);
-                if (attendeeNames.length > 2) {
-                    ttText = `TT: ${attendeeNames.slice(0, 2).join(', ')} y ${attendeeNames.length - 2} más`;
-                } else {
-                    ttText = `TT: ${attendeeNames.join(', ')}`;
-                }
-            }
-            document.getElementById('tt-status').textContent = ttText;
-            ttTrigger.classList.toggle('completed', hasAttendees);
-            ttTrigger.classList.toggle('pending', !hasAttendees);
-            const ttContainer = document.getElementById('dashboard-tt-players');
-            renderTtAttendancePlayers(targetMatch, ttContainer);
-            document.getElementById('dashboard-register-tt').addEventListener('click', () => {
-                const attendees = Array.from(ttContainer.querySelectorAll('.selected')).map(el => el.dataset.id);
-                handleRegisterTt(attendees);
+            openDashboardModal();
+        }
+
+        function openTtModal(match) {
+            DOMElements.dashboardModalTitle.textContent = 'Registrar Asistencia a TT';
+            DOMElements.dashboardModalBody.innerHTML = `<div id="modal-tt-players" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>`;
+            renderTtAttendancePlayers(match, document.getElementById('modal-tt-players'));
+
+            DOMElements.dashboardModalFooter.innerHTML = `<button id="modal-save-tt" class="px-6 py-2 button-purple font-semibold rounded-lg">Guardar Asistencia</button>`;
+            document.getElementById('modal-save-tt').addEventListener('click', async () => {
+                const attendees = Array.from(document.querySelectorAll('#modal-tt-players .selected')).map(el => el.dataset.id);
+                await handleRegisterTt(attendees);
+                closeDashboardModal();
             });
 
-            // Lógica de Acordeón
-            document.querySelectorAll('.dashboard-section-trigger').forEach(trigger => {
-                trigger.addEventListener('click', () => {
-                    const content = trigger.nextElementSibling;
-                    const icon = trigger.querySelector('i');
-                    document.querySelectorAll('.dashboard-section-content.open').forEach(openContent => {
-                        if (openContent !== content) {
-                            openContent.classList.remove('open');
-                            openContent.previousElementSibling.querySelector('i').classList.remove('rotate-180');
-                        }
-                    });
-                    content.classList.toggle('open');
-                    icon.classList.toggle('rotate-180');
-                });
-            });
-        };
+            openDashboardModal();
+        }
 
         window.render_team_formation = () => {
             const leftCardBody = `
