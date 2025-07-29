@@ -1533,7 +1533,8 @@
             const yearSelect = document.getElementById(`${prefix}-year-select`);
             const monthSelect = document.getElementById(`${prefix}-month-select`);
             
-            const years = [...new Set(AppState.matches.map(m => new Date(m.match_date).getFullYear()))].sort((a,b) => b-a);
+            // FIX: Use getUTCFullYear to avoid timezone issues when creating the year list
+            const years = [...new Set(AppState.matches.map(m => new Date(m.match_date).getUTCFullYear()))].sort((a,b) => b-a);
             yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
             
             const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -1541,16 +1542,18 @@
             
             const mostRecentMatchDate = AppState.matches.length > 0 ? new Date(AppState.matches[0].match_date) : new Date();
             
-            if (years.includes(mostRecentMatchDate.getFullYear())) yearSelect.value = mostRecentMatchDate.getFullYear();
-            monthSelect.value = mostRecentMatchDate.getMonth();
+            // FIX: Use getUTCFullYear and getUTCMonth for setting the initial filter values
+            if (years.includes(mostRecentMatchDate.getUTCFullYear())) yearSelect.value = mostRecentMatchDate.getUTCFullYear();
+            monthSelect.value = mostRecentMatchDate.getUTCMonth();
 
             const renderList = () => {
                 const listContainer = document.getElementById(`${prefix}-list`);
                 const selectedYear = yearSelect.value;
                 const selectedMonth = monthSelect.value;
                 const filteredMatches = AppState.matches.filter(m => {
+                    // FIX: Use getUTCFullYear and getUTCMonth for filtering to prevent timezone shifts
                     const d = new Date(m.match_date);
-                    return d.getFullYear() == selectedYear && d.getMonth() == selectedMonth;
+                    return d.getUTCFullYear() == selectedYear && d.getUTCMonth() == selectedMonth;
                 });
                 
                 if (filteredMatches.length === 0) {
@@ -1565,6 +1568,7 @@
                 
                 listContainer.innerHTML = filteredMatches.map(match => {
                     const d = new Date(match.match_date);
+                    // Using timeZone: 'UTC' here ensures the displayed date is correct and not shifted by local timezone.
                     const formattedDate = d.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC'});
                     return `
                         <div class="match-item border-l-4 p-3 rounded-r-lg cursor-pointer transition" data-match-id="${match.id}">
