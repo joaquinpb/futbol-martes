@@ -371,6 +371,7 @@
         let lastSelectedFixtureMatchId = null;
         let currentEstadisticasData = []; 
         let globalFilterState = {}; 
+        let statsChannel = null; // Variable para gestionar el canal de realtime
 
         let estadisticasSortState = { criterion: 'points', order: 'desc' };
 
@@ -890,7 +891,6 @@
                 playerWrapper.style.top = `${currentPos[team][index].y * 100}%`;
                 playerWrapper.style.left = `${currentPos[team][index].x * 100}%`;
                 
-                // CORREGIDO: Se convierte el ID a número para eliminar ceros iniciales.
                 let markerHTML = `<div class="player-marker ${team} relative w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-center">
                     ${Number(playerId.replace('J', ''))}`;
                 if (chamigosIds.includes(playerId)) {
@@ -1361,6 +1361,12 @@
         };
 
         function setupRealtimeSubscriptions() {
+            // Si ya existe un canal, lo eliminamos para evitar duplicados
+            if (statsChannel) {
+                supabaseClient.removeChannel(statsChannel);
+                statsChannel = null;
+            }
+            
             console.log('Setting up Realtime subscriptions for stats page...');
             
             const handleChanges = (payload) => {
@@ -1377,7 +1383,9 @@
                 }
 
                 if (eventType === 'INSERT') {
-                    dataArray.push(newRecord);
+                    if (!dataArray.some(item => item.id === newRecord.id)) {
+                       dataArray.push(newRecord);
+                    }
                 }
                 else if (eventType === 'UPDATE') {
                     const index = dataArray.findIndex(item => item.id === newRecord.id);
@@ -1397,13 +1405,14 @@
                 if (activeTabButton) {
                     const tabId = activeTabButton.dataset.tab;
                     if (renderFunctions[tabId]) {
-                        console.log(`Refreshing tab: ${tabId}`);
+                        console.log(`Refreshing tab due to realtime update: ${tabId}`);
                         renderFunctions[tabId]();
                     }
                 }
             };
 
-            const channel = supabaseClient.channel('public:stats_changes')
+            // Creamos el nuevo canal y lo asignamos a nuestra variable
+            statsChannel = supabaseClient.channel('public:stats_changes')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
                 .subscribe((status, err) => {
@@ -1412,6 +1421,12 @@
                     }
                      if (status === 'CHANNEL_ERROR') {
                         console.error('Realtime channel error:', err);
+                        console.log('Attempting to reconnect in 5 seconds...');
+                        setTimeout(setupRealtimeSubscriptions, 5000);
+                    }
+                    if (status === 'TIMED_OUT') {
+                        console.warn('Realtime channel timed out. Attempting to reconnect in 5 seconds...');
+                        setTimeout(setupRealtimeSubscriptions, 5000);
                     }
                 });
         }
