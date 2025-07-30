@@ -980,7 +980,7 @@
         }
 
         // ==================================================================
-        // INICIO: FUNCIÓN MODIFICADA PARA CORREGIR POSICIONAMIENTO DEL TROFEO
+        // INICIO: FUNCIÓN MODIFICADA PARA AUMENTAR TAMAÑO DE ELEMENTOS
         // ==================================================================
         function renderFixtureDetails(matchId, fromUserClick = false) {
             const match = allMatchesData.find(m => m.id == matchId);
@@ -1021,14 +1021,10 @@
 
             // Definir posiciones de los jugadores para ambas orientaciones
             const playerPositions = {
-                // Posiciones para el campo vertical (móvil)
-                // Claros abajo, Oscuros arriba
                 vertical: {
                     claros:  [{ x: 0.5, y: 0.92 }, { x: 0.25, y: 0.75 }, { x: 0.75, y: 0.75 }, { x: 0.35, y: 0.60 }, { x: 0.65, y: 0.60 }],
                     oscuros: [{ x: 0.5, y: 0.08 }, { x: 0.25, y: 0.25 }, { x: 0.75, y: 0.25 }, { x: 0.35, y: 0.40 }, { x: 0.65, y: 0.40 }]
                 },
-                // Posiciones para el campo horizontal (desktop)
-                // Claros a la derecha, Oscuros a la izquierda
                 horizontal: {
                     claros:  [{ x: 0.92, y: 0.50 }, { x: 0.75, y: 0.25 }, { x: 0.75, y: 0.75 }, { x: 0.65, y: 0.35 }, { x: 0.65, y: 0.65 }],
                     oscuros: [{ x: 0.08, y: 0.50 }, { x: 0.25, y: 0.25 }, { x: 0.25, y: 0.75 }, { x: 0.35, y: 0.35 }, { x: 0.35, y: 0.65 }]
@@ -1053,14 +1049,16 @@
                 playerWrapper.style.top = `${currentPositions[team][index].y * 100}%`;
                 playerWrapper.style.left = `${currentPositions[team][index].x * 100}%`;
 
-                // Quitar la 'J' y los ceros iniciales del ID para mostrar el número
                 const playerNumber = Number(playerId.replace('J', ''));
                 const isChamigo = chamigoPlayerIds.includes(playerId);
 
+                // --- MODIFICACIÓN DE TAMAÑO ---
+                // Se aumenta el tamaño del círculo y la fuente en desktop (md:)
+                // Se aumenta el tamaño de la estrella y se ajusta su posición
                 let markerHTML = `
-                    <div class="player-marker ${team} relative w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-base font-bold text-center">
+                    <div class="player-marker ${team} relative w-10 h-10 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center">
                         ${playerNumber}
-                        ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-2.5 -right-1 text-lg md:text-xl"></i>' : ''}
+                        ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-3 -right-2 text-lg md:text-2xl"></i>' : ''}
                     </div>
                     <div class="player-name-label text-xs font-bold px-2 py-0.5 rounded-md">${getPlayerName(playerId)}</div>`;
                 
@@ -1068,27 +1066,24 @@
                 soccerFieldContainer.appendChild(playerWrapper);
             };
 
-            // Renderizar jugadores de ambos equipos
             (team_white_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'claros', i));
             (team_dark_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'oscuros', i));
 
-            // Renderizar el trofeo del ganador
             if (result && result !== 'Empate' && result !== 'Suspendido') {
                 const trophyDiv = document.createElement('div');
-                trophyDiv.className = 'winner-trophy absolute text-3xl md:text-4xl z-20 transform -translate-x-1/2 -translate-y-1/2';
+                // --- MODIFICACIÓN DE TAMAÑO ---
+                // Se aumenta el tamaño del trofeo en desktop (md:)
+                trophyDiv.className = 'winner-trophy absolute text-3xl md:text-5xl z-20 transform -translate-x-1/2 -translate-y-1/2';
                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
 
-                // Definir posiciones del trofeo para ambas orientaciones
                 const trophyPositions = {
-                    // Posiciones para el campo horizontal (desktop)
                     horizontal: {
-                        Claros:  { top: '88%', left: '90%' }, // Abajo a la derecha
-                        Oscuros: { top: '88%', left: '10%' }  // Abajo a la izquierda
+                        Claros:  { top: '88%', left: '90%' },
+                        Oscuros: { top: '88%', left: '10%' }
                     },
-                    // Posiciones para el campo vertical (móvil)
                     vertical: {
-                        Claros:  { top: '90%', left: '90%' }, // Abajo a la derecha
-                        Oscuros: { top: '10%', left: '90%' }  // Arriba a la derecha (CORREGIDO)
+                        Claros:  { top: '90%', left: '90%' },
+                        Oscuros: { top: '10%', left: '90%' }
                     }
                 };
 
@@ -1100,10 +1095,8 @@
                 }
             }
 
-            // Mostrar el contenedor de detalles visuales
             visualDetailsContainer.classList.remove('hidden');
             
-            // Ocultar filtros si el usuario hizo clic en un partido
             if (collapsibleContent && fromUserClick && !collapsibleContent.classList.contains('hidden')) {
                 collapsibleContent.classList.add('hidden');
                 filterToggle.classList.remove('visible-content');
