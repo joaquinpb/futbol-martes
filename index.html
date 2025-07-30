@@ -980,7 +980,7 @@
         }
 
         // ==================================================================
-        // INICIO: FUNCIÓN MODIFICADA PARA AUMENTAR TAMAÑO DE ELEMENTOS
+        // INICIO: FUNCIÓN MODIFICADA PARA AJUSTAR POSICIONES
         // ==================================================================
         function renderFixtureDetails(matchId, fromUserClick = false) {
             const match = allMatchesData.find(m => m.id == matchId);
@@ -999,7 +999,6 @@
 
             if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
 
-            // Limpiar el contenido anterior del campo de juego
             soccerFieldContainer.innerHTML = `
                 <div class="goal-area top"></div><div class="goal-area bottom"></div>
                 <div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
@@ -1007,32 +1006,30 @@
             const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
             const getPlayerName = id => (allPlayersData.find(p => p.id === id) || { name: 'ID Desconocido' }).name;
 
-            // Renderizar asistentes al TT
             ttAttendeesTableBody.innerHTML = (Array.isArray(tt_attendees) && tt_attendees.length > 0)
                 ? tt_attendees.map(id => `
                     <tr><td class="p-3 text-center">${getPlayerName(id)}</td></tr>`
                   ).join('')
                 : `<tr><td class="p-4 text-center text-gray-500" colspan="1">No hay asistentes al TT.</td></tr>`;
 
-            // Determinar la orientación del campo (vertical en móvil, horizontal en desktop)
             const isHorizontalField = window.innerWidth >= 768;
             soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
             soccerFieldContainer.querySelectorAll('.goal-area, .penalty-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
 
-            // Definir posiciones de los jugadores para ambas orientaciones
+            // --- MODIFICACIÓN DE POSICIONES ---
+            // Se ajustan las coordenadas X para separar defensores y delanteros en desktop
             const playerPositions = {
                 vertical: {
                     claros:  [{ x: 0.5, y: 0.92 }, { x: 0.25, y: 0.75 }, { x: 0.75, y: 0.75 }, { x: 0.35, y: 0.60 }, { x: 0.65, y: 0.60 }],
                     oscuros: [{ x: 0.5, y: 0.08 }, { x: 0.25, y: 0.25 }, { x: 0.75, y: 0.25 }, { x: 0.35, y: 0.40 }, { x: 0.65, y: 0.40 }]
                 },
                 horizontal: {
-                    claros:  [{ x: 0.92, y: 0.50 }, { x: 0.75, y: 0.25 }, { x: 0.75, y: 0.75 }, { x: 0.65, y: 0.35 }, { x: 0.65, y: 0.65 }],
-                    oscuros: [{ x: 0.08, y: 0.50 }, { x: 0.25, y: 0.25 }, { x: 0.25, y: 0.75 }, { x: 0.35, y: 0.35 }, { x: 0.35, y: 0.65 }]
+                    claros:  [{ x: 0.90, y: 0.50 }, { x: 0.80, y: 0.25 }, { x: 0.80, y: 0.75 }, { x: 0.62, y: 0.35 }, { x: 0.62, y: 0.65 }],
+                    oscuros: [{ x: 0.10, y: 0.50 }, { x: 0.20, y: 0.25 }, { x: 0.20, y: 0.75 }, { x: 0.38, y: 0.35 }, { x: 0.38, y: 0.65 }]
                 }
             };
             const currentPositions = isHorizontalField ? playerPositions.horizontal : playerPositions.vertical;
 
-            // Determinar jugador(es) "Chamigo"
             let chamigoPlayerIds = [];
             if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
                 const votesArray = Object.values(chamigo_votes);
@@ -1042,7 +1039,6 @@
                 }
             }
 
-            // Función para crear y posicionar el marcador de un jugador
             const createPlayerMarker = (playerId, team, index) => {
                 const playerWrapper = document.createElement('div');
                 playerWrapper.className = `player-wrapper absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10`;
@@ -1052,9 +1048,6 @@
                 const playerNumber = Number(playerId.replace('J', ''));
                 const isChamigo = chamigoPlayerIds.includes(playerId);
 
-                // --- MODIFICACIÓN DE TAMAÑO ---
-                // Se aumenta el tamaño del círculo y la fuente en desktop (md:)
-                // Se aumenta el tamaño de la estrella y se ajusta su posición
                 let markerHTML = `
                     <div class="player-marker ${team} relative w-10 h-10 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center">
                         ${playerNumber}
@@ -1071,15 +1064,15 @@
 
             if (result && result !== 'Empate' && result !== 'Suspendido') {
                 const trophyDiv = document.createElement('div');
-                // --- MODIFICACIÓN DE TAMAÑO ---
-                // Se aumenta el tamaño del trofeo en desktop (md:)
                 trophyDiv.className = 'winner-trophy absolute text-3xl md:text-5xl z-20 transform -translate-x-1/2 -translate-y-1/2';
                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
 
+                // --- MODIFICACIÓN DE POSICIONES ---
+                // Se ajustan las coordenadas para acercar el trofeo a la esquina
                 const trophyPositions = {
                     horizontal: {
-                        Claros:  { top: '88%', left: '90%' },
-                        Oscuros: { top: '88%', left: '10%' }
+                        Claros:  { top: '92%', left: '95%' },
+                        Oscuros: { top: '92%', left: '5%' }
                     },
                     vertical: {
                         Claros:  { top: '90%', left: '90%' },
