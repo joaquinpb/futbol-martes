@@ -254,7 +254,7 @@
         .player-marker.claros { background-color: var(--player-claros-bg); color: var(--player-claros-text); border-color: var(--player-claros-text); }
         .player-marker.oscuros { background-color: var(--player-oscuros-bg); color: var(--player-oscuros-text); border-color: var(--player-oscuros-text); }
         .player-name-label { background-color: var(--bg-secondary); color: var(--text-primary); }
-        .winner-trophy { color: var(--text-yellow-400); }
+        .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
         #individual-player-results { background-color: var(--bg-secondary); border: 1px solid var(--border-color); z-index: 20; }
         #individual-player-results > div:hover { background-color: var(--bg-muted); }
@@ -982,95 +982,115 @@
 
         function renderFixtureDetails(matchId, fromUserClick = false) {
             const match = allMatchesData.find(m => m.id == matchId);
-            if (!match) { console.error("Match details not found locally for ID:", matchId); return; }
-            
+            if (!match) {
+                console.error("Detalles del partido no encontrados localmente para el ID:", matchId);
+                return;
+            }
+
             lastSelectedFixtureMatchId = matchId;
-            
+
             const visualDetailsContainer = document.getElementById('fixture-visual-details-container');
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
             const collapsibleContent = document.getElementById('fixture-filters-collapsible');
             const filterToggle = document.getElementById('fixture-filter-toggle');
+
             if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
-            
+
             soccerFieldContainer.innerHTML = `
                 <div class="goal-area top"></div><div class="goal-area bottom"></div>
                 <div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
-            
+
             const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
-            const getPlayerName = id => (allPlayersData.find(p => p.id === id) || {name: 'ID Desconocido'}).name;
-            
+            const getPlayerName = id => (allPlayersData.find(p => p.id === id) || { name: 'ID Desconocido' }).name;
+
             ttAttendeesTableBody.innerHTML = (Array.isArray(tt_attendees) && tt_attendees.length > 0)
                 ? tt_attendees.map(id => `
-                    <tr>
-                        <td class="p-3 text-center">
-                            ${getPlayerName(id)}
-                        </td>
-                    </tr>
-                  `).join('')
+                    <tr><td class="p-3 text-center">${getPlayerName(id)}</td></tr>`
+                  ).join('')
                 : `<tr><td class="p-4 text-center text-gray-500" colspan="1">No hay asistentes al TT.</td></tr>`;
 
             const isHorizontalField = window.innerWidth >= 768;
             soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
             soccerFieldContainer.querySelectorAll('.goal-area, .penalty-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
 
-            const pos = {
-                v: {
-                    claros: [{ x: 0.5, y: 0.92 }, { x: 0.25, y: 0.75 }, { x: 0.75, y: 0.75 }, { x: 0.35, y: 0.60 }, { x: 0.65, y: 0.60 }],
-                    oscuros: [{ x: 0.5, y: 0.08 }, { x: 0.25, y: 0.25 }, { x: 0.75, y: 0.25 }, { x: 0.35, y: 0.40 }, { x: 0.65, y: 0.40 }]
+            const playerPositions = {
+                vertical: {
+                    claros:  [{ x: 0.5, y: 0.94 }, { x: 0.25, y: 0.78 }, { x: 0.75, y: 0.78 }, { x: 0.35, y: 0.62 }, { x: 0.65, y: 0.57 }],
+                    oscuros: [{ x: 0.5, y: 0.06 }, { x: 0.25, y: 0.22 }, { x: 0.75, y: 0.22 }, { x: 0.35, y: 0.38 }, { x: 0.65, y: 0.43 }]
                 },
-                h: {
-                    claros: [{ x: 0.95, y: 0.50 }, { x: 0.75, y: 0.25 }, { x: 0.75, y: 0.75 }, { x: 0.60, y: 0.35 }, { x: 0.60, y: 0.65 }],
-                    oscuros: [{ x: 0.05, y: 0.50 }, { x: 0.25, y: 0.25 }, { x: 0.25, y: 0.75 }, { x: 0.40, y: 0.35 }, { x: 0.40, y: 0.65 }]
+                horizontal: {
+                    claros:  [{ x: 0.90, y: 0.50 }, { x: 0.80, y: 0.25 }, { x: 0.80, y: 0.75 }, { x: 0.62, y: 0.35 }, { x: 0.57, y: 0.65 }],
+                    oscuros: [{ x: 0.10, y: 0.50 }, { x: 0.20, y: 0.25 }, { x: 0.20, y: 0.75 }, { x: 0.38, y: 0.35 }, { x: 0.43, y: 0.65 }]
                 }
             };
-            const currentPos = isHorizontalField ? pos.h : pos.v;
-            
-            let chamigosIds = [];
+            const currentPositions = isHorizontalField ? playerPositions.horizontal : playerPositions.vertical;
+
+            let chamigoPlayerIds = [];
             if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
-                const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
-                if (votosArray.length > 0) {
-                    const maxVotes = Math.max(...votosArray.map(v => v.votos));
-                    chamigosIds = votosArray.filter(v => v.votos === maxVotes).map(c => c.id);
+                const votesArray = Object.values(chamigo_votes);
+                const maxVotes = Math.max(...votesArray);
+                if (maxVotes > 0) {
+                    chamigoPlayerIds = Object.keys(chamigo_votes).filter(id => chamigo_votes[id] === maxVotes);
                 }
             }
 
             const createPlayerMarker = (playerId, team, index) => {
                 const playerWrapper = document.createElement('div');
                 playerWrapper.className = `player-wrapper absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10`;
-                playerWrapper.style.top = `${currentPos[team][index].y * 100}%`;
-                playerWrapper.style.left = `${currentPos[team][index].x * 100}%`;
+                playerWrapper.style.top = `${currentPositions[team][index].y * 100}%`;
+                playerWrapper.style.left = `${currentPositions[team][index].x * 100}%`;
+
+                const playerNumber = Number(playerId.replace('J', ''));
+                const isChamigo = chamigoPlayerIds.includes(playerId);
+
+                let markerHTML = `
+                    <div class="player-marker ${team} relative w-10 h-10 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center">
+                        ${playerNumber}
+                        ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-3 -right-2 text-lg md:text-2xl"></i>' : ''}
+                    </div>
+                    <div class="player-name-label text-xs font-bold px-2 py-0.5 rounded-md">${getPlayerName(playerId)}</div>`;
                 
-                let markerHTML = `<div class="player-marker ${team} relative w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-center">
-                    ${Number(playerId.replace('J', ''))}`;
-                if (chamigosIds.includes(playerId)) {
-                    markerHTML += `<i class="fas fa-star text-yellow-400 absolute -top-2.5 -right-1 text-lg"></i>`;
-                }
-                markerHTML += `</div><div class="player-name-label text-xs font-bold px-2 py-0.5 rounded-md">${getPlayerName(playerId)}</div>`;
                 playerWrapper.innerHTML = markerHTML;
                 soccerFieldContainer.appendChild(playerWrapper);
             };
 
             (team_white_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'claros', i));
             (team_dark_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'oscuros', i));
-            
+
             if (result && result !== 'Empate' && result !== 'Suspendido') {
-                 const trophyDiv = document.createElement('div');
-                 trophyDiv.className = 'winner-trophy absolute text-2xl z-20 transform -translate-x-1/2 -translate-y-1/2';
-                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
-                 const trophyPos = {
-                     h: { Claros: { top: '95%', left: '95%'}, Oscuros: { top: '95%', left: '5%'} },
-                     v: { Claros: { top: '95%', left: '95%'}, Oscuros: { top: '95%', left: '5%'} }
-                 };
-                 Object.assign(trophyDiv.style, (isHorizontalField ? trophyPos.h : trophyPos.v)[result]);
-                 soccerFieldContainer.appendChild(trophyDiv);
+                const trophyDiv = document.createElement('div');
+                trophyDiv.className = 'winner-trophy absolute text-3xl md:text-5xl z-20 transform -translate-x-1/2 -translate-y-1/2';
+                trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
+
+                // --- MODIFICACIÓN DE POSICIONES ---
+                // Se ajustan las coordenadas para la vista móvil (vertical)
+                const trophyPositions = {
+                    horizontal: {
+                        Claros:  { top: '92%', left: '95%' },
+                        Oscuros: { top: '92%', left: '5%' }
+                    },
+                    vertical: {
+                        Claros:  { top: '95%', left: '92%' },
+                        Oscuros: { top: '5%', left: '92%' }
+                    }
+                };
+
+                const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical[result];
+                
+                if (currentTrophyPosition) {
+                    Object.assign(trophyDiv.style, currentTrophyPosition);
+                    soccerFieldContainer.appendChild(trophyDiv);
+                }
             }
-            
+
             visualDetailsContainer.classList.remove('hidden');
-            if (collapsibleContent && fromUserClick) {
+            
+            if (collapsibleContent && fromUserClick && !collapsibleContent.classList.contains('hidden')) {
                 collapsibleContent.classList.add('hidden');
                 filterToggle.classList.remove('visible-content');
                 filterToggle.querySelector('.toggle-icon')?.classList.remove('fa-chevron-up');
+                filterToggle.querySelector('.toggle-icon')?.classList.add('fa-chevron-down');
             }
         }
         
