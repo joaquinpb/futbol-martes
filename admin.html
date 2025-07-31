@@ -475,6 +475,26 @@
         </div>
     </div>
 
+    <!-- Avatar Upload Modal -->
+    <div id="avatar-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
+        <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
+            <h3 class="text-lg font-semibold mb-4">Cambiar Foto de Perfil</h3>
+            <div class="flex justify-center mb-4">
+                <img id="avatar-preview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Avatar" alt="Vista previa del avatar" class="w-32 h-32 rounded-full object-cover border-4 border-border-color">
+            </div>
+            <form id="avatar-upload-form">
+                <input type="file" id="avatar-file-input" class="hidden" accept="image/png, image/jpeg">
+                <button type="button" id="select-avatar-button" class="w-full mb-4 px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition">
+                    Seleccionar Foto
+                </button>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="avatar-cancel-button" class="px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
+                    <button type="submit" id="avatar-save-button" class="px-4 py-2 button-primary font-semibold rounded-md hover:opacity-90 transition" disabled>Guardar Foto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+ 
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -490,6 +510,7 @@
             userRole: null,
             userName: null,
             userEmail: null,
+            avatarUrl: null, // <-- AÑADIDO
             selectedMatchId: null,
             isInitialized: false,
             isInitializing: false,
@@ -586,12 +607,15 @@
             
             try {
                 const { data: { user } } = await supabase.auth.getUser();
-                const { data: profile } = await supabase.from('profiles').select('role, name').eq('id', user.id).single();
+                // Se pide el avatar_url
+                const { data: profile } = await supabase.from('profiles').select('role, name, avatar_url').eq('id', user.id).single();
                 
                 AppState.userRole = profile ? profile.role : null;
                 AppState.userName = profile?.name || user.user_metadata?.name || user.email.split('@')[0];
                 AppState.userEmail = user.email;
+                AppState.avatarUrl = profile?.avatar_url || null; // Se guarda el avatar_url
 
+                // ... (el resto de la función sigue igual) ...
 
                 const [playersRes, matchesRes, usersRes] = await Promise.allSettled([
                     supabase.from('players').select('*').order('id', { ascending: true }),
@@ -617,7 +641,7 @@
                 const savedTab = localStorage.getItem('lastAdminTab');
                 const allNavItems = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin];
                 const isValidTab = allNavItems.some(item => item.id === savedTab);
-                let initialTab = NAV_ITEMS.dashboard[0].id; // El dashboard es ahora el default
+                let initialTab = NAV_ITEMS.dashboard[0].id;
 
                 if (isValidTab) {
                     const isAdminTab = NAV_ITEMS.admin.some(item => item.id === savedTab);
@@ -1113,13 +1137,17 @@
 
             const userName = AppState.userName || 'Usuario';
             const userEmail = AppState.userEmail || 'email@example.com';
-            
+            const avatarSrc = AppState.avatarUrl ? `${AppState.avatarUrl}?t=${new Date().getTime()}` : 'https://placehold.co/40x40/64748b/ffffff?text=⚽';
+
+            const avatarHTML = `<img src="${avatarSrc}" alt="Avatar de usuario" class="avatar-trigger w-8 h-8 rounded-full object-cover cursor-pointer border-2 border-white/50 hover:border-white transition-all">`;
+
             const dropdownHTML = `
                 <div class="user-menu-dropdown card hidden origin-top-right absolute right-0 top-full mt-2 w-56 rounded-md shadow-lg py-1 text-sm z-50">
                     <div class="px-4 py-2 border-b border-border-color">
                         <p class="font-semibold truncate text-text-primary">${userName}</p>
                         <p class="text-xs text-text-secondary truncate">${userEmail}</p>
                     </div>
+                    <a href="#" class="avatar-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar foto</a>
                     <a href="#" class="change-name-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar nombre</a>
                     <a href="#" class="change-password-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar contraseña</a>
                     <div class="border-t border-border-color my-1"></div>
@@ -1136,16 +1164,16 @@
             `;
 
             desktopContainer.innerHTML = `
-                <button class="user-menu-button flex items-center gap-2 p-2 rounded-full hover:bg-white/20 transition-colors">
+                <button class="user-menu-button flex items-center gap-3 p-1 rounded-full hover:bg-white/20 transition-colors">
                     <span class="font-semibold text-sm hidden sm:inline truncate max-w-[100px] text-white">${userName}</span>
-                    <i class="fas fa-user-circle text-2xl text-white"></i>
+                    ${avatarHTML}
                 </button>
                 ${dropdownHTML}
             `;
 
             mobileContainer.innerHTML = `
                 <button class="user-menu-button flex items-center">
-                     <i class="fas fa-user-circle text-2xl"></i>
+                     ${avatarHTML}
                 </button>
                 ${dropdownHTML}
             `;
@@ -1157,6 +1185,14 @@
                         if (d !== button.nextElementSibling) d.classList.add('hidden');
                     });
                     button.nextElementSibling.classList.toggle('hidden');
+                });
+            });
+
+            document.querySelectorAll('.avatar-trigger').forEach(trigger => {
+                trigger.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    trigger.closest('.user-menu-dropdown')?.classList.add('hidden');
+                    showAvatarModal();
                 });
             });
 
@@ -2514,6 +2550,7 @@
             };
             notificationModal.addEventListener('click', dismissNotification);
         }
+        
         function showModal(title, message) {
             return new Promise(resolve => {
                 DOMElements.modalTitle.textContent = title;
@@ -2540,6 +2577,88 @@
                 DOMElements.modalCancel.addEventListener('click', cancelHandler);
             });
         }
+
+        function showAvatarModal() {
+            const modal = document.getElementById('avatar-modal');
+            const preview = document.getElementById('avatar-preview');
+            const saveButton = document.getElementById('avatar-save-button');
+            
+            preview.src = AppState.avatarUrl ? `${AppState.avatarUrl}?t=${new Date().getTime()}` : 'https://placehold.co/128x128/e2e8f0/64748b?text=Avatar';
+            saveButton.disabled = true;
+            document.getElementById('avatar-upload-form').reset();
+
+            modal.classList.remove('hidden');
+            DOMElements.body.classList.add('modal-open');
+        }
+
+        function hideAvatarModal() {
+            const modal = document.getElementById('avatar-modal');
+            modal.classList.add('hidden');
+            DOMElements.body.classList.remove('modal-open');
+        }
+
+        async function handleAvatarUpload(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('avatar-file-input');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const saveButton = document.getElementById('avatar-save-button');
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                const filePath = `${user.id}/${Date.now()}_${file.name}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: true,
+                    });
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath);
+
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ avatar_url: publicUrl })
+                    .eq('id', user.id);
+
+                if (updateError) throw updateError;
+
+                AppState.avatarUrl = publicUrl;
+                setupUserMenu();
+                hideAvatarModal();
+                showNotification('Foto de perfil actualizada.', 'success');
+
+            } catch (error) {
+                console.error('Error al subir avatar:', error);
+                showNotification(`Error: ${error.message}`, 'error');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.innerHTML = 'Guardar Foto';
+            }
+        }
+
+        // En la función setupEventListeners(), agregá estos nuevos listeners:
+        document.getElementById('select-avatar-button').addEventListener('click', () => {
+        document.getElementById('avatar-file-input').click();
+        });
+        document.getElementById('avatar-cancel-button').addEventListener('click', hideAvatarModal);
+        document.getElementById('avatar-upload-form').addEventListener('submit', handleAvatarUpload);
+        document.getElementById('avatar-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const preview = document.getElementById('avatar-preview');
+                preview.src = URL.createObjectURL(file);
+                document.getElementById('avatar-save-button').disabled = false;
+            }
+        });
 
         init();
     });
