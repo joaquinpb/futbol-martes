@@ -236,6 +236,24 @@
             transition: opacity 0.2s ease, transform 0.2s ease;
         }
         /* --- FIN: Estilos para el Dashboard --- */
+
+        .button-edit {
+            background-color: var(--bg-muted);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+        .button-edit:hover {
+            background-color: var(--border-color);
+        }
+        html.dark .button-edit {
+            background-color: #374151;
+            color: var(--sidebar-text);
+            border-color: #4b5563;
+        }
+        html.dark .button-edit:hover {
+            background-color: #4b5563;
+        }
     </style>
     <script>
         (function() {
@@ -1279,9 +1297,9 @@
             const matchDate = new Date(targetMatch.match_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
             const content = `
-                <div class="mb-6">
-                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
-                    <p class="text-gray-500 dark:text-gray-400">Acciones para el partido del ${matchDate}</p>
+                <div class="mb-6 p-6 rounded-xl shadow-lg bg-gradient-to-r from-gray-800 to-gray-700 dark:from-gray-900 dark:to-gray-800 text-white">
+                    <h1 class="text-3xl font-bold tracking-tight">Dashboard</h1>
+                    <p class="text-gray-300 mt-1">Acciones para el partido del ${matchDate}</p>
                 </div>
                 <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Cards will be inserted here by JS -->
@@ -1298,6 +1316,7 @@
             setupDashboardEventListeners();
         };
 
+
         function createDashboardCard({ id, icon, title, match }) {
             const getPlayerName = pid => (AppState.players.find(p => p.id == pid) || { name: '?' }).name;
             let status = 'pending';
@@ -1310,7 +1329,7 @@
                     status = 'completed';
                     summary = `Resultado: <strong>${match.result}</strong>`;
                     buttonText = 'Editar';
-                    buttonClass = 'button-secondary';
+                    buttonClass = 'button-edit'; // <-- CAMBIO AQUÍ
                 }
             } else if (id === 'chamigo') {
                 const hasVotes = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
@@ -1321,7 +1340,7 @@
                     const chamigoNames = votesArray.filter(([, v]) => v === maxVotes).map(([pid]) => getPlayerName(pid)).join(', ');
                     summary = `Chamigo(s): <strong>${chamigoNames}</strong>`;
                     buttonText = 'Editar';
-                    buttonClass = 'button-secondary';
+                    buttonClass = 'button-edit'; // <-- CAMBIO AQUÍ
                 }
             } else if (id === 'tt') {
                 const hasAttendees = match.tt_attendees && match.tt_attendees.length > 0;
@@ -1334,7 +1353,7 @@
                          summary = `Asistentes: <strong>${attendeeNames.join(', ')}</strong>`;
                     }
                     buttonText = 'Editar';
-                    buttonClass = 'button-secondary';
+                    buttonClass = 'button-edit'; // <-- CAMBIO AQUÍ
                 }
             }
 
