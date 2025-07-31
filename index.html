@@ -296,6 +296,40 @@
         html.dark .fixture-header.active {
             background-color: #d97706 !important;
         }
+        
+        /* Estilos para el nuevo selector múltiple de año */
+        .multi-year-select-button {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 0.375rem;
+            position: relative;
+            text-align: left;
+            padding-right: 2.5rem; /* Espacio para el ícono */
+        }
+        html.dark .multi-year-select-button {
+             background-color: var(--bg-muted);
+        }
+        .multi-year-select-dropdown {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+        }
+        .multi-year-select-dropdown label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        .multi-year-select-dropdown label:hover {
+            background-color: var(--bg-muted);
+        }
+        html.dark .multi-year-select-dropdown label:hover {
+            background-color: #374151;
+        }
+        .multi-year-select-dropdown input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
     </style>
     <script>
         // Script de inicialización del tema (de admin.html)
@@ -566,19 +600,6 @@
             return new Date(dateString + 'T00:00:00'); 
         }
 
-        function populateYearSelects(selectId) {
-            const yearSelect = document.getElementById(selectId);
-            if (!yearSelect) return;
-            const years = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
-            
-            const currentValue = yearSelect.value;
-            yearSelect.innerHTML = '<option value="all">Todos los Años</option>';
-            years.forEach(year => yearSelect.innerHTML += `<option value="${year}">${year}</option>`);
-            if (Array.from(yearSelect.options).some(opt => opt.value === currentValue)) {
-                yearSelect.value = currentValue;
-            }
-        }
-
         function populateMonthSelects(selectId) {
             const monthSelect = document.getElementById(selectId);
             if (!monthSelect) return;
@@ -590,61 +611,46 @@
             if (currentValue) monthSelect.value = currentValue;
         }
         
-        function populateAndSetCurrentPeriod(yearSelectId, periodSelectId) {
-            populateYearSelects(yearSelectId);
-            const yearSelect = document.getElementById(yearSelectId);
-            const periodSelect = document.getElementById(periodSelectId);
-            if (!periodSelect || !yearSelect) return;
-
-            if (globalFilterState.year && globalFilterState.period) {
-                if (Array.from(yearSelect.options).some(opt => opt.value === globalFilterState.year)) {
-                    yearSelect.value = globalFilterState.year;
-                }
-                periodSelect.value = globalFilterState.period;
-            } else {
-                const prefix = yearSelectId.replace('-year-select', '');
-                setTodayFilters(prefix);
-                globalFilterState.year = yearSelect.value;
-                globalFilterState.period = periodSelect.value;
-                FilterSessionManager.update(globalFilterState);
-            }
-        }
-
-        function setTodayFilters(sectionPrefix, isMonthFilter = false) {
+        function setTodayFilters(prefix, isMonthFilter = false) {
              const today = new Date();
-             const yearSelect = document.getElementById(`${sectionPrefix}-year-select`);
-             const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${sectionPrefix}-month-select`) : document.getElementById(`${sectionPrefix}-period-select`);
+             const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${prefix}-month-select`) : document.getElementById(`${prefix}-period-select`);
              
-             if(yearSelect) yearSelect.value = today.getFullYear();
+             // Para el selector multianual, marcamos solo el año actual
+             const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
+             yearCheckboxes.forEach(cb => {
+                 cb.checked = (cb.value == today.getFullYear());
+             });
+             updateMultiYearButtonText(prefix); // Actualizamos el texto del botón
+             
              if(periodOrMonthSelect) {
                  periodOrMonthSelect.value = isMonthFilter ? today.getMonth() + 1 : (today.getMonth() <= 5 ? 'apertura' : 'clausura');
              }
         }
 
-        function calculateStatsForPeriod(yearSelectId, periodSelectId) {
-            const selectedYear = document.getElementById(yearSelectId)?.value;
-            const selectedPeriod = document.getElementById(periodSelectId)?.value;
+        function calculateStatsForPeriod(prefix) {
+            const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]:checked`);
+            const selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+            const selectedPeriod = document.getElementById(`${prefix}-period-select`)?.value;
         
             let timeFilteredMatches = allMatchesData;
-            if (selectedYear && selectedYear !== 'all') {
+
+            // Si hay años seleccionados, filtramos por ellos. Si no, se usan todos.
+            if (selectedYears.length > 0) {
                 timeFilteredMatches = timeFilteredMatches.filter(match => {
                     const matchYear = parseDate(match.match_date).getFullYear();
-                    return matchYear == selectedYear;
+                    return selectedYears.includes(String(matchYear));
                 });
-        
-                if (selectedPeriod && selectedPeriod !== 'total') {
-                    timeFilteredMatches = timeFilteredMatches.filter(match => {
-                        const month = parseDate(match.match_date).getMonth(); // 0-11
-                        const period = (month <= 5) ? 'apertura' : 'clausura';
-                        return period === selectedPeriod;
-                    });
-                }
             }
         
-            // --- INICIO DE LA MODIFICACIÓN ---
-            // Filtramos para procesar únicamente los partidos que tienen un resultado.
+            if (selectedPeriod && selectedPeriod !== 'total') {
+                timeFilteredMatches = timeFilteredMatches.filter(match => {
+                    const month = parseDate(match.match_date).getMonth(); // 0-11
+                    const period = (month <= 5) ? 'apertura' : 'clausura';
+                    return period === selectedPeriod;
+                });
+            }
+        
             const filteredMatches = timeFilteredMatches.filter(match => match.result);
-            // --- FIN DE LA MODIFICACIÓN ---
         
             const playerStats = {};
             allPlayersData.forEach(player => {
@@ -652,12 +658,10 @@
             });
         
             let clarosWins = 0, oscurosWins = 0, empates = 0, suspendidos = 0, totalPJMatches = 0;
-            // Usamos la lista de partidos ya filtrada.
             (filteredMatches || []).forEach(match => {
                 const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
                 const allPlayersInMatch = [...new Set([...(team_white_players || []), ...(team_dark_players || [])])];
                 
-                // Este contador ahora solo se incrementará para partidos con resultado.
                 if (result !== 'Suspendido') totalPJMatches++;
                 else suspendidos++;
         
@@ -667,7 +671,6 @@
                         else if (result === 'Oscuros' && (team_dark_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
                         else if (result === 'Empate') { playerStats[pId].points += 1; playerStats[pId].pe++; }
                         else if (result !== 'Suspendido') { playerStats[pId].pp++; }
-                        // Los Partidos Jugados (PJ) solo se suman si el partido no fue suspendido.
                         if (result !== 'Suspendido') playerStats[pId].pj++;
                     }
                 });
@@ -696,15 +699,13 @@
                 } else {
                     player.efectividad = "0.00";
                 }
-                // El cálculo de ausentes ahora es correcto porque se basa en el total de partidos con resultado.
                 player.ausentes = Math.max(0, totalPJMatches - player.pj);
             });
         
             let playersToShow;
-            if (selectedYear && selectedYear !== 'all') {
-                const yearlyMatches = allMatchesData.filter(m => parseDate(m.match_date).getFullYear() == selectedYear);
+            if (selectedYears.length > 0) {
                 const yearlyPlayerIds = new Set();
-                yearlyMatches.forEach(match => {
+                timeFilteredMatches.forEach(match => {
                     (match.team_white_players || []).forEach(id => yearlyPlayerIds.add(id));
                     (match.team_dark_players || []).forEach(id => yearlyPlayerIds.add(id));
                 });
@@ -729,7 +730,7 @@
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Calculando...`;
             
-            const { players, error } = calculateStatsForPeriod(`${section}-year-select`, `${section}-period-select`);
+            const { players, error } = calculateStatsForPeriod(section);
             
             if (error) {
                 loadingMessage.innerHTML = 'Error al calcular los datos.';
@@ -834,7 +835,7 @@
             if (!fromSort) {
                 table.classList.add('hidden');
                 loadingMessage.classList.remove('hidden');
-                const { players, error } = calculateStatsForPeriod('estadisticas-year-select', 'estadisticas-period-select');
+                const { players, error } = calculateStatsForPeriod('estadisticas');
                 if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
                 currentEstadisticasData = players;
             }
@@ -895,7 +896,7 @@
             statsDisplay.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
 
-            const { teamStats, error } = calculateStatsForPeriod('equipos-year-select', 'equipos-period-select');
+            const { teamStats, error } = calculateStatsForPeriod('equipos');
 
             if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
             
@@ -922,19 +923,22 @@
         function renderFixture(isFilterChange = false) {
             const cardsContainer = document.getElementById('fixture-matches-cards-container');
             const loadingMessage = document.getElementById('fixture-loading-message');
-            const year = document.getElementById('fixture-year-select').value;
+            
+            const selectedYearsCheckboxes = document.querySelectorAll(`#fixture-year-select-dropdown input[type="checkbox"]:checked`);
+            const selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
             const month = document.getElementById('fixture-month-select').value;
+            
             if (!cardsContainer || !loadingMessage) return;
 
             cardsContainer.innerHTML = '';
             loadingMessage.classList.remove('hidden');
 
             let filteredMatches = allMatchesData;
-            if (year && year !== 'all') {
-                filteredMatches = filteredMatches.filter(m => parseDate(m.match_date).getFullYear() == year);
-                if (month && month !== 'all') {
-                    filteredMatches = filteredMatches.filter(m => parseDate(m.match_date).getMonth() + 1 == month);
-                }
+            if (selectedYears.length > 0) {
+                filteredMatches = filteredMatches.filter(m => selectedYears.includes(String(parseDate(m.match_date).getFullYear())));
+            }
+            if (month && month !== 'all') {
+                filteredMatches = filteredMatches.filter(m => parseDate(m.match_date).getMonth() + 1 == month);
             }
 
             if (!filteredMatches || filteredMatches.length === 0) { loadingMessage.innerHTML = `No hay partidos disponibles.`; lastSelectedFixtureMatchId = null; return; }
@@ -1202,11 +1206,8 @@
                 };
             });
             
-            // --- INICIO DE LA MODIFICACIÓN ---
-            // Iteramos sobre todos los partidos del jugador, pero solo procesamos estadísticas si tienen resultado.
             allPlayerMatches.forEach(match => {
                  const { match_date, team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
-                 // Si no hay resultado, saltamos este partido para los cálculos de PJ, PG, etc.
                  if (!result || !match_date) return;
         
                  const matchDate = parseDate(match_date);
@@ -1246,7 +1247,6 @@
                 const yearData = playerStats.years[year];
                 ['apertura', 'clausura', 'total'].forEach(periodType => {
                     const stats = yearData[periodType];
-                    // Para calcular ausentes, contamos el total de partidos CON RESULTADO en el período.
                     const totalMatchesInPeriod = allPlayerMatches.filter(m => {
                         if (!m.match_date || !m.result || m.result === 'Suspendido') return false;
                         const d = parseDate(m.match_date);
@@ -1262,13 +1262,11 @@
                 });
             });
         
-            // Hacemos lo mismo para el total general.
             const totalNonSuspendedMatches = allPlayerMatches.filter(m => m.result && m.result !== 'Suspendido').length;
             const overall = playerStats.overallTotal;
             const maxTotalPoints = overall.pj * 3;
             overall.efectividad = maxTotalPoints > 0 ? ((overall.points / maxTotalPoints) * 100).toFixed(2) : "0.00";
             overall.ausentes = Math.max(0, totalNonSuspendedMatches - overall.pj);
-            // --- FIN DE LA MODIFICACIÓN ---
         
             return playerStats;
         }
@@ -1336,15 +1334,45 @@
             
             const prefix = tabId.replace('-content', '');
             
-            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas'].includes(prefix)) {
+            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas', 'fixture'].includes(prefix)) {
+                 const yearFilterHTML = `
+                    <div>
+                        <label for="${prefix}-year-select-button" class="block text-sm font-medium mb-1">Año(s):</label>
+                        <div class="relative">
+                            <button id="${prefix}-year-select-button" class="multi-year-select-button mt-1 block w-full p-2 text-sm shadow-sm">
+                                <span class="truncate">Seleccionar Años</span>
+                                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            </button>
+                            <div id="${prefix}-year-select-dropdown" class="multi-year-select-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 hidden max-h-60 overflow-y-auto">
+                                <!-- Opciones de año se insertan aquí -->
+                            </div>
+                        </div>
+                    </div>
+                 `;
+                 
+                 const periodOrMonthFilterHTML = prefix === 'fixture' ? `
+                    <div>
+                        <label for="fixture-month-select" class="block text-sm font-medium mb-1">Mes:</label>
+                        <select id="fixture-month-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select>
+                    </div>` : `
+                    <div>
+                        <label for="${prefix}-period-select" class="block text-sm font-medium mb-1">Torneo:</label>
+                        <select id="${prefix}-period-select" class="mt-1 block w-full p-2 text-sm shadow-sm">
+                            <option value="apertura">Apertura</option>
+                            <option value="clausura">Clausura</option>
+                            <option value="total">Totales</option>
+                        </select>
+                    </div>
+                 `;
+
                  baseHtml += `
                     <div id="${prefix}-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
                         <span>Seleccionar Torneo</span><i class="fas fa-chevron-down toggle-icon"></i>
                     </div>
                     <div id="${prefix}-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 hidden items-end">
                         <button id="${prefix}-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm">Torneo Actual</button>
-                        <div><label for="${prefix}-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="${prefix}-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
-                        <div><label for="${prefix}-period-select" class="block text-sm font-medium mb-1">Torneo:</label><select id="${prefix}-period-select" class="mt-1 block w-full p-2 text-sm shadow-sm"><option value="apertura">Apertura</option><option value="clausura">Clausura</option><option value="total">Totales</option></select></div>
+                        ${yearFilterHTML}
+                        ${periodOrMonthFilterHTML}
                     </div>`;
             }
             
@@ -1368,19 +1396,9 @@
                     break;
                 case 'fixture-content':
                      baseHtml += `
-                        <div id="fixture-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
-                            <span>Elegir otro partido</span><i class="fas fa-chevron-down toggle-icon"></i>
-                        </div>
-                        <div id="fixture-filters-collapsible" class="hidden space-y-4 pt-4">
-                            <div class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
-                                <button id="fixture-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm">Torneo Actual</button>
-                                <div><label for="fixture-year-select" class="block text-sm font-medium mb-1">Año:</label><select id="fixture-year-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
-                                <div><label for="fixture-month-select" class="block text-sm font-medium mb-1">Mes:</label><select id="fixture-month-select" class="mt-1 block w-full p-2 text-sm shadow-sm"></select></div>
-                            </div>
-                            <p id="fixture-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando partidos...</p>
-                            <h3 class="text-xl font-semibold mb-2">Partidos del Mes</h3>
-                            <div id="fixture-matches-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"></div>
-                        </div>
+                        <p id="fixture-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando partidos...</p>
+                        <h3 class="text-xl font-semibold mb-2">Partidos del Mes</h3>
+                        <div id="fixture-matches-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"></div>
                         <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
                             <div class="md:w-[65%] min-w-0"><div id="soccer-field-container" class="rounded-lg overflow-hidden"></div></div>
                             <div id="fixture-details-display" class="flex-1 md:w-[35%] p-4 rounded-lg mt-6 md:mt-0">
@@ -1445,6 +1463,64 @@
                 history.pushState(null, '', hash);
             }
         }
+        
+        function updateMultiYearButtonText(prefix) {
+            const button = document.getElementById(`${prefix}-year-select-button`);
+            if (!button) return;
+            const buttonSpan = button.querySelector('span');
+            const checked = document.querySelectorAll(`#${prefix}-year-select-dropdown input:checked`);
+            const allYears = document.querySelectorAll(`#${prefix}-year-select-dropdown input[value]`);
+
+            if (checked.length === 0 || checked.length === allYears.length) {
+                buttonSpan.textContent = 'Todos los Años';
+            } else if (checked.length === 1) {
+                buttonSpan.textContent = checked[0].value;
+            } else {
+                buttonSpan.textContent = `${checked.length} Años seleccionados`;
+            }
+        }
+
+        function populateMultiYearSelect(prefix, changeCallback) {
+            const dropdown = document.getElementById(`${prefix}-year-select-dropdown`);
+            const button = document.getElementById(`${prefix}-year-select-button`);
+            if (!dropdown || !button) return;
+
+            const years = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
+            
+            dropdown.innerHTML = years.map(year => `
+                <label>
+                    <input type="checkbox" value="${year}" class="year-checkbox">
+                    <span>${year}</span>
+                </label>
+            `).join('');
+
+            // Restore state
+            const savedYears = globalFilterState.years || [];
+            if (savedYears.length > 0) {
+                dropdown.querySelectorAll('input').forEach(cb => {
+                    if (savedYears.includes(cb.value)) {
+                        cb.checked = true;
+                    }
+                });
+            } else {
+                // Default to current year if no selection is saved
+                const currentYear = new Date().getFullYear().toString();
+                const currentYearCb = dropdown.querySelector(`input[value="${currentYear}"]`);
+                if (currentYearCb) currentYearCb.checked = true;
+            }
+            updateMultiYearButtonText(prefix);
+
+            // Add event listeners
+            dropdown.addEventListener('change', () => {
+                updateMultiYearButtonText(prefix);
+                changeCallback();
+            });
+
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+            });
+        }
 
         function setupDynamicEventListeners(tabId) {
             const prefix = tabId.replace('-content', '');
@@ -1462,19 +1538,14 @@
             }
 
             const handleFilterChange = () => {
-                const yearSelect = document.getElementById(`${prefix}-year-select`);
+                const selectedYears = Array.from(document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`)).map(cb => cb.value);
                 const periodSelect = document.getElementById(`${prefix}-period-select`);
                 const monthSelect = document.getElementById(`${prefix}-month-select`);
 
-                if (yearSelect) globalFilterState.year = yearSelect.value;
+                globalFilterState.years = selectedYears;
                 if (periodSelect) globalFilterState.period = periodSelect.value;
-                if (monthSelect) {
-                    delete globalFilterState.period;
-                    globalFilterState.month = monthSelect.value;
-                } else if (periodSelect) {
-                    delete globalFilterState.month;
-                }
-
+                if (monthSelect) globalFilterState.month = monthSelect.value;
+                
                 FilterSessionManager.update(globalFilterState);
 
                 if (renderFn) {
@@ -1488,8 +1559,11 @@
                     }
                 }
             };
+            
+            if (tabId.includes('content') && !tabId.includes('individual')) {
+                 populateMultiYearSelect(prefix, handleFilterChange);
+            }
 
-            document.getElementById(`${prefix}-year-select`)?.addEventListener('change', handleFilterChange);
             document.getElementById(`${prefix}-period-select`)?.addEventListener('change', handleFilterChange);
             document.getElementById(`${prefix}-month-select`)?.addEventListener('change', handleFilterChange);
 
@@ -1518,20 +1592,14 @@
             if (tabId.includes('content') && !tabId.includes('individual')) {
                 const isMonthFilter = prefix === 'fixture';
                 if (isMonthFilter) {
-                    populateYearSelects('fixture-year-select');
                     populateMonthSelects('fixture-month-select');
-                    
-                    if (globalFilterState.year && globalFilterState.month) {
-                        document.getElementById('fixture-year-select').value = globalFilterState.year;
-                        document.getElementById('fixture-month-select').value = globalFilterState.month;
-                    } else {
-                        setTodayFilters('fixture', true);
-                        globalFilterState.year = document.getElementById('fixture-year-select').value;
-                        globalFilterState.month = document.getElementById('fixture-month-select').value;
-                        FilterSessionManager.update(globalFilterState);
+                    if (globalFilterState.month) {
+                         document.getElementById('fixture-month-select').value = globalFilterState.month;
                     }
                 } else {
-                    populateAndSetCurrentPeriod(`${prefix}-year-select`, `${prefix}-period-select`);
+                    if (globalFilterState.period) {
+                        document.getElementById(`${prefix}-period-select`).value = globalFilterState.period;
+                    }
                 }
             }
             
@@ -1584,10 +1652,8 @@
                 const activeTabButton = document.querySelector('.tab-button.active');
                 if (activeTabButton) {
                     const tabId = activeTabButton.dataset.tab;
-                    if (renderFunctions[tabId]) {
-                        console.log(`Refreshing tab due to realtime update: ${tabId}`);
-                        renderFunctions[tabId]();
-                    }
+                    // Re-render the active tab to reflect changes
+                    activateTab(tabId);
                 }
             };
 
@@ -1706,6 +1772,15 @@
                     const icon = trigger.querySelector('i.fa-chevron-down');
                     content.classList.toggle('hidden');
                     icon?.classList.toggle('rotate-180');
+                });
+            });
+            
+            document.addEventListener('click', (e) => {
+                document.querySelectorAll('.multi-year-select-dropdown:not(.hidden)').forEach(dropdown => {
+                    const button = document.getElementById(dropdown.id.replace('-dropdown', '-button'));
+                    if (!dropdown.contains(e.target) && e.target !== button) {
+                        dropdown.classList.add('hidden');
+                    }
                 });
             });
 
