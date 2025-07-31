@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -238,7 +237,31 @@
             transition: opacity 0.2s ease, transform 0.2s ease;
         }
         /* --- FIN: Estilos para el Dashboard --- */
+
+        .button-edit {
+            background-color: var(--bg-muted);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+        .button-edit:hover {
+            background-color: var(--border-color);
+        }
+        html.dark .button-edit {
+            background-color: #374151;
+            color: var(--sidebar-text);
+            border-color: #4b5563;
+        }
+        html.dark .button-edit:hover {
+            background-color: #4b5563;
+        }
+
+        .icon-resultado { color: var(--success-color); }
+        .icon-chamigo { color: var(--warning-color); }
+        .icon-tt { color: #9333ea; } /* violeta */
+        
     </style>
+    
     <script>
         (function() {
             const savedTheme = localStorage.getItem('theme');
@@ -1262,14 +1285,12 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
+            // 1. Buscar el próximo partido (hoy o en el futuro)
             let targetMatch = AppState.matches
                 .filter(m => new Date(m.match_date + 'T00:00:00') >= today)
                 .sort((a, b) => new Date(a.match_date) - new Date(b.match_date))[0];
 
-            if (!targetMatch) {
-                targetMatch = AppState.matches.find(m => !m.result || !m.chamigo_votes || (m.tt_attendees || []).length === 0);
-            }
-            
+            // 2. Si no hay partidos futuros, tomar el más reciente (el primero de la lista, ya que está ordenada)
             if (!targetMatch && AppState.matches.length > 0) {
                 targetMatch = AppState.matches[0];
             }
@@ -1280,12 +1301,18 @@
             }
 
             AppState.selectedMatchId = targetMatch.id;
-            const matchDate = new Date(targetMatch.match_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            let matchDate = new Date(targetMatch.match_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            // Poner en mayúscula la primera letra del día
+            matchDate = matchDate.charAt(0).toUpperCase() + matchDate.slice(1);
 
             const content = `
-                <div class="mb-6">
-                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
-                    <p class="text-gray-500 dark:text-gray-400">Acciones pendientes para el partido del ${matchDate}</p>
+                <div class="mb-6 rounded-xl shadow-lg overflow-hidden text-center card">
+                    <div class="p-4 bg-muted">
+                        <h1 class="text-3xl font-bold tracking-tight text-text-primary">Dashboard</h1>
+                    </div>
+                    <div class="p-3 bg-secondary border-t border-border-color">
+                        <p class="text-text-secondary text-sm">${matchDate}</p>
+                    </div>
                 </div>
                 <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Cards will be inserted here by JS -->
@@ -1295,14 +1322,14 @@
 
             const grid = document.getElementById('dashboard-grid');
             
-            grid.innerHTML += createDashboardCard({ id: 'resultado', icon: 'fa-trophy', title: 'Resultado del Partido', match: targetMatch });
-            grid.innerHTML += createDashboardCard({ id: 'chamigo', icon: 'fa-star', title: 'Votos Chamigo', match: targetMatch });
-            grid.innerHTML += createDashboardCard({ id: 'tt', icon: 'fa-beer', title: 'Asistencia TT', match: targetMatch });
+            grid.innerHTML += createDashboardCard({ id: 'resultado', icon: 'fa-trophy', title: 'Resultado del Partido', match: targetMatch, iconColorClass: 'icon-resultado' });
+            grid.innerHTML += createDashboardCard({ id: 'chamigo', icon: 'fa-star', title: 'Votos Chamigo', match: targetMatch, iconColorClass: 'icon-chamigo' });
+            grid.innerHTML += createDashboardCard({ id: 'tt', icon: 'fa-beer', title: 'Asistencia TT', match: targetMatch, iconColorClass: 'icon-tt' });
             
             setupDashboardEventListeners();
         };
 
-        function createDashboardCard({ id, icon, title, match }) {
+        function createDashboardCard({ id, icon, title, match, iconColorClass }) {
             const getPlayerName = pid => (AppState.players.find(p => p.id == pid) || { name: '?' }).name;
             let status = 'pending';
             let summary = 'Datos pendientes de carga';
@@ -1314,7 +1341,7 @@
                     status = 'completed';
                     summary = `Resultado: <strong>${match.result}</strong>`;
                     buttonText = 'Editar';
-                    buttonClass = 'button-secondary';
+                    buttonClass = 'button-edit';
                 }
             } else if (id === 'chamigo') {
                 const hasVotes = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
@@ -1325,7 +1352,7 @@
                     const chamigoNames = votesArray.filter(([, v]) => v === maxVotes).map(([pid]) => getPlayerName(pid)).join(', ');
                     summary = `Chamigo(s): <strong>${chamigoNames}</strong>`;
                     buttonText = 'Editar';
-                    buttonClass = 'button-secondary';
+                    buttonClass = 'button-edit';
                 }
             } else if (id === 'tt') {
                 const hasAttendees = match.tt_attendees && match.tt_attendees.length > 0;
@@ -1338,14 +1365,14 @@
                          summary = `Asistentes: <strong>${attendeeNames.join(', ')}</strong>`;
                     }
                     buttonText = 'Editar';
-                    buttonClass = 'button-secondary';
+                    buttonClass = 'button-edit';
                 }
             }
 
             return `
                 <div class="dashboard-card card rounded-xl shadow-lg flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-l-4 ${status === 'completed' ? 'border-success-color' : 'border-danger-color'}">
                     <div class="dashboard-card-header p-4 flex items-center gap-4 border-b border-border-color">
-                        <i class="fas ${icon} text-2xl ${status === 'completed' ? 'text-success-color' : 'text-danger-color'}"></i>
+                        <i class="fas ${icon} text-2xl ${iconColorClass}"></i>
                         <div>
                             <h3 class="font-bold text-lg">${title}</h3>
                             <span class="status-badge text-xs font-bold py-1 px-2 rounded-full ${status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">${status === 'completed' ? 'Completado' : 'Pendiente'}</span>
