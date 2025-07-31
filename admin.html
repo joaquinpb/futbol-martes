@@ -2161,10 +2161,34 @@
         function renderTtAttendancePlayers(match, container) {
             if (!container) return;
             container.innerHTML = '';
-            const activePlayers = AppState.players.filter(p => p.status === 'Activo');
+
+            const matchPlayerIDs = new Set([
+                ...(match.team_white_players || []),
+                ...(match.team_dark_players || [])
+            ]);
+
+            const participants = [];
+            const nonParticipants = [];
+
+            AppState.players
+                .filter(p => p.status === 'Activo')
+                .forEach(player => {
+                    if (matchPlayerIDs.has(player.id)) {
+                        participants.push(player);
+                    } else {
+                        nonParticipants.push(player);
+                    }
+                });
+
+            // Ordenar ambos grupos alfabéticamente
+            const sortByName = (a, b) => a.name.localeCompare(b.name);
+            participants.sort(sortByName);
+            nonParticipants.sort(sortByName);
+
+            const sortedPlayers = [...participants, ...nonParticipants];
             const existingAttendees = match.tt_attendees || [];
 
-            activePlayers.forEach(player => {
+            sortedPlayers.forEach(player => {
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'tt-player-item p-2 border border-border-color rounded-lg cursor-pointer text-center flex items-center justify-center gap-2';
                 if (existingAttendees.includes(player.id)) {
