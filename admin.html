@@ -492,9 +492,9 @@
 
                 <input type="file" id="avatar-file-input" class="hidden" accept="image/png, image/jpeg">
                 
-                <div class="flex justify-end space-x-3 mt-4">
-                    <button type="button" id="avatar-cancel-button" class="px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
-                    <button type="submit" id="avatar-save-button" class="px-4 py-2 button-primary font-semibold rounded-md hover:opacity-90 transition" disabled>Guardar Foto</button>
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <button type="button" id="avatar-cancel-button" class="w-full px-4 py-2 button-secondary font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
+                    <button type="submit" id="avatar-save-button" class="w-full px-4 py-2 button-primary font-semibold rounded-md hover:opacity-90 transition" disabled>Guardar Foto</button>
                 </div>
             </form>
         </div>
@@ -1142,46 +1142,67 @@
 
             const userName = AppState.userName || 'Usuario';
             const userEmail = AppState.userEmail || 'email@example.com';
-            const avatarSrc = AppState.avatarUrl ? `${AppState.avatarUrl}?t=${new Date().getTime()}` : 'https://placehold.co/40x40/64748b/ffffff?text=⚽';
+            // Usamos una imagen de placeholder si no hay avatarUrl
+            const avatarPlaceholder = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            const avatarSrc = AppState.avatarUrl ? `${AppState.avatarUrl}?t=${new Date().getTime()}` : avatarPlaceholder;
 
-            const avatarHTML = `<img src="${avatarSrc}" alt="Avatar de usuario" class="avatar-trigger w-8 h-8 rounded-full object-cover cursor-pointer border-2 border-white/50 hover:border-white transition-all">`;
-
-            const dropdownHTML = `
-                <div class="user-menu-dropdown card hidden origin-top-right absolute right-0 top-full mt-2 w-56 rounded-md shadow-lg py-1 text-sm z-50">
-                    <div class="px-4 py-2 border-b border-border-color">
-                        <p class="font-semibold truncate text-text-primary">${userName}</p>
-                        <p class="text-xs text-text-secondary truncate">${userEmail}</p>
+            // --- INICIO DE LA MODIFICACIÓN ---
+            // 1. El avatar para el botón del header
+            const headerAvatarHTML = `<img src="${avatarSrc}" alt="Avatar de usuario" class="w-8 h-8 rounded-full object-cover border-2 border-white/50 hover:border-white transition-all">`;
+            
+            // 2. El avatar más grande para DENTRO del menú desplegable
+            const dropdownAvatarHTML = `
+                <div class="avatar-trigger mt-2 mb-3 flex justify-center cursor-pointer group">
+                    <div class="relative">
+                        <img src="${avatarSrc}" alt="Avatar de usuario" class="w-24 h-24 rounded-full object-cover border-4 border-border-color group-hover:opacity-75 transition-opacity">
+                        <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fas fa-camera text-white text-3xl"></i>
+                        </div>
                     </div>
-                    <a href="#" class="avatar-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar foto</a>
-                    <a href="#" class="change-name-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar nombre</a>
-                    <a href="#" class="change-password-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar contraseña</a>
-                    <div class="border-t border-border-color my-1"></div>
-                    <button class="theme-toggle-button dropdown-item w-full text-left flex items-center gap-2 px-4 py-2 text-text-primary">
-                        <i class="fas fa-moon w-5 text-center"></i>
-                        <span>Modo Oscuro</span>
-                    </button>
-                    <div class="border-t border-border-color my-1"></div>
-                    <a href="#" class="signout-trigger dropdown-item flex items-center gap-2 px-4 py-2 text-danger-color">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Cerrar Sesión</span>
-                    </a>
                 </div>
             `;
 
+            // 3. Se unifica el menú desplegable
+            const dropdownHTML = `
+                <div class="user-menu-dropdown card hidden origin-top-right absolute right-0 top-full mt-2 w-64 rounded-md shadow-lg py-1 text-sm z-50">
+                    <div class="px-4 py-2 border-b border-border-color text-center">
+                        ${dropdownAvatarHTML}
+                        <p class="font-semibold truncate text-text-primary text-base">${userName}</p>
+                        <p class="text-xs text-text-secondary truncate">${userEmail}</p>
+                    </div>
+                    <div class="py-1">
+                        <a href="#" class="change-name-trigger dropdown-item flex items-center gap-3 px-4 py-2 text-text-primary"><i class="fas fa-user-edit w-5 text-center"></i>Cambiar nombre</a>
+                        <a href="#" class="change-password-trigger dropdown-item flex items-center gap-3 px-4 py-2 text-text-primary"><i class="fas fa-key w-5 text-center"></i>Cambiar contraseña</a>
+                        <div class="border-t border-border-color my-1"></div>
+                        <button class="theme-toggle-button dropdown-item w-full text-left flex items-center gap-3 px-4 py-2 text-text-primary">
+                            <i class="fas fa-moon w-5 text-center"></i>
+                            <span>Modo Oscuro</span>
+                        </button>
+                        <div class="border-t border-border-color my-1"></div>
+                        <a href="#" class="signout-trigger dropdown-item flex items-center gap-3 px-4 py-2 text-danger-color">
+                            <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                            <span>Cerrar Sesión</span>
+                        </a>
+                    </div>
+                </div>
+            `;
+
+            // 4. Se actualiza el HTML de los contenedores para que todo el botón abra el menú
             desktopContainer.innerHTML = `
                 <button class="user-menu-button flex items-center gap-3 p-1 rounded-full hover:bg-white/20 transition-colors">
                     <span class="font-semibold text-sm hidden sm:inline truncate max-w-[100px] text-white">${userName}</span>
-                    ${avatarHTML}
+                    ${headerAvatarHTML}
                 </button>
                 ${dropdownHTML}
             `;
 
             mobileContainer.innerHTML = `
                 <button class="user-menu-button flex items-center">
-                     ${avatarHTML}
+                     ${headerAvatarHTML}
                 </button>
                 ${dropdownHTML}
             `;
+            // --- FIN DE LA MODIFICACIÓN ---
 
             document.querySelectorAll('.user-menu-button').forEach(button => {
                 button.addEventListener('click', (e) => {
@@ -1193,6 +1214,7 @@
                 });
             });
 
+            // El trigger para cambiar el avatar ahora está DENTRO del menú
             document.querySelectorAll('.avatar-trigger').forEach(trigger => {
                 trigger.addEventListener('click', (e) => {
                     e.preventDefault();
