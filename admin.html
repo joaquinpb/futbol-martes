@@ -254,7 +254,13 @@
         html.dark .button-edit:hover {
             background-color: #4b5563;
         }
+
+        .icon-resultado { color: var(--success-color); }
+        .icon-chamigo { color: var(--warning-color); }
+        .icon-tt { color: #9333ea; } /* violeta */
+        
     </style>
+    
     <script>
         (function() {
             const savedTheme = localStorage.getItem('theme');
@@ -1315,14 +1321,14 @@
 
             const grid = document.getElementById('dashboard-grid');
             
-            grid.innerHTML += createDashboardCard({ id: 'resultado', icon: 'fa-trophy', title: 'Resultado del Partido', match: targetMatch });
-            grid.innerHTML += createDashboardCard({ id: 'chamigo', icon: 'fa-star', title: 'Votos Chamigo', match: targetMatch });
-            grid.innerHTML += createDashboardCard({ id: 'tt', icon: 'fa-beer', title: 'Asistencia TT', match: targetMatch });
+            grid.innerHTML += createDashboardCard({ id: 'resultado', icon: 'fa-trophy', title: 'Resultado del Partido', match: targetMatch, iconColorClass: 'icon-resultado' });
+            grid.innerHTML += createDashboardCard({ id: 'chamigo', icon: 'fa-star', title: 'Votos Chamigo', match: targetMatch, iconColorClass: 'icon-chamigo' });
+            grid.innerHTML += createDashboardCard({ id: 'tt', icon: 'fa-beer', title: 'Asistencia TT', match: targetMatch, iconColorClass: 'icon-tt' });
             
             setupDashboardEventListeners();
         };
 
-        function createDashboardCard({ id, icon, title, match }) {
+        function createDashboardCard({ id, icon, title, match, iconColorClass }) {
             const getPlayerName = pid => (AppState.players.find(p => p.id == pid) || { name: '?' }).name;
             let status = 'pending';
             let summary = 'Datos pendientes de carga';
@@ -1334,7 +1340,7 @@
                     status = 'completed';
                     summary = `Resultado: <strong>${match.result}</strong>`;
                     buttonText = 'Editar';
-                    buttonClass = 'button-edit'; // <-- CAMBIO AQUÍ
+                    buttonClass = 'button-edit';
                 }
             } else if (id === 'chamigo') {
                 const hasVotes = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
@@ -1345,7 +1351,7 @@
                     const chamigoNames = votesArray.filter(([, v]) => v === maxVotes).map(([pid]) => getPlayerName(pid)).join(', ');
                     summary = `Chamigo(s): <strong>${chamigoNames}</strong>`;
                     buttonText = 'Editar';
-                    buttonClass = 'button-edit'; // <-- CAMBIO AQUÍ
+                    buttonClass = 'button-edit';
                 }
             } else if (id === 'tt') {
                 const hasAttendees = match.tt_attendees && match.tt_attendees.length > 0;
@@ -1358,14 +1364,14 @@
                          summary = `Asistentes: <strong>${attendeeNames.join(', ')}</strong>`;
                     }
                     buttonText = 'Editar';
-                    buttonClass = 'button-edit'; // <-- CAMBIO AQUÍ
+                    buttonClass = 'button-edit';
                 }
             }
 
             return `
                 <div class="dashboard-card card rounded-xl shadow-lg flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-l-4 ${status === 'completed' ? 'border-success-color' : 'border-danger-color'}">
                     <div class="dashboard-card-header p-4 flex items-center gap-4 border-b border-border-color">
-                        <i class="fas ${icon} text-2xl ${status === 'completed' ? 'text-success-color' : 'text-danger-color'}"></i>
+                        <i class="fas ${icon} text-2xl ${iconColorClass}"></i>
                         <div>
                             <h3 class="font-bold text-lg">${title}</h3>
                             <span class="status-badge text-xs font-bold py-1 px-2 rounded-full ${status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">${status === 'completed' ? 'Completado' : 'Pendiente'}</span>
