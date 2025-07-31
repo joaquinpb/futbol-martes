@@ -1978,11 +1978,42 @@
         
         async function handleSaveTeams() {
             const matchDate = document.getElementById('team-match-date').value;
-            if (!matchDate) { 
+            if (!matchDate) {
                 showNotification('Por favor, selecciona la fecha del partido.', 'warning');
                 return;
             }
 
+            // 1. VERIFICACIÓN DE FECHA DUPLICADA
+            const existingMatch = AppState.matches.find(m => m.match_date === matchDate);
+            if (existingMatch) {
+                showNotification('Ya existe un partido en esta fecha. Por favor, elige otra.', 'error');
+                return;
+            }
+
+            // 2. VERIFICACIÓN DEL DÍA DE LA SEMANA
+            const dateObj = new Date(matchDate + 'T00:00:00');
+            const dayOfWeek = dateObj.getDay(); // 0=Domingo, 1=Lunes, 2=Martes...
+
+            // Si no es Martes (2), mostrar alerta personalizada
+            if (dayOfWeek !== 2) {
+                const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                const dayName = dayNames[dayOfWeek];
+
+                const confirmed = await showCustomConfirm({
+                    title: 'Confirmar Creación',
+                    message: `El partido está siendo creado un ${dayName}. ¿Estás seguro?`,
+                    confirmText: 'Aceptar',
+                    cancelText: 'Cancelar',
+                    confirmClass: 'button-success',
+                    cancelClass: 'button-danger'
+                });
+
+                if (!confirmed) {
+                    return; // El usuario canceló, no continuar.
+                }
+            }
+
+            // Lógica original para guardar el partido
             const teamWhitePlayers = Array.from(document.getElementById('team-claros').children).map(el => el.dataset.id);
             const teamDarkPlayers = Array.from(document.getElementById('team-oscuros').children).map(el => el.dataset.id);
 
@@ -2602,6 +2633,61 @@
             };
             notificationModal.addEventListener('click', dismissNotification);
         }
+
+        function showCustomConfirm({ title, message, confirmText = 'Aceptar', cancelText = 'Cancelar', confirmClass = 'button-success', cancelClass = 'button-danger' }) {
+            return new Promise(resolve => {
+                DOMElements.modalTitle.textContent = title;
+                DOMElements.modalMessage.textContent = message;
+
+                const confirmBtn = DOMElements.modalConfirm;
+                const cancelBtn = DOMElements.modalCancel;
+
+                // Guardar estado original
+                const originalState = {
+                    confirm: { className: confirmBtn.className, textContent: confirmBtn.textContent },
+                    cancel: { className: cancelBtn.className, textContent: cancelBtn.textContent },
+                };
+
+                // Aplicar clases y texto personalizados
+                confirmBtn.className = `px-4 py-2 font-semibold rounded-md hover:opacity-90 transition ${confirmClass}`;
+                confirmBtn.textContent = confirmText;
+                cancelBtn.className = `px-4 py-2 font-semibold rounded-md hover:opacity-90 transition ${cancelClass}`;
+                cancelBtn.textContent = cancelText;
+                
+                DOMElements.modal.classList.remove('hidden');
+                DOMElements.body.classList.add('modal-open');
+
+                const cleanup = (result) => {
+                    DOMElements.modal.classList.add('hidden');
+                    DOMElements.body.classList.remove('modal-open');
+                    
+                    // Restaurar estado original
+                    confirmBtn.className = originalState.confirm.className;
+                    confirmBtn.textContent = originalState.confirm.textContent;
+                    cancelBtn.className = originalState.cancel.className;
+                    cancelBtn.textContent = originalState.cancel.textContent;
+                    
+                    // Remover listeners para evitar duplicados
+                    confirmBtn.removeEventListener('click', confirmHandler);
+                    cancelBtn.removeEventListener('click', cancelHandler);
+                    DOMElements.modal.removeEventListener('click', dismissOnOverlayClick);
+                    
+                    resolve(result);
+                };
+
+                const confirmHandler = () => cleanup(true);
+                const cancelHandler = () => cleanup(false);
+                const dismissOnOverlayClick = (e) => {
+                    if (e.target === DOMElements.modal) {
+                        cleanup(false);
+                    }
+                };
+                
+                confirmBtn.addEventListener('click', confirmHandler);
+                cancelBtn.addEventListener('click', cancelHandler);
+                DOMElements.modal.addEventListener('click', dismissOnOverlayClick);
+            });
+        }
         
         function showModal(title, message) {
             return new Promise(resolve => {
@@ -2609,24 +2695,27 @@
                 DOMElements.modalMessage.textContent = message;
                 DOMElements.modal.classList.remove('hidden');
                 DOMElements.body.classList.add('modal-open');
-                const confirmHandler = () => { cleanup(); resolve(true); };
-                const cancelHandler = () => { cleanup(); resolve(false); };
 
-                const dismissOnOverlayClick = (e) => {
-                    if (e.target === DOMElements.modal) {
-                        cleanup();
-                        resolve(false);
-                    }
-                };
-                
-                const cleanup = () => {
+                const cleanup = (result) => {
                     DOMElements.modal.classList.add('hidden');
                     DOMElements.body.classList.remove('modal-open');
                     DOMElements.modalConfirm.removeEventListener('click', confirmHandler);
                     DOMElements.modalCancel.removeEventListener('click', cancelHandler);
+                    DOMElements.modal.removeEventListener('click', dismissOnOverlayClick);
+                    resolve(result);
                 };
+
+                const confirmHandler = () => cleanup(true);
+                const cancelHandler = () => cleanup(false);
+                const dismissOnOverlayClick = (e) => {
+                    if (e.target === DOMElements.modal) {
+                        cleanup(false);
+                    }
+                };
+                
                 DOMElements.modalConfirm.addEventListener('click', confirmHandler);
                 DOMElements.modalCancel.addEventListener('click', cancelHandler);
+                DOMElements.modal.addEventListener('click', dismissOnOverlayClick);
             });
         }
 
@@ -2714,4 +2803,3 @@
     </script>
 </body>
 </html>
-
