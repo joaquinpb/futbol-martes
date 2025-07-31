@@ -493,8 +493,8 @@
                 <input type="file" id="avatar-file-input" class="hidden" accept="image/png, image/jpeg">
                 
                 <div class="grid grid-cols-2 gap-3 mt-4">
-                    <button type="button" id="avatar-cancel-button" class="w-full px-4 py-2 button-secondary font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
-                    <button type="submit" id="avatar-save-button" class="w-full px-4 py-2 button-primary font-semibold rounded-md hover:opacity-90 transition" disabled>Guardar Foto</button>
+                    <button type="button" id="avatar-cancel-button" class="w-full px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
+                    <button type="submit" id="avatar-save-button" class="w-full px-4 py-2 button-success font-semibold rounded-md hover:opacity-90 transition" disabled>Guardar Foto</button>
                 </div>
             </form>
         </div>
@@ -1099,6 +1099,31 @@
             DOMElements.changePasswordModal.addEventListener('click', (e) => {
                 if (e.target.id === 'change-password-modal') hideChangePasswordModal();
             });
+            
+            // --- Eventos del Modal de Avatar (Bloque actualizado) ---
+            const avatarModal = document.getElementById('avatar-modal');
+            if (avatarModal) {
+                // Cierra el modal si se hace clic en el fondo oscuro
+                avatarModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'avatar-modal') {
+                        hideAvatarModal();
+                    }
+                });
+
+                // Listeners de los botones y el input del modal
+                document.getElementById('avatar-cancel-button').addEventListener('click', hideAvatarModal);
+                document.getElementById('avatar-upload-form').addEventListener('submit', handleAvatarUpload);
+                
+                document.getElementById('avatar-file-input').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const preview = document.getElementById('avatar-preview');
+                        preview.src = URL.createObjectURL(file);
+                        // Habilita el botón de guardar solo cuando hay una nueva imagen
+                        document.getElementById('avatar-save-button').disabled = false;
+                    }
+                });
+            }
         }
 
         async function handleLogin(e) {
