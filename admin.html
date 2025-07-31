@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -475,6 +476,31 @@
         </div>
     </div>
 
+    <!-- Avatar Upload Modal -->
+    <div id="avatar-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
+        <div class="card rounded-lg shadow-xl max-w-sm w-full p-6">
+            <h3 class="text-lg font-semibold mb-4">Cambiar Foto de Perfil</h3>
+            
+            <form id="avatar-upload-form">
+                <label for="avatar-file-input" class="flex justify-center mb-4 cursor-pointer group">
+                    <div class="relative">
+                        <img id="avatar-preview" src="https://placehold.co/128x128/e2e8f0/64748b?text=Avatar" alt="Vista previa del avatar" class="w-32 h-32 rounded-full object-cover border-4 border-border-color group-hover:opacity-75 transition-opacity">
+                        <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fas fa-camera text-white text-2xl"></i>
+                        </div>
+                    </div>
+                </label>
+
+                <input type="file" id="avatar-file-input" class="hidden" accept="image/png, image/jpeg">
+                
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <button type="button" id="avatar-cancel-button" class="w-full px-4 py-2 button-danger font-semibold rounded-md hover:opacity-90 transition">Cancelar</button>
+                    <button type="submit" id="avatar-save-button" class="w-full px-4 py-2 button-success font-semibold rounded-md hover:opacity-90 transition" disabled>Guardar Foto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+ 
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -490,6 +516,7 @@
             userRole: null,
             userName: null,
             userEmail: null,
+            avatarUrl: null, // <-- AÑADIDO
             selectedMatchId: null,
             isInitialized: false,
             isInitializing: false,
@@ -586,12 +613,15 @@
             
             try {
                 const { data: { user } } = await supabase.auth.getUser();
-                const { data: profile } = await supabase.from('profiles').select('role, name').eq('id', user.id).single();
+                // Se pide el avatar_url
+                const { data: profile } = await supabase.from('profiles').select('role, name, avatar_url').eq('id', user.id).single();
                 
                 AppState.userRole = profile ? profile.role : null;
                 AppState.userName = profile?.name || user.user_metadata?.name || user.email.split('@')[0];
                 AppState.userEmail = user.email;
+                AppState.avatarUrl = profile?.avatar_url || null; // Se guarda el avatar_url
 
+                // ... (el resto de la función sigue igual) ...
 
                 const [playersRes, matchesRes, usersRes] = await Promise.allSettled([
                     supabase.from('players').select('*').order('id', { ascending: true }),
@@ -617,7 +647,7 @@
                 const savedTab = localStorage.getItem('lastAdminTab');
                 const allNavItems = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin];
                 const isValidTab = allNavItems.some(item => item.id === savedTab);
-                let initialTab = NAV_ITEMS.dashboard[0].id; // El dashboard es ahora el default
+                let initialTab = NAV_ITEMS.dashboard[0].id;
 
                 if (isValidTab) {
                     const isAdminTab = NAV_ITEMS.admin.some(item => item.id === savedTab);
@@ -1070,6 +1100,31 @@
             DOMElements.changePasswordModal.addEventListener('click', (e) => {
                 if (e.target.id === 'change-password-modal') hideChangePasswordModal();
             });
+            
+            // --- Eventos del Modal de Avatar (Bloque actualizado) ---
+            const avatarModal = document.getElementById('avatar-modal');
+            if (avatarModal) {
+                // Cierra el modal si se hace clic en el fondo oscuro
+                avatarModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'avatar-modal') {
+                        hideAvatarModal();
+                    }
+                });
+
+                // Listeners de los botones y el input del modal
+                document.getElementById('avatar-cancel-button').addEventListener('click', hideAvatarModal);
+                document.getElementById('avatar-upload-form').addEventListener('submit', handleAvatarUpload);
+                
+                document.getElementById('avatar-file-input').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const preview = document.getElementById('avatar-preview');
+                        preview.src = URL.createObjectURL(file);
+                        // Habilita el botón de guardar solo cuando hay una nueva imagen
+                        document.getElementById('avatar-save-button').disabled = false;
+                    }
+                });
+            }
         }
 
         async function handleLogin(e) {
@@ -1113,42 +1168,67 @@
 
             const userName = AppState.userName || 'Usuario';
             const userEmail = AppState.userEmail || 'email@example.com';
+            // Usamos una imagen de placeholder si no hay avatarUrl
+            const avatarPlaceholder = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            const avatarSrc = AppState.avatarUrl ? `${AppState.avatarUrl}?t=${new Date().getTime()}` : avatarPlaceholder;
+
+            // --- INICIO DE LA MODIFICACIÓN ---
+            // 1. El avatar para el botón del header
+            const headerAvatarHTML = `<img src="${avatarSrc}" alt="Avatar de usuario" class="w-8 h-8 rounded-full object-cover border-2 border-white/50 hover:border-white transition-all">`;
             
-            const dropdownHTML = `
-                <div class="user-menu-dropdown card hidden origin-top-right absolute right-0 top-full mt-2 w-56 rounded-md shadow-lg py-1 text-sm z-50">
-                    <div class="px-4 py-2 border-b border-border-color">
-                        <p class="font-semibold truncate text-text-primary">${userName}</p>
-                        <p class="text-xs text-text-secondary truncate">${userEmail}</p>
+            // 2. El avatar más grande para DENTRO del menú desplegable
+            const dropdownAvatarHTML = `
+                <div class="avatar-trigger mt-2 mb-3 flex justify-center cursor-pointer group">
+                    <div class="relative">
+                        <img src="${avatarSrc}" alt="Avatar de usuario" class="w-24 h-24 rounded-full object-cover border-4 border-border-color group-hover:opacity-75 transition-opacity">
+                        <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fas fa-camera text-white text-3xl"></i>
+                        </div>
                     </div>
-                    <a href="#" class="change-name-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar nombre</a>
-                    <a href="#" class="change-password-trigger dropdown-item block px-4 py-2 text-text-primary">Cambiar contraseña</a>
-                    <div class="border-t border-border-color my-1"></div>
-                    <button class="theme-toggle-button dropdown-item w-full text-left flex items-center gap-2 px-4 py-2 text-text-primary">
-                        <i class="fas fa-moon w-5 text-center"></i>
-                        <span>Modo Oscuro</span>
-                    </button>
-                    <div class="border-t border-border-color my-1"></div>
-                    <a href="#" class="signout-trigger dropdown-item flex items-center gap-2 px-4 py-2 text-danger-color">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Cerrar Sesión</span>
-                    </a>
                 </div>
             `;
 
+            // 3. Se unifica el menú desplegable
+            const dropdownHTML = `
+                <div class="user-menu-dropdown card hidden origin-top-right absolute right-0 top-full mt-2 w-64 rounded-md shadow-lg py-1 text-sm z-50">
+                    <div class="px-4 py-2 border-b border-border-color text-center">
+                        ${dropdownAvatarHTML}
+                        <p class="font-semibold truncate text-text-primary text-base">${userName}</p>
+                        <p class="text-xs text-text-secondary truncate">${userEmail}</p>
+                    </div>
+                    <div class="py-1">
+                        <a href="#" class="change-name-trigger dropdown-item flex items-center gap-3 px-4 py-2 text-text-primary"><i class="fas fa-user-edit w-5 text-center"></i>Cambiar nombre</a>
+                        <a href="#" class="change-password-trigger dropdown-item flex items-center gap-3 px-4 py-2 text-text-primary"><i class="fas fa-key w-5 text-center"></i>Cambiar contraseña</a>
+                        <div class="border-t border-border-color my-1"></div>
+                        <button class="theme-toggle-button dropdown-item w-full text-left flex items-center gap-3 px-4 py-2 text-text-primary">
+                            <i class="fas fa-moon w-5 text-center"></i>
+                            <span>Modo Oscuro</span>
+                        </button>
+                        <div class="border-t border-border-color my-1"></div>
+                        <a href="#" class="signout-trigger dropdown-item flex items-center gap-3 px-4 py-2 text-danger-color">
+                            <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                            <span>Cerrar Sesión</span>
+                        </a>
+                    </div>
+                </div>
+            `;
+
+            // 4. Se actualiza el HTML de los contenedores para que todo el botón abra el menú
             desktopContainer.innerHTML = `
-                <button class="user-menu-button flex items-center gap-2 p-2 rounded-full hover:bg-white/20 transition-colors">
+                <button class="user-menu-button flex items-center gap-3 p-1 rounded-full hover:bg-white/20 transition-colors">
                     <span class="font-semibold text-sm hidden sm:inline truncate max-w-[100px] text-white">${userName}</span>
-                    <i class="fas fa-user-circle text-2xl text-white"></i>
+                    ${headerAvatarHTML}
                 </button>
                 ${dropdownHTML}
             `;
 
             mobileContainer.innerHTML = `
                 <button class="user-menu-button flex items-center">
-                     <i class="fas fa-user-circle text-2xl"></i>
+                     ${headerAvatarHTML}
                 </button>
                 ${dropdownHTML}
             `;
+            // --- FIN DE LA MODIFICACIÓN ---
 
             document.querySelectorAll('.user-menu-button').forEach(button => {
                 button.addEventListener('click', (e) => {
@@ -1157,6 +1237,15 @@
                         if (d !== button.nextElementSibling) d.classList.add('hidden');
                     });
                     button.nextElementSibling.classList.toggle('hidden');
+                });
+            });
+
+            // El trigger para cambiar el avatar ahora está DENTRO del menú
+            document.querySelectorAll('.avatar-trigger').forEach(trigger => {
+                trigger.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    trigger.closest('.user-menu-dropdown')?.classList.add('hidden');
+                    showAvatarModal();
                 });
             });
 
@@ -2514,6 +2603,7 @@
             };
             notificationModal.addEventListener('click', dismissNotification);
         }
+        
         function showModal(title, message) {
             return new Promise(resolve => {
                 DOMElements.modalTitle.textContent = title;
@@ -2540,6 +2630,85 @@
                 DOMElements.modalCancel.addEventListener('click', cancelHandler);
             });
         }
+
+        function showAvatarModal() {
+            const modal = document.getElementById('avatar-modal');
+            const preview = document.getElementById('avatar-preview');
+            const saveButton = document.getElementById('avatar-save-button');
+            
+            preview.src = AppState.avatarUrl ? `${AppState.avatarUrl}?t=${new Date().getTime()}` : 'https://placehold.co/128x128/e2e8f0/64748b?text=Avatar';
+            saveButton.disabled = true;
+            document.getElementById('avatar-upload-form').reset();
+
+            modal.classList.remove('hidden');
+            DOMElements.body.classList.add('modal-open');
+        }
+
+        function hideAvatarModal() {
+            const modal = document.getElementById('avatar-modal');
+            modal.classList.add('hidden');
+            DOMElements.body.classList.remove('modal-open');
+        }
+
+        async function handleAvatarUpload(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('avatar-file-input');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const saveButton = document.getElementById('avatar-save-button');
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                const filePath = `${user.id}/${Date.now()}_${file.name}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: true,
+                    });
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath);
+
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ avatar_url: publicUrl })
+                    .eq('id', user.id);
+
+                if (updateError) throw updateError;
+
+                AppState.avatarUrl = publicUrl;
+                setupUserMenu();
+                hideAvatarModal();
+                showNotification('Foto de perfil actualizada.', 'success');
+
+            } catch (error) {
+                console.error('Error al subir avatar:', error);
+                showNotification(`Error: ${error.message}`, 'error');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.innerHTML = 'Guardar Foto';
+            }
+        }
+
+        // En la función setupEventListeners(), agregá estos nuevos listeners:
+        document.getElementById('avatar-cancel-button').addEventListener('click', hideAvatarModal);
+        document.getElementById('avatar-upload-form').addEventListener('submit', handleAvatarUpload);
+        document.getElementById('avatar-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const preview = document.getElementById('avatar-preview');
+                preview.src = URL.createObjectURL(file);
+                document.getElementById('avatar-save-button').disabled = false;
+            }
+        });
 
         init();
     });
