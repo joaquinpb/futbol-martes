@@ -8,6 +8,8 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- FORMA CORRECTA DE IMPORTAR GOOGLE FONTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,7 +17,6 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
 
     <style>
-        /* --- INICIO: Estilos replicados de admin.html --- */
         :root {
             --bg-primary: #f4f7fe;
             --bg-secondary: #ffffff;
@@ -45,7 +46,7 @@
             --bg-primary: #030712;
             --bg-secondary: #1f2937;
             --bg-muted: #111827;
-            --sidebar-bg: #1f2937; /* Sidebar en modo oscuro es ligeramente más claro que el fondo */
+            --sidebar-bg: #1f2937;
             --text-primary: #f9fafb;
             --text-secondary: #d1d5db;
             --text-muted: #9ca3af;
@@ -53,13 +54,17 @@
             --accent-color: #6366f1;
             --accent-color-hover: #818cf8;
         }
-        /* --- FIN: Estilos replicados de admin.html --- */
+
+        html {
+            background-color: var(--bg-primary);
+        }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+            min-height: 100vh; /* Asegura que el body ocupe al menos toda la altura de la pantalla */
         }
         body.overflow-hidden { overflow: hidden; }
 
@@ -69,13 +74,11 @@
         
         .main-content-container {
             background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -2px rgba(0,0,0,.05);
             padding: 1.5rem;
+            min-height: 100%; /* CORRECCIÓN FINAL: height -> min-height */
         }
         @media (max-width: 767px) {
-            .main-content-container { margin-top: 1rem; }
+            .main-content-container { }
         }
 
         input, select {
@@ -108,18 +111,18 @@
 
         #overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); z-index: 30; }
         
-        /* Estilo del Header Móvil (replicado de admin.html) */
         header.md\:hidden {
             background-color: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
         }
         html.dark header.md\:hidden {
-            background-color: #111827; /* Un color de cabecera oscuro consistente */
+            background-color: #111827;
         }
         
         @media (min-width: 768px) {
             #side-menu { position: relative; transform: translateX(0); flex-shrink: 0; height: 100vh; }
             #hamburger-button, #overlay { display: none !important; }
+            .flex-1.flex.flex-col { height: 100vh; } /* Se aplica la altura solo a desktop */
         }
 
         .table-container {
@@ -145,7 +148,7 @@
             border-bottom: 2px solid var(--border-color);
         }
         html.dark thead th {
-            background-color: #111827; /* Un poco más oscuro para la cabecera de la tabla */
+            background-color: #111827;
         }
         thead th[data-sort] { cursor: pointer; transition: background-color 0.2s; }
         thead th[data-sort]:hover { background-color: var(--border-color); }
@@ -271,7 +274,6 @@
         html.dark ::-webkit-scrollbar-thumb { background: #555; }
         html.dark ::-webkit-scrollbar-thumb:hover { background: #888; }
         
-        /* --- NUEVOS ESTILOS --- */
         .sidebar-group-header {
             background-color: var(--bg-muted);
             border-bottom: 1px solid var(--border-color);
@@ -290,7 +292,7 @@
         html.dark .fixture-header {
             background-color: #d97706;
         }
-        .fixture-header.active { /* Asegura que el color se mantenga al estar activo */
+        .fixture-header.active {
              background-color: var(--warning-color) !important;
              opacity: 1 !important;
         }
@@ -298,7 +300,6 @@
             background-color: #d97706 !important;
         }
         
-        /* Estilos para el nuevo selector múltiple de año */
         .multi-year-select-button {
             background-color: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -306,7 +307,7 @@
             border-radius: 0.375rem;
             position: relative;
             text-align: left;
-            padding-right: 2.5rem; /* Espacio para el ícono */
+            padding-right: 2.5rem;
         }
         html.dark .multi-year-select-button {
              background-color: var(--bg-muted);
@@ -333,7 +334,6 @@
         }
     </style>
     <script>
-        // Script de inicialización del tema (de admin.html)
         (function() {
             const savedTheme = localStorage.getItem('theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -343,7 +343,7 @@
         })();
     </script>
 </head>
-<body class="antialiased min-h-screen">
+<body class="antialiased">
 
     <!-- Header para móvil -->
     <header class="sticky top-0 z-30 flex items-center justify-between p-4 md:hidden">
@@ -391,7 +391,7 @@
                 </div>
             </div>
 
-            <!-- Enlace Fixture (MODIFICADO) -->
+            <!-- Enlace Fixture -->
             <a href="#fixture" class="tab-button fixture-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200 mt-2" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</a>
 
             <!-- Sección Vista PC -->
@@ -418,11 +418,11 @@
     </nav>
     <div id="overlay" class="hidden md:hidden"></div>
 
-    <!-- Contenedor principal que envuelve el header de escritorio y el main content -->
-    <div class="flex-1 flex flex-col h-screen">
-        <!-- Header para Escritorio (MODIFICADO) -->
+    <!-- Contenedor principal -->
+    <div class="flex-1 flex flex-col">
+        <!-- Header para Escritorio -->
         <header class="hidden md:flex items-center justify-between p-4 border-b border-border-color bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg shrink-0">
-            <div class="w-10"></div> <!-- Espaciador izquierdo -->
+            <div class="w-10"></div>
             <div class="flex-1 text-center text-2xl font-bold text-white uppercase tracking-wider">
                 <span id="desktop-header-title"></span>
             </div>
@@ -433,25 +433,20 @@
             </div>
        </header>
 
-        <!-- El contenido principal ahora es scrollable por sí mismo -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main class="flex-1 overflow-y-auto">
         </main>
     </div>
 
-
-    <!-- CORRECCIÓN: Se mueven los scripts al final del body y en el orden correcto -->
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
-    // Se envuelve todo el código en un listener para asegurar que el DOM esté cargado
     document.addEventListener('DOMContentLoaded', () => {
         
-        // Se verifica que las variables de config.js existan antes de inicializar Supabase
         if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
             console.error("Error: Las variables de configuración de Supabase no están definidas. Asegúrate de que config.js se cargue correctamente.");
             document.querySelector('main').innerHTML = `<div class="main-content-container text-center text-red-500"><p>Error de configuración. No se pudo conectar a la base de datos.</p></div>`;
-            return; // Detiene la ejecución si no hay configuración
+            return;
         }
 
         const FilterSessionManager = {
@@ -532,7 +527,7 @@
             sideMenu: document.getElementById('side-menu'),
             overlay: document.getElementById('overlay'),
             darkModeToggleMobile: document.getElementById('dark-mode-toggle-mobile'),
-            darkModeToggleDesktop: document.getElementById('dark-mode-toggle-desktop'), // Nuevo
+            darkModeToggleDesktop: document.getElementById('dark-mode-toggle-desktop'),
             mainContentArea: document.querySelector('main'),
             tabButtons: document.querySelectorAll('.tab-button'),
             collapsibleTriggers: document.querySelectorAll('.collapsible-trigger'),
@@ -549,7 +544,6 @@
             localStorage.setItem('theme', theme);
             
             const isDark = theme === 'dark';
-            // Actualiza ambos íconos
             const icons = [
                 DOMElements.darkModeToggleMobile.querySelector('i'),
                 DOMElements.darkModeToggleDesktop.querySelector('i')
@@ -616,12 +610,11 @@
              const today = new Date();
              const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${prefix}-month-select`) : document.getElementById(`${prefix}-period-select`);
              
-             // Para el selector multianual, marcamos solo el año actual
              const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
              yearCheckboxes.forEach(cb => {
                  cb.checked = (cb.value == today.getFullYear());
              });
-             updateMultiYearButtonText(prefix); // Actualizamos el texto del botón
+             updateMultiYearButtonText(prefix);
              
              if(periodOrMonthSelect) {
                  periodOrMonthSelect.value = isMonthFilter ? today.getMonth() + 1 : (today.getMonth() <= 5 ? 'apertura' : 'clausura');
@@ -635,7 +628,6 @@
         
             let timeFilteredMatches = allMatchesData;
 
-            // Si hay años seleccionados, filtramos por ellos. Si no, se usan todos.
             if (selectedYears.length > 0) {
                 timeFilteredMatches = timeFilteredMatches.filter(match => {
                     const matchYear = parseDate(match.match_date).getFullYear();
@@ -645,7 +637,7 @@
         
             if (selectedPeriod && selectedPeriod !== 'total') {
                 timeFilteredMatches = timeFilteredMatches.filter(match => {
-                    const month = parseDate(match.match_date).getMonth(); // 0-11
+                    const month = parseDate(match.match_date).getMonth();
                     const period = (month <= 5) ? 'apertura' : 'clausura';
                     return period === selectedPeriod;
                 });
@@ -1067,8 +1059,6 @@
                 trophyDiv.className = 'winner-trophy absolute text-3xl md:text-5xl z-20 transform -translate-x-1/2 -translate-y-1/2';
                 trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
 
-                // --- MODIFICACIÓN DE POSICIONES ---
-                // Se ajustan las coordenadas para la vista móvil (vertical)
                 const trophyPositions = {
                     horizontal: {
                         Claros:  { top: '92%', left: '95%' },
@@ -1328,7 +1318,6 @@
             const title = titles[tabId] || 'Contenido';
             
             let baseHtml = `<div id="${tabId}" class="main-content-container space-y-6">
-                <!-- Este header ahora se oculta en desktop -->
                 <div class="relative flex md:hidden items-center justify-center p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg">
                     <h1 class="flex-1 text-2xl font-bold tracking-tight uppercase text-center text-white">${title}</h1>
                 </div>`;
@@ -1345,7 +1334,6 @@
                                 <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                             </button>
                             <div id="${prefix}-year-select-dropdown" class="multi-year-select-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 hidden max-h-60 overflow-y-auto">
-                                <!-- Opciones de año se insertan aquí -->
                             </div>
                         </div>
                     </div>
@@ -1511,7 +1499,6 @@
             }
             updateMultiYearButtonText(prefix);
 
-            // Add event listeners
             dropdown.addEventListener('change', () => {
                 updateMultiYearButtonText(prefix);
                 changeCallback();
@@ -1653,7 +1640,6 @@
                 const activeTabButton = document.querySelector('.tab-button.active');
                 if (activeTabButton) {
                     const tabId = activeTabButton.dataset.tab;
-                    // Re-render the active tab to reflect changes
                     activateTab(tabId);
                 }
             };
@@ -1746,7 +1732,7 @@
             applyInitialResponsiveStyles();
             applyTheme(localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
             DOMElements.darkModeToggleMobile.addEventListener('click', toggleTheme);
-            DOMElements.darkModeToggleDesktop.addEventListener('click', toggleTheme); // Nuevo listener
+            DOMElements.darkModeToggleDesktop.addEventListener('click', toggleTheme);
             
             DOMElements.hamburgerButton.addEventListener('click', openSideMenu);
             DOMElements.overlay.addEventListener('click', closeSideMenu);
@@ -1785,16 +1771,14 @@
                 });
             });
 
-            // Desplegar la sección "Vista Celular" por defecto al cargar la página
-            const celularTrigger = DOMElements.collapsibleTriggers[0]; // El primer desplegable es "Vista Celular"
+            const celularTrigger = DOMElements.collapsibleTriggers[0];
             if (celularTrigger) {
                 const content = celularTrigger.nextElementSibling;
                 const icon = celularTrigger.querySelector('i.fa-chevron-down');
                 
-                // Se asegura de que el estado inicial sea el correcto: contenido visible y flecha hacia arriba
                 if (content && icon) {
-                    content.classList.remove('hidden'); // Quita 'hidden' si existiera
-                    icon.classList.add('rotate-180');   // Gira la flecha
+                    content.classList.remove('hidden');
+                    icon.classList.add('rotate-180');
                 }
             }
 
