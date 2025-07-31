@@ -1511,9 +1511,14 @@
                         <label for="team-match-date" class="block text-sm font-medium mb-1">Fecha del Partido</label>
                         <input type="date" id="team-match-date" class="w-full p-2 border rounded-md">
                     </div>
-                    <button id="save-teams-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                        Guardar Partido
-                    </button>
+                    <div class="flex flex-col gap-2 pt-2">
+                        <button id="save-teams-button" class="w-full px-6 py-3 button-primary font-semibold rounded-lg shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Guardar Partido
+                        </button>
+                        <button id="save-suspended-button" class="w-full px-6 py-2 button-danger font-semibold rounded-lg shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Partido Suspendido
+                        </button>
+                    </div>
                 </div>`;
 
             const content = `
@@ -1540,7 +1545,9 @@
             document.getElementById('team-match-date').addEventListener('click', function() { this.showPicker(); });
             document.getElementById('team-match-date').addEventListener('change', updateTeamCounts);
             document.getElementById('save-teams-button').addEventListener('click', handleSaveTeams);
+            document.getElementById('save-suspended-button').addEventListener('click', handleSaveSuspendedMatch);
         };
+
         const renderMatchSelectionTemplate = (prefix, panelTitle, panelContent) => {
             const selectionCardBody = `
                 <div class="flex gap-2 mb-4">
@@ -1867,6 +1874,7 @@
             hidePlayerAssignmentModal();
             if (!isEditMode) updateTeamCounts();
         }
+        
         function updateTeamCounts() {
             const clarosCount = document.getElementById('team-claros').children.length;
             const oscurosCount = document.getElementById('team-oscuros').children.length;
@@ -1877,6 +1885,7 @@
             document.querySelector('#total-selected-players').textContent = clarosCount + oscurosCount;
             
             document.getElementById('save-teams-button').disabled = !(clarosCount === 5 && oscurosCount === 5 && matchDate);
+            document.getElementById('save-suspended-button').disabled = !matchDate;
         }
         
         async function handleSaveTeams() {
@@ -1901,6 +1910,33 @@
             } else {
                 showNotification('Partido creado exitosamente!', 'success');
                 await navigateTo('team-formation');
+            }
+        }
+
+        async function handleSaveSuspendedMatch() {
+            const matchDate = document.getElementById('team-match-date').value;
+            if (!matchDate) { 
+                showNotification('Por favor, selecciona la fecha del partido.', 'warning');
+                return;
+            }
+
+            const confirmed = await showModal(
+                'Confirmar Suspensión', 
+                `¿Estás seguro de que quieres registrar un partido suspendido para la fecha ${matchDate}?`
+            );
+
+            if (confirmed) {
+                const { error } = await supabase.rpc('create_suspended_match', {
+                    match_date_param: matchDate
+                });
+
+                if (error) {
+                    showNotification(`Error al crear el partido suspendido: ${error.message}`, 'error');
+                    console.error('Error RPC:', error);
+                } else {
+                    showNotification('Partido suspendido creado exitosamente!', 'success');
+                    await navigateTo('team-formation');
+                }
             }
         }
 
