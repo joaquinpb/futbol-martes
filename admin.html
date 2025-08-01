@@ -548,7 +548,8 @@
             isInitializing: false,
             activePlayerElement: null,
             realtimeChannel: null,
-            heartbeatInterval: null
+            heartbeatInterval: null,
+            selectedPhotoFile: null // Para almacenar el archivo de foto seleccionado
         };
 
         const NAV_ITEMS = {
@@ -1800,10 +1801,31 @@
             document.querySelector('#edit-panel-container > .card > h3').remove();
             populateMatchFilters('edit');
         };
+        
+        // --- INICIO: Función render_players_management actualizada ---
         window.render_players_management = () => {
             const formBody = `
-                <form id="player-form" class="space-y-4">
+                <form id="player-form" class="space-y-3">
                     <input type="hidden" id="player-id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-center">Foto del Jugador</label>
+                        <div class="flex justify-center">
+                            <label for="player-photo-input" class="cursor-pointer group">
+                                <div class="relative">
+                                    <img id="player-photo-preview" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" class="w-28 h-28 rounded-full object-cover border-4 border-border-color group-hover:opacity-75 transition-opacity">
+                                    <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <i class="fas fa-camera text-white text-2xl"></i>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        <input type="file" id="player-photo-input" class="hidden" accept="image/png, image/jpeg">
+                        <div class="text-center mt-2">
+                            <button type="button" id="remove-photo-button" class="text-xs button-danger px-3 py-1 rounded-md hidden">Quitar Foto</button>
+                        </div>
+                    </div>
+
                     <div>
                         <label for="player-name" class="block text-sm font-medium mb-1">Nombre</label>
                         <input type="text" id="player-name" class="w-full p-2 border rounded-md" required>
@@ -1822,9 +1844,10 @@
                             <option value="Suplente">Suplente</option>
                         </select>
                     </div>
-                    <div class="flex gap-3 pt-2">
-                        <button type="submit" class="flex-1 px-4 py-2 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar</button>
-                        <button type="button" id="delete-player-button" class="flex-1 px-4 py-2 button-danger font-semibold rounded-lg shadow-md hover:opacity-90">Eliminar</button>
+                    <div class="flex flex-col gap-2 pt-2">
+                        <button type="submit" id="save-player-button" class="w-full px-4 py-2.5 button-success font-semibold rounded-lg shadow-md hover:opacity-90">Guardar Jugador</button>
+                        <button type="button" id="delete-player-button" class="w-full px-4 py-2 button-danger font-semibold rounded-lg shadow-md hover:opacity-90">Eliminar Jugador</button>
+                        <button type="button" id="clear-player-form-button" class="w-full px-4 py-2 bg-gray-400 text-gray-800 hover:bg-gray-500 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500 font-semibold rounded-lg shadow-md transition">Limpiar Formulario</button>
                     </div>
                 </form>`;
             const listBody = `
@@ -1832,9 +1855,9 @@
                     <input type="text" id="player-search-input" placeholder="Buscar por nombre..." class="w-full p-2 pl-10 border rounded-md">
                     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
-                <div class="overflow-x-auto max-h-[60vh]">
+                <div class="overflow-y-auto max-h-[70vh]">
                     <table class="w-full text-sm text-left">
-                        <thead class="text-xs uppercase bg-muted">
+                        <thead class="text-xs uppercase bg-muted sticky top-0">
                             <tr>
                                 <th class="p-4">ID</th>
                                 <th class="p-4">Nombre</th>
@@ -1864,7 +1887,12 @@
             });
             document.getElementById('player-form').addEventListener('submit', handleSavePlayer);
             document.getElementById('delete-player-button').addEventListener('click', handleDeletePlayer);
+            document.getElementById('clear-player-form-button').addEventListener('click', clearPlayerForm);
+            document.getElementById('player-photo-input').addEventListener('change', handlePhotoPreview);
+            document.getElementById('remove-photo-button').addEventListener('click', handleRemovePhoto);
         };
+        // --- FIN: Función render_players_management actualizada ---
+
         window.render_user_management = () => {
              const formBody = `
                 <form id="user-form" class="space-y-4">
@@ -2509,37 +2537,138 @@
                 });
             });
         }
+        
+        // --- INICIO: Funciones de gestión de jugadores actualizadas ---
         function populatePlayerForm(player) {
             document.getElementById('player-id').value = player.id;
             document.getElementById('player-name').value = player.name;
             document.getElementById('player-status').value = player.status;
             document.getElementById('player-role').value = player.role;
+            
+            const photoPreview = document.getElementById('player-photo-preview');
+            const removePhotoButton = document.getElementById('remove-photo-button');
+            
+            if (player.photo_url) {
+                photoPreview.src = `${player.photo_url}?t=${new Date().getTime()}`; // Cache-busting
+                removePhotoButton.classList.remove('hidden');
+            } else {
+                photoPreview.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+                removePhotoButton.classList.add('hidden');
+            }
+            AppState.selectedPhotoFile = null;
+            document.getElementById('player-photo-input').value = '';
         }
+
         function clearPlayerForm() {
             document.getElementById('player-form').reset();
             document.getElementById('player-id').value = '';
             document.querySelectorAll('#players-list-admin .selectable-row').forEach(r => r.classList.remove('selected'));
+            
+            const photoPreview = document.getElementById('player-photo-preview');
+            photoPreview.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            document.getElementById('remove-photo-button').classList.add('hidden');
+            AppState.selectedPhotoFile = null;
         }
+
+        function handlePhotoPreview(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const preview = document.getElementById('player-photo-preview');
+            preview.src = URL.createObjectURL(file);
+            AppState.selectedPhotoFile = file;
+            document.getElementById('remove-photo-button').classList.remove('hidden');
+        }
+
+        async function handleRemovePhoto() {
+            const playerId = document.getElementById('player-id').value;
+            if (!playerId) {
+                showNotification('Selecciona un jugador primero.', 'warning');
+                return;
+            }
+
+            const confirmed = await showModal('Confirmar Eliminación', '¿Estás seguro de que quieres eliminar la foto de este jugador?');
+            if (!confirmed) return;
+
+            // 1. Eliminar de Storage (opcional pero recomendado)
+            // Para esto necesitaríamos saber la ruta del archivo, que no guardamos. 
+            // Por ahora, solo quitamos la URL de la base de datos.
+            
+            // 2. Actualizar la base de datos
+            const { error } = await supabase
+                .from('players')
+                .update({ photo_url: null })
+                .eq('id', playerId);
+
+            if (error) {
+                showNotification(`Error al eliminar la foto: ${error.message}`, 'error');
+            } else {
+                showNotification('Foto eliminada.', 'success');
+                clearPlayerForm();
+            }
+        }
+
         async function handleSavePlayer(e) {
             e.preventDefault();
-            const id = document.getElementById('player-id').value;
+            const saveButton = document.getElementById('save-player-button');
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            let id = document.getElementById('player-id').value;
             const playerData = {
                 name: document.getElementById('player-name').value,
                 status: document.getElementById('player-status').value,
                 role: document.getElementById('player-role').value,
             };
 
-            const { data, error } = id
-                ? await supabase.from('players').update(playerData).eq('id', id)
-                : await supabase.from('players').insert(playerData);
+            try {
+                // Paso 1: Guardar o actualizar datos del jugador
+                let playerResponse;
+                if (id) {
+                    playerResponse = await supabase.from('players').update(playerData).eq('id', id).select().single();
+                } else {
+                    playerResponse = await supabase.from('players').insert(playerData).select().single();
+                    id = playerResponse.data.id; // Obtener el ID del nuevo jugador
+                }
 
-            if (error) {
-                showNotification(`Error al guardar jugador: ${error.message}`, 'error');
-            } else {
+                if (playerResponse.error) throw playerResponse.error;
+
+                // Paso 2: Si hay una nueva foto, subirla y actualizar la URL
+                if (AppState.selectedPhotoFile) {
+                    const file = AppState.selectedPhotoFile;
+                    const filePath = `${id}/${Date.now()}_${file.name}`;
+
+                    const { error: uploadError } = await supabase.storage
+                        .from('player-photos')
+                        .upload(filePath, file, { upsert: true });
+
+                    if (uploadError) throw uploadError;
+
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('player-photos')
+                        .getPublicUrl(filePath);
+
+                    const { error: urlError } = await supabase
+                        .from('players')
+                        .update({ photo_url: publicUrl })
+                        .eq('id', id);
+                    
+                    if (urlError) throw urlError;
+                }
+                
                 showNotification('Jugador guardado exitosamente.', 'success');
                 clearPlayerForm();
+
+            } catch (error) {
+                showNotification(`Error al guardar jugador: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Guardar Jugador';
             }
         }
+        // --- FIN: Funciones de gestión de jugadores actualizadas ---
+        
         async function handleDeletePlayer() {
             const id = document.getElementById('player-id').value;
             if (!id) {
