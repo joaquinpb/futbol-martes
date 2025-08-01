@@ -259,7 +259,23 @@
         }
         .player-marker.claros { background-color: var(--player-claros-bg); color: var(--player-claros-text); border-color: var(--player-claros-text); }
         .player-marker.oscuros { background-color: var(--player-oscuros-bg); color: var(--player-oscuros-text); border-color: var(--player-oscuros-text); }
-        .player-name-label { background-color: var(--bg-secondary); color: var(--text-primary); }
+        .player-name-label {
+            /* Estilos base para la etiqueta */
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .player-name-label.claros-label {
+            background-color: #FFFFFF;
+            color: #f59e0b; /* Naranja de --warning-color */
+            border: 1px solid #e2e8f0; /* Borde sutil para el fondo blanco */
+        }
+        .player-name-label.oscuros-label {
+            background-color: #1a202c; /* Negro de --player-oscuros-bg */
+            color: #f59e0b; /* Naranja de --warning-color */
+        }
         .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
         #individual-player-results { background-color: var(--bg-secondary); border: 1px solid var(--border-color); z-index: 20; }
@@ -1184,13 +1200,16 @@
                 const player = allPlayersData.find(p => p.id === playerId) || {name: 'ID Desconocido'};
                 const isChamigo = chamigoPlayerIds.includes(String(playerId));
                 const photoUrl = player.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+                
+                // Se añade la clase correcta según el equipo
+                const labelClass = team === 'claros' ? 'claros-label' : 'oscuros-label';
 
                 let markerHTML = `
                     <div class="player-marker ${team} relative w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center" data-player-id="${playerId}">
                         <img src="${photoUrl}" alt="Foto de ${player.name}" class="w-full h-full rounded-full object-cover">
                         ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-2 -right-2 text-lg md:text-2xl" style="text-shadow: 0 0 4px black;"></i>' : ''}
                     </div>
-                    <div class="player-name-label text-xs font-bold px-2 py-0.5 rounded-md">${player.name}</div>`;
+                    <div class="player-name-label ${labelClass}">${player.name}</div>`;
                 
                 playerWrapper.innerHTML = markerHTML;
                 playerWrapper.querySelector('.player-marker').addEventListener('click', (e) => {
