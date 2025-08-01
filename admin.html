@@ -16,6 +16,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Cropper.js for image editing -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
     
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
@@ -273,6 +276,18 @@
         .icon-resultado { color: var(--success-color); }
         .icon-chamigo { color: var(--warning-color); }
         .icon-tt { color: #9333ea; }
+
+        /* Cropper.js specific styles */
+        #cropper-container {
+            width: 100%;
+            height: 40vh;
+            max-height: 300px;
+            background-color: var(--bg-muted);
+        }
+        #cropper-image {
+            display: block;
+            max-width: 100%;
+        }
         
     </style>
     
@@ -428,7 +443,6 @@
         </div>
     </div>
 
-    <!-- NUEVO MODAL: Opciones de Jugador en Equipo -->
     <div id="player-team-options-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
         <div class="card card-styled p-6 text-center w-full max-w-sm">
             <h3 class="text-lg font-semibold mb-2">Opciones de Jugador</h3>
@@ -527,14 +541,35 @@
             </form>
         </div>
     </div>
+
+    <!-- === INICIO: Modal para Recortar Imagen === -->
+    <div id="cropper-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-[60] p-4">
+        <div class="card card-styled p-6 w-full max-w-md">
+            <h3 class="text-lg font-semibold mb-4">Editar Foto</h3>
+            <div id="cropper-container" class="mb-4">
+                <img id="cropper-image" src="">
+            </div>
+            <div class="flex items-center justify-center space-x-4 mb-4">
+                <label for="zoom-slider" class="text-sm font-medium">Zoom:</label>
+                <input id="zoom-slider" type="range" min="0" max="1" step="0.01" class="w-full">
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="cropper-cancel-button" class="px-4 py-2 button-secondary font-semibold rounded-md">Cancelar</button>
+                <button id="cropper-save-button" class="px-4 py-2 button-success font-semibold rounded-md">Recortar y Guardar</button>
+            </div>
+        </div>
+    </div>
+    <!-- === FIN: Modal para Recortar Imagen === -->
  
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
     
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- CONFIG & STATE ---
         const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+        let cropper = null;
         
         const AppState = {
             players: [],
@@ -550,7 +585,8 @@
             activePlayerElement: null,
             realtimeChannel: null,
             heartbeatInterval: null,
-            selectedPhotoFile: null // Para almacenar el archivo de foto seleccionado
+            selectedPhotoFile: null,
+            selectedAvatarFile: null // Para el archivo recortado del perfil de usuario
         };
 
         const NAV_ITEMS = {
@@ -700,12 +736,6 @@
             }
         }
         
-        // --- INICIO: Función para refrescar datos y UI ---
-        /**
-         * Vuelve a cargar todos los datos principales desde Supabase, actualiza el estado local
-         * y vuelve a renderizar la pestaña activa para reflejar los cambios inmediatamente.
-         * @param {string} tabToRender - El ID de la pestaña que se debe volver a renderizar.
-         */
         async function refreshDataAndRender(tabToRender) {
             try {
                 const [playersRes, matchesRes] = await Promise.all([
@@ -733,7 +763,6 @@
                 showNotification(`Error al refrescar los datos: ${error.message}`, 'error');
             }
         }
-        // --- FIN: Función para refrescar datos y UI ---
 
         function setupRealtimeSubscriptions() {
             if (AppState.realtimeChannel) {
@@ -1154,7 +1183,6 @@
                 if (e.target.id === 'player-assignment-modal') hidePlayerAssignmentModal();
             });
 
-            // Listeners for the new modal
             DOMElements.playerTeamOptionsModal.addEventListener('click', (e) => {
                 if (e.target.id === 'player-team-options-modal') hidePlayerTeamOptionsModal();
             });
@@ -1185,15 +1213,6 @@
 
                 document.getElementById('avatar-cancel-button').addEventListener('click', hideAvatarModal);
                 document.getElementById('avatar-upload-form').addEventListener('submit', handleAvatarUpload);
-                
-                document.getElementById('avatar-file-input').addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const preview = document.getElementById('avatar-preview');
-                        preview.src = URL.createObjectURL(file);
-                        document.getElementById('avatar-save-button').disabled = false;
-                    }
-                });
             }
         }
 
@@ -2605,11 +2624,7 @@
         function handlePhotoPreview(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            const preview = document.getElementById('player-photo-preview');
-            preview.src = URL.createObjectURL(file);
-            AppState.selectedPhotoFile = file;
-            document.getElementById('remove-photo-button').classList.remove('hidden');
+            openCropperModal(file, 'player'); // Añadimos el contexto
         }
 
         async function handleRemovePhoto() {
@@ -3020,18 +3035,147 @@
                 saveButton.innerHTML = 'Guardar Foto';
             }
         }
+        
+        // --- INICIO: Funciones para el modal de recorte ---
+        function openCropperModal(file, context) {
+            cropperContext = context; // Guardamos el contexto
+            const modal = document.getElementById('cropper-modal');
+            const image = document.getElementById('cropper-image');
+            const zoomSlider = document.getElementById('zoom-slider');
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                image.src = e.target.result;
+                modal.classList.remove('hidden');
+                DOMElements.body.classList.add('modal-open');
+                
+                if (cropper) {
+                    cropper.destroy();
+                }
+                
+                cropper = new Cropper(image, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    background: false,
+                    autoCropArea: 0.8,
+                    zoomable: true,
+                    ready() {
+                        zoomSlider.value = 0;
+                        zoomSlider.oninput = () => {
+                            cropper.zoomTo(zoomSlider.value);
+                        };
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function closeCropperModal() {
+            const modal = document.getElementById('cropper-modal');
+            modal.classList.add('hidden');
+            DOMElements.body.classList.remove('modal-open');
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+        }
+        
+        function handleCropAndSave() {
+            if (!cropper) return;
+            
+            cropper.getCroppedCanvas({
+                width: 256,
+                height: 256,
+                imageSmoothingQuality: 'high',
+            }).toBlob((blob) => {
+                if (cropperContext === 'player') {
+                    const preview = document.getElementById('player-photo-preview');
+                    preview.src = URL.createObjectURL(blob);
+                    
+                    const originalFile = document.getElementById('player-photo-input').files[0];
+                    const fileName = originalFile ? originalFile.name : 'cropped.png';
+                    AppState.selectedPhotoFile = new File([blob], fileName, { type: blob.type });
+
+                    document.getElementById('remove-photo-button').classList.remove('hidden');
+                } else if (cropperContext === 'avatar') {
+                    const preview = document.getElementById('avatar-preview');
+                    preview.src = URL.createObjectURL(blob);
+
+                    const originalFile = document.getElementById('avatar-file-input').files[0];
+                    const fileName = originalFile ? originalFile.name : 'cropped.png';
+                    AppState.selectedAvatarFile = new File([blob], fileName, { type: blob.type });
+
+                    document.getElementById('avatar-save-button').disabled = false;
+                }
+                closeCropperModal();
+            }, 'image/jpeg', 0.9);
+        }
+
+        document.getElementById('cropper-cancel-button').addEventListener('click', closeCropperModal);
+        document.getElementById('cropper-save-button').addEventListener('click', handleCropAndSave);
+        // --- FIN: Funciones para el modal de recorte ---
+
 
         document.getElementById('avatar-cancel-button').addEventListener('click', hideAvatarModal);
         document.getElementById('avatar-upload-form').addEventListener('submit', handleAvatarUpload);
         document.getElementById('avatar-file-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                const preview = document.getElementById('avatar-preview');
-                preview.src = URL.createObjectURL(file);
-                document.getElementById('avatar-save-button').disabled = false;
+                openCropperModal(file, 'avatar'); // Llamamos al editor con el contexto 'avatar'
             }
         });
 
+        async function handleAvatarUpload(e) {
+            e.preventDefault();
+            const file = AppState.selectedAvatarFile; // Usamos el archivo recortado
+            if (!file) {
+                showNotification("Por favor, selecciona y recorta una imagen primero.", "warning");
+                return;
+            }
+
+            const saveButton = document.getElementById('avatar-save-button');
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                const filePath = `${user.id}/${Date.now()}_${file.name}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: true,
+                    });
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath);
+
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ avatar_url: publicUrl })
+                    .eq('id', user.id);
+
+                if (updateError) throw updateError;
+
+                AppState.avatarUrl = publicUrl;
+                AppState.selectedAvatarFile = null; // Limpiamos el estado
+                setupUserMenu();
+                hideAvatarModal();
+                showNotification('Foto de perfil actualizada.', 'success');
+
+            } catch (error) {
+                console.error('Error al subir avatar:', error);
+                showNotification(`Error: ${error.message}`, 'error');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.innerHTML = 'Guardar Foto';
+            }
+        }
         init();
     });
     </script>
