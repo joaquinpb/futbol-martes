@@ -426,6 +426,19 @@
             </div>
         </div>
     </div>
+
+    <!-- NUEVO MODAL: Opciones de Jugador en Equipo -->
+    <div id="player-team-options-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
+        <div class="card card-styled p-6 text-center w-full max-w-sm">
+            <h3 class="text-lg font-semibold mb-2">Opciones de Jugador</h3>
+            <p class="text-secondary mb-6" id="options-modal-player-name">Nombre del Jugador</p>
+            <div class="flex flex-col space-y-3">
+                <button id="move-between-teams-btn" class="w-full px-4 py-2 button-primary font-semibold rounded-md hover:opacity-90 transition">Mover a...</button>
+                <button id="return-player-btn" class="w-full px-4 py-2 button-warning font-semibold rounded-md hover:opacity-90 transition">Devolver a Lista</button>
+                <button id="cancel-player-options-btn" class="mt-4 text-sm text-secondary hover:underline">Cancelar</button>
+            </div>
+        </div>
+    </div>
     
     <div id="change-name-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50 p-4">
         <div class="card card-styled p-6 w-full max-w-md">
@@ -580,6 +593,11 @@
             assignToClarosBtn: document.getElementById('assign-to-claros'),
             assignToOscurosBtn: document.getElementById('assign-to-oscuros'),
             assignModalCancelBtn: document.getElementById('assign-modal-cancel'),
+            playerTeamOptionsModal: document.getElementById('player-team-options-modal'),
+            optionsModalPlayerName: document.getElementById('options-modal-player-name'),
+            moveBetweenTeamsBtn: document.getElementById('move-between-teams-btn'),
+            returnPlayerBtn: document.getElementById('return-player-btn'),
+            cancelPlayerOptionsBtn: document.getElementById('cancel-player-options-btn'),
             notificationModal: document.getElementById('notification-modal'),
             notificationContent: document.getElementById('notification-content'),
             notificationIcon: document.getElementById('notification-icon'),
@@ -1098,6 +1116,15 @@
             DOMElements.playerAssignmentModal.addEventListener('click', (e) => {
                 if (e.target.id === 'player-assignment-modal') hidePlayerAssignmentModal();
             });
+
+            // Listeners for the new modal
+            DOMElements.playerTeamOptionsModal.addEventListener('click', (e) => {
+                if (e.target.id === 'player-team-options-modal') hidePlayerTeamOptionsModal();
+            });
+            DOMElements.cancelPlayerOptionsBtn.addEventListener('click', hidePlayerTeamOptionsModal);
+            DOMElements.returnPlayerBtn.addEventListener('click', handleReturnPlayer);
+            DOMElements.moveBetweenTeamsBtn.addEventListener('click', handleMoveBetweenTeams);
+
 
             DOMElements.changeNameForm.addEventListener('submit', handleUpdateName);
             DOMElements.changePasswordForm.addEventListener('submit', handleUpdatePassword);
@@ -1905,26 +1932,27 @@
             el.textContent = player.name;
             return el;
         }
+
+        function returnPlayerToOrigin(playerEl) {
+            if (!playerEl) return;
+            const playerId = playerEl.dataset.id;
+            const player = AppState.players.find(p => p.id == playerId);
+            const isEditMode = playerEl.closest('#edit-match-container');
+
+            const suplentesList = document.getElementById(isEditMode ? 'edit-suplentes-players' : 'suplentes-players');
+            const titularesList = document.getElementById(isEditMode ? 'edit-titulares-players' : 'titulares-players');
+            
+            if (player && player.role === 'Suplente') {
+                insertPlayerAlphabetically(playerEl, suplentesList);
+            } else if (player) {
+                insertPlayerAlphabetically(playerEl, titularesList);
+            }
+            if (!isEditMode) updateTeamCounts();
+        };
+
         function setupPlayerInteractions(containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
-
-            const returnPlayerToOrigin = (playerEl) => {
-                if (!playerEl) return;
-                const playerId = playerEl.dataset.id;
-                const player = AppState.players.find(p => p.id == playerId);
-                const isEditMode = containerId.includes('edit');
-
-                const suplentesList = document.getElementById(isEditMode ? 'edit-suplentes-players' : 'suplentes-players');
-                const titularesList = document.getElementById(isEditMode ? 'edit-titulares-players' : 'titulares-players');
-                
-                if (player && player.role === 'Suplente') {
-                    insertPlayerAlphabetically(playerEl, suplentesList);
-                } else if (player) {
-                    insertPlayerAlphabetically(playerEl, titularesList);
-                }
-                if (!isEditMode) updateTeamCounts();
-            };
 
             const onClick = (e) => {
                 const playerEl = e.target.closest('.player-element');
@@ -1936,7 +1964,7 @@
                     showPlayerAssignmentModal(playerEl);
                 } 
                 else if (parentId.includes('team-claros') || parentId.includes('team-oscuros')) {
-                    returnPlayerToOrigin(playerEl);
+                    showPlayerTeamOptionsModal(playerEl);
                 }
             };
 
@@ -1953,6 +1981,57 @@
             DOMElements.playerAssignmentModal.classList.add('hidden');
             DOMElements.body.classList.remove('modal-open');
         }
+
+        function showPlayerTeamOptionsModal(playerEl) {
+            AppState.activePlayerElement = playerEl;
+            const parentId = playerEl.parentElement.id;
+            const moveBtn = DOMElements.moveBetweenTeamsBtn;
+
+            DOMElements.optionsModalPlayerName.textContent = playerEl.textContent;
+
+            if (parentId.includes('claros')) {
+                moveBtn.textContent = 'Mover a Oscuros';
+                moveBtn.dataset.target = parentId.replace('claros', 'oscuros');
+            } else {
+                moveBtn.textContent = 'Mover a Claros';
+                moveBtn.dataset.target = parentId.replace('oscuros', 'claros');
+            }
+
+            DOMElements.playerTeamOptionsModal.classList.remove('hidden');
+            DOMElements.body.classList.add('modal-open');
+        }
+
+        function hidePlayerTeamOptionsModal() {
+            AppState.activePlayerElement = null;
+            DOMElements.playerTeamOptionsModal.classList.add('hidden');
+            DOMElements.body.classList.remove('modal-open');
+        }
+
+        function handleReturnPlayer() {
+            if (AppState.activePlayerElement) {
+                returnPlayerToOrigin(AppState.activePlayerElement);
+            }
+            hidePlayerTeamOptionsModal();
+        }
+
+        function handleMoveBetweenTeams() {
+            const playerEl = AppState.activePlayerElement;
+            const targetId = DOMElements.moveBetweenTeamsBtn.dataset.target;
+            if (!playerEl || !targetId) {
+                hidePlayerTeamOptionsModal();
+                return;
+            }
+
+            const targetContainer = document.getElementById(targetId);
+            if (targetContainer) {
+                targetContainer.appendChild(playerEl);
+                if (!playerEl.closest('#edit-match-container')) {
+                    updateTeamCounts();
+                }
+            }
+            hidePlayerTeamOptionsModal();
+        }
+
         function movePlayerToTeam(teamId) {
             if (!AppState.activePlayerElement) return;
             
