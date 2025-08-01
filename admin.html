@@ -700,6 +700,41 @@
             }
         }
         
+        // --- INICIO: Función para refrescar datos y UI ---
+        /**
+         * Vuelve a cargar todos los datos principales desde Supabase, actualiza el estado local
+         * y vuelve a renderizar la pestaña activa para reflejar los cambios inmediatamente.
+         * @param {string} tabToRender - El ID de la pestaña que se debe volver a renderizar.
+         */
+        async function refreshDataAndRender(tabToRender) {
+            try {
+                const [playersRes, matchesRes] = await Promise.all([
+                    supabase.from('players').select('*').order('id', { ascending: true }),
+                    supabase.from('matches').select('*').order('match_date', { ascending: false })
+                ]);
+
+                if (playersRes.error || matchesRes.error) {
+                    throw playersRes.error || matchesRes.error;
+                }
+
+                AppState.players = playersRes.data || [];
+                AppState.matches = matchesRes.data || [];
+                
+                if (AppState.userRole === 'Admin') {
+                    const { data, error } = await supabase.rpc('get_all_users_with_roles');
+                    if (!error) AppState.users = data || [];
+                }
+
+                if (tabToRender) {
+                    await navigateTo(tabToRender);
+                }
+
+            } catch (error) {
+                showNotification(`Error al refrescar los datos: ${error.message}`, 'error');
+            }
+        }
+        // --- FIN: Función para refrescar datos y UI ---
+
         function setupRealtimeSubscriptions() {
             if (AppState.realtimeChannel) {
                 supabase.removeChannel(AppState.realtimeChannel);
@@ -1803,7 +1838,6 @@
             populateMatchFilters('edit');
         };
         
-        // --- INICIO: Función render_players_management actualizada ---
         window.render_players_management = () => {
             const formBody = `
                 <form id="player-form" class="space-y-3">
@@ -1892,7 +1926,6 @@
             document.getElementById('player-photo-input').addEventListener('change', handlePhotoPreview);
             document.getElementById('remove-photo-button').addEventListener('click', handleRemovePhoto);
         };
-        // --- FIN: Función render_players_management actualizada ---
 
         window.render_user_management = () => {
              const formBody = `
@@ -2136,10 +2169,9 @@
 
             if (error) {
                 showNotification(`Error al crear el partido: ${error.message}`, 'error');
-                console.error('Error RPC:', error);
             } else {
                 showNotification('Partido creado exitosamente!', 'success');
-                await navigateTo('team-formation');
+                await refreshDataAndRender('team-formation');
             }
         }
 
@@ -2168,10 +2200,9 @@
 
                 if (error) {
                     showNotification(`Error al crear el partido suspendido: ${error.message}`, 'error');
-                    console.error('Error RPC:', error);
                 } else {
                     showNotification('Partido suspendido creado exitosamente!', 'success');
-                    await navigateTo('team-formation');
+                    await refreshDataAndRender('team-formation');
                 }
             }
         }
@@ -2384,9 +2415,11 @@
                 match_id_param: AppState.selectedMatchId,
                 new_result: resultValue
             });
-            if(error) { showNotification('Error al registrar resultado', 'error'); console.error(error); } 
-            else {
-                 showNotification('Resultado registrado!', 'success');
+            if(error) { 
+                showNotification('Error al registrar resultado', 'error'); 
+            } else {
+                showNotification('Resultado registrado!', 'success');
+                await refreshDataAndRender('match-results');
             }
         }
         async function handleDeleteMatchFromEdit() {
@@ -2395,10 +2428,11 @@
                 const { error } = await supabase.rpc('delete_match_by_id', {
                     match_id_param: AppState.selectedMatchId
                 });
-                if(error) { showNotification('Error al eliminar partido', 'error'); console.error(error); } 
-                else {
+                if(error) { 
+                    showNotification('Error al eliminar partido', 'error'); 
+                } else {
                     showNotification('Partido eliminado.', 'success');
-                    document.getElementById('edit-panel-container').classList.add('hidden');
+                    await refreshDataAndRender('edit-match');
                 }
             }
         }
@@ -2445,11 +2479,10 @@
             });
 
             if (error) { 
-                showNotification('Error al guardar votos de Chamigo', 'error'); 
-                console.error('Error RPC (Chamigo):', error);
-            } 
-            else {
+                showNotification('Error al guardar votos de Chamigo', 'error');
+            } else {
                 showNotification('Votos de Chamigo guardados!', 'success');
+                await refreshDataAndRender('chamigo-management');
             }
         }
 
@@ -2510,10 +2543,9 @@
 
             if (error) { 
                 showNotification('Error al guardar asistencia a TT', 'error');
-                console.error('Error RPC (TT):', error);
-            } 
-            else {
+            } else {
                 showNotification('Asistencia a TT guardada!', 'success');
+                await refreshDataAndRender('tt-attendance');
             }
         }
 
@@ -2539,7 +2571,6 @@
             });
         }
         
-        // --- INICIO: Funciones de gestión de jugadores actualizadas ---
         function populatePlayerForm(player) {
             document.getElementById('player-id').value = player.id;
             document.getElementById('player-name').value = player.name;
@@ -2591,11 +2622,6 @@
             const confirmed = await showModal('Confirmar Eliminación', '¿Estás seguro de que quieres eliminar la foto de este jugador?');
             if (!confirmed) return;
 
-            // 1. Eliminar de Storage (opcional pero recomendado)
-            // Para esto necesitaríamos saber la ruta del archivo, que no guardamos. 
-            // Por ahora, solo quitamos la URL de la base de datos.
-            
-            // 2. Actualizar la base de datos
             const { error } = await supabase
                 .from('players')
                 .update({ photo_url: null })
@@ -2605,6 +2631,7 @@
                 showNotification(`Error al eliminar la foto: ${error.message}`, 'error');
             } else {
                 showNotification('Foto eliminada.', 'success');
+                await refreshDataAndRender('players-management');
                 clearPlayerForm();
             }
         }
@@ -2623,18 +2650,16 @@
             };
 
             try {
-                // Paso 1: Guardar o actualizar datos del jugador
                 let playerResponse;
                 if (id) {
                     playerResponse = await supabase.from('players').update(playerData).eq('id', id).select().single();
                 } else {
                     playerResponse = await supabase.from('players').insert(playerData).select().single();
-                    id = playerResponse.data.id; // Obtener el ID del nuevo jugador
+                    id = playerResponse.data.id;
                 }
 
                 if (playerResponse.error) throw playerResponse.error;
 
-                // Paso 2: Si hay una nueva foto, subirla y actualizar la URL
                 if (AppState.selectedPhotoFile) {
                     const file = AppState.selectedPhotoFile;
                     const filePath = `${id}/${Date.now()}_${file.name}`;
@@ -2658,17 +2683,16 @@
                 }
                 
                 showNotification('Jugador guardado exitosamente.', 'success');
+                await refreshDataAndRender('players-management');
                 clearPlayerForm();
 
             } catch (error) {
                 showNotification(`Error al guardar jugador: ${error.message}`, 'error');
-                console.error(error);
             } finally {
                 saveButton.disabled = false;
                 saveButton.textContent = 'Guardar Jugador';
             }
         }
-        // --- FIN: Funciones de gestión de jugadores actualizadas ---
         
         async function handleDeletePlayer() {
             const id = document.getElementById('player-id').value;
@@ -2690,6 +2714,7 @@
                     showNotification(`Error al eliminar jugador: ${error.message}`, 'error');
                 } else {
                     showNotification('Jugador eliminado exitosamente.', 'success');
+                    await refreshDataAndRender('players-management');
                     clearPlayerForm();
                 }
             }
@@ -2737,9 +2762,11 @@
                 role: document.getElementById('user-role').value,
             };
             const { error } = await supabase.from('profiles').update(userData).eq('id', id);
-            if (error) { showNotification(`Error al guardar usuario: ${error.message}`, 'error'); }
-            else {
+            if (error) { 
+                showNotification(`Error al guardar usuario: ${error.message}`, 'error'); 
+            } else {
                 showNotification('Usuario guardado.', 'success');
+                await refreshDataAndRender('user-management');
                 clearUserForm();
             }
         }
@@ -2809,10 +2836,9 @@
             
             if (error) { 
                 showNotification(`Error al actualizar el partido: ${error.message}`, 'error');
-                console.error('Error RPC (Update Match):', error);
-            }
-            else {
+            } else {
                 showNotification('Partido actualizado.', 'success');
+                await refreshDataAndRender('edit-match');
             }
         }
         
