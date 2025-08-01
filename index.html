@@ -606,20 +606,55 @@
             if (currentValue) monthSelect.value = currentValue;
         }
         
+        // --- INICIO DE LA MODIFICACIÓN ---
         function setTodayFilters(prefix, isMonthFilter = false) {
              const today = new Date();
-             const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${prefix}-month-select`) : document.getElementById(`${prefix}-period-select`);
              
-             const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
-             yearCheckboxes.forEach(cb => {
-                 cb.checked = (cb.value == today.getFullYear());
-             });
-             updateMultiYearButtonText(prefix);
+             if (prefix === 'fixture' && isMonthFilter) {
+                // Lógica específica para Fixture: buscar mes con partidos
+                let targetYear = today.getFullYear();
+                let targetMonth = today.getMonth() + 1; // 1-12
+
+                const hasMatches = (year, month) => {
+                    return allMatchesData.some(m => {
+                        const d = parseDate(m.match_date);
+                        return d.getFullYear() === year && (d.getMonth() + 1) == month;
+                    });
+                };
+
+                // Si el mes actual no tiene partidos, retroceder al anterior
+                if (!hasMatches(targetYear, targetMonth)) {
+                    const prevMonthDate = new Date(today);
+                    prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
+                    targetYear = prevMonthDate.getFullYear();
+                    targetMonth = prevMonthDate.getMonth() + 1;
+                }
+                
+                const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
+                yearCheckboxes.forEach(cb => {
+                    cb.checked = (cb.value == targetYear);
+                });
+                updateMultiYearButtonText(prefix);
+                
+                const monthSelect = document.getElementById(`${prefix}-month-select`);
+                if (monthSelect) monthSelect.value = targetMonth;
+
+             } else {
+                // Lógica original para las otras pestañas
+                const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${prefix}-month-select`) : document.getElementById(`${prefix}-period-select`);
              
-             if(periodOrMonthSelect) {
-                 periodOrMonthSelect.value = isMonthFilter ? today.getMonth() + 1 : (today.getMonth() <= 5 ? 'apertura' : 'clausura');
+                const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
+                yearCheckboxes.forEach(cb => {
+                    cb.checked = (cb.value == today.getFullYear());
+                });
+                updateMultiYearButtonText(prefix);
+                
+                if(periodOrMonthSelect) {
+                    periodOrMonthSelect.value = isMonthFilter ? today.getMonth() + 1 : (today.getMonth() <= 5 ? 'apertura' : 'clausura');
+                }
              }
         }
+        // --- FIN DE LA MODIFICACIÓN ---
 
         function calculateStatsForPeriod(prefix) {
             const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]:checked`);
@@ -1510,6 +1545,7 @@
             });
         }
 
+        // --- INICIO DE LA MODIFICACIÓN ---
         function setupDynamicEventListeners(tabId) {
             const prefix = tabId.replace('-content', '');
             const renderFn = renderFunctions[tabId];
@@ -1581,13 +1617,29 @@
                 const isMonthFilter = prefix === 'fixture';
                 if (isMonthFilter) {
                     populateMonthSelects('fixture-month-select');
-                    if (globalFilterState.month) {
-                         document.getElementById('fixture-month-select').value = globalFilterState.month;
-                    }
-                } else {
-                    if (globalFilterState.period) {
+                }
+
+                const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.month : globalFilterState.period);
+                
+                if (hasSavedState) {
+                    // Restaurar desde el estado guardado
+                    if (isMonthFilter && globalFilterState.month) {
+                        document.getElementById('fixture-month-select').value = globalFilterState.month;
+                    } else if (!isMonthFilter && globalFilterState.period) {
                         document.getElementById(`${prefix}-period-select`).value = globalFilterState.period;
                     }
+                } else {
+                    // Si no hay estado guardado, establecer a "hoy" (con la lógica de fallback del fixture)
+                    setTodayFilters(prefix, isMonthFilter);
+                    
+                    // Actualizar el estado global ya que estaba vacío
+                    const selectedYears = Array.from(document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`)).map(cb => cb.value);
+                    const periodSelect = document.getElementById(`${prefix}-period-select`);
+                    const monthSelect = document.getElementById(`${prefix}-month-select`);
+                    globalFilterState.years = selectedYears;
+                    if (periodSelect) globalFilterState.period = periodSelect.value;
+                    if (monthSelect) globalFilterState.month = monthSelect.value;
+                    FilterSessionManager.update(globalFilterState);
                 }
             }
             
@@ -1595,6 +1647,7 @@
                 setupPlayerSearch();
             }
         }
+        // --- FIN DE LA MODIFICACIÓN ---
         
         function setupRealtimeSubscriptions() {
             if (statsChannel) {
