@@ -9,7 +9,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- FORMA CORRECTA DE IMPORTAR GOOGLE FONTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -64,9 +63,9 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            min-height: 100vh; /* Asegura que el body ocupe al menos toda la altura de la pantalla */
+            min-height: 100vh;
         }
-        body.overflow-hidden { overflow: hidden; }
+        body.overflow-hidden, body.modal-open { overflow: hidden; }
 
         @media (min-width: 768px) {
             body { display: flex; }
@@ -75,10 +74,7 @@
         .main-content-container {
             background-color: var(--bg-secondary);
             padding: 1.5rem;
-            min-height: 100%; /* CORRECCIÓN FINAL: height -> min-height */
-        }
-        @media (max-width: 767px) {
-            .main-content-container { }
+            min-height: 100%;
         }
 
         input, select {
@@ -122,7 +118,7 @@
         @media (min-width: 768px) {
             #side-menu { position: relative; transform: translateX(0); flex-shrink: 0; height: 100vh; }
             #hamburger-button, #overlay { display: none !important; }
-            .flex-1.flex.flex-col { height: 100vh; } /* Se aplica la altura solo a desktop */
+            .flex-1.flex.flex-col { height: 100vh; }
         }
 
         .table-container {
@@ -253,16 +249,93 @@
         .fixture-match-item.selected { box-shadow: 0 0 0 2px var(--accent-color); border-color: var(--accent-color); }
         .fixture-match-item.current-match-card { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); border-color: transparent;}
         
-        .player-marker { border: 2px solid; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .player-marker { 
+            border: 2px solid; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .player-marker:hover {
+            transform: scale(1.1);
+        }
         .player-marker.claros { background-color: var(--player-claros-bg); color: var(--player-claros-text); border-color: var(--player-claros-text); }
         .player-marker.oscuros { background-color: var(--player-oscuros-bg); color: var(--player-oscuros-text); border-color: var(--player-oscuros-text); }
-        .player-name-label { background-color: var(--bg-secondary); color: var(--text-primary); }
+        .player-name-label {
+            /* Estilos base para la etiqueta */
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .player-name-label.claros-label {
+            background-color: #FFFFFF;
+            color: #d97706; /* Naranja más oscuro */
+            border: 1px solid #e2e8f0; /* Borde sutil para el fondo blanco */
+        }
+        .player-name-label.oscuros-label {
+            background-color: #1a202c; /* Negro de --player-oscuros-bg */
+            color: #d97706; /* Naranja más oscuro */
+        }
         .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
         #individual-player-results { background-color: var(--bg-secondary); border: 1px solid var(--border-color); z-index: 20; }
         #individual-player-results > div:hover { background-color: var(--bg-muted); }
         #individual-player-search { padding-right: 2.5rem !important; }
         #clear-player-search { color: var(--text-muted); }
+
+        /* === INICIO: Estilos Corregidos para el Modal de Jugador === */
+        #player-modal-overlay {
+            position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.7);
+            z-index: 50; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+        }
+        #player-modal-overlay.visible { opacity: 1; pointer-events: auto; }
+
+        #player-modal-content {
+            background-color: var(--bg-secondary);
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+            width: 90%; max-width: 320px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        #player-modal-overlay.visible #player-modal-content { transform: scale(1); }
+
+        #player-modal-photo {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--accent-color);
+            margin-top: -60px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            background-color: var(--bg-muted);
+            border: 1px solid var(--border-color);
+        }
+        .stat-item .value { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            color: var(--accent-color);
+            line-height: 1;
+        }
+        .stat-item .label { 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            color: var(--text-secondary); 
+            text-transform: uppercase; 
+            margin-top: 0.35rem;
+        }
+        /* === FIN: Estilos Corregidos para el Modal de Jugador === */
         
         .loading-spinner { border: 4px solid var(--border-color); border-top: 4px solid var(--accent-color); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -437,6 +510,37 @@
         </main>
     </div>
 
+    <!-- Modal de Jugador -->
+    <div id="player-modal-overlay" class="hidden">
+        <div id="player-modal-content">
+            <button id="player-modal-close" class="absolute top-2 right-2 text-text-secondary hover:text-text-primary p-2 rounded-full z-10">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <div class="flex flex-col items-center pt-8 pb-6 px-6">
+                <div class="w-full h-[60px]"></div>
+                <img id="player-modal-photo" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Foto del jugador">
+                <h2 id="player-modal-name" class="text-2xl font-bold mt-4 text-center">Nombre Jugador</h2>
+                <p id="player-modal-tournament" class="text-sm text-text-secondary mb-6"></p>
+
+                <div class="grid grid-cols-3 gap-4 w-full">
+                    <div class="stat-item">
+                        <div id="player-modal-points" class="value">0</div>
+                        <div class="label">Puntos</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="player-modal-chamigo" class="value">0</div>
+                        <div class="label">Chamigo</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="player-modal-tt" class="value">0</div>
+                        <div class="label">TT</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -531,6 +635,17 @@
             mainContentArea: document.querySelector('main'),
             tabButtons: document.querySelectorAll('.tab-button'),
             collapsibleTriggers: document.querySelectorAll('.collapsible-trigger'),
+            playerModal: {
+                overlay: document.getElementById('player-modal-overlay'),
+                content: document.getElementById('player-modal-content'),
+                closeBtn: document.getElementById('player-modal-close'),
+                photo: document.getElementById('player-modal-photo'),
+                name: document.getElementById('player-modal-name'),
+                tournament: document.getElementById('player-modal-tournament'),
+                points: document.getElementById('player-modal-points'),
+                chamigo: document.getElementById('player-modal-chamigo'),
+                tt: document.getElementById('player-modal-tt'),
+            }
         };
 
         const hashToTabMap = {
@@ -606,14 +721,12 @@
             if (currentValue) monthSelect.value = currentValue;
         }
         
-        // --- INICIO DE LA MODIFICACIÓN ---
         function setTodayFilters(prefix, isMonthFilter = false) {
              const today = new Date();
              
              if (prefix === 'fixture' && isMonthFilter) {
-                // Lógica específica para Fixture: buscar mes con partidos
                 let targetYear = today.getFullYear();
-                let targetMonth = today.getMonth() + 1; // 1-12
+                let targetMonth = today.getMonth() + 1;
 
                 const hasMatches = (year, month) => {
                     return allMatchesData.some(m => {
@@ -622,7 +735,6 @@
                     });
                 };
 
-                // Si el mes actual no tiene partidos, retroceder al anterior
                 if (!hasMatches(targetYear, targetMonth)) {
                     const prevMonthDate = new Date(today);
                     prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
@@ -640,7 +752,6 @@
                 if (monthSelect) monthSelect.value = targetMonth;
 
              } else {
-                // Lógica original para las otras pestañas
                 const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${prefix}-month-select`) : document.getElementById(`${prefix}-period-select`);
              
                 const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
@@ -654,16 +765,21 @@
                 }
              }
         }
-        // --- FIN DE LA MODIFICACIÓN ---
-
-        function calculateStatsForPeriod(prefix) {
-            const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]:checked`);
-            const selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
-            const selectedPeriod = document.getElementById(`${prefix}-period-select`)?.value;
         
+        // --- INICIO: Lógica de cálculo de estadísticas refactorizada ---
+        /**
+         * Calcula las estadísticas para un conjunto de filtros dados.
+         * @param {object} filters - Objeto con los filtros a aplicar.
+         * @param {string[]} filters.selectedYears - Array de años a incluir.
+         * @param {string} [filters.selectedPeriod] - 'apertura', 'clausura' o 'total'.
+         * @returns {object} - Objeto con `players` y `teamStats`.
+         */
+        function calculateStats(filters) {
+            const { selectedYears, selectedPeriod } = filters;
+
             let timeFilteredMatches = allMatchesData;
 
-            if (selectedYears.length > 0) {
+            if (selectedYears && selectedYears.length > 0) {
                 timeFilteredMatches = timeFilteredMatches.filter(match => {
                     const matchYear = parseDate(match.match_date).getFullYear();
                     return selectedYears.includes(String(matchYear));
@@ -672,7 +788,7 @@
         
             if (selectedPeriod && selectedPeriod !== 'total') {
                 timeFilteredMatches = timeFilteredMatches.filter(match => {
-                    const month = parseDate(match.match_date).getMonth();
+                    const month = parseDate(match.match_date).getMonth(); // 0-11
                     const period = (month <= 5) ? 'apertura' : 'clausura';
                     return period === selectedPeriod;
                 });
@@ -682,7 +798,7 @@
         
             const playerStats = {};
             allPlayersData.forEach(player => {
-                playerStats[player.id] = { name: player.name, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player.id };
+                playerStats[player.id] = { name: player.name, photo_url: player.photo_url, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player.id };
             });
         
             let clarosWins = 0, oscurosWins = 0, empates = 0, suspendidos = 0, totalPJMatches = 0;
@@ -731,7 +847,7 @@
             });
         
             let playersToShow;
-            if (selectedYears.length > 0) {
+            if (selectedYears && selectedYears.length > 0) {
                 const yearlyPlayerIds = new Set();
                 timeFilteredMatches.forEach(match => {
                     (match.team_white_players || []).forEach(id => yearlyPlayerIds.add(id));
@@ -748,6 +864,16 @@
                 error: null
             };
         }
+
+        // Esta función ahora actúa como un "wrapper" que lee del DOM y llama a la función principal.
+        function calculateStatsForPeriod(prefix) {
+            const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]:checked`);
+            const selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+            const selectedPeriod = document.getElementById(`${prefix}-period-select`)?.value;
+            
+            return calculateStats({ selectedYears, selectedPeriod });
+        }
+        // --- FIN: Lógica de cálculo de estadísticas refactorizada ---
 
         function renderGenericTable(section, filterFn, sortFn, renderRowFn, headers) {
             const table = document.getElementById(`${section}-table`);
@@ -1072,17 +1198,26 @@
                 playerWrapper.style.top = `${currentPositions[team][index].y * 100}%`;
                 playerWrapper.style.left = `${currentPositions[team][index].x * 100}%`;
 
-                const playerNumber = Number(playerId.replace('J', ''));
-                const isChamigo = chamigoPlayerIds.includes(playerId);
+                const player = allPlayersData.find(p => p.id === playerId) || {name: 'ID Desconocido'};
+                const isChamigo = chamigoPlayerIds.includes(String(playerId));
+                const photoUrl = player.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+                
+                // Se añade la clase correcta según el equipo
+                const labelClass = team === 'claros' ? 'claros-label' : 'oscuros-label';
 
                 let markerHTML = `
-                    <div class="player-marker ${team} relative w-10 h-10 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center">
-                        ${playerNumber}
-                        ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-3 -right-2 text-lg md:text-2xl"></i>' : ''}
+                    <div class="player-marker ${team} relative w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center" data-player-id="${playerId}">
+                        <img src="${photoUrl}" alt="Foto de ${player.name}" class="w-full h-full rounded-full object-cover">
+                        ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-2 -right-2 text-lg md:text-2xl" style="text-shadow: 0 0 4px black;"></i>' : ''}
                     </div>
-                    <div class="player-name-label text-xs font-bold px-2 py-0.5 rounded-md">${getPlayerName(playerId)}</div>`;
+                    <div class="player-name-label ${labelClass}">${player.name}</div>`;
                 
                 playerWrapper.innerHTML = markerHTML;
+                playerWrapper.querySelector('.player-marker').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showPlayerModal(playerId);
+                });
+
                 soccerFieldContainer.appendChild(playerWrapper);
             };
 
@@ -1123,6 +1258,72 @@
             }
         }
         
+        // --- INICIO: Funciones del modal de jugador corregidas ---
+        function showPlayerModal(playerId) {
+            // 1. Obtener el partido actualmente seleccionado
+            const match = allMatchesData.find(m => m.id == lastSelectedFixtureMatchId);
+            if (!match) {
+                console.error("No se encontró el partido seleccionado para el modal.");
+                return;
+            }
+
+            // 2. Determinar el contexto del torneo (año y período)
+            const matchDate = parseDate(match.match_date);
+            const year = matchDate.getFullYear();
+            const month = matchDate.getMonth(); // 0 (Ene) a 11 (Dic)
+            const period = (month <= 5) ? 'apertura' : 'clausura'; // Ene-Jun: Apertura, Jul-Dic: Clausura
+            const tournamentName = `${year} - ${period.charAt(0).toUpperCase() + period.slice(1)}`;
+
+            // 3. Calcular estadísticas para ese torneo específico
+            const { players: statsForTournament, error } = calculateStats({
+                selectedYears: [String(year)],
+                selectedPeriod: period
+            });
+
+            if (error) {
+                console.error("No se pudieron calcular las estadísticas para el modal.");
+                return;
+            }
+            
+            // 4. Encontrar los datos del jugador específico
+            const tournamentPlayerData = statsForTournament.find(p => p.id === playerId);
+            const basePlayerData = allPlayersData.find(p => p.id === playerId);
+
+            if (!basePlayerData) {
+                console.error(`No se encontraron datos base para el jugador con ID: ${playerId}`);
+                return;
+            }
+
+            // 5. Poblar el modal con los datos correctos
+            const { playerModal } = DOMElements;
+            playerModal.photo.src = basePlayerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
+            playerModal.name.textContent = basePlayerData.name;
+            playerModal.tournament.textContent = tournamentName;
+
+            // Usar datos del torneo si el jugador participó, sino mostrar 0
+            playerModal.points.textContent = tournamentPlayerData ? tournamentPlayerData.points : 0;
+            playerModal.chamigo.textContent = tournamentPlayerData ? tournamentPlayerData.chamigos : 0;
+            playerModal.tt.textContent = tournamentPlayerData ? tournamentPlayerData.tt : 0;
+
+            // 6. Mostrar el modal
+            playerModal.overlay.classList.remove('hidden');
+            setTimeout(() => {
+                playerModal.overlay.classList.add('visible');
+                DOMElements.body.classList.add('modal-open');
+            }, 10);
+        }
+
+        function hidePlayerModal() {
+            const { playerModal } = DOMElements;
+            playerModal.overlay.classList.remove('visible');
+            DOMElements.body.classList.remove('modal-open');
+            setTimeout(() => {
+                playerModal.overlay.classList.add('hidden');
+            }, 300);
+        }
+        // --- FIN: Funciones del modal de jugador corregidas ---
+
         async function renderIndividualStatsTable() {
             const selectedPlayerId = document.getElementById('selected-player-id').value;
             const table = document.getElementById('individual-stats-table');
@@ -1545,7 +1746,6 @@
             });
         }
 
-        // --- INICIO DE LA MODIFICACIÓN ---
         function setupDynamicEventListeners(tabId) {
             const prefix = tabId.replace('-content', '');
             const renderFn = renderFunctions[tabId];
@@ -1622,17 +1822,14 @@
                 const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.month : globalFilterState.period);
                 
                 if (hasSavedState) {
-                    // Restaurar desde el estado guardado
                     if (isMonthFilter && globalFilterState.month) {
                         document.getElementById('fixture-month-select').value = globalFilterState.month;
                     } else if (!isMonthFilter && globalFilterState.period) {
                         document.getElementById(`${prefix}-period-select`).value = globalFilterState.period;
                     }
                 } else {
-                    // Si no hay estado guardado, establecer a "hoy" (con la lógica de fallback del fixture)
                     setTodayFilters(prefix, isMonthFilter);
                     
-                    // Actualizar el estado global ya que estaba vacío
                     const selectedYears = Array.from(document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`)).map(cb => cb.value);
                     const periodSelect = document.getElementById(`${prefix}-period-select`);
                     const monthSelect = document.getElementById(`${prefix}-month-select`);
@@ -1647,7 +1844,6 @@
                 setupPlayerSearch();
             }
         }
-        // --- FIN DE LA MODIFICACIÓN ---
         
         function setupRealtimeSubscriptions() {
             if (statsChannel) {
@@ -1742,7 +1938,7 @@
 
         async function initializeApp() {
             try {
-                const { data: players, error: pError } = await supabaseClient.from('players').select('*');
+                const { data: players, error: pError } = await supabaseClient.from('players').select('*, photo_url');
                 const { data: matches, error: mError } = await supabaseClient.from('matches').select('*');
 
                 if (pError || mError) throw pError || mError;
@@ -1822,6 +2018,13 @@
                         dropdown.classList.add('hidden');
                     }
                 });
+            });
+
+            DOMElements.playerModal.closeBtn.addEventListener('click', hidePlayerModal);
+            DOMElements.playerModal.overlay.addEventListener('click', (e) => {
+                if (e.target === DOMElements.playerModal.overlay) {
+                    hidePlayerModal();
+                }
             });
 
             const celularTrigger = DOMElements.collapsibleTriggers[0];
