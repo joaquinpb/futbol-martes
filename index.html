@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- FORMA CORRECTA DE IMPORTAR GOOGLE FONTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -63,9 +62,9 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            min-height: 100vh; /* Asegura que el body ocupe al menos toda la altura de la pantalla */
+            min-height: 100vh;
         }
-        body.overflow-hidden { overflow: hidden; }
+        body.overflow-hidden, body.modal-open { overflow: hidden; }
 
         @media (min-width: 768px) {
             body { display: flex; }
@@ -74,10 +73,7 @@
         .main-content-container {
             background-color: var(--bg-secondary);
             padding: 1.5rem;
-            min-height: 100%; /* CORRECCIÓN FINAL: height -> min-height */
-        }
-        @media (max-width: 767px) {
-            .main-content-container { }
+            min-height: 100%;
         }
 
         input, select {
@@ -121,7 +117,7 @@
         @media (min-width: 768px) {
             #side-menu { position: relative; transform: translateX(0); flex-shrink: 0; height: 100vh; }
             #hamburger-button, #overlay { display: none !important; }
-            .flex-1.flex.flex-col { height: 100vh; } /* Se aplica la altura solo a desktop */
+            .flex-1.flex.flex-col { height: 100vh; }
         }
 
         .table-container {
@@ -252,7 +248,16 @@
         .fixture-match-item.selected { box-shadow: 0 0 0 2px var(--accent-color); border-color: var(--accent-color); }
         .fixture-match-item.current-match-card { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); border-color: transparent;}
         
-        .player-marker { border: 2px solid; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        /* Estilos para el circulito del jugador */
+        .player-marker { 
+            border: 2px solid; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+            cursor: pointer; /* Añadido para indicar que es clickeable */
+            transition: transform 0.2s ease;
+        }
+        .player-marker:hover {
+            transform: scale(1.1); /* Efecto hover */
+        }
         .player-marker.claros { background-color: var(--player-claros-bg); color: var(--player-claros-text); border-color: var(--player-claros-text); }
         .player-marker.oscuros { background-color: var(--player-oscuros-bg); color: var(--player-oscuros-text); border-color: var(--player-oscuros-text); }
         .player-name-label { background-color: var(--bg-secondary); color: var(--text-primary); }
@@ -262,6 +267,44 @@
         #individual-player-results > div:hover { background-color: var(--bg-muted); }
         #individual-player-search { padding-right: 2.5rem !important; }
         #clear-player-search { color: var(--text-muted); }
+
+        /* Estilos para el nuevo modal de jugador */
+        #player-modal-overlay {
+            position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.7);
+            z-index: 50; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+        }
+        #player-modal-overlay.visible { opacity: 1; pointer-events: auto; }
+
+        #player-modal-content {
+            background-color: var(--bg-secondary);
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+            width: 90%; max-width: 320px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        #player-modal-overlay.visible #player-modal-content { transform: scale(1); }
+
+        #player-modal-photo {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--accent-color);
+            margin-top: -60px; /* La mitad de la altura para que sobresalga */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            background-color: var(--bg-muted);
+            border: 1px solid var(--border-color);
+        }
+        .stat-item .value { font-size: 1.5rem; font-weight: 700; color: var(--accent-color); }
+        .stat-item .label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; }
         
         .loading-spinner { border: 4px solid var(--border-color); border-top: 4px solid var(--accent-color); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -344,7 +387,6 @@
 </head>
 <body class="antialiased">
 
-    <!-- Header para móvil -->
     <header class="sticky top-0 z-30 flex items-center justify-between p-4 md:hidden">
         <div class="w-10">
             <button id="hamburger-button" class="p-2 rounded-md -ml-2 text-text-primary">
@@ -364,7 +406,6 @@
         </div>
     </header>
     
-    <!-- Menú lateral -->
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 transform -translate-x-full transition-transform duration-300 ease-in-out md:transform-none md:relative md:w-64 flex flex-col">
         <div class="px-6 py-4 flex items-center">
             <a href="#" class="text-xl font-bold flex items-center gap-2">
@@ -374,7 +415,6 @@
         </div>
         
         <div class="flex-1 px-4 space-y-2 overflow-y-auto">
-            <!-- Sección Vista Celular -->
             <div>
                 <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
                     <span class="flex items-center gap-3"><i class="fas fa-mobile-alt w-5 text-center"></i>Vista Celular</span>
@@ -390,10 +430,8 @@
                 </div>
             </div>
 
-            <!-- Enlace Fixture -->
             <a href="#fixture" class="tab-button fixture-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200 mt-2" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</a>
 
-            <!-- Sección Vista PC -->
             <div class="mt-2">
                 <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
                     <span class="flex items-center gap-3"><i class="fas fa-laptop w-5 text-center"></i>Vista PC</span>
@@ -417,9 +455,7 @@
     </nav>
     <div id="overlay" class="hidden md:hidden"></div>
 
-    <!-- Contenedor principal -->
     <div class="flex-1 flex flex-col">
-        <!-- Header para Escritorio -->
         <header class="hidden md:flex items-center justify-between p-4 border-b border-border-color bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg shrink-0">
             <div class="w-10"></div>
             <div class="flex-1 text-center text-2xl font-bold text-white uppercase tracking-wider">
@@ -436,6 +472,33 @@
         </main>
     </div>
 
+    <div id="player-modal-overlay" class="hidden">
+        <div id="player-modal-content">
+            <button id="player-modal-close" class="absolute top-2 right-2 text-text-secondary hover:text-text-primary p-2 rounded-full z-10">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <div class="flex flex-col items-center pt-8 pb-6 px-6">
+                <div class="w-full h-[60px]"></div> <img id="player-modal-photo" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Foto del jugador">
+                <h2 id="player-modal-name" class="text-2xl font-bold mt-4 text-center">Nombre Jugador</h2>
+                <p id="player-modal-tournament" class="text-sm text-text-secondary mb-6"></p>
+
+                <div class="grid grid-cols-3 gap-4 w-full">
+                    <div class="stat-item">
+                        <div id="player-modal-points" class="value">0</div>
+                        <div class="label">Puntos</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="player-modal-chamigo" class="value">0</div>
+                        <div class="label">Chamigo</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="player-modal-tt" class="value">0</div>
+                        <div class="label">TT</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -530,6 +593,17 @@
             mainContentArea: document.querySelector('main'),
             tabButtons: document.querySelectorAll('.tab-button'),
             collapsibleTriggers: document.querySelectorAll('.collapsible-trigger'),
+            playerModal: {
+                overlay: document.getElementById('player-modal-overlay'),
+                content: document.getElementById('player-modal-content'),
+                closeBtn: document.getElementById('player-modal-close'),
+                photo: document.getElementById('player-modal-photo'),
+                name: document.getElementById('player-modal-name'),
+                tournament: document.getElementById('player-modal-tournament'),
+                points: document.getElementById('player-modal-points'),
+                chamigo: document.getElementById('player-modal-chamigo'),
+                tt: document.getElementById('player-modal-tt'),
+            }
         };
 
         const hashToTabMap = {
@@ -605,14 +679,12 @@
             if (currentValue) monthSelect.value = currentValue;
         }
         
-        // --- INICIO DE LA MODIFICACIÓN ---
         function setTodayFilters(prefix, isMonthFilter = false) {
              const today = new Date();
              
              if (prefix === 'fixture' && isMonthFilter) {
-                // Lógica específica para Fixture: buscar mes con partidos
                 let targetYear = today.getFullYear();
-                let targetMonth = today.getMonth() + 1; // 1-12
+                let targetMonth = today.getMonth() + 1;
 
                 const hasMatches = (year, month) => {
                     return allMatchesData.some(m => {
@@ -621,7 +693,6 @@
                     });
                 };
 
-                // Si el mes actual no tiene partidos, retroceder al anterior
                 if (!hasMatches(targetYear, targetMonth)) {
                     const prevMonthDate = new Date(today);
                     prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
@@ -639,7 +710,6 @@
                 if (monthSelect) monthSelect.value = targetMonth;
 
              } else {
-                // Lógica original para las otras pestañas
                 const periodOrMonthSelect = isMonthFilter ? document.getElementById(`${prefix}-month-select`) : document.getElementById(`${prefix}-period-select`);
              
                 const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
@@ -653,7 +723,6 @@
                 }
              }
         }
-        // --- FIN DE LA MODIFICACIÓN ---
 
         function calculateStatsForPeriod(prefix) {
             const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]:checked`);
@@ -681,7 +750,7 @@
         
             const playerStats = {};
             allPlayersData.forEach(player => {
-                playerStats[player.id] = { name: player.name, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player.id };
+                playerStats[player.id] = { name: player.name, photo_url: player.photo_url, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player.id };
             });
         
             let clarosWins = 0, oscurosWins = 0, empates = 0, suspendidos = 0, totalPJMatches = 0;
@@ -1071,17 +1140,23 @@
                 playerWrapper.style.top = `${currentPositions[team][index].y * 100}%`;
                 playerWrapper.style.left = `${currentPositions[team][index].x * 100}%`;
 
-                const playerNumber = Number(playerId.replace('J', ''));
-                const isChamigo = chamigoPlayerIds.includes(playerId);
+                const player = allPlayersData.find(p => p.id === playerId) || {name: 'ID Desconocido'};
+                const isChamigo = chamigoPlayerIds.includes(String(playerId));
+                const photoUrl = player.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
 
                 let markerHTML = `
-                    <div class="player-marker ${team} relative w-10 h-10 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center">
-                        ${playerNumber}
-                        ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-3 -right-2 text-lg md:text-2xl"></i>' : ''}
+                    <div class="player-marker ${team} relative w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center" data-player-id="${playerId}">
+                        <img src="${photoUrl}" alt="Foto de ${player.name}" class="w-full h-full rounded-full object-cover">
+                        ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-2 -right-2 text-lg md:text-2xl" style="text-shadow: 0 0 4px black;"></i>' : ''}
                     </div>
-                    <div class="player-name-label text-xs font-bold px-2 py-0.5 rounded-md">${getPlayerName(playerId)}</div>`;
+                    <div class="player-name-label text-xs font-bold px-2 py-0.5 rounded-md">${player.name}</div>`;
                 
                 playerWrapper.innerHTML = markerHTML;
+                playerWrapper.querySelector('.player-marker').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showPlayerModal(playerId);
+                });
+
                 soccerFieldContainer.appendChild(playerWrapper);
             };
 
@@ -1122,6 +1197,53 @@
             }
         }
         
+        // --- INICIO: Nuevas funciones para el modal de jugador ---
+        function showPlayerModal(playerId) {
+            const { players: statsForAllPlayers, error } = calculateStatsForPeriod('fixture');
+            if (error) {
+                console.error("No se pudieron calcular las estadísticas para el modal.");
+                return;
+            }
+
+            const playerData = statsForAllPlayers.find(p => p.id === playerId);
+            if (!playerData) {
+                console.error(`No se encontraron datos para el jugador con ID: ${playerId}`);
+                return;
+            }
+            
+            const { playerModal } = DOMElements;
+
+            const periodSelect = document.getElementById('fixture-period-select');
+            const selectedYears = Array.from(document.querySelectorAll('#fixture-year-select-dropdown input:checked')).map(cb => cb.value);
+            let tournamentText = selectedYears.join(', ');
+            if (periodSelect && periodSelect.value !== 'total') {
+                tournamentText += ` - ${periodSelect.options[periodSelect.selectedIndex].text}`;
+            }
+
+            playerModal.photo.src = playerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            playerModal.name.textContent = playerData.name;
+            playerModal.tournament.textContent = tournamentText;
+            playerModal.points.textContent = playerData.points;
+            playerModal.chamigo.textContent = playerData.chamigos;
+            playerModal.tt.textContent = playerData.tt;
+
+            playerModal.overlay.classList.remove('hidden');
+            setTimeout(() => {
+                playerModal.overlay.classList.add('visible');
+                DOMElements.body.classList.add('modal-open');
+            }, 10);
+        }
+
+        function hidePlayerModal() {
+            const { playerModal } = DOMElements;
+            playerModal.overlay.classList.remove('visible');
+            DOMElements.body.classList.remove('modal-open');
+            setTimeout(() => {
+                playerModal.overlay.classList.add('hidden');
+            }, 300);
+        }
+        // --- FIN: Nuevas funciones para el modal de jugador ---
+
         async function renderIndividualStatsTable() {
             const selectedPlayerId = document.getElementById('selected-player-id').value;
             const table = document.getElementById('individual-stats-table');
@@ -1544,7 +1666,6 @@
             });
         }
 
-        // --- INICIO DE LA MODIFICACIÓN ---
         function setupDynamicEventListeners(tabId) {
             const prefix = tabId.replace('-content', '');
             const renderFn = renderFunctions[tabId];
@@ -1621,17 +1742,14 @@
                 const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.month : globalFilterState.period);
                 
                 if (hasSavedState) {
-                    // Restaurar desde el estado guardado
                     if (isMonthFilter && globalFilterState.month) {
                         document.getElementById('fixture-month-select').value = globalFilterState.month;
                     } else if (!isMonthFilter && globalFilterState.period) {
                         document.getElementById(`${prefix}-period-select`).value = globalFilterState.period;
                     }
                 } else {
-                    // Si no hay estado guardado, establecer a "hoy" (con la lógica de fallback del fixture)
                     setTodayFilters(prefix, isMonthFilter);
                     
-                    // Actualizar el estado global ya que estaba vacío
                     const selectedYears = Array.from(document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`)).map(cb => cb.value);
                     const periodSelect = document.getElementById(`${prefix}-period-select`);
                     const monthSelect = document.getElementById(`${prefix}-month-select`);
@@ -1646,7 +1764,6 @@
                 setupPlayerSearch();
             }
         }
-        // --- FIN DE LA MODIFICACIÓN ---
         
         function setupRealtimeSubscriptions() {
             if (statsChannel) {
@@ -1741,7 +1858,8 @@
 
         async function initializeApp() {
             try {
-                const { data: players, error: pError } = await supabaseClient.from('players').select('*');
+                // He añadido photo_url al select
+                const { data: players, error: pError } = await supabaseClient.from('players').select('*, photo_url');
                 const { data: matches, error: mError } = await supabaseClient.from('matches').select('*');
 
                 if (pError || mError) throw pError || mError;
@@ -1821,6 +1939,14 @@
                         dropdown.classList.add('hidden');
                     }
                 });
+            });
+
+            // Listeners para cerrar el modal de jugador
+            DOMElements.playerModal.closeBtn.addEventListener('click', hidePlayerModal);
+            DOMElements.playerModal.overlay.addEventListener('click', (e) => {
+                if (e.target === DOMElements.playerModal.overlay) {
+                    hidePlayerModal();
+                }
             });
 
             const celularTrigger = DOMElements.collapsibleTriggers[0];
