@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -208,8 +206,6 @@
         
         .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
         .button-primary:hover { background-color: var(--accent-color-hover); }
-        .collapsible-toggle-button { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); }
-        .collapsible-toggle-button.visible-content { background: linear-gradient(to right, #e53e3e, var(--danger-color)); }
 
         #soccer-field-container {
             position: relative;
@@ -246,9 +242,46 @@
         }
 
         #fixture-details-display { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
-        .fixture-match-item { background-color: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary); }
-        .fixture-match-item.selected { box-shadow: 0 0 0 2px var(--accent-color); border-color: var(--accent-color); }
-        .fixture-match-item.current-match-card { background: linear-gradient(to right, var(--accent-color), var(--accent-color-hover)); color: var(--button-text-color); border-color: transparent;}
+        
+        /* === INICIO: Estilos para el nuevo dropdown de Fixture === */
+        .fixture-dropdown-button {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .fixture-dropdown-button:hover {
+            border-color: var(--accent-color);
+        }
+        html.dark .fixture-dropdown-button {
+            background-color: var(--bg-muted);
+        }
+        .fixture-dropdown-options {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .fixture-dropdown-options .option-item {
+            transition: background-color 0.2s;
+        }
+        .fixture-dropdown-options .option-item:hover {
+            background-color: var(--bg-muted);
+        }
+        html.dark .fixture-dropdown-options .option-item:hover {
+            background-color: #374151;
+        }
+        .fixture-dropdown-options .option-item.selected {
+            background-color: var(--accent-color);
+            color: var(--sidebar-active-text);
+        }
+        .fixture-dropdown-options .option-item.current-match {
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+        html.dark .fixture-dropdown-options .option-item.current-match {
+            color: var(--accent-color-hover);
+        }
+        /* === FIN: Estilos para el nuevo dropdown de Fixture === */
         
         .player-marker { 
             border: 2px solid; 
@@ -262,7 +295,6 @@
         .player-marker.claros { background-color: var(--player-claros-bg); color: var(--player-claros-text); border-color: var(--player-claros-text); }
         .player-marker.oscuros { background-color: var(--player-oscuros-bg); color: var(--player-oscuros-text); border-color: var(--player-oscuros-text); }
         .player-name-label {
-            /* Estilos base para la etiqueta */
             font-size: 0.75rem;
             font-weight: 700;
             padding: 0.125rem 0.5rem;
@@ -271,12 +303,12 @@
         }
         .player-name-label.claros-label {
             background-color: #FFFFFF;
-            color: #d97706; /* Naranja más oscuro */
-            border: 1px solid #e2e8f0; /* Borde sutil para el fondo blanco */
+            color: #d97706;
+            border: 1px solid #e2e8f0;
         }
         .player-name-label.oscuros-label {
-            background-color: #1a202c; /* Negro de --player-oscuros-bg */
-            color: #d97706; /* Naranja más oscuro */
+            background-color: #1a202c;
+            color: #d97706;
         }
         .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
@@ -285,7 +317,6 @@
         #individual-player-search { padding-right: 2.5rem !important; }
         #clear-player-search { color: var(--text-muted); }
 
-        /* === INICIO: Estilos Corregidos para el Modal de Jugador === */
         #player-modal-overlay {
             position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.7);
             z-index: 50; display: flex; align-items: center; justify-content: center;
@@ -336,7 +367,6 @@
             text-transform: uppercase; 
             margin-top: 0.35rem;
         }
-        /* === FIN: Estilos Corregidos para el Modal de Jugador === */
         
         .loading-spinner { border: 4px solid var(--border-color); border-top: 4px solid var(--accent-color); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -745,7 +775,7 @@
                 
                 const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
                 yearCheckboxes.forEach(cb => {
-                    cb.checked = (cb.value == targetYear);
+                    cb.checked = (cb.value == targetYear || cb.value === 'all');
                 });
                 updateMultiYearButtonText(prefix);
                 
@@ -757,7 +787,7 @@
              
                 const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
                 yearCheckboxes.forEach(cb => {
-                    cb.checked = (cb.value == today.getFullYear());
+                    cb.checked = (cb.value == today.getFullYear() || cb.value === 'all');
                 });
                 updateMultiYearButtonText(prefix);
                 
@@ -767,20 +797,12 @@
              }
         }
         
-        // --- INICIO: Lógica de cálculo de estadísticas refactorizada ---
-        /**
-         * Calcula las estadísticas para un conjunto de filtros dados.
-         * @param {object} filters - Objeto con los filtros a aplicar.
-         * @param {string[]} filters.selectedYears - Array de años a incluir.
-         * @param {string} [filters.selectedPeriod] - 'apertura', 'clausura' o 'total'.
-         * @returns {object} - Objeto con `players` y `teamStats`.
-         */
         function calculateStats(filters) {
             const { selectedYears, selectedPeriod } = filters;
 
             let timeFilteredMatches = allMatchesData;
 
-            if (selectedYears && selectedYears.length > 0) {
+            if (selectedYears && selectedYears.length > 0 && !selectedYears.includes('all')) {
                 timeFilteredMatches = timeFilteredMatches.filter(match => {
                     const matchYear = parseDate(match.match_date).getFullYear();
                     return selectedYears.includes(String(matchYear));
@@ -848,7 +870,7 @@
             });
         
             let playersToShow;
-            if (selectedYears && selectedYears.length > 0) {
+            if (selectedYears && selectedYears.length > 0 && !selectedYears.includes('all')) {
                 const yearlyPlayerIds = new Set();
                 timeFilteredMatches.forEach(match => {
                     (match.team_white_players || []).forEach(id => yearlyPlayerIds.add(id));
@@ -856,7 +878,7 @@
                 });
                 playersToShow = Object.values(playerStats).filter(p => yearlyPlayerIds.has(p.id));
             } else {
-                playersToShow = Object.values(playerStats).filter(p => p.pj > 0);
+                playersToShow = Object.values(playerStats).filter(p => p.pj > 0 || (selectedYears && selectedYears.includes('all')));
             }
         
             return {
@@ -866,15 +888,18 @@
             };
         }
 
-        // Esta función ahora actúa como un "wrapper" que lee del DOM y llama a la función principal.
         function calculateStatsForPeriod(prefix) {
             const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]:checked`);
-            const selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+            let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+            
+            if (selectedYears.includes('all')) {
+                selectedYears = ['all']; // Simplificamos para la lógica de cálculo
+            }
+
             const selectedPeriod = document.getElementById(`${prefix}-period-select`)?.value;
             
             return calculateStats({ selectedYears, selectedPeriod });
         }
-        // --- FIN: Lógica de cálculo de estadísticas refactorizada ---
 
         function renderGenericTable(section, filterFn, sortFn, renderRowFn, headers) {
             const table = document.getElementById(`${section}-table`);
@@ -1076,16 +1101,19 @@
         }
         
         function renderFixture(isFilterChange = false) {
-            const cardsContainer = document.getElementById('fixture-matches-cards-container');
+            const dropdownContainer = document.getElementById('fixture-dropdown-container');
             const loadingMessage = document.getElementById('fixture-loading-message');
             
             const selectedYearsCheckboxes = document.querySelectorAll(`#fixture-year-select-dropdown input[type="checkbox"]:checked`);
-            const selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+            let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+            if (selectedYears.includes('all')) {
+                selectedYears = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].map(String);
+            }
             const month = document.getElementById('fixture-month-select').value;
             
-            if (!cardsContainer || !loadingMessage) return;
+            if (!dropdownContainer || !loadingMessage) return;
 
-            cardsContainer.innerHTML = '';
+            dropdownContainer.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
 
             let filteredMatches = allMatchesData;
@@ -1096,7 +1124,12 @@
                 filteredMatches = filteredMatches.filter(m => parseDate(m.match_date).getMonth() + 1 == month);
             }
 
-            if (!filteredMatches || filteredMatches.length === 0) { loadingMessage.innerHTML = `No hay partidos disponibles.`; lastSelectedFixtureMatchId = null; return; }
+            if (!filteredMatches || filteredMatches.length === 0) { 
+                loadingMessage.innerHTML = `No hay partidos disponibles.`; 
+                lastSelectedFixtureMatchId = null; 
+                document.getElementById('fixture-visual-details-container').classList.add('hidden');
+                return; 
+            }
 
             filteredMatches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
             
@@ -1104,41 +1137,55 @@
             today.setHours(0, 0, 0, 0);
             let currentOrFutureMatchFound = false;
 
-            cardsContainer.innerHTML = filteredMatches.map(match => {
+            const optionsContainer = dropdownContainer.querySelector('.fixture-dropdown-options');
+            optionsContainer.innerHTML = filteredMatches.map(match => {
                 const matchDateObj = parseDate(match.match_date);
                 let isCurrent = !currentOrFutureMatchFound && matchDateObj.getTime() >= today.getTime();
                 if(isCurrent) currentOrFutureMatchFound = true;
 
                 return `
-                    <div class="fixture-match-item p-2 rounded-lg shadow-sm cursor-pointer transition flex justify-center items-center text-center text-sm font-semibold sm:p-4 sm:shadow-md ${isCurrent ? 'current-match-card' : ''}" data-match-id="${match.id}">
-                        ${isCurrent ? 'PARTIDO ACTUAL' : `${matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC'})}`}
+                    <div class="option-item p-3 cursor-pointer ${isCurrent ? 'current-match' : ''}" data-match-id="${match.id}">
+                        ${matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric'})}
+                        <span class="text-xs text-gray-400 ml-2">${match.result || 'Pendiente'}</span>
                     </div>`;
             }).join('');
 
-            cardsContainer.querySelectorAll('.fixture-match-item').forEach(card => card.addEventListener('click', (e) => {
-                cardsContainer.querySelectorAll('.fixture-match-item').forEach(c => c.classList.remove('selected'));
-                e.currentTarget.classList.add('selected');
-                renderFixtureDetails(e.currentTarget.dataset.matchId, true);
-            }));
-
             loadingMessage.classList.add('hidden');
+            dropdownContainer.classList.remove('hidden');
 
-            if (!isFilterChange) {
-                setTimeout(() => {
-                    const currentMatchCard = document.querySelector('.current-match-card');
-                    const firstCard = cardsContainer.querySelector('[data-match-id]');
-                    if (currentMatchCard) {
-                        currentMatchCard.classList.add('selected');
-                        renderFixtureDetails(currentMatchCard.dataset.matchId, false);
-                    } else if (firstCard) {
-                        firstCard.classList.add('selected');
-                        renderFixtureDetails(firstCard.dataset.matchId, false);
-                    }
-                }, 100);
+            const firstMatchToSelect = document.querySelector('.current-match') || optionsContainer.querySelector('[data-match-id]');
+
+            if (firstMatchToSelect) {
+                if (isFilterChange || !lastSelectedFixtureMatchId) {
+                    handleFixtureSelection(firstMatchToSelect.dataset.matchId);
+                } else {
+                    handleFixtureSelection(lastSelectedFixtureMatchId);
+                }
+            } else {
+                 document.getElementById('fixture-visual-details-container').classList.add('hidden');
             }
         }
 
-        function renderFixtureDetails(matchId, fromUserClick = false) {
+        function handleFixtureSelection(matchId) {
+            const match = allMatchesData.find(m => m.id == matchId);
+            if (!match) return;
+
+            lastSelectedFixtureMatchId = matchId;
+
+            const dropdownButton = document.querySelector('.fixture-dropdown-button span');
+            const optionsContainer = document.querySelector('.fixture-dropdown-options');
+
+            const matchDateObj = parseDate(match.match_date);
+            dropdownButton.textContent = matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric'});
+
+            optionsContainer.querySelectorAll('.option-item').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.matchId === matchId);
+            });
+            
+            renderFixtureDetails(matchId);
+        }
+
+        function renderFixtureDetails(matchId) {
             const match = allMatchesData.find(m => m.id == matchId);
             if (!match) {
                 console.error("Detalles del partido no encontrados localmente para el ID:", matchId);
@@ -1150,8 +1197,6 @@
             const visualDetailsContainer = document.getElementById('fixture-visual-details-container');
             const soccerFieldContainer = document.getElementById('soccer-field-container');
             const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
-            const collapsibleContent = document.getElementById('fixture-filters-collapsible');
-            const filterToggle = document.getElementById('fixture-filter-toggle');
 
             if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
 
@@ -1178,8 +1223,8 @@
                     oscuros: [{ x: 0.5, y: 0.06 }, { x: 0.25, y: 0.22 }, { x: 0.75, y: 0.22 }, { x: 0.35, y: 0.38 }, { x: 0.65, y: 0.43 }]
                 },
                 horizontal: {
-                    claros:  [{ x: 0.90, y: 0.50 }, { x: 0.80, y: 0.25 }, { x: 0.80, y: 0.75 }, { x: 0.62, y: 0.35 }, { x: 0.57, y: 0.65 }],
-                    oscuros: [{ x: 0.10, y: 0.50 }, { x: 0.20, y: 0.25 }, { x: 0.20, y: 0.75 }, { x: 0.38, y: 0.35 }, { x: 0.43, y: 0.65 }]
+                    claros:  [{ x: 0.95, y: 0.50 }, { x: 0.80, y: 0.25 }, { x: 0.80, y: 0.75 }, { x: 0.62, y: 0.35 }, { x: 0.57, y: 0.65 }],
+                    oscuros: [{ x: 0.05, y: 0.50 }, { x: 0.20, y: 0.25 }, { x: 0.20, y: 0.75 }, { x: 0.38, y: 0.35 }, { x: 0.43, y: 0.65 }]
                 }
             };
             const currentPositions = isHorizontalField ? playerPositions.horizontal : playerPositions.vertical;
@@ -1203,11 +1248,10 @@
                 const isChamigo = chamigoPlayerIds.includes(String(playerId));
                 const photoUrl = player.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
                 
-                // Se añade la clase correcta según el equipo
                 const labelClass = team === 'claros' ? 'claros-label' : 'oscuros-label';
 
                 let markerHTML = `
-                    <div class="player-marker ${team} relative w-10 h-10 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center" data-player-id="${playerId}">
+                    <div class="player-marker ${team} relative w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center" data-player-id="${playerId}">
                         <img src="${photoUrl}" alt="Foto de ${player.name}" class="w-full h-full rounded-full object-cover">
                         ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-2 -right-2 text-lg md:text-3xl" style="text-shadow: 0 0 4px black;"></i>' : ''}
                     </div>
@@ -1250,32 +1294,21 @@
             }
 
             visualDetailsContainer.classList.remove('hidden');
-            
-            if (collapsibleContent && fromUserClick && !collapsibleContent.classList.contains('hidden')) {
-                collapsibleContent.classList.add('hidden');
-                filterToggle.classList.remove('visible-content');
-                filterToggle.querySelector('.toggle-icon')?.classList.remove('fa-chevron-up');
-                filterToggle.querySelector('.toggle-icon')?.classList.add('fa-chevron-down');
-            }
         }
         
-        // --- INICIO: Funciones del modal de jugador corregidas ---
         function showPlayerModal(playerId) {
-            // 1. Obtener el partido actualmente seleccionado
             const match = allMatchesData.find(m => m.id == lastSelectedFixtureMatchId);
             if (!match) {
                 console.error("No se encontró el partido seleccionado para el modal.");
                 return;
             }
 
-            // 2. Determinar el contexto del torneo (año y período)
             const matchDate = parseDate(match.match_date);
             const year = matchDate.getFullYear();
-            const month = matchDate.getMonth(); // 0 (Ene) a 11 (Dic)
-            const period = (month <= 5) ? 'apertura' : 'clausura'; // Ene-Jun: Apertura, Jul-Dic: Clausura
+            const month = matchDate.getMonth();
+            const period = (month <= 5) ? 'apertura' : 'clausura';
             const tournamentName = `${year} - ${period.charAt(0).toUpperCase() + period.slice(1)}`;
 
-            // 3. Calcular estadísticas para ese torneo específico
             const { players: statsForTournament, error } = calculateStats({
                 selectedYears: [String(year)],
                 selectedPeriod: period
@@ -1286,7 +1319,6 @@
                 return;
             }
             
-            // 4. Encontrar los datos del jugador específico
             const tournamentPlayerData = statsForTournament.find(p => p.id === playerId);
             const basePlayerData = allPlayersData.find(p => p.id === playerId);
 
@@ -1295,19 +1327,16 @@
                 return;
             }
 
-            // 5. Poblar el modal con los datos correctos
             const { playerModal } = DOMElements;
             playerModal.photo.src = basePlayerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
             playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
             playerModal.name.textContent = basePlayerData.name;
             playerModal.tournament.textContent = tournamentName;
 
-            // Usar datos del torneo si el jugador participó, sino mostrar 0
             playerModal.points.textContent = tournamentPlayerData ? tournamentPlayerData.points : 0;
             playerModal.chamigo.textContent = tournamentPlayerData ? tournamentPlayerData.chamigos : 0;
             playerModal.tt.textContent = tournamentPlayerData ? tournamentPlayerData.tt : 0;
 
-            // 6. Mostrar el modal
             playerModal.overlay.classList.remove('hidden');
             setTimeout(() => {
                 playerModal.overlay.classList.add('visible');
@@ -1323,7 +1352,84 @@
                 playerModal.overlay.classList.add('hidden');
             }, 300);
         }
-        // --- FIN: Funciones del modal de jugador corregidas ---
+
+        function calculateIndividualPlayerStats(playerId, allPlayerMatches) {
+            const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }};
+            const allYearsInMatches = [...new Set(allPlayerMatches.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
+        
+            allYearsInMatches.forEach(year => {
+                playerStats.years[year] = {
+                    apertura: { name: 'Apertura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
+                    clausura: { name: 'Clausura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
+                    total: { name: year, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }
+                };
+            });
+            
+            allPlayerMatches.forEach(match => {
+                 const { match_date, team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
+                 if (!result || !match_date) return;
+        
+                 const matchDate = parseDate(match_date);
+                 const year = matchDate.getFullYear();
+                 const period = matchDate.getMonth() <= 5 ? 'apertura' : 'clausura';
+        
+                 if (!playerStats.years[year]) return;
+                 
+                 const playerIsInMatch = (team_white_players || []).includes(playerId) || (team_dark_players || []).includes(playerId);
+                 
+                 if (playerIsInMatch) {
+                     const statsToUpdate = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
+                     
+                     if (result !== 'Suspendido') {
+                         statsToUpdate.forEach(s => s.pj++);
+                         if (result === 'Claros' && (team_white_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                         else if (result === 'Oscuros' && (team_dark_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                         else if (result === 'Empate') statsToUpdate.forEach(s => { s.points += 1; s.pe++; });
+                         else statsToUpdate.forEach(s => s.pp++);
+                     }
+            
+                     if (chamigo_votes) {
+                         const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
+                         if (votosArray.length > 0) {
+                             const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                             if (votosArray.some(v => v.id === playerId && v.votos === maxVotes)) {
+                                 statsToUpdate.forEach(s => s.chamigos++);
+                             }
+                         }
+                     }
+                     if (tt_attendees && tt_attendees.includes(playerId)) {
+                         statsToUpdate.forEach(s => s.tt++);
+                     }
+                 }
+            });
+        
+            allYearsInMatches.forEach(year => {
+                const yearData = playerStats.years[year];
+                ['apertura', 'clausura', 'total'].forEach(periodType => {
+                    const stats = yearData[periodType];
+                    const totalMatchesInPeriod = allPlayerMatches.filter(m => {
+                        if (!m.match_date || !m.result || m.result === 'Suspendido') return false;
+                        const d = parseDate(m.match_date);
+                        const p = d.getMonth() <= 5 ? 'apertura' : 'clausura';
+                        const y = d.getFullYear();
+                        if (periodType === 'total') return y === year;
+                        return y === year && p === periodType;
+                    }).length;
+        
+                    const maxPoints = stats.pj * 3;
+                    stats.efectividad = maxPoints > 0 ? ((stats.points / maxPoints) * 100).toFixed(2) : "0.00";
+                    stats.ausentes = Math.max(0, totalMatchesInPeriod - stats.pj);
+                });
+            });
+        
+            const totalNonSuspendedMatches = allPlayerMatches.filter(m => m.result && m.result !== 'Suspendido').length;
+            const overall = playerStats.overallTotal;
+            const maxTotalPoints = overall.pj * 3;
+            overall.efectividad = maxTotalPoints > 0 ? ((overall.points / maxTotalPoints) * 100).toFixed(2) : "0.00";
+            overall.ausentes = Math.max(0, totalNonSuspendedMatches - overall.pj);
+        
+            return playerStats;
+        }
 
         async function renderIndividualStatsTable() {
             const selectedPlayerId = document.getElementById('selected-player-id').value;
@@ -1411,87 +1517,6 @@
                     toggleIcon?.classList.toggle('fa-minus-circle');
                 });
             });
-        }
-
-        function calculateIndividualPlayerStats(playerId, allPlayerMatches) {
-            const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }};
-            const allYearsInMatches = [...new Set(allPlayerMatches.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
-        
-            allYearsInMatches.forEach(year => {
-                playerStats.years[year] = {
-                    apertura: { name: 'Apertura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
-                    clausura: { name: 'Clausura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
-                    total: { name: year, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }
-                };
-            });
-            
-            allPlayerMatches.forEach(match => {
-                 const { match_date, team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
-                 if (!result || !match_date) return;
-        
-                 const matchDate = parseDate(match_date);
-                 const year = matchDate.getFullYear();
-                 const period = matchDate.getMonth() <= 5 ? 'apertura' : 'clausura';
-        
-                 if (!playerStats.years[year]) return;
-                 
-                 const playerIsInMatch = (team_white_players || []).includes(playerId) || (team_dark_players || []).includes(playerId);
-                 
-                 // Si el jugador está en el partido, se actualizan sus estadísticas.
-                 if (playerIsInMatch) {
-                     const statsToUpdate = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
-                     
-                     if (result !== 'Suspendido') {
-                         statsToUpdate.forEach(s => s.pj++);
-                         if (result === 'Claros' && (team_white_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
-                         else if (result === 'Oscuros' && (team_dark_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
-                         else if (result === 'Empate') statsToUpdate.forEach(s => { s.points += 1; s.pe++; });
-                         else statsToUpdate.forEach(s => s.pp++);
-                     }
-            
-                     if (chamigo_votes) {
-                         const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
-                         if (votosArray.length > 0) {
-                             const maxVotes = Math.max(...votosArray.map(v => v.votos));
-                             if (votosArray.some(v => v.id === playerId && v.votos === maxVotes)) {
-                                 statsToUpdate.forEach(s => s.chamigos++);
-                             }
-                         }
-                     }
-                     if (tt_attendees && tt_attendees.includes(playerId)) {
-                         statsToUpdate.forEach(s => s.tt++);
-                     }
-                 }
-                 // Si el jugador no está en el partido, no se hace nada, y la ausencia se calculará más adelante.
-            });
-        
-            // Esta parte ahora funciona correctamente porque tiene los datos correctos.
-            allYearsInMatches.forEach(year => {
-                const yearData = playerStats.years[year];
-                ['apertura', 'clausura', 'total'].forEach(periodType => {
-                    const stats = yearData[periodType];
-                    const totalMatchesInPeriod = allPlayerMatches.filter(m => {
-                        if (!m.match_date || !m.result || m.result === 'Suspendido') return false;
-                        const d = parseDate(m.match_date);
-                        const p = d.getMonth() <= 5 ? 'apertura' : 'clausura';
-                        const y = d.getFullYear();
-                        if (periodType === 'total') return y === year;
-                        return y === year && p === periodType;
-                    }).length;
-        
-                    const maxPoints = stats.pj * 3;
-                    stats.efectividad = maxPoints > 0 ? ((stats.points / maxPoints) * 100).toFixed(2) : "0.00";
-                    stats.ausentes = Math.max(0, totalMatchesInPeriod - stats.pj);
-                });
-            });
-        
-            const totalNonSuspendedMatches = allPlayerMatches.filter(m => m.result && m.result !== 'Suspendido').length;
-            const overall = playerStats.overallTotal;
-            const maxTotalPoints = overall.pj * 3;
-            overall.efectividad = maxTotalPoints > 0 ? ((overall.points / maxTotalPoints) * 100).toFixed(2) : "0.00";
-            overall.ausentes = Math.max(0, totalNonSuspendedMatches - overall.pj);
-        
-            return playerStats;
         }
 
         function setupPlayerSearch() {
@@ -1587,10 +1612,7 @@
                  `;
 
                  baseHtml += `
-                    <div id="${prefix}-filter-toggle" class="collapsible-toggle-button p-3 rounded-md cursor-pointer flex items-center justify-between font-semibold">
-                        <span>Seleccionar Torneo</span><i class="fas fa-chevron-down toggle-icon"></i>
-                    </div>
-                    <div id="${prefix}-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 hidden items-end">
+                    <div id="${prefix}-filters-collapsible" class="grid grid-cols-2 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end border-b border-border-color pb-4 mb-4">
                         <button id="${prefix}-hoy-button" class="button-primary col-span-2 md:col-auto px-6 py-2 rounded-md shadow-sm">Torneo Actual</button>
                         ${yearFilterHTML}
                         ${periodOrMonthFilterHTML}
@@ -1618,8 +1640,15 @@
                 case 'fixture-content':
                      baseHtml += `
                         <p id="fixture-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando partidos...</p>
-                        <h3 class="text-xl font-semibold mb-2">Partidos del Mes</h3>
-                        <div id="fixture-matches-cards-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"></div>
+                        <div id="fixture-dropdown-container" class="relative hidden">
+                            <button class="fixture-dropdown-button w-full p-3 rounded-lg shadow-sm flex justify-between items-center text-left">
+                                <span>Seleccionar Partido</span>
+                                <i class="fas fa-chevron-down transition-transform"></i>
+                            </button>
+                            <div class="fixture-dropdown-options hidden absolute top-full left-0 w-full mt-1 rounded-lg shadow-lg z-20 max-h-72 overflow-y-auto">
+                                <!-- Opciones de partidos se insertan aquí -->
+                            </div>
+                        </div>
                         <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
                             <div class="md:w-[65%] min-w-0"><div id="soccer-field-container" class="rounded-lg overflow-hidden"></div></div>
                             <div id="fixture-details-display" class="flex-1 md:w-[35%] p-4 rounded-lg mt-6 md:mt-0">
@@ -1689,11 +1718,13 @@
             const button = document.getElementById(`${prefix}-year-select-button`);
             if (!button) return;
             const buttonSpan = button.querySelector('span');
-            const checked = document.querySelectorAll(`#${prefix}-year-select-dropdown input:checked`);
-            const allYears = document.querySelectorAll(`#${prefix}-year-select-dropdown input[value]`);
-
-            if (checked.length === 0 || checked.length === allYears.length) {
+            const allYearsCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="all"]`);
+            const checked = document.querySelectorAll(`#${prefix}-year-select-dropdown input[value]:not([value="all"]):checked`);
+            
+            if (allYearsCheckbox && allYearsCheckbox.checked) {
                 buttonSpan.textContent = 'Todos los Años';
+            } else if (checked.length === 0) {
+                 buttonSpan.textContent = 'Seleccionar Años';
             } else if (checked.length === 1) {
                 buttonSpan.textContent = checked[0].value;
             } else {
@@ -1708,14 +1739,20 @@
 
             const years = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
             
-            dropdown.innerHTML = years.map(year => `
+            let optionsHTML = `
+                <label class="font-bold border-b border-border-color">
+                    <input type="checkbox" value="all" class="year-checkbox">
+                    <span>Todos los Años</span>
+                </label>`;
+            
+            optionsHTML += years.map(year => `
                 <label>
                     <input type="checkbox" value="${year}" class="year-checkbox">
                     <span>${year}</span>
                 </label>
             `).join('');
+            dropdown.innerHTML = optionsHTML;
 
-            // Restore state
             const savedYears = globalFilterState.years || [];
             if (savedYears.length > 0) {
                 dropdown.querySelectorAll('input').forEach(cb => {
@@ -1724,14 +1761,22 @@
                     }
                 });
             } else {
-                // Default to current year if no selection is saved
                 const currentYear = new Date().getFullYear().toString();
                 const currentYearCb = dropdown.querySelector(`input[value="${currentYear}"]`);
                 if (currentYearCb) currentYearCb.checked = true;
             }
             updateMultiYearButtonText(prefix);
 
-            dropdown.addEventListener('change', () => {
+            dropdown.addEventListener('change', (e) => {
+                const allCheckbox = dropdown.querySelector('input[value="all"]');
+                const yearCheckboxes = dropdown.querySelectorAll('input[value]:not([value="all"])');
+
+                if (e.target.value === 'all') {
+                    yearCheckboxes.forEach(cb => cb.checked = e.target.checked);
+                } else {
+                    allCheckbox.checked = [...yearCheckboxes].every(cb => cb.checked);
+                }
+                
                 updateMultiYearButtonText(prefix);
                 changeCallback();
             });
@@ -1746,23 +1791,14 @@
             const prefix = tabId.replace('-content', '');
             const renderFn = renderFunctions[tabId];
 
-            const filterToggle = document.getElementById(`${prefix}-filter-toggle`);
-            const filtersCollapsible = document.getElementById(`${prefix}-filters-collapsible`);
-            
-            if(filterToggle && filtersCollapsible) {
-                filterToggle.addEventListener('click', () => {
-                    filtersCollapsible.classList.toggle('hidden');
-                    filterToggle.classList.toggle('visible-content');
-                    filterToggle.querySelector('.toggle-icon')?.classList.toggle('fa-chevron-up');
-                });
-            }
-
             const handleFilterChange = () => {
-                const selectedYears = Array.from(document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`)).map(cb => cb.value);
-                const periodSelect = document.getElementById(`${prefix}-period-select`);
-                const monthSelect = document.getElementById(`${prefix}-month-select`);
+                const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`);
+                let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
 
                 globalFilterState.years = selectedYears;
+                
+                const periodSelect = document.getElementById(`${prefix}-period-select`);
+                const monthSelect = document.getElementById(`${prefix}-month-select`);
                 if (periodSelect) globalFilterState.period = periodSelect.value;
                 if (monthSelect) globalFilterState.month = monthSelect.value;
                 
@@ -1809,6 +1845,27 @@
                  });
             }
             
+            if (tabId === 'fixture-content') {
+                const dropdownContainer = document.getElementById('fixture-dropdown-container');
+                const button = dropdownContainer?.querySelector('.fixture-dropdown-button');
+                const options = dropdownContainer?.querySelector('.fixture-dropdown-options');
+
+                button?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    options.classList.toggle('hidden');
+                    button.querySelector('i').classList.toggle('rotate-180');
+                });
+
+                options?.addEventListener('click', (e) => {
+                    const optionItem = e.target.closest('.option-item');
+                    if (optionItem) {
+                        handleFixtureSelection(optionItem.dataset.matchId);
+                        options.classList.add('hidden');
+                        button.querySelector('i').classList.remove('rotate-180');
+                    }
+                });
+            }
+
             if (tabId.includes('content') && !tabId.includes('individual')) {
                 const isMonthFilter = prefix === 'fixture';
                 if (isMonthFilter) {
@@ -1826,7 +1883,8 @@
                 } else {
                     setTodayFilters(prefix, isMonthFilter);
                     
-                    const selectedYears = Array.from(document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`)).map(cb => cb.value);
+                    const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`);
+                    let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
                     const periodSelect = document.getElementById(`${prefix}-period-select`);
                     const monthSelect = document.getElementById(`${prefix}-month-select`);
                     globalFilterState.years = selectedYears;
@@ -2014,6 +2072,12 @@
                         dropdown.classList.add('hidden');
                     }
                 });
+                
+                const openFixtureDropdown = document.querySelector('.fixture-dropdown-options:not(.hidden)');
+                if (openFixtureDropdown && !e.target.closest('.fixture-dropdown-container')) {
+                    openFixtureDropdown.classList.add('hidden');
+                    openFixtureDropdown.previousElementSibling.querySelector('i').classList.remove('rotate-180');
+                }
             });
 
             DOMElements.playerModal.closeBtn.addEventListener('click', hidePlayerModal);
