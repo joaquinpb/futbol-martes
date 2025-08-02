@@ -65,7 +65,8 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            min-height: 100vh; /* Asegura que el body ocupe al menos toda la pantalla */
+            height: 100vh; /* Cambiado de min-height a height */
+            overflow-y: hidden; /* Evita el scroll en el body */
         }
         body.overflow-hidden, body.modal-open { overflow: hidden; }
 
@@ -215,10 +216,11 @@
             #hamburger-button, #overlay { display: none !important; }
         }
         
+        /* Esta regla ahora está afuera del @media para que aplique siempre */
         .flex-1.flex.flex-col { 
-            display: flex;
-            flex-direction: column;
-            /* Se elimina height: 100vh para permitir que el contenido crezca */
+            height: 100vh; 
+            display: flex; /* Aseguramos que sea flexbox */
+            flex-direction: column; /* Dirección vertical */
         }
         
         @media (min-width: 768px) {
@@ -516,9 +518,8 @@
             </button>
         </div>
         <div class="flex-1 text-center">
-            <a href="#" class="text-xl font-bold flex items-center gap-2 justify-center">
-                <span class="text-2xl">⚽</span>
-                <span>LA CLANDE</span>
+            <a href="#" id="mobile-header-title" class="text-xl font-bold flex items-center gap-2 justify-center">
+                <!-- El título dinámico se insertará aquí -->
             </a>
         </div>
         <div class="w-10 flex justify-end items-center">
@@ -736,6 +737,18 @@
                 chamigo: document.getElementById('player-modal-chamigo'),
                 tt: document.getElementById('player-modal-tt'),
             }
+        };
+
+        const PAGE_CONFIG = {
+            'leaderboard-content': { title: 'Posiciones', icon: 'fa-trophy' },
+            'chamigo-content': { title: 'Chamigo', icon: 'fa-star' },
+            'tt-content': { title: 'TT', icon: 'fa-beer', desktopTitle: 'Tercer Tiempo (TT)' },
+            'presentismo-content': { title: 'Presentismo', icon: 'fa-check-circle' },
+            'ausentismo-content': { title: 'Ausentismo', icon: 'fa-times-circle' },
+            'equipos-content': { title: 'Equipos', icon: 'fa-futbol' },
+            'fixture-content': { title: 'Fixture', icon: 'fa-calendar-alt' },
+            'estadisticas-content': { title: 'Estadísticas', icon: 'fa-chart-bar' },
+            'individual-stats-content': { title: 'Histórico', icon: 'fa-history' }
         };
 
         const hashToTabMap = {
@@ -1665,15 +1678,11 @@
         }
         
         function getTabContentHTML(tabId) {
-            const titles = {
-                'leaderboard-content': 'Posiciones', 'chamigo-content': 'Chamigo', 'tt-content': 'Tercer Tiempo (TT)',
-                'presentismo-content': 'Presentismo', 'ausentismo-content': 'Ausentismo', 'estadisticas-content': 'Estadísticas',
-                'equipos-content': 'Equipos', 'fixture-content': 'Fixture', 'individual-stats-content': 'Histórico'
-            };
-            const title = titles[tabId] || 'Contenido';
+            const config = PAGE_CONFIG[tabId] || PAGE_CONFIG['leaderboard-content'];
+            const title = config.desktopTitle || config.title;
             
             let baseHtml = `<div id="${tabId}" class="main-content-container space-y-4">
-                <div class="relative flex md:hidden items-center justify-center p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg">
+                <div class="relative hidden md:flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg">
                     <h1 class="flex-1 text-2xl font-bold tracking-tight uppercase text-center text-white">${title}</h1>
                 </div>`;
             
@@ -1796,14 +1805,18 @@
         }
 
         function activateTab(tabId) {
-            const titles = {
-                'leaderboard-content': 'Posiciones', 'chamigo-content': 'Chamigo', 'tt-content': 'Tercer Tiempo (TT)',
-                'presentismo-content': 'Presentismo', 'ausentismo-content': 'Ausentismo', 'estadisticas-content': 'Estadísticas',
-                'equipos-content': 'Equipos', 'fixture-content': 'Fixture', 'individual-stats-content': 'Histórico'
-            };
+            const config = PAGE_CONFIG[tabId] || PAGE_CONFIG['leaderboard-content'];
+            
             const desktopTitleEl = document.getElementById('desktop-header-title');
             if (desktopTitleEl) {
-                desktopTitleEl.textContent = titles[tabId] || 'Estadísticas';
+                desktopTitleEl.textContent = config.desktopTitle || config.title;
+            }
+            
+            const mobileTitleEl = document.getElementById('mobile-header-title');
+            if(mobileTitleEl) {
+                mobileTitleEl.innerHTML = `
+                    <i class="fas ${config.icon} text-lg mr-2"></i>
+                    <span class="font-bold uppercase tracking-wider">${config.title}</span>`;
             }
 
             DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
