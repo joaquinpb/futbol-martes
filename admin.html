@@ -171,8 +171,21 @@
             color: var(--sidebar-active-text);
         }
         
-        thead th { color: var(--text-secondary); }
+        thead th { 
+            color: var(--text-secondary); 
+            position: sticky;
+            top: 0;
+            border-bottom: 2px solid var(--border-color);
+        }
         html.dark thead th { color: var(--sidebar-text); }
+
+        /* FIX: Solid background for sticky table header */
+        #players-management-table-container thead th {
+            background-color: var(--bg-muted);
+        }
+        html.dark #players-management-table-container thead th {
+            background-color: #111827;
+        }
         
         .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
         .button-primary:hover { background-color: var(--accent-color-hover); }
@@ -1910,9 +1923,9 @@
                     <input type="text" id="player-search-input" placeholder="Buscar por nombre..." class="w-full p-2 pl-10 border rounded-md">
                     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
-                <div class="overflow-y-auto max-h-[70vh]">
+                <div id="players-management-table-container" class="overflow-y-auto max-h-[70vh]">
                     <table class="w-full text-sm text-left">
-                        <thead class="text-xs uppercase bg-muted sticky top-0">
+                        <thead class="text-xs uppercase sticky top-0 z-10">
                             <tr>
                                 <th class="p-4">ID</th>
                                 <th class="p-4">Nombre</th>
@@ -2625,12 +2638,9 @@
         function handlePhotoPreview(event) {
             const file = event.target.files[0];
             if (!file) return;
-            openCropperModal(file, 'player'); // Añadimos el contexto
+            openCropperModal(file, 'player'); 
         }
 
-        // =======================================================
-        // === INICIO: FUNCIÓN MODIFICADA handleRemovePhoto ===
-        // =======================================================
         async function handleRemovePhoto() {
             const playerId = document.getElementById('player-id').value;
             if (!playerId) {
@@ -2641,7 +2651,6 @@
             const confirmed = await showModal('Confirmar Acción', '¿Estás seguro de que quieres restablecer la foto de este jugador a la imagen por defecto?');
             if (!confirmed) return;
 
-            // Llamamos a la función RPC en lugar de hacer un update directo
             const { error } = await supabase.rpc('reset_player_photo', {
                 player_id_to_reset: playerId
             });
@@ -2652,8 +2661,6 @@
                 showNotification('Foto restablecida a la imagen por defecto.', 'success');
                 await refreshDataAndRender('players-management');
                 
-                // Para que el formulario refleje el cambio, volvemos a popularlo
-                // con los datos actualizados del jugador.
                 const updatedPlayer = AppState.players.find(p => p.id == playerId);
                 if (updatedPlayer) {
                     populatePlayerForm(updatedPlayer);
@@ -2662,9 +2669,6 @@
                 }
             }
         }
-        // =======================================================
-        // === FIN: FUNCIÓN MODIFICADA handleRemovePhoto ===
-        // =======================================================
 
         async function handleSavePlayer(e) {
             e.preventDefault();
@@ -2673,11 +2677,24 @@
             saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
             let id = document.getElementById('player-id').value;
+            const name = document.getElementById('player-name').value.trim();
             const playerData = {
-                name: document.getElementById('player-name').value,
+                name: name,
                 status: document.getElementById('player-status').value,
                 role: document.getElementById('player-role').value,
             };
+
+            // --- INICIO: Validación de nombre duplicado ---
+            const normalizedName = name.toLowerCase();
+            const existingPlayer = AppState.players.find(p => p.name.trim().toLowerCase() === normalizedName);
+
+            if (existingPlayer && (!id || existingPlayer.id != id)) {
+                showNotification('Ya existe un jugador con ese nombre.', 'error');
+                saveButton.disabled = false;
+                saveButton.textContent = 'Guardar Jugador';
+                return;
+            }
+            // --- FIN: Validación de nombre duplicado ---
 
             try {
                 let playerResponse;
