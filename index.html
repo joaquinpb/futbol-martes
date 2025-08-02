@@ -65,7 +65,8 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            min-height: 100vh;
+            height: 100vh; /* Cambiado de min-height a height */
+            overflow-y: hidden; /* Evita el scroll en el body */
         }
         body.overflow-hidden, body.modal-open { overflow: hidden; }
 
@@ -209,7 +210,13 @@
         @media (min-width: 768px) {
             #side-menu { position: relative; transform: translateX(0); flex-shrink: 0; height: 100vh; }
             #hamburger-button, #overlay { display: none !important; }
-            .flex-1.flex.flex-col { height: 100vh; }
+        }
+        
+        /* Esta regla ahora está afuera del @media para que aplique siempre */
+        .flex-1.flex.flex-col { 
+            height: 100vh; 
+            display: flex; /* Aseguramos que sea flexbox */
+            flex-direction: column; /* Dirección vertical */
         }
 
         .table-container {
@@ -292,8 +299,8 @@
         }
 
         #estadisticas-table .sticky-col-1 { left: 0; }
-        #estadisticas-table .sticky-col-2 { left: 32px; } /* Avatar, pegado a la col 1 */
-        #estadisticas-table .sticky-col-3 { left: 80px; } /* Jugador, pegado a la col 2 */
+        #estadisticas-table .sticky-col-2 { left: 32px; } /* Avatar */
+        #estadisticas-table .sticky-col-3 { left: 80px; } /* Jugador */
         #individual-stats-table .sticky-col-1 { left: 0; }
         #individual-stats-table .sticky-col-2 { left: 90px; }
         thead th.sticky-col { z-index: 15; }
@@ -366,8 +373,6 @@
         }
         .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
-        #individual-player-results { background-color: var(--bg-secondary); border: 1px solid var(--border-color); z-index: 20; }
-        #individual-player-results > div:hover { background-color: var(--bg-muted); }
         #individual-player-search { padding-right: 2.5rem !important; }
         #clear-player-search { color: var(--text-muted); }
 
@@ -457,6 +462,31 @@
         html.dark .fixture-header.active {
             background-color: #d97706 !important;
         }
+
+        /* === INICIO: Corrección Buscador Histórico === */
+        html.dark #individual-player-search {
+            background-color: #374151 !important;
+            color: var(--text-primary) !important;
+            border-color: #4b5563 !important;
+            -webkit-box-shadow: 0 0 0 30px #374151 inset !important;
+            -webkit-text-fill-color: var(--text-primary) !important;
+        }
+        html.dark #individual-player-search::placeholder {
+            color: var(--text-muted);
+        }
+        #individual-player-results {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            z-index: 100; /* Aumentado drásticamente para asegurar que esté por encima de todo */
+        }
+        #individual-player-results > div {
+            color: var(--text-primary);
+        }
+        #individual-player-results > div:hover {
+            background-color: var(--bg-muted);
+        }
+        /* === FIN: Corrección Buscador Histórico === */
+
     </style>
     <script>
         (function() {
@@ -1609,10 +1639,12 @@
                 e.preventDefault(); 
                 searchInput.value = '';
                 selectedIdInput.value = '';
-                document.getElementById('individual-stats-table').innerHTML = '';
-                document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
-                searchInput.focus();
-                filterAndDisplay();
+                document.getElementById('individual-stats-table').innerHTML = ''; // Limpia la tabla
+                const loadingMsg = document.getElementById('individual-stats-loading-message');
+                if(loadingMsg) {
+                    loadingMsg.textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                }
+                filterAndDisplay(); // Vuelve a mostrar la lista completa
             });
             
             if(allPlayersData.length > 0) {
@@ -1737,7 +1769,7 @@
                     baseHtml += `
                         <div class="mb-6">
                             <label for="individual-player-search" class="block text-sm font-medium mb-1">Buscar Jugador:</label>
-                            <div class="relative">
+                            <div class="relative z-20">
                                 <input type="text" id="individual-player-search" placeholder="Escribe para buscar..." class="mt-1 block w-full p-2 shadow-sm">
                                 <button id="clear-player-search" class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"><i class="fas fa-times-circle"></i></button>
                                 <div id="individual-player-results" class="absolute z-10 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
