@@ -87,12 +87,13 @@
             color: var(--text-primary);
             transition: background-color 0.2s, border-color 0.2s;
             width: 100%;
-            padding: 0.5rem;
+            padding: 0.75rem; /* Padding aumentado para consistencia */
             border-radius: 0.375rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             text-align: left;
+            height: 100%; /* Para que ocupe toda la altura en la grilla */
         }
         .custom-select-button:hover {
             border-color: var(--accent-color);
@@ -112,6 +113,10 @@
             border-radius: 0.375rem;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
             z-index: 20; /* Asegura que esté por encima de otros elementos */
+        }
+        html.dark .custom-select-options {
+             background-color: #1f2937;
+             border-color: #374151;
         }
         .custom-select-options .option-item {
             transition: background-color 0.2s;
@@ -135,21 +140,26 @@
         html.dark .custom-select-options .option-item.current-match {
             color: var(--accent-color-hover);
         }
-        .multi-year-select-dropdown label {
+        .multi-year-select-dropdown label,
+        .multi-month-select-dropdown label {
             display: flex;
             align-items: center;
             cursor: pointer;
-            padding: 0.5rem;
+            padding: 0.75rem;
             transition: background-color 0.2s;
         }
-        .multi-year-select-dropdown label:hover {
+        .multi-year-select-dropdown label:hover,
+        .multi-month-select-dropdown label:hover {
             background-color: var(--bg-muted);
         }
-        html.dark .multi-year-select-dropdown label:hover {
+        html.dark .multi-year-select-dropdown label:hover,
+        html.dark .multi-month-select-dropdown label:hover {
             background-color: #374151;
         }
-        .multi-year-select-dropdown input[type="checkbox"] {
+        .multi-year-select-dropdown input[type="checkbox"],
+        .multi-month-select-dropdown input[type="checkbox"] {
             margin-right: 0.5rem;
+            accent-color: var(--accent-color);
         }
         /* === FIN: Estilos unificados para menús desplegables === */
 
@@ -748,35 +758,24 @@
             if (!dateString) return new Date();
             return new Date(dateString + 'T00:00:00'); 
         }
-
-        function populateMonthSelects(selectId) {
-            const monthSelect = document.getElementById(selectId);
-            if (!monthSelect) return;
-            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            
-            const currentValue = monthSelect.value;
-            monthSelect.innerHTML = '<option value="all">Todos los Meses</option>';
-            months.forEach((month, index) => monthSelect.innerHTML += `<option value="${index + 1}">${month}</option>`);
-            if (currentValue) monthSelect.value = currentValue;
-        }
         
         function setTodayFilters(prefix, isMonthFilter = false) {
-             const today = new Date();
-             const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
-             
-             yearCheckboxes.forEach(cb => cb.checked = false);
-             
-             const currentYearCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="${today.getFullYear()}"]`);
-             if (currentYearCheckbox) {
-                 currentYearCheckbox.checked = true;
-             }
-             
-             updateMultiYearButtonText(prefix);
-             
-             if (isMonthFilter) {
+            const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
+            yearCheckboxes.forEach(cb => cb.checked = false);
+            
+            const today = new Date();
+            const currentYearCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="${today.getFullYear()}"]`);
+            if (currentYearCheckbox) {
+                currentYearCheckbox.checked = true;
+            }
+            updateMultiYearButtonText(prefix);
+            
+            if (isMonthFilter) {
+                const monthDropdown = document.getElementById(`${prefix}-month-select-dropdown`);
+                if (!monthDropdown) return;
+                monthDropdown.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+
                 let targetMonth = today.getMonth() + 1;
-                const monthSelect = document.getElementById(`${prefix}-month-select`);
-                
                 const hasMatchesInMonth = (year, month) => allMatchesData.some(m => {
                     const d = parseDate(m.match_date);
                     return d.getFullYear() === year && (d.getMonth() + 1) == month;
@@ -784,7 +783,7 @@
 
                 let searchDate = new Date();
                 let found = false;
-                for (let i=0; i < 12; i++) { // Limit search to 12 months back
+                for (let i=0; i < 12; i++) {
                     if (hasMatchesInMonth(searchDate.getFullYear(), searchDate.getMonth() + 1)) {
                         found = true;
                         break;
@@ -802,14 +801,30 @@
                     }
                 }
 
-                if (monthSelect) monthSelect.value = targetMonth;
-
-             } else {
-                const periodSelect = document.getElementById(`${prefix}-period-select`);
-                if(periodSelect) {
-                    periodSelect.value = today.getMonth() <= 5 ? 'apertura' : 'clausura';
+                const targetMonthCheckbox = monthDropdown.querySelector(`input[value="${targetMonth}"]`);
+                if (targetMonthCheckbox) {
+                    targetMonthCheckbox.checked = true;
                 }
-             }
+                updateMultiMonthButtonText(prefix);
+
+            } else {
+                const periodContainer = document.getElementById(`${prefix}-period-select-container`);
+                if (!periodContainer) return;
+                
+                const valueInput = periodContainer.querySelector('input[type=hidden]');
+                const buttonSpan = periodContainer.querySelector('button span');
+                const dropdown = periodContainer.querySelector('.custom-select-options');
+                
+                const defaultPeriod = today.getMonth() <= 5 ? 'apertura' : 'clausura';
+                valueInput.value = defaultPeriod;
+                
+                const selectedOption = dropdown.querySelector(`.option-item[data-value="${defaultPeriod}"]`);
+                if (selectedOption) {
+                    buttonSpan.textContent = selectedOption.textContent;
+                    dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                    selectedOption.classList.add('selected');
+                }
+            }
         }
         
         function calculateStats(filters) {
@@ -1119,12 +1134,17 @@
             const dropdownContainer = document.getElementById('fixture-dropdown-container');
             const loadingMessage = document.getElementById('fixture-loading-message');
             
-            const selectedYearsCheckboxes = document.querySelectorAll(`#fixture-year-select-dropdown input[type="checkbox"]:checked`);
+            const selectedYearsCheckboxes = document.querySelectorAll(`#fixture-year-select-dropdown input[type="checkbox"]:checked:not([value="all"])`);
             let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
-            if (selectedYears.includes('all')) {
+            if (document.querySelector(`#fixture-year-select-dropdown input[value="all"]`)?.checked) {
                 selectedYears = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].map(String);
             }
-            const month = document.getElementById('fixture-month-select').value;
+
+            const selectedMonthCheckboxes = document.querySelectorAll(`#fixture-month-select-dropdown input[type="checkbox"]:checked:not([value="all"])`);
+            let selectedMonths = Array.from(selectedMonthCheckboxes).map(cb => cb.value);
+            if (document.querySelector(`#fixture-month-select-dropdown input[value="all"]`)?.checked) {
+                selectedMonths = []; // Empty array means all months
+            }
             
             if (!dropdownContainer || !loadingMessage) return;
 
@@ -1135,8 +1155,8 @@
             if (selectedYears.length > 0) {
                 filteredMatches = filteredMatches.filter(m => selectedYears.includes(String(parseDate(m.match_date).getFullYear())));
             }
-            if (month && month !== 'all') {
-                filteredMatches = filteredMatches.filter(m => parseDate(m.match_date).getMonth() + 1 == month);
+            if (selectedMonths.length > 0) {
+                filteredMatches = filteredMatches.filter(m => selectedMonths.includes(String(parseDate(m.match_date).getMonth() + 1)));
             }
 
             if (!filteredMatches || filteredMatches.length === 0) { 
@@ -1171,13 +1191,14 @@
             const firstMatchToSelect = document.querySelector('.current-match') || optionsContainer.querySelector('[data-match-id]');
 
             if (firstMatchToSelect) {
-                if (isFilterChange || !lastSelectedFixtureMatchId) {
+                if (isFilterChange || !lastSelectedFixtureMatchId || !filteredMatches.some(m => m.id == lastSelectedFixtureMatchId)) {
                     handleFixtureSelection(firstMatchToSelect.dataset.matchId);
                 } else {
                     handleFixtureSelection(lastSelectedFixtureMatchId);
                 }
             } else {
                  document.getElementById('fixture-visual-details-container').classList.add('hidden');
+                 lastSelectedFixtureMatchId = null;
             }
         }
 
@@ -1606,33 +1627,41 @@
                         </button>
                         <div id="${prefix}-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto">
                         </div>
-                    </div>
-                 `;
+                    </div>`;
                  
                  const periodOrMonthFilterHTML = prefix === 'fixture' ? `
                     <div class="custom-select-container">
-                        <label class="filter-label">Mes:</label>
-                        <select id="fixture-month-select" class="custom-select-button"></select>
+                        <label class="filter-label">Mes(es):</label>
+                        <button id="fixture-month-select-button" class="custom-select-button">
+                            <span class="truncate">Seleccionar Meses</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div id="fixture-month-select-dropdown" class="custom-select-options multi-month-select-dropdown hidden max-h-60 overflow-y-auto">
+                        </div>
                     </div>` : `
-                    <div class="custom-select-container">
+                    <div id="${prefix}-period-select-container" class="custom-select-container">
                         <label class="filter-label">Torneo:</label>
-                        <select id="${prefix}-period-select" class="custom-select-button">
-                            <option value="apertura">Apertura</option>
-                            <option value="clausura">Clausura</option>
-                            <option value="total">Totales</option>
-                        </select>
-                    </div>
-                 `;
+                        <input type="hidden" id="${prefix}-period-select" value="apertura">
+                        <button id="${prefix}-period-select-button" class="custom-select-button">
+                            <span class="truncate">Apertura</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div id="${prefix}-period-select-dropdown" class="custom-select-options hidden">
+                            <div class="option-item selected" data-value="apertura">Apertura</div>
+                            <div class="option-item" data-value="clausura">Clausura</div>
+                            <div class="option-item" data-value="total">Totales</div>
+                        </div>
+                    </div>`;
 
                  baseHtml += `
-                    <div id="${prefix}-filters-container" class="grid grid-cols-2 md:grid-cols-[40%_20%_40%] gap-4 items-stretch">
-                        <div class="col-span-1 md:order-1">
+                    <div id="${prefix}-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
+                        <div class="col-span-1 md:col-span-2 md:order-1">
                             ${yearFilterHTML}
                         </div>
-                        <div class="col-span-1 md:order-3">
+                        <div class="col-span-1 md:col-span-2 md:order-3">
                             ${periodOrMonthFilterHTML}
                         </div>
-                        <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch px-0 md:px-2">
+                        <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
                            <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
                         </div>
                     </div>
@@ -1666,7 +1695,7 @@
                                 <span>Seleccionar Partido</span>
                                 <i class="fas fa-chevron-down transition-transform"></i>
                             </button>
-                            <div class="custom-select-options hidden">
+                            <div class="custom-select-options hidden max-h-72 overflow-y-auto">
                             </div>
                         </div>
                         <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
@@ -1808,20 +1837,85 @@
             });
         }
 
+        function updateMultiMonthButtonText(prefix) {
+            const button = document.getElementById(`${prefix}-month-select-button`);
+            if (!button) return;
+            const buttonSpan = button.querySelector('span');
+            const allMonthsCheckbox = document.querySelector(`#${prefix}-month-select-dropdown input[value="all"]`);
+            const checked = document.querySelectorAll(`#${prefix}-month-select-dropdown input[value]:not([value="all"]):checked`);
+            
+            if (allMonthsCheckbox && allMonthsCheckbox.checked) {
+                buttonSpan.textContent = 'Todos los Meses';
+            } else if (checked.length === 0) {
+                 buttonSpan.textContent = 'Seleccionar Meses';
+            } else if (checked.length === 1) {
+                const monthIndex = parseInt(checked[0].value) - 1;
+                const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                buttonSpan.textContent = months[monthIndex];
+            } else {
+                buttonSpan.textContent = `${checked.length} Meses seleccionados`;
+            }
+        }
+
+        function populateMultiMonthSelect(prefix, changeCallback) {
+            const dropdown = document.getElementById(`${prefix}-month-select-dropdown`);
+            const button = document.getElementById(`${prefix}-month-select-button`);
+            if (!dropdown || !button) return;
+
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            
+            let optionsHTML = `<label class="font-bold border-b border-border-color"><input type="checkbox" value="all" class="month-checkbox"><span>Todos los Meses</span></label>`;
+            optionsHTML += months.map((month, index) => `<label><input type="checkbox" value="${index + 1}" class="month-checkbox"><span>${month}</span></label>`).join('');
+            dropdown.innerHTML = optionsHTML;
+
+            const savedMonths = globalFilterState.months || [];
+            if (savedMonths.length > 0) {
+                dropdown.querySelectorAll('input').forEach(cb => {
+                    if (savedMonths.includes(cb.value)) {
+                        cb.checked = true;
+                    }
+                });
+            }
+            updateMultiMonthButtonText(prefix);
+
+            dropdown.addEventListener('change', (e) => {
+                const allCheckbox = dropdown.querySelector('input[value="all"]');
+                const monthCheckboxes = dropdown.querySelectorAll('input[value]:not([value="all"])');
+
+                if (e.target.value === 'all') {
+                    monthCheckboxes.forEach(cb => cb.checked = e.target.checked);
+                } else {
+                    allCheckbox.checked = [...monthCheckboxes].every(cb => cb.checked);
+                }
+                
+                updateMultiMonthButtonText(prefix);
+                changeCallback();
+            });
+
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                button.querySelector('i').classList.toggle('rotate-180');
+            });
+        }
+
         function setupDynamicEventListeners(tabId) {
             const prefix = tabId.replace('-content', '');
             const renderFn = renderFunctions[tabId];
 
             const handleFilterChange = () => {
                 const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`);
-                let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
-
-                globalFilterState.years = selectedYears;
+                globalFilterState.years = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
                 
                 const periodSelect = document.getElementById(`${prefix}-period-select`);
-                const monthSelect = document.getElementById(`${prefix}-month-select`);
                 if (periodSelect) globalFilterState.period = periodSelect.value;
-                if (monthSelect) globalFilterState.month = monthSelect.value;
+                
+                const monthCheckboxes = document.querySelectorAll(`#${prefix}-month-select-dropdown input[type=checkbox]:checked`);
+                if (monthCheckboxes.length > 0) {
+                    globalFilterState.months = Array.from(monthCheckboxes).map(cb => cb.value);
+                } else {
+                    delete globalFilterState.months;
+                }
                 
                 FilterSessionManager.update(globalFilterState);
 
@@ -1841,8 +1935,37 @@
                  populateMultiYearSelect(prefix, handleFilterChange);
             }
 
-            document.getElementById(`${prefix}-period-select`)?.addEventListener('change', handleFilterChange);
-            document.getElementById(`${prefix}-month-select`)?.addEventListener('change', handleFilterChange);
+            const periodContainer = document.getElementById(`${prefix}-period-select-container`);
+            if (periodContainer) {
+                const button = periodContainer.querySelector('button');
+                const dropdown = periodContainer.querySelector('.custom-select-options');
+                const valueInput = periodContainer.querySelector('input[type=hidden]');
+                const buttonSpan = button.querySelector('span');
+
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    button.querySelector('i').classList.toggle('rotate-180');
+                });
+
+                dropdown.addEventListener('click', (e) => {
+                    const option = e.target.closest('.option-item');
+                    if (option) {
+                        const newValue = option.dataset.value;
+                        valueInput.value = newValue;
+                        buttonSpan.textContent = option.textContent;
+                        dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                        dropdown.classList.add('hidden');
+                        button.querySelector('i').classList.remove('rotate-180');
+                        handleFilterChange();
+                    }
+                });
+            }
+
+            if (prefix === 'fixture') {
+                populateMultiMonthSelect(prefix, handleFilterChange);
+            }
 
             document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => {
                 const isMonthFilter = prefix === 'fixture';
@@ -1889,28 +2012,42 @@
 
             if (tabId.includes('content') && !tabId.includes('individual')) {
                 const isMonthFilter = prefix === 'fixture';
-                if (isMonthFilter) {
-                    populateMonthSelects('fixture-month-select');
-                }
-
-                const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.month : globalFilterState.period);
+                const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.months : globalFilterState.period);
                 
                 if (hasSavedState) {
-                    if (isMonthFilter && globalFilterState.month) {
-                        document.getElementById('fixture-month-select').value = globalFilterState.month;
+                    if (isMonthFilter && globalFilterState.months) {
+                        const monthDropdown = document.getElementById('fixture-month-select-dropdown');
+                        monthDropdown.querySelectorAll('input').forEach(cb => {
+                            cb.checked = globalFilterState.months.includes(cb.value);
+                        });
+                        updateMultiMonthButtonText('fixture');
                     } else if (!isMonthFilter && globalFilterState.period) {
-                        document.getElementById(`${prefix}-period-select`).value = globalFilterState.period;
+                        const periodContainer = document.getElementById(`${prefix}-period-select-container`);
+                        const valueInput = periodContainer.querySelector('input[type=hidden]');
+                        const buttonSpan = periodContainer.querySelector('button span');
+                        const dropdown = periodContainer.querySelector('.custom-select-options');
+                        
+                        valueInput.value = globalFilterState.period;
+                        const selectedOption = dropdown.querySelector(`.option-item[data-value="${globalFilterState.period}"]`);
+                         if (selectedOption) {
+                            buttonSpan.textContent = selectedOption.textContent;
+                            dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                            selectedOption.classList.add('selected');
+                        }
                     }
                 } else {
                     setTodayFilters(prefix, isMonthFilter);
                     
                     const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`);
-                    let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+                    globalFilterState.years = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+                    
                     const periodSelect = document.getElementById(`${prefix}-period-select`);
-                    const monthSelect = document.getElementById(`${prefix}-month-select`);
-                    globalFilterState.years = selectedYears;
                     if (periodSelect) globalFilterState.period = periodSelect.value;
-                    if (monthSelect) globalFilterState.month = monthSelect.value;
+                    
+                    const monthCheckboxes = document.querySelectorAll(`#${prefix}-month-select-dropdown input[type=checkbox]:checked`);
+                    if (monthCheckboxes.length > 0) {
+                        globalFilterState.months = Array.from(monthCheckboxes).map(cb => cb.value);
+                    }
                     FilterSessionManager.update(globalFilterState);
                 }
             }
