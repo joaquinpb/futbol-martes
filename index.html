@@ -157,8 +157,8 @@
             background-color: var(--filter-label-bg);
             color: var(--text-secondary);
             font-weight: 700;
-            text-align: left;
-            padding: 0.25rem 0.75rem;
+            text-align: left; /* Alineación a la izquierda */
+            padding: 0.25rem 0.75rem; /* Ajuste de padding */
             border-radius: 0.375rem;
             display: block;
             width: 100%;
@@ -777,19 +777,33 @@
                 let targetMonth = today.getMonth() + 1;
                 const monthSelect = document.getElementById(`${prefix}-month-select`);
                 
-                // Lógica para encontrar el mes más reciente con partidos
                 const hasMatchesInMonth = (year, month) => allMatchesData.some(m => {
                     const d = parseDate(m.match_date);
                     return d.getFullYear() === year && (d.getMonth() + 1) == month;
                 });
 
                 let searchDate = new Date();
-                while (!hasMatchesInMonth(searchDate.getFullYear(), searchDate.getMonth() + 1) && allMatchesData.length > 0) {
+                let found = false;
+                for (let i=0; i < 12; i++) { // Limit search to 12 months back
+                    if (hasMatchesInMonth(searchDate.getFullYear(), searchDate.getMonth() + 1)) {
+                        found = true;
+                        break;
+                    }
                     searchDate.setMonth(searchDate.getMonth() - 1);
                 }
-                targetMonth = searchDate.getMonth() + 1;
+                
+                if (found) {
+                    targetMonth = searchDate.getMonth() + 1;
+                    const targetYearCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="${searchDate.getFullYear()}"]`);
+                    if(targetYearCheckbox && !targetYearCheckbox.checked) {
+                        yearCheckboxes.forEach(cb => cb.checked = false);
+                        targetYearCheckbox.checked = true;
+                        updateMultiYearButtonText(prefix);
+                    }
+                }
 
                 if (monthSelect) monthSelect.value = targetMonth;
+
              } else {
                 const periodSelect = document.getElementById(`${prefix}-period-select`);
                 if(periodSelect) {
@@ -1220,12 +1234,12 @@
 
             const playerPositions = {
                 vertical: {
-                    claros:  [{ x: 0.5, y: 0.93 }, { x: 0.25, y: 0.78 }, { x: 0.75, y: 0.78 }, { x: 0.35, y: 0.62 }, { x: 0.65, y: 0.57 }],
-                    oscuros: [{ x: 0.5, y: 0.07 }, { x: 0.25, y: 0.22 }, { x: 0.75, y: 0.22 }, { x: 0.35, y: 0.38 }, { x: 0.65, y: 0.43 }]
+                    claros:  [{ x: 0.5, y: 0.94 }, { x: 0.25, y: 0.78 }, { x: 0.75, y: 0.78 }, { x: 0.35, y: 0.62 }, { x: 0.65, y: 0.57 }],
+                    oscuros: [{ x: 0.5, y: 0.06 }, { x: 0.25, y: 0.22 }, { x: 0.75, y: 0.22 }, { x: 0.35, y: 0.38 }, { x: 0.65, y: 0.43 }]
                 },
                 horizontal: {
                     claros:  [{ x: 0.94, y: 0.50 }, { x: 0.80, y: 0.25 }, { x: 0.80, y: 0.75 }, { x: 0.62, y: 0.35 }, { x: 0.57, y: 0.65 }],
-                    oscuros: [{ x: 0.6, y: 0.50 }, { x: 0.20, y: 0.25 }, { x: 0.20, y: 0.75 }, { x: 0.38, y: 0.35 }, { x: 0.43, y: 0.65 }]
+                    oscuros: [{ x: 0.06, y: 0.50 }, { x: 0.20, y: 0.25 }, { x: 0.20, y: 0.75 }, { x: 0.38, y: 0.35 }, { x: 0.43, y: 0.65 }]
                 }
             };
             const currentPositions = isHorizontalField ? playerPositions.horizontal : playerPositions.vertical;
@@ -1611,12 +1625,16 @@
                  `;
 
                  baseHtml += `
-                    <div id="${prefix}-filters-container" class="grid grid-cols-2 md:grid-cols-[40%_20%_40%] md:grid-rows-2 gap-4">
-                        <div class="md:row-span-1">${yearFilterHTML}</div>
-                        <div class="md:row-span-2 flex items-center justify-center px-2">
+                    <div id="${prefix}-filters-container" class="grid grid-cols-2 md:grid-cols-[40%_20%_40%] gap-4 items-stretch">
+                        <div class="col-span-1 md:order-1">
+                            ${yearFilterHTML}
+                        </div>
+                        <div class="col-span-1 md:order-3">
+                            ${periodOrMonthFilterHTML}
+                        </div>
+                        <div class="col-span-2 md:col-span-1 md:order-2 px-0 md:px-2">
                            <button id="${prefix}-hoy-button" class="button-primary w-full h-full rounded-md shadow-sm">Torneo Actual</button>
                         </div>
-                        <div class="md:row-span-1">${periodOrMonthFilterHTML}</div>
                     </div>
                     <hr class="border-border-color"/>
                     `;
