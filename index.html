@@ -469,7 +469,7 @@
         #individual-player-results {
             background-color: var(--bg-secondary);
             border: 1px solid var(--border-color);
-            z-index: 20;
+            z-index: 40;
         }
         #individual-player-results > div {
             color: var(--text-primary);
@@ -1608,10 +1608,6 @@
 
             const filterAndDisplay = () => {
                 const searchTerm = searchInput.value.toLowerCase();
-                if (searchTerm === '') {
-                    resultsDiv.classList.add('hidden');
-                    return;
-                }
                 const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm)).sort((a, b) => a.name.localeCompare(b.name));
                 resultsDiv.innerHTML = filtered.map(player => `<div class="p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
                 resultsDiv.classList.remove('hidden');
@@ -1635,14 +1631,10 @@
                 e.preventDefault(); 
                 searchInput.value = '';
                 selectedIdInput.value = '';
-                document.getElementById('individual-stats-table').classList.add('hidden');
-                const loadingMsg = document.getElementById('individual-stats-loading-message');
-                if (loadingMsg) {
-                    loadingMsg.textContent = 'Selecciona un jugador para ver sus estadísticas.';
-                    loadingMsg.classList.remove('hidden');
-                }
-                resultsDiv.classList.add('hidden');
+                document.getElementById('individual-stats-table').innerHTML = '';
+                document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
                 searchInput.focus();
+                filterAndDisplay();
             });
             
             if(allPlayersData.length > 0) {
