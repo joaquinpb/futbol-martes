@@ -682,6 +682,14 @@
         function init() {
             setupTheme();
             setupEventListeners();
+            
+            // --- START: Hashchange listener for URL routing ---
+            window.addEventListener('hashchange', () => {
+                const tabId = window.location.hash.substring(1) || NAV_ITEMS.dashboard[0].id;
+                renderPage(tabId);
+            });
+            // --- END: Hashchange listener for URL routing ---
+
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
                     if (!AppState.isInitialized) loadAdminPanel(session);
@@ -737,18 +745,12 @@
                 
                 setupRealtimeSubscriptions();
                 
-                const savedTab = localStorage.getItem('lastAdminTab');
-                const allNavItems = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin];
-                const isValidTab = allNavItems.some(item => item.id === savedTab);
-                let initialTab = NAV_ITEMS.dashboard[0].id;
+                // --- START: URL Hash based routing ---
+                const hash = window.location.hash.substring(1);
+                let initialTab = hash || NAV_ITEMS.dashboard[0].id;
+                // --- END: URL Hash based routing ---
 
-                if (isValidTab) {
-                    const isAdminTab = NAV_ITEMS.admin.some(item => item.id === savedTab);
-                    if (!isAdminTab || (isAdminTab && AppState.userRole === 'Admin')) {
-                        initialTab = savedTab;
-                    }
-                }
-                await navigateTo(initialTab);
+                await renderPage(initialTab);
 
             } catch (error) {
                 console.error("Fatal error during admin panel setup:", error);
@@ -783,7 +785,7 @@
                 }
 
                 if (tabToRender) {
-                    await navigateTo(tabToRender);
+                    await renderPage(tabToRender);
                 }
 
             } catch (error) {
@@ -836,9 +838,9 @@
                     AppState.matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
                 }
                 
-                const currentTab = localStorage.getItem('lastAdminTab');
+                const currentTab = window.location.hash.substring(1);
                 if (currentTab) {
-                    navigateTo(currentTab);
+                    renderPage(currentTab);
                 }
             };
             
@@ -972,7 +974,7 @@
         
         function setupDesktopNav() {
             let dashboardLink = NAV_ITEMS.dashboard.map(item => `
-                <a href="#" data-tab="${item.id}" class="nav-link nav-link-dashboard w-full text-left flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-colors duration-200">
+                <a href="#${item.id}" data-tab="${item.id}" class="nav-link nav-link-dashboard w-full text-left flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-colors duration-200">
                     <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
                 </a>
             `).join('');
@@ -985,7 +987,7 @@
                     </button>
                     <div class="collapsible-content mt-1 space-y-1 pl-4">
                         ${NAV_ITEMS.main.map(item => `
-                            <a href="#" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
+                            <a href="#${item.id}" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
                                 <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
                             </a>`).join('')}
                     </div>
@@ -1000,7 +1002,7 @@
                         </button>
                         <div class="collapsible-content hidden mt-1 space-y-1 pl-4">
                             ${NAV_ITEMS.admin.map(item => `
-                                <a href="#" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
+                                <a href="#${item.id}" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
                                     <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
                                 </a>`).join('')}
                         </div>
@@ -1024,9 +1026,10 @@
             DOMElements.mainNav.innerHTML = navHtml;
             
             DOMElements.mainNav.querySelectorAll('.nav-link[data-tab]').forEach(link => {
-                link.addEventListener('click', async (e) => {
+                link.addEventListener('click', (e) => {
                     e.preventDefault();
-                    await navigateTo(e.currentTarget.dataset.tab);
+                    const tabId = e.currentTarget.dataset.tab;
+                    window.location.hash = tabId;
                 });
             });
 
@@ -1046,7 +1049,7 @@
         function setupMobileMenu() {
             const dashboardLinkMobile = NAV_ITEMS.dashboard.map(item => `
                 <li>
-                    <a href="#" data-tab="${item.id}" class="nav-link nav-link-dashboard block px-4 py-3 rounded-md mb-2">
+                    <a href="#${item.id}" data-tab="${item.id}" class="nav-link nav-link-dashboard block px-4 py-3 rounded-md mb-2">
                         ${item.name}
                     </a>
                 </li>`).join('');
@@ -1058,7 +1061,7 @@
                         <i class="fas fa-chevron-down transform transition-transform"></i>
                     </button>
                     <ul class="collapsible-content hidden mt-1 space-y-1 pl-4">
-                        ${NAV_ITEMS.admin.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2.5 rounded-md">${item.name}</a></li>`).join('')}
+                        ${NAV_ITEMS.admin.map(item => `<li><a href="#${item.id}" data-tab="${item.id}" class="nav-link block px-4 py-2.5 rounded-md">${item.name}</a></li>`).join('')}
                     </ul>
                 </div>` : '';
 
@@ -1075,7 +1078,7 @@
                             <i class="fas fa-chevron-down transform transition-transform rotate-180"></i>
                         </button>
                         <ul class="collapsible-content mt-1 space-y-1 pl-4">
-                            ${NAV_ITEMS.main.map(item => `<li><a href="#" data-tab="${item.id}" class="nav-link block px-4 py-2.5 rounded-md">${item.name}</a></li>`).join('')}
+                            ${NAV_ITEMS.main.map(item => `<li><a href="#${item.id}" data-tab="${item.id}" class="nav-link block px-4 py-2.5 rounded-md">${item.name}</a></li>`).join('')}
                         </ul>
                     </div>
                     ${adminItemsHtml}
@@ -1093,10 +1096,11 @@
             DOMElements.mobileMenu.innerHTML = menuHtml;
             
             DOMElements.mobileMenu.querySelectorAll('.nav-link[data-tab]').forEach(link => {
-                link.addEventListener('click', async e => {
+                link.addEventListener('click', e => {
                     e.preventDefault();
                     e.stopPropagation();
-                    await navigateTo(e.currentTarget.dataset.tab);
+                    const tabId = e.currentTarget.dataset.tab;
+                    window.location.hash = tabId;
                     closeMobileMenu();
                 });
             });
@@ -1113,13 +1117,24 @@
             document.getElementById('close-mobile-menu').addEventListener('click', closeMobileMenu);
         }
         
-        async function navigateTo(tabId) {
+        async function renderPage(tabId) {
+            const allNavItems = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin];
+            const itemExists = allNavItems.some(item => item.id === tabId);
+
+            // Fallback to dashboard if tab is invalid or user doesn't have permission
+            if (!itemExists || (NAV_ITEMS.admin.some(item => item.id === tabId) && AppState.userRole !== 'Admin')) {
+                tabId = NAV_ITEMS.dashboard[0].id;
+                // Update hash to reflect the fallback without triggering another hashchange event
+                if (window.location.hash !== `#${tabId}`) {
+                    history.replaceState(null, '', `#${tabId}`);
+                }
+            }
+
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('active', link.dataset.tab === tabId);
             });
             
             const desktopTitleEl = document.getElementById('desktop-header-title');
-            const allNavItems = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin];
             const currentItem = allNavItems.find(item => item.id === tabId);
             if (desktopTitleEl && currentItem) {
                 desktopTitleEl.textContent = currentItem.name;
@@ -1128,7 +1143,6 @@
             const renderFunction = window[`render_${tabId.replace(/-/g, '_')}`];
             if (typeof renderFunction === 'function') {
                 renderFunction();
-                localStorage.setItem('lastAdminTab', tabId);
             } else {
                 DOMElements.adminContent.innerHTML = `<div class="p-4 sm:p-6 lg:p-8"><div class="card card-styled p-6"><h1 class="text-2xl font-bold">Contenido para ${tabId} no implementado.</h1></div></div>`;
             }
