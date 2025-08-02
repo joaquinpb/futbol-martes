@@ -291,8 +291,8 @@
         }
 
         #estadisticas-table .sticky-col-1 { left: 0; }
-        #estadisticas-table .sticky-col-2 { left: 32px; } /* Avatar, pegado a la col 1 */
-        #estadisticas-table .sticky-col-3 { left: 80px; } /* Jugador, pegado a la col 2 */
+        #estadisticas-table .sticky-col-2 { left: 32px; } /* Avatar */
+        #estadisticas-table .sticky-col-3 { left: 80px; } /* Jugador */
         #individual-stats-table .sticky-col-1 { left: 0; }
         #individual-stats-table .sticky-col-2 { left: 90px; }
         thead th.sticky-col { z-index: 15; }
@@ -365,8 +365,6 @@
         }
         .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
-        #individual-player-results { background-color: var(--bg-secondary); border: 1px solid var(--border-color); z-index: 20; }
-        #individual-player-results > div:hover { background-color: var(--bg-muted); }
         #individual-player-search { padding-right: 2.5rem !important; }
         #clear-player-search { color: var(--text-muted); }
 
@@ -456,6 +454,31 @@
         html.dark .fixture-header.active {
             background-color: #d97706 !important;
         }
+
+        /* === INICIO: Corrección Buscador Histórico === */
+        html.dark #individual-player-search {
+            background-color: #374151 !important;
+            color: var(--text-primary) !important;
+            border-color: #4b5563 !important;
+            -webkit-box-shadow: 0 0 0 30px #374151 inset !important;
+            -webkit-text-fill-color: var(--text-primary) !important;
+        }
+        html.dark #individual-player-search::placeholder {
+            color: var(--text-muted);
+        }
+        #individual-player-results {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            z-index: 20;
+        }
+        #individual-player-results > div {
+            color: var(--text-primary);
+        }
+        #individual-player-results > div:hover {
+            background-color: var(--bg-muted);
+        }
+        /* === FIN: Corrección Buscador Histórico === */
+
     </style>
     <script>
         (function() {
@@ -1585,6 +1608,10 @@
 
             const filterAndDisplay = () => {
                 const searchTerm = searchInput.value.toLowerCase();
+                if (searchTerm === '') {
+                    resultsDiv.classList.add('hidden');
+                    return;
+                }
                 const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm)).sort((a, b) => a.name.localeCompare(b.name));
                 resultsDiv.innerHTML = filtered.map(player => `<div class="p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
                 resultsDiv.classList.remove('hidden');
@@ -1608,10 +1635,14 @@
                 e.preventDefault(); 
                 searchInput.value = '';
                 selectedIdInput.value = '';
-                document.getElementById('individual-stats-table').innerHTML = '';
-                document.getElementById('individual-stats-loading-message').textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                document.getElementById('individual-stats-table').classList.add('hidden');
+                const loadingMsg = document.getElementById('individual-stats-loading-message');
+                if (loadingMsg) {
+                    loadingMsg.textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                    loadingMsg.classList.remove('hidden');
+                }
+                resultsDiv.classList.add('hidden');
                 searchInput.focus();
-                filterAndDisplay();
             });
             
             if(allPlayersData.length > 0) {
