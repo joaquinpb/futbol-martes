@@ -179,11 +179,20 @@
         html.dark thead th { color: var(--sidebar-text); }
 
         /* FIX: Solid background for sticky table header */
-        #players-management-table-container thead th {
+        #players-management-table-container thead th,
+        #user-management-table-container thead th {
             background-color: var(--bg-muted);
         }
-        html.dark #players-management-table-container thead th {
+        html.dark #players-management-table-container thead th,
+        html.dark #user-management-table-container thead th {
             background-color: #111827;
+        }
+        
+        thead th[data-sort-by]:hover {
+            background-color: var(--border-color);
+        }
+        html.dark thead th[data-sort-by]:hover {
+            background-color: var(--sidebar-hover-bg);
         }
         
         .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
@@ -601,6 +610,10 @@
             selectedPhotoFile: null,
             selectedAvatarFile: null // Para el archivo recortado del perfil de usuario
         };
+        
+        // Sorting state for tables
+        let playerSortState = { key: 'id', dir: 'asc' };
+        let userSortState = { key: 'email', dir: 'asc' };
 
         const NAV_ITEMS = {
             dashboard: [
@@ -1926,10 +1939,10 @@
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs uppercase sticky top-0 z-10">
                             <tr>
-                                <th class="p-4">ID</th>
-                                <th class="p-4">Nombre</th>
-                                <th class="p-4">Estado</th>
-                                <th class="p-4">Rol</th>
+                                <th class="p-4" data-sort-by="id" style="cursor:pointer;">ID</th>
+                                <th class="p-4" data-sort-by="name" style="cursor:pointer;">Nombre</th>
+                                <th class="p-4" data-sort-by="status" style="cursor:pointer;">Estado</th>
+                                <th class="p-4" data-sort-by="role" style="cursor:pointer;">Rol</th>
                             </tr>
                         </thead>
                         <tbody id="players-list-admin"></tbody>
@@ -1952,6 +1965,20 @@
             document.getElementById('player-search-input').addEventListener('input', (e) => {
                 renderPlayersListAdmin(e.target.value);
             });
+
+            document.querySelectorAll('#players-management-table-container th[data-sort-by]').forEach(header => {
+                header.addEventListener('click', () => {
+                    const key = header.dataset.sortBy;
+                    if (playerSortState.key === key) {
+                        playerSortState.dir = playerSortState.dir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        playerSortState.key = key;
+                        playerSortState.dir = 'asc';
+                    }
+                    renderPlayersListAdmin(document.getElementById('player-search-input').value);
+                });
+            });
+
             document.getElementById('player-form').addEventListener('submit', handleSavePlayer);
             document.getElementById('delete-player-button').addEventListener('click', handleDeletePlayer);
             document.getElementById('clear-player-form-button').addEventListener('click', clearPlayerForm);
@@ -1988,13 +2015,13 @@
                     <input type="text" id="user-search-input" placeholder="Buscar por nombre o email..." class="w-full p-2 pl-10 border rounded-md">
                     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
-                <div class="overflow-x-auto max-h-[60vh]">
+                <div id="user-management-table-container" class="overflow-y-auto max-h-[60vh]">
                     <table class="w-full text-sm text-left">
-                        <thead class="text-xs uppercase bg-muted">
+                        <thead class="text-xs uppercase sticky top-0 z-10">
                             <tr>
-                                <th class="p-4">Email</th>
-                                <th class="p-4">Nombre</th>
-                                <th class="p-4">Rol</th>
+                                <th class="p-4" data-sort-by="email" style="cursor:pointer;">Email</th>
+                                <th class="p-4" data-sort-by="name" style="cursor:pointer;">Nombre</th>
+                                <th class="p-4" data-sort-by="role" style="cursor:pointer;">Rol</th>
                             </tr>
                         </thead>
                         <tbody id="users-list-admin"></tbody>
@@ -2016,6 +2043,20 @@
             document.getElementById('user-search-input').addEventListener('input', (e) => {
                 renderUsersListAdmin(e.target.value);
             });
+
+            document.querySelectorAll('#user-management-table-container th[data-sort-by]').forEach(header => {
+                header.addEventListener('click', () => {
+                    const key = header.dataset.sortBy;
+                    if (userSortState.key === key) {
+                        userSortState.dir = userSortState.dir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        userSortState.key = key;
+                        userSortState.dir = 'asc';
+                    }
+                    renderUsersListAdmin(document.getElementById('user-search-input').value);
+                });
+            });
+
             document.getElementById('user-form').addEventListener('submit', handleSaveUser);
             document.getElementById('clear-user-form-button').addEventListener('click', clearUserForm);
         };
@@ -2584,9 +2625,24 @@
         function renderPlayersListAdmin(searchTerm = '') {
             const tableBody = document.getElementById('players-list-admin');
             const normalizedSearch = searchTerm.toLowerCase();
-            const filteredPlayers = AppState.players.filter(p => 
+            let filteredPlayers = AppState.players.filter(p => 
                 p.name.toLowerCase().includes(normalizedSearch)
             );
+
+            // Sorting logic
+            const { key, dir } = playerSortState;
+            filteredPlayers.sort((a, b) => {
+                const valA = a[key];
+                const valB = b[key];
+
+                if (key === 'id') { // Numeric sort for ID
+                    return dir === 'asc' ? valA - valB : valB - valA;
+                } else { // String sort for others
+                    return dir === 'asc' 
+                        ? String(valA).localeCompare(String(valB)) 
+                        : String(valB).localeCompare(String(valA));
+                }
+            });
 
             tableBody.innerHTML = filteredPlayers.map(p => `
                 <tr class="selectable-row border-b border-border-color cursor-pointer" data-player-id="${p.id}">
@@ -2594,6 +2650,16 @@
                     <td class="p-4">${p.status}</td><td class="p-4">${p.role}</td>
                 </tr>`).join('');
             
+            // Add visual indicators to headers
+            document.querySelectorAll('#players-management-table-container th[data-sort-by]').forEach(th => {
+                th.querySelector('.sort-icon')?.remove();
+                if (th.dataset.sortBy === key) {
+                    const icon = document.createElement('i');
+                    icon.className = `fas fa-chevron-${dir === 'asc' ? 'up' : 'down'} ml-2 sort-icon`;
+                    th.appendChild(icon);
+                }
+            });
+
             tableBody.querySelectorAll('.selectable-row').forEach(row => {
                 row.addEventListener('click', () => {
                     tableBody.querySelectorAll('.selectable-row').forEach(r => r.classList.remove('selected'));
@@ -2768,10 +2834,20 @@
         function renderUsersListAdmin(searchTerm = '') {
             const tableBody = document.getElementById('users-list-admin');
             const normalizedSearch = searchTerm.toLowerCase();
-            const filteredUsers = AppState.users.filter(u =>
+            let filteredUsers = AppState.users.filter(u =>
                 (u.name && u.name.toLowerCase().includes(normalizedSearch)) ||
                 u.email.toLowerCase().includes(normalizedSearch)
             );
+
+            // Sorting logic
+            const { key, dir } = userSortState;
+            filteredUsers.sort((a, b) => {
+                const valA = a[key] || '';
+                const valB = b[key] || '';
+                return dir === 'asc' 
+                    ? String(valA).localeCompare(String(valB)) 
+                    : String(valB).localeCompare(String(valA));
+            });
 
             tableBody.innerHTML = filteredUsers.map(u => `
                 <tr class="selectable-row border-b border-border-color cursor-pointer" data-user-id="${u.id}">
@@ -2779,6 +2855,16 @@
                     <td class="p-4">${u.name || 'N/A'}</td>
                     <td class="p-4">${u.role || 'Sin Rol'}</td>
                 </tr>`).join('');
+            
+            // Add visual indicators to headers
+            document.querySelectorAll('#user-management-table-container th[data-sort-by]').forEach(th => {
+                th.querySelector('.sort-icon')?.remove();
+                if (th.dataset.sortBy === key) {
+                    const icon = document.createElement('i');
+                    icon.className = `fas fa-chevron-${dir === 'asc' ? 'up' : 'down'} ml-2 sort-icon`;
+                    th.appendChild(icon);
+                }
+            });
             
             tableBody.querySelectorAll('.selectable-row').forEach(row => {
                 row.addEventListener('click', () => {
