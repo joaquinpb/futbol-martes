@@ -570,6 +570,7 @@
         // --- CONFIG & STATE ---
         const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
         let cropper = null;
+        let cropperContext = 'player'; // 'player' or 'avatar'
         
         const AppState = {
             players: [],
@@ -2627,6 +2628,9 @@
             openCropperModal(file, 'player'); // Añadimos el contexto
         }
 
+        // =======================================================
+        // === INICIO: FUNCIÓN MODIFICADA handleRemovePhoto ===
+        // =======================================================
         async function handleRemovePhoto() {
             const playerId = document.getElementById('player-id').value;
             if (!playerId) {
@@ -2634,22 +2638,33 @@
                 return;
             }
 
-            const confirmed = await showModal('Confirmar Eliminación', '¿Estás seguro de que quieres eliminar la foto de este jugador?');
+            const confirmed = await showModal('Confirmar Acción', '¿Estás seguro de que quieres restablecer la foto de este jugador a la imagen por defecto?');
             if (!confirmed) return;
 
-            const { error } = await supabase
-                .from('players')
-                .update({ photo_url: null })
-                .eq('id', playerId);
+            // Llamamos a la función RPC en lugar de hacer un update directo
+            const { error } = await supabase.rpc('reset_player_photo', {
+                player_id_to_reset: playerId
+            });
 
             if (error) {
-                showNotification(`Error al eliminar la foto: ${error.message}`, 'error');
+                showNotification(`Error al restablecer la foto: ${error.message}`, 'error');
             } else {
-                showNotification('Foto eliminada.', 'success');
+                showNotification('Foto restablecida a la imagen por defecto.', 'success');
                 await refreshDataAndRender('players-management');
-                clearPlayerForm();
+                
+                // Para que el formulario refleje el cambio, volvemos a popularlo
+                // con los datos actualizados del jugador.
+                const updatedPlayer = AppState.players.find(p => p.id == playerId);
+                if (updatedPlayer) {
+                    populatePlayerForm(updatedPlayer);
+                } else {
+                    clearPlayerForm();
+                }
             }
         }
+        // =======================================================
+        // === FIN: FUNCIÓN MODIFICADA handleRemovePhoto ===
+        // =======================================================
 
         async function handleSavePlayer(e) {
             e.preventDefault();
