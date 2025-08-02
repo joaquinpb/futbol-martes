@@ -31,6 +31,7 @@
             --border-color: #e5e7eb;
             --accent-color: #4f46e5;
             --accent-color-hover: #4338ca;
+            --accent-color-muted: #7e22ce; /* Color para header móvil */
             --danger-color: #ef4444;
             --warning-color: #f59e0b;
             --button-text-color: #ffffff;
@@ -53,6 +54,7 @@
             --border-color: #374151;
             --accent-color: #6366f1;
             --accent-color-hover: #818cf8;
+            --accent-color-muted: #9333ea; /* Color para header móvil en dark mode */
         }
 
         html {
@@ -64,8 +66,7 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            height: 100vh; /* Cambiado de min-height a height */
-            overflow-y: hidden; /* Evita el scroll en el body */
+            min-height: 100vh; /* Asegura que el body ocupe al menos toda la pantalla */
         }
         body.overflow-hidden, body.modal-open { overflow: hidden; }
 
@@ -203,11 +204,19 @@
         #overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); z-index: 30; }
         
         header.md\:hidden {
-            background-color: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
+            background-color: var(--accent-color-muted);
+            color: var(--button-text-color);
+            border-bottom: 1px solid transparent;
         }
+
         html.dark header.md\:hidden {
-            background-color: #111827;
+            background-color: var(--accent-color-muted);
+        }
+        
+        header.md\:hidden #hamburger-button,
+        header.md\:hidden #mobile-header-title,
+        header.md\:hidden #dark-mode-toggle-mobile {
+            color: var(--button-text-color);
         }
         
         @media (min-width: 768px) {
@@ -215,11 +224,10 @@
             #hamburger-button, #overlay { display: none !important; }
         }
         
-        /* Esta regla ahora está afuera del @media para que aplique siempre */
         .flex-1.flex.flex-col { 
-            height: 100vh; 
-            display: flex; /* Aseguramos que sea flexbox */
-            flex-direction: column; /* Dirección vertical */
+            display: flex;
+            flex-direction: column;
+            /* Se elimina height: 100vh para permitir que el contenido crezca */
         }
         
         @media (min-width: 768px) {
@@ -512,17 +520,17 @@
     <!-- Header para móvil -->
     <header class="sticky top-0 z-30 flex items-center justify-between p-4 md:hidden">
         <div class="w-10">
-            <button id="hamburger-button" class="p-2 rounded-md -ml-2 text-text-primary">
+            <button id="hamburger-button" class="p-2 rounded-md -ml-2">
                 <i class="fas fa-bars text-lg"></i>
             </button>
         </div>
         <div class="flex-1 text-center">
-            <a href="#" id="mobile-header-title" class="text-xl font-bold flex items-center gap-2 justify-center">
+            <div id="mobile-header-title" class="text-xl font-bold flex items-center gap-2 justify-center">
                 <!-- El título dinámico se insertará aquí -->
-            </a>
+            </div>
         </div>
         <div class="w-10 flex justify-end items-center">
-             <button id="dark-mode-toggle-mobile" class="p-2 rounded-full text-text-primary">
+             <button id="dark-mode-toggle-mobile" class="p-2 rounded-full">
                 <i class="fas fa-moon text-lg"></i>
             </button>
         </div>
@@ -737,7 +745,7 @@
                 tt: document.getElementById('player-modal-tt'),
             }
         };
-
+        
         const PAGE_CONFIG = {
             'leaderboard-content': { title: 'Posiciones', icon: 'fa-trophy' },
             'chamigo-content': { title: 'Chamigo', icon: 'fa-star' },
@@ -1681,9 +1689,6 @@
             const title = config.desktopTitle || config.title;
             
             let baseHtml = `<div id="${tabId}" class="main-content-container space-y-4">
-                <div class="relative hidden md:flex items-center justify-center p-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg">
-                    <h1 class="flex-1 text-2xl font-bold tracking-tight uppercase text-center text-white">${title}</h1>
-                </div>`;
             
             const prefix = tabId.replace('-content', '');
             
