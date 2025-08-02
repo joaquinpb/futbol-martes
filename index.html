@@ -1339,16 +1339,7 @@
                 return;
             }
 
-            const { data: matches, error } = await supabaseClient.rpc('get_player_matches', { player_id_to_find: selectedPlayerId });
-
-            if(error) { 
-                console.error("Error fetching player matches:", error);
-                loadingMessage.textContent = 'Error al cargar el historial del jugador.'; 
-                return; 
-            }
-            if (!matches || matches.length === 0) { loadingMessage.textContent = 'Este jugador no tiene partidos registrados.'; return; }
-
-            const playerStats = calculateIndividualPlayerStats(selectedPlayerId, matches);
+            const playerStats = calculateIndividualPlayerStats(selectedPlayerId, allMatchesData);
 
             if (!playerStats) { loadingMessage.textContent = 'No se pudieron calcular las estadísticas.'; return; }
             
@@ -1445,32 +1436,36 @@
                  if (!playerStats.years[year]) return;
                  
                  const playerIsInMatch = (team_white_players || []).includes(playerId) || (team_dark_players || []).includes(playerId);
-                 if (!playerIsInMatch) return;
-        
-                 const statsToUpdate = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
                  
-                 if (result !== 'Suspendido') {
-                     statsToUpdate.forEach(s => s.pj++);
-                     if (result === 'Claros' && (team_white_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
-                     else if (result === 'Oscuros' && (team_dark_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
-                     else if (result === 'Empate') statsToUpdate.forEach(s => { s.points += 1; s.pe++; });
-                     else statsToUpdate.forEach(s => s.pp++);
-                 }
-        
-                 if (chamigo_votes) {
-                     const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
-                     if (votosArray.length > 0) {
-                         const maxVotes = Math.max(...votosArray.map(v => v.votos));
-                         if (votosArray.some(v => v.id === playerId && v.votos === maxVotes)) {
-                             statsToUpdate.forEach(s => s.chamigos++);
+                 // Si el jugador está en el partido, se actualizan sus estadísticas.
+                 if (playerIsInMatch) {
+                     const statsToUpdate = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
+                     
+                     if (result !== 'Suspendido') {
+                         statsToUpdate.forEach(s => s.pj++);
+                         if (result === 'Claros' && (team_white_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                         else if (result === 'Oscuros' && (team_dark_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                         else if (result === 'Empate') statsToUpdate.forEach(s => { s.points += 1; s.pe++; });
+                         else statsToUpdate.forEach(s => s.pp++);
+                     }
+            
+                     if (chamigo_votes) {
+                         const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
+                         if (votosArray.length > 0) {
+                             const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                             if (votosArray.some(v => v.id === playerId && v.votos === maxVotes)) {
+                                 statsToUpdate.forEach(s => s.chamigos++);
+                             }
                          }
                      }
+                     if (tt_attendees && tt_attendees.includes(playerId)) {
+                         statsToUpdate.forEach(s => s.tt++);
+                     }
                  }
-                 if (tt_attendees && tt_attendees.includes(playerId)) {
-                     statsToUpdate.forEach(s => s.tt++);
-                 }
+                 // Si el jugador no está en el partido, no se hace nada, y la ausencia se calculará más adelante.
             });
         
+            // Esta parte ahora funciona correctamente porque tiene los datos correctos.
             allYearsInMatches.forEach(year => {
                 const yearData = playerStats.years[year];
                 ['apertura', 'clausura', 'total'].forEach(periodType => {
