@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1816,7 +1815,7 @@
                             ${periodOrMonthFilterHTML}
                         </div>
                         <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
+                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
                         </div>
                     </div>
                     <hr class="border-border-color"/>
@@ -1911,7 +1910,7 @@
                                     </div>
                                 </div>
                                 <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                                   <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
+                                   <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
                                 </div>
                             </div>
                             
@@ -1936,13 +1935,8 @@
                             </div>
 
                             <!-- Comparison Display -->
-                            <div id="comparison-display-area" class="hidden space-y-8 pt-4">
-                                <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                                    <div id="player1-card-display" class="text-center"></div>
-                                    <div class="vs-separator">VS</div>
-                                    <div id="player2-card-display" class="text-center"></div>
-                                </div>
-                                <div id="stats-bars-container" class="space-y-4"></div>
+                            <div id="comparison-display-area" class="hidden space-y-6 pt-4">
+                                <!-- Las tarjetas de jugador y las barras de stats se insertarán aquí con JS -->
                             </div>
                             <p id="comparador-placeholder" class="text-center text-text-secondary pt-8">Selecciona dos jugadores y un período para comenzar la comparación.</p>
                         </div>
@@ -2473,32 +2467,22 @@
             const selectedIdInput = document.getElementById(`comparador-player${playerNum}-id`);
             const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
 
-            if(!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
+            if (!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
 
-            // --- INICIO DE LA MODIFICACIÓN ---
-
-            let clickTimer = null;
-            // Puedes ajustar este valor (en milisegundos) para cambiar la sensibilidad del doble toque.
-            const DOUBLE_CLICK_DELAY = 1000; 
-
+            // El input comienza como solo lectura para controlar la apertura del teclado
             searchInput.readOnly = true;
 
             const filterAndDisplay = () => {
                 const searchTerm = searchInput.value.toLowerCase();
-                
-                if (searchTerm.length > 0) {
-                    clearButton.classList.remove('hidden');
-                } else {
-                    clearButton.classList.add('hidden');
-                }
-                
+                clearButton.classList.toggle('hidden', searchTerm.length === 0);
+
                 const otherPlayerNum = playerNum === 1 ? 2 : 1;
                 const otherPlayerId = document.getElementById(`comparador-player${otherPlayerNum}-id`).value;
 
                 const filtered = allPlayersData
                     .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id != otherPlayerId)
                     .sort((a, b) => a.name.localeCompare(b.name));
-                
+
                 resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
                 resultsDiv.classList.remove('hidden');
             };
@@ -2507,66 +2491,59 @@
                 const target = e.target.closest('.option-item');
                 if (target && target.dataset.playerId) {
                     e.preventDefault();
-                    searchInput.blur();
                     const player = allPlayersData.find(p => p.id == target.dataset.playerId);
                     searchInput.value = player.name;
                     selectedIdInput.value = player.id;
                     resultsDiv.classList.add('hidden');
                     clearButton.classList.remove('hidden');
+                    searchInput.readOnly = true;
+                    searchInput.blur(); // Cierra el teclado
                     updateComparison();
                 }
             });
 
-            // Lógica de clic actualizada
+            // Lógica de 1 toque para abrir lista / 2do toque para abrir teclado
             searchInput.addEventListener('click', (e) => {
                 e.preventDefault();
 
-                // Solo procesar clics si el campo está en modo "solo lectura".
-                if (searchInput.readOnly) {
-                    if (clickTimer === null) {
-                        // Es el PRIMER CLIC.
-                        // 1. Mostramos la lista de inmediato.
-                        filterAndDisplay();
-                        // 2. Iniciamos el temporizador para detectar un posible segundo clic.
-                        clickTimer = setTimeout(() => {
-                            // El tiempo de espera terminó, reseteamos el temporizador.
-                            clickTimer = null;
-                        }, DOUBLE_CLICK_DELAY);
-                    } else {
-                        // Es el SEGUNDO CLIC (dentro del tiempo de delay).
-                        // 1. Cancelamos el temporizador del primer clic.
-                        clearTimeout(clickTimer);
-                        clickTimer = null;
-                        // 2. Habilitamos la escritura y abrimos el teclado.
-                        searchInput.readOnly = false;
-                        searchInput.focus();
-                    }
+                // Si la lista está oculta, el primer clic la muestra.
+                if (resultsDiv.classList.contains('hidden')) {
+                    filterAndDisplay();
+                } 
+                // Si la lista ya está visible, el siguiente clic abre el teclado.
+                else {
+                    searchInput.readOnly = false;
+                    searchInput.focus();
                 }
             });
 
+            // Filtrado en vivo solo cuando el teclado está abierto
             searchInput.addEventListener('input', () => {
-                // El filtrado en vivo solo ocurre cuando el usuario está escribiendo.
                 if (!searchInput.readOnly) {
                     filterAndDisplay();
                 }
             });
 
+            // Cuando el campo pierde el foco, vuelve a su estado inicial
             searchInput.addEventListener('blur', () => {
-                // Al perder el foco, ocultamos la lista y volvemos al modo "solo lectura".
                 setTimeout(() => {
-                    resultsDiv.classList.add('hidden');
-                    searchInput.readOnly = true; 
-                }, 200);
+                    if (!resultsDiv.contains(document.activeElement)) {
+                        resultsDiv.classList.add('hidden');
+                        searchInput.readOnly = true;
+                    }
+                }, 150);
             });
             
+            // Lógica del botón de la cruz
             clearButton.addEventListener('mousedown', (e) => {
                 e.preventDefault(); 
                 searchInput.value = '';
                 selectedIdInput.value = '';
+                searchInput.readOnly = true; // Asegura que el teclado se cierre
+                searchInput.blur(); // Cierra el teclado
                 updateComparison();
-                filterAndDisplay();
+                filterAndDisplay(); // Muestra la lista completa de nuevo
             });
-            // --- FIN DE LA MODIFICACIÓN ---
         }
 
         function renderComparador() {
@@ -2586,10 +2563,8 @@
             const isPlaceholder = !playerStats.id;
             const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
             
-            // Aplicar un color de borde distinto para cada jugador y uno neutral para el placeholder
             let borderColorClass = 'border-gray-300 dark:border-gray-600';
             if (!isPlaceholder) {
-                // Usamos colores diferentes para cada jugador para distinguirlos
                 borderColorClass = playerNum === 1 ? 'border-accent-color' : 'border-danger-color';
             }
             
@@ -2601,33 +2576,29 @@
             `;
         }
         
-        function createComparisonBars(stats1, stats2) {
-            const statsMeta = [
-                { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
-                { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
-                { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' },
-                { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' },
-                { key: 'ausentes', label: 'Ausencias' },
-            ];
-
+        function createComparisonBars(stats1, stats2, statsMeta) {
             const renderStatBar = (stat) => {
                 const val1 = parseFloat(stats1[stat.key]) || 0;
                 const val2 = parseFloat(stats2[stat.key]) || 0;
                 const suffix = stat.suffix || '';
                 const total = val1 + val2;
-                
+        
                 let width1 = 0, width2 = 0;
                 if (total > 0) {
                     width1 = (val1 / total) * 100;
                     width2 = (val2 / total) * 100;
+                } else if (val1 === 0 && val2 === 0) {
+                    width1 = 0;
+                    width2 = 0;
+                } else if (val1 > 0) {
+                    width1 = 100;
+                } else {
+                    width2 = 100;
                 }
-
-                let winnerClass1 = '';
-                let winnerClass2 = '';
-                
-                // Para 'pp' (perdidos) y 'ausentes', un número menor es mejor.
+        
+                let winnerClass1 = '', winnerClass2 = '';
                 const isLowerBetter = stat.key === 'pp' || stat.key === 'ausentes';
-                
+        
                 if (val1 !== val2) {
                     const winnerCssClass = 'winner-bar';
                     if ((!isLowerBetter && val1 > val2) || (isLowerBetter && val1 < val2)) {
@@ -2636,81 +2607,170 @@
                         winnerClass2 = winnerCssClass;
                     }
                 }
-
+        
                 return `
                     <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
-                        <!-- Barra y Valor Jugador 1 -->
                         <div class="progress-bg player1 ${winnerClass1}">
                             <div class="progress-fill player1" style="width: ${width1}%"></div>
-                            <span class="stat-value player1">${val1}${suffix}</span>
+                            <span class="stat-value player1">${val1.toLocaleString('es-AR')}${suffix}</span>
                         </div>
-
-                        <!-- Etiqueta Central -->
                         <div class="stat-label">${stat.label}</div>
-
-                        <!-- Barra y Valor Jugador 2 -->
                         <div class="progress-bg player2 ${winnerClass2}">
                             <div class="progress-fill player2" style="width: ${width2}%"></div>
-                            <span class="stat-value player2">${val2}${suffix}</span>
+                            <span class="stat-value player2">${val2.toLocaleString('es-AR')}${suffix}</span>
                         </div>
                     </div>
                 `;
             };
-
+        
             return statsMeta.map(renderStatBar).join('');
         }
 
+        // CORRECCIÓN 3: Excluir partidos suspendidos
+        function calculateHeadToHeadStats(player1Id, player2Id, filteredMatches) {
+            const stats = {
+                p1: { pj: 0, pg: 0, pe: 0, pp: 0, efectividad: "0.00" },
+                p2: { pj: 0, pg: 0, pe: 0, pp: 0, efectividad: "0.00" }
+            };
+        
+            if (!player1Id || !player2Id) return stats;
+        
+            filteredMatches.forEach(match => {
+                const p1Team = (match.team_white_players || []).includes(player1Id) ? 'claros'
+                             : (match.team_dark_players || []).includes(player1Id) ? 'oscuros' : null;
+        
+                const p2Team = (match.team_white_players || []).includes(player2Id) ? 'claros'
+                             : (match.team_dark_players || []).includes(player2Id) ? 'oscuros' : null;
+        
+                // Solo contamos si ambos jugaron en equipos opuestos Y el partido no fue suspendido
+                if (p1Team && p2Team && p1Team !== p2Team && match.result && match.result !== 'Suspendido') {
+                    stats.p1.pj++;
+                    stats.p2.pj++;
+        
+                    const result = match.result;
+                    if (result === 'Empate') {
+                        stats.p1.pe++;
+                        stats.p2.pe++;
+                    } else if ((result === 'Claros' && p1Team === 'claros') || (result === 'Oscuros' && p1Team === 'oscuros')) {
+                        stats.p1.pg++;
+                        stats.p2.pp++;
+                    } else if ((result === 'Claros' && p2Team === 'claros') || (result === 'Oscuros' && p2Team === 'oscuros')) {
+                        stats.p2.pg++;
+                        stats.p1.pp++;
+                    }
+                }
+            });
+        
+            // Calcular efectividad
+            const p1TotalPoints = (stats.p1.pg * 3) + stats.p1.pe;
+            const p1PossiblePoints = stats.p1.pj * 3;
+            stats.p1.efectividad = p1PossiblePoints > 0 ? ((p1TotalPoints / p1PossiblePoints) * 100).toFixed(2) : "0.00";
+        
+            const p2TotalPoints = (stats.p2.pg * 3) + stats.p2.pe;
+            const p2PossiblePoints = stats.p2.pj * 3;
+            stats.p2.efectividad = p2PossiblePoints > 0 ? ((p2TotalPoints / p2PossiblePoints) * 100).toFixed(2) : "0.00";
+        
+            return stats;
+        }
+        
+        // CORRECCIÓN 2: Manejar la comparación de un solo jugador
         function updateComparison() {
             const player1Id = document.getElementById('comparador-player1-id')?.value;
             const player2Id = document.getElementById('comparador-player2-id')?.value;
-
+        
             const displayArea = document.getElementById('comparison-display-area');
             const placeholder = document.getElementById('comparador-placeholder');
             if (!displayArea || !placeholder) return;
-
-            // Objeto para representar a un jugador no seleccionado
-            const placeholderPlayerStats = {
-                name: 'Sin Asignar',
-                photo_url: 'https://placehold.co/128x128/e2e8f0/64748b?text=?',
-                points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: null
-            };
-
-            // La vista de comparación se muestra si al menos un jugador está seleccionado
-            if (player1Id || player2Id) {
-                const { players: allStats } = calculateStatsForPeriod('comparador');
-
-                let player1Stats, player2Stats;
-
-                // Cargar datos del jugador 1 o usar el placeholder
-                if (player1Id) {
-                    const player1Data = allPlayersData.find(p => p.id == player1Id);
-                    player1Stats = allStats.find(p => p.id == player1Id) || { ...placeholderPlayerStats, name: player1Data.name, photo_url: player1Data.photo_url, id: player1Id };
-                } else {
-                    player1Stats = placeholderPlayerStats;
-                }
-
-                // Cargar datos del jugador 2 o usar el placeholder
-                if (player2Id) {
-                    const player2Data = allPlayersData.find(p => p.id == player2Id);
-                    player2Stats = allStats.find(p => p.id == player2Id) || { ...placeholderPlayerStats, name: player2Data.name, photo_url: player2Data.photo_url, id: player2Id };
-                } else {
-                    player2Stats = placeholderPlayerStats;
-                }
-
-                // Renderizar las tarjetas y las barras
-                document.getElementById('player1-card-display').innerHTML = createPlayerCard(player1Stats, 1);
-                document.getElementById('player2-card-display').innerHTML = createPlayerCard(player2Stats, 2);
-                document.getElementById('stats-bars-container').innerHTML = createComparisonBars(player1Stats, player2Stats);
-
-                displayArea.classList.remove('hidden');
-                placeholder.classList.add('hidden');
-
-            } else {
-                // Si no hay ningún jugador, mostrar el mensaje inicial
+        
+            displayArea.innerHTML = '';
+        
+            if (!player1Id && !player2Id) {
                 displayArea.classList.add('hidden');
                 placeholder.classList.remove('hidden');
-                placeholder.textContent = 'Selecciona un jugador para comenzar la comparación.';
+                placeholder.textContent = 'Selecciona un jugador para comenzar.';
+                return;
             }
+        
+            const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
+            let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
+            if (selectedYears.includes('all')) {
+                selectedYears = ['all'];
+            }
+            const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
+        
+            if (!selectedYears || selectedYears.length === 0 || !selectedPeriod) {
+                displayArea.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                placeholder.textContent = 'Por favor, selecciona un período válido para comparar.';
+                return;
+            }
+        
+            const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
+            
+            const placeholderPlayer = { name: 'Seleccionar...', photo_url: 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽', id: null };
+            const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
+        
+            let player1Data = player1Id ? allPlayersData.find(p => p.id == player1Id) : placeholderPlayer;
+            let player2Data = player2Id ? allPlayersData.find(p => p.id == player2Id) : placeholderPlayer;
+            
+            let player1IndividualStats = player1Id ? allIndividualStats.find(p => p.id == player1Id) : zeroStats;
+            let player2IndividualStats = player2Id ? allIndividualStats.find(p => p.id == player2Id) : zeroStats;
+            
+            if (player1Id && !player1IndividualStats) player1IndividualStats = { ...zeroStats, id: player1Id };
+            if (player2Id && !player2IndividualStats) player2IndividualStats = { ...zeroStats, id: player2Id };
+        
+            placeholder.classList.add('hidden');
+            displayArea.classList.remove('hidden');
+        
+            // 1. Renderizar las tarjetas de los jugadores
+            displayArea.innerHTML += `
+                <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                    ${createPlayerCard(player1Data, 1)}
+                    <div class="vs-separator">VS</div>
+                    ${createPlayerCard(player2Data, 2)}
+                </div>`;
+            
+            // 2. Calcular y renderizar estadísticas "ENTRE SÍ" (solo si ambos jugadores están seleccionados)
+            if (player1Id && player2Id) {
+                const allFilteredMatches = allMatchesData.filter(match => {
+                    if (!match.result) return false;
+                    const matchYear = parseDate(match.match_date).getFullYear();
+                    const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
+                    const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
+                    const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
+                    return yearMatch && periodMatch;
+                });
+        
+                const headToHeadStats = calculateHeadToHeadStats(player1Id, player2Id, allFilteredMatches);
+                if (headToHeadStats.p1.pj > 0) {
+                    const h2hMeta = [
+                        { key: 'pj', label: 'Jugados' }, { key: 'pg', label: 'Ganados' },
+                        { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' },
+                        { key: 'efectividad', label: 'Efectividad', suffix: '%' }
+                    ];
+                    displayArea.innerHTML += `
+                        <div class="space-y-4">
+                            <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Entre Sí</h4>
+                            ${createComparisonBars(headToHeadStats.p1, headToHeadStats.p2, h2hMeta)}
+                        </div>
+                    `;
+                }
+            }
+            
+            // 3. Renderizar estadísticas "INDIVIDUALES"
+            const individualMeta = [
+                { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
+                { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
+                { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' },
+                { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' },
+                { key: 'ausentes', label: 'Ausencias' },
+            ];
+            displayArea.innerHTML += `
+                <div class="space-y-4">
+                    <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6">Individuales</h4>
+                    ${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}
+                </div>
+            `;
         }
         // --- FIN: Funciones del Comparador ---
 
@@ -2792,11 +2852,20 @@
                 });
             });
             
+            // CORRECCIÓN 1: Listener global para cerrar desplegables
             document.addEventListener('click', (e) => {
+                // Cerrar desplegables de filtros generales
                 document.querySelectorAll('.custom-select-options:not(.hidden)').forEach(dropdown => {
                     if (!dropdown.parentElement.contains(e.target)) {
                         dropdown.classList.add('hidden');
                         dropdown.previousElementSibling.querySelector('i').classList.remove('rotate-180');
+                    }
+                });
+                // Cerrar desplegables del comparador
+                document.querySelectorAll('.comparator-results-dropdown:not(.hidden)').forEach(dropdown => {
+                    const container = dropdown.closest('.relative');
+                    if (container && !container.contains(e.target)) {
+                        dropdown.classList.add('hidden');
                     }
                 });
             });
