@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -35,6 +36,7 @@
             --accent-color-muted: #7e22ce; /* Color para header móvil */
             --danger-color: #ef4444;
             --warning-color: #f59e0b;
+            --success-color: #10b981;
             --button-text-color: #ffffff;
             --text-yellow-400: #facc15;
             --player-claros-bg: #ffffff;
@@ -67,15 +69,14 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            min-height: 100vh; /* Asegura que el body ocupe al menos toda la pantalla */
+            display: flex; /* Siempre flex */
+            flex-direction: column; /* Dirección por defecto para móvil */
         }
-        body.overflow-hidden, body.modal-open { overflow: hidden; }
-
+        
         @media (min-width: 768px) {
-            body { 
-                display: flex; 
-                height: 100vh;
-                overflow: hidden; /* Desactiva el scroll en desktop para que lo maneje el main */
+            body {
+                flex-direction: row;
+                overflow: hidden;
             }
         }
         
@@ -169,22 +170,7 @@
             accent-color: var(--accent-color);
         }
         /* === FIN: Estilos unificados para menús desplegables === */
-
-        .filter-label {
-            background-color: var(--filter-label-bg);
-            color: var(--text-secondary);
-            font-weight: 700;
-            text-align: left; /* Alineación a la izquierda */
-            padding: 0.25rem 0.75rem; /* Ajuste de padding */
-            border-radius: 0.375rem;
-            display: block;
-            width: 100%;
-            margin-bottom: 0.5rem;
-        }
-        html.dark .filter-label {
-            background-color: var(--filter-label-bg);
-        }
-
+        
         #side-menu {
             background-color: var(--bg-secondary);
             color: var(--text-primary);
@@ -225,15 +211,17 @@
             #hamburger-button, #overlay { display: none !important; }
         }
         
-        .flex-1.flex.flex-col { 
+        /* Esta regla ahora está afuera del @media para que aplique siempre */
+        .flex-1.flex.flex-col {
+            flex: 1; /* Usar flex: 1 en lugar de height: 100vh */
             display: flex;
             flex-direction: column;
-            /* Se elimina height: 100vh para permitir que el contenido crezca */
+            min-height: 0; /* Clave para que el scroll funcione en contenedores flex */
         }
         
         @media (min-width: 768px) {
             .flex-1.flex.flex-col {
-                height: 100vh; /* Se re-aplica solo para desktop */
+                height: 100vh; 
             }
         }
 
@@ -481,6 +469,85 @@
             background-color: #d97706 !important;
         }
 
+        .comparador-header {
+            background-color: var(--success-color);
+            color: var(--button-text-color);
+            font-weight: 600;
+        }
+        .comparador-header:hover {
+            opacity: 0.9;
+        }
+        html.dark .comparador-header {
+            background-color: #059669;
+        }
+        .comparador-header.active {
+             background-color: var(--success-color) !important;
+             opacity: 1 !important;
+        }
+        html.dark .comparador-header.active {
+            background-color: #059669 !important;
+        }
+
+        .new-badge {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            margin-left: 8px;
+            line-height: 1;
+        }
+        
+        /* Estilos del Comparador */
+        .vs-separator {
+            color: var(--text-muted);
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+        .progress-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .progress-bg {
+            flex-grow: 1;
+            background-color: var(--border-color);
+            border-radius: 9999px;
+            height: 1.25rem;
+            overflow: hidden;
+            position: relative;
+        }
+        html.dark .progress-bg {
+            background-color: #374151;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out;
+        }
+        .progress-bar-container.player1 .progress-fill {
+            background-color: var(--accent-color);
+        }
+        .progress-bar-container.player2 .progress-fill {
+            background-color: var(--danger-color);
+        }
+        .stat-value {
+            font-weight: 600;
+            min-width: 40px;
+            text-align: right;
+        }
+        .progress-bar-container.player1 .stat-value {
+            text-align: left;
+        }
+        .stat-label {
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+
         /* === INICIO: Corrección Buscador Histórico === */
         html.dark #individual-player-search {
             background-color: #374151 !important;
@@ -505,6 +572,11 @@
         }
         /* === FIN: Corrección Buscador Histórico === */
 
+        .winner-bar {
+            box-shadow: 0 0 0 3px var(--success-color);
+            border-radius: 9999px; /* Para que el contorno sea redondeado como la barra */
+        }
+        
     </style>
     <script>
         (function() {
@@ -563,8 +635,15 @@
                 </div>
             </div>
 
-            <!-- Enlace Fixture -->
-            <a href="#fixture" class="tab-button fixture-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200 mt-2" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</a>
+            <!-- Enlaces Especiales -->
+            <div class="mt-2 space-y-1">
+                <a href="#fixture" class="tab-button fixture-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</a>
+                <a href="#comparador" class="tab-button comparador-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="comparador-content">
+                    <i class="fas fa-users w-5 text-center"></i>
+                    <span>Comparador</span>
+                    <span class="new-badge">New</span>
+                </a>
+            </div>
 
             <!-- Sección Vista PC -->
             <div class="mt-2">
@@ -605,7 +684,7 @@
             </div>
        </header>
 
-        <main class="flex-1 overflow-y-auto">
+        <main class="flex-1 md:overflow-y-auto">
         </main>
     </div>
 
@@ -721,7 +800,8 @@
         const renderFunctions = {
             'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
             'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
-            'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
+            'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable,
+            'comparador-content': renderComparador
         };
 
         const DOMElements = {
@@ -756,13 +836,15 @@
             'equipos-content': { title: 'Equipos', icon: 'fa-futbol' },
             'fixture-content': { title: 'Fixture', icon: 'fa-calendar-alt' },
             'estadisticas-content': { title: 'Estadísticas', icon: 'fa-chart-bar' },
-            'individual-stats-content': { title: 'Histórico', icon: 'fa-history' }
+            'individual-stats-content': { title: 'Histórico', icon: 'fa-history' },
+            'comparador-content': { title: 'Comparador', icon: 'fa-users' }
         };
 
         const hashToTabMap = {
             "#leaderboard": "leaderboard-content", "#chamigo": "chamigo-content", "#tt": "tt-content",
             "#presentismo": "presentismo-content", "#ausentismo": "ausentismo-content", "#estadisticas": "estadisticas-content",
-            "#equipos": "equipos-content", "#fixture": "fixture-content", "#individual-stats": "individual-stats-content"
+            "#equipos": "equipos-content", "#fixture": "fixture-content", "#individual-stats": "individual-stats-content",
+            "#comparador": "comparador-content"
         };
         
         function applyTheme(theme) {
@@ -1687,7 +1769,6 @@
         
         function getTabContentHTML(tabId) {
             const config = PAGE_CONFIG[tabId] || PAGE_CONFIG['leaderboard-content'];
-            const title = config.desktopTitle || config.title;
             
             let baseHtml = `<div id="${tabId}" class="main-content-container space-y-4">`;
             
@@ -1696,7 +1777,6 @@
             if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas', 'fixture'].includes(prefix)) {
                 const yearFilterHTML = `
                     <div class="custom-select-container">
-                        <label class="filter-label hidden md:block">Año(s):</label>
                         <button id="${prefix}-year-select-button" class="custom-select-button">
                             <span class="truncate">Seleccionar Años</span>
                             <i class="fas fa-chevron-down transition-transform"></i>
@@ -1707,7 +1787,6 @@
                  
                  const periodOrMonthFilterHTML = prefix === 'fixture' ? `
                     <div class="custom-select-container">
-                        <label class="filter-label hidden md:block">Mes(es):</label>
                         <button id="fixture-month-select-button" class="custom-select-button">
                             <span class="truncate">Seleccionar Meses</span>
                             <i class="fas fa-chevron-down transition-transform"></i>
@@ -1716,7 +1795,6 @@
                         </div>
                     </div>` : `
                     <div id="${prefix}-period-select-container" class="custom-select-container">
-                        <label class="filter-label hidden md:block">Torneo:</label>
                         <input type="hidden" id="${prefix}-period-select" value="apertura">
                         <button id="${prefix}-period-select-button" class="custom-select-button">
                             <span class="truncate">Apertura</span>
@@ -1738,7 +1816,7 @@
                             ${periodOrMonthFilterHTML}
                         </div>
                         <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm md:text-lg md:font-bold">Torneo Actual</button>
+                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
                         </div>
                     </div>
                     <hr class="border-border-color"/>
@@ -1790,9 +1868,8 @@
                 case 'individual-stats-content':
                     baseHtml += `
                         <div class="mb-6">
-                            <label for="individual-player-search" class="block text-sm font-medium mb-1">Buscar Jugador:</label>
                             <div class="relative z-20">
-                                <input type="text" id="individual-player-search" placeholder="Escribe para buscar..." class="mt-1 block w-full p-2 shadow-sm">
+                                <input type="text" id="individual-player-search" placeholder="Buscar Jugador..." class="mt-1 block w-full p-2 shadow-sm">
                                 <button id="clear-player-search" class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"><i class="fas fa-times-circle"></i></button>
                                 <div id="individual-player-results" class="absolute z-10 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                             </div>
@@ -1802,6 +1879,74 @@
                             <p id="individual-stats-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
                             <table id="individual-stats-table" class="hidden"></table>
                         </div>`;
+                    break;
+                    
+                case 'comparador-content':
+                     // ESTRUCTURA ACTUALIZADA PARA COMPARADOR
+                    baseHtml = `
+                        <div id="comparador-content" class="main-content-container space-y-4">
+                            <!-- Filters Container -->
+                            <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
+                                <div class="col-span-1 md:col-span-2 md:order-1">
+                                    <div class="custom-select-container">
+                                        <button id="comparador-year-select-button" class="custom-select-button">
+                                            <span class="truncate">Seleccionar Años</span>
+                                            <i class="fas fa-chevron-down transition-transform"></i>
+                                        </button>
+                                        <div id="comparador-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
+                                <div class="col-span-1 md:col-span-2 md:order-3">
+                                     <div id="comparador-period-select-container" class="custom-select-container">
+                                        <input type="hidden" id="comparador-period-select" value="apertura">
+                                        <button id="comparador-period-select-button" class="custom-select-button">
+                                            <span class="truncate">Apertura</span>
+                                            <i class="fas fa-chevron-down transition-transform"></i>
+                                        </button>
+                                        <div id="comparador-period-select-dropdown" class="custom-select-options hidden">
+                                            <div class="option-item selected" data-value="apertura">Apertura</div>
+                                            <div class="option-item" data-value="clausura">Clausura</div>
+                                            <div class="option-item" data-value="total">Totales</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
+                                   <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
+                                </div>
+                            </div>
+                            
+                            <hr class="border-border-color"/>
+
+                            <!-- Player Selectors -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="relative">
+                                    <label class="block text-sm font-medium mb-1">Jugador 1</label>
+                                    <input type="text" id="comparador-player1-search" placeholder="Buscar Jugador 1..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
+                                    <button id="comparador-clear-player1-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
+                                    <div id="comparador-player1-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                                    <input type="hidden" id="comparador-player1-id">
+                                </div>
+                                <div class="relative">
+                                     <label class="block text-sm font-medium mb-1">Jugador 2</label>
+                                    <input type="text" id="comparador-player2-search" placeholder="Buscar Jugador 2..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
+                                    <button id="comparador-clear-player2-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
+                                    <div id="comparador-player2-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                                    <input type="hidden" id="comparador-player2-id">
+                                </div>
+                            </div>
+
+                            <!-- Comparison Display -->
+                            <div id="comparison-display-area" class="hidden space-y-8 pt-4">
+                                <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                                    <div id="player1-card-display" class="text-center"></div>
+                                    <div class="vs-separator">VS</div>
+                                    <div id="player2-card-display" class="text-center"></div>
+                                </div>
+                                <div id="stats-bars-container" class="space-y-4"></div>
+                            </div>
+                            <p id="comparador-placeholder" class="text-center text-text-secondary pt-8">Selecciona dos jugadores y un período para comenzar la comparación.</p>
+                        </div>
+                    `;
                     break;
             }
             
@@ -2000,6 +2145,8 @@
                 }
                 
                 FilterSessionManager.update(globalFilterState);
+                document.body.dispatchEvent(new CustomEvent('filterChanged'));
+
 
                 if (renderFn) {
                     if (prefix === 'estadisticas') {
@@ -2007,7 +2154,10 @@
                         renderEstadisticas();
                     } else if (prefix === 'fixture') {
                         renderFixture(true);
-                    } else {
+                    } else if (prefix === 'comparador') {
+                        updateComparison();
+                    }
+                    else {
                         renderFn();
                     }
                 }
@@ -2230,6 +2380,340 @@
                 });
         }
 
+        // --- INICIO: Funciones del Comparador ---
+
+        function injectComparatorStyles() {
+            const styleId = 'comparator-dynamic-styles';
+            if (document.getElementById(styleId)) return; // Inject only once
+
+            const style = document.createElement('style');
+            style.id = styleId;
+            // ESTILOS ACTUALIZADOS PARA EL GRÁFICO CON VALORES DENTRO DE LAS BARRAS
+            style.innerHTML = `
+                .comparator-results-dropdown {
+                    background-color: var(--bg-secondary);
+                    border: 1px solid var(--border-color);
+                }
+                .comparator-results-dropdown .option-item:hover {
+                    background-color: var(--bg-muted);
+                }
+                html.dark .comparator-search-input {
+                    background-color: var(--bg-muted) !important;
+                    color: var(--text-primary) !important;
+                    border-color: var(--border-color) !important;
+                }
+                html.dark .comparator-results-dropdown {
+                     background-color: #1f2937;
+                     border-color: #374151;
+                }
+                html.dark .comparator-results-dropdown .option-item:hover {
+                    background-color: #374151;
+                }
+                .progress-bg {
+                    position: relative; /* Contenedor para el valor absoluto */
+                    display: flex;
+                    background-color: var(--border-color);
+                    border-radius: 9999px;
+                    height: 1.75rem; /* Aumentamos la altura para el texto */
+                    overflow: hidden;
+                }
+                html.dark .progress-bg {
+                    background-color: #374151;
+                }
+                .progress-bg.player1 {
+                    justify-content: flex-end; /* Barra crece de derecha a izquierda */
+                }
+                .progress-bg.player2 {
+                    justify-content: flex-start; /* Barra crece de izquierda a derecha */
+                }
+                .progress-fill {
+                    height: 100%;
+                    border-radius: 9999px;
+                    transition: width 0.5s ease-in-out;
+                }
+                .progress-fill.player1 {
+                    background-color: var(--accent-color);
+                }
+                .progress-fill.player2 {
+                    background-color: var(--danger-color);
+                }
+                .stat-value {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: white;
+                    font-weight: 600;
+                    font-size: 0.875rem;
+                    padding: 0 0.75rem; /* Padding horizontal */
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.6); /* Sombra para legibilidad */
+                    white-space: nowrap;
+                }
+                .stat-value.player1 {
+                    right: 0; /* Alineado a la derecha dentro de la barra */
+                }
+                .stat-value.player2 {
+                    left: 0; /* Alineado a la izquierda dentro de la barra */
+                }
+                .stat-value.winner {
+                    font-weight: 800; /* Hacemos más notorio al ganador */
+                }
+                .stat-label {
+                    text-align: center;
+                    font-weight: 600;
+                    color: var(--text-secondary);
+                    white-space: nowrap;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function setupComparatorPlayerSearch(playerNum) {
+            const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
+            const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
+            const selectedIdInput = document.getElementById(`comparador-player${playerNum}-id`);
+            const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
+
+            if(!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
+
+            // --- INICIO DE LA MODIFICACIÓN ---
+
+            let clickTimer = null;
+            // Puedes ajustar este valor (en milisegundos) para cambiar la sensibilidad del doble toque.
+            const DOUBLE_CLICK_DELAY = 1000; 
+
+            searchInput.readOnly = true;
+
+            const filterAndDisplay = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                
+                if (searchTerm.length > 0) {
+                    clearButton.classList.remove('hidden');
+                } else {
+                    clearButton.classList.add('hidden');
+                }
+                
+                const otherPlayerNum = playerNum === 1 ? 2 : 1;
+                const otherPlayerId = document.getElementById(`comparador-player${otherPlayerNum}-id`).value;
+
+                const filtered = allPlayersData
+                    .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id != otherPlayerId)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                
+                resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
+                resultsDiv.classList.remove('hidden');
+            };
+
+            resultsDiv.addEventListener('mousedown', (e) => {
+                const target = e.target.closest('.option-item');
+                if (target && target.dataset.playerId) {
+                    e.preventDefault();
+                    searchInput.blur();
+                    const player = allPlayersData.find(p => p.id == target.dataset.playerId);
+                    searchInput.value = player.name;
+                    selectedIdInput.value = player.id;
+                    resultsDiv.classList.add('hidden');
+                    clearButton.classList.remove('hidden');
+                    updateComparison();
+                }
+            });
+
+            // Lógica de clic actualizada
+            searchInput.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Solo procesar clics si el campo está en modo "solo lectura".
+                if (searchInput.readOnly) {
+                    if (clickTimer === null) {
+                        // Es el PRIMER CLIC.
+                        // 1. Mostramos la lista de inmediato.
+                        filterAndDisplay();
+                        // 2. Iniciamos el temporizador para detectar un posible segundo clic.
+                        clickTimer = setTimeout(() => {
+                            // El tiempo de espera terminó, reseteamos el temporizador.
+                            clickTimer = null;
+                        }, DOUBLE_CLICK_DELAY);
+                    } else {
+                        // Es el SEGUNDO CLIC (dentro del tiempo de delay).
+                        // 1. Cancelamos el temporizador del primer clic.
+                        clearTimeout(clickTimer);
+                        clickTimer = null;
+                        // 2. Habilitamos la escritura y abrimos el teclado.
+                        searchInput.readOnly = false;
+                        searchInput.focus();
+                    }
+                }
+            });
+
+            searchInput.addEventListener('input', () => {
+                // El filtrado en vivo solo ocurre cuando el usuario está escribiendo.
+                if (!searchInput.readOnly) {
+                    filterAndDisplay();
+                }
+            });
+
+            searchInput.addEventListener('blur', () => {
+                // Al perder el foco, ocultamos la lista y volvemos al modo "solo lectura".
+                setTimeout(() => {
+                    resultsDiv.classList.add('hidden');
+                    searchInput.readOnly = true; 
+                }, 200);
+            });
+            
+            clearButton.addEventListener('mousedown', (e) => {
+                e.preventDefault(); 
+                searchInput.value = '';
+                selectedIdInput.value = '';
+                updateComparison();
+                filterAndDisplay();
+            });
+            // --- FIN DE LA MODIFICACIÓN ---
+        }
+
+        function renderComparador() {
+            injectComparatorStyles();
+            setupComparatorPlayerSearch(1);
+            setupComparatorPlayerSearch(2);
+            
+            if (!document.body.dataset.comparadorListener) {
+                document.body.addEventListener('filterChanged', updateComparison);
+                document.body.dataset.comparadorListener = 'true';
+            }
+        }
+
+        function createPlayerCard(playerStats, playerNum) {
+            if (!playerStats) return '';
+
+            const isPlaceholder = !playerStats.id;
+            const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            
+            // Aplicar un color de borde distinto para cada jugador y uno neutral para el placeholder
+            let borderColorClass = 'border-gray-300 dark:border-gray-600';
+            if (!isPlaceholder) {
+                // Usamos colores diferentes para cada jugador para distinguirlos
+                borderColorClass = playerNum === 1 ? 'border-accent-color' : 'border-danger-color';
+            }
+            
+            return `
+                <div class="flex flex-col items-center text-center space-y-3">
+                    <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 ${borderColorClass} shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
+                    <h3 class="text-2xl font-bold text-text-primary ${isPlaceholder ? 'opacity-50' : ''}">${playerStats.name}</h3>
+                </div>
+            `;
+        }
+        
+        function createComparisonBars(stats1, stats2) {
+            const statsMeta = [
+                { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
+                { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
+                { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' },
+                { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' },
+                { key: 'ausentes', label: 'Ausencias' },
+            ];
+
+            const renderStatBar = (stat) => {
+                const val1 = parseFloat(stats1[stat.key]) || 0;
+                const val2 = parseFloat(stats2[stat.key]) || 0;
+                const suffix = stat.suffix || '';
+                const total = val1 + val2;
+                
+                let width1 = 0, width2 = 0;
+                if (total > 0) {
+                    width1 = (val1 / total) * 100;
+                    width2 = (val2 / total) * 100;
+                }
+
+                let winnerClass1 = '';
+                let winnerClass2 = '';
+                
+                // Para 'pp' (perdidos) y 'ausentes', un número menor es mejor.
+                const isLowerBetter = stat.key === 'pp' || stat.key === 'ausentes';
+                
+                if (val1 !== val2) {
+                    const winnerCssClass = 'winner-bar';
+                    if ((!isLowerBetter && val1 > val2) || (isLowerBetter && val1 < val2)) {
+                        winnerClass1 = winnerCssClass;
+                    } else {
+                        winnerClass2 = winnerCssClass;
+                    }
+                }
+
+                return `
+                    <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
+                        <!-- Barra y Valor Jugador 1 -->
+                        <div class="progress-bg player1 ${winnerClass1}">
+                            <div class="progress-fill player1" style="width: ${width1}%"></div>
+                            <span class="stat-value player1">${val1}${suffix}</span>
+                        </div>
+
+                        <!-- Etiqueta Central -->
+                        <div class="stat-label">${stat.label}</div>
+
+                        <!-- Barra y Valor Jugador 2 -->
+                        <div class="progress-bg player2 ${winnerClass2}">
+                            <div class="progress-fill player2" style="width: ${width2}%"></div>
+                            <span class="stat-value player2">${val2}${suffix}</span>
+                        </div>
+                    </div>
+                `;
+            };
+
+            return statsMeta.map(renderStatBar).join('');
+        }
+
+        function updateComparison() {
+            const player1Id = document.getElementById('comparador-player1-id')?.value;
+            const player2Id = document.getElementById('comparador-player2-id')?.value;
+
+            const displayArea = document.getElementById('comparison-display-area');
+            const placeholder = document.getElementById('comparador-placeholder');
+            if (!displayArea || !placeholder) return;
+
+            // Objeto para representar a un jugador no seleccionado
+            const placeholderPlayerStats = {
+                name: 'Sin Asignar',
+                photo_url: 'https://placehold.co/128x128/e2e8f0/64748b?text=?',
+                points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: null
+            };
+
+            // La vista de comparación se muestra si al menos un jugador está seleccionado
+            if (player1Id || player2Id) {
+                const { players: allStats } = calculateStatsForPeriod('comparador');
+
+                let player1Stats, player2Stats;
+
+                // Cargar datos del jugador 1 o usar el placeholder
+                if (player1Id) {
+                    const player1Data = allPlayersData.find(p => p.id == player1Id);
+                    player1Stats = allStats.find(p => p.id == player1Id) || { ...placeholderPlayerStats, name: player1Data.name, photo_url: player1Data.photo_url, id: player1Id };
+                } else {
+                    player1Stats = placeholderPlayerStats;
+                }
+
+                // Cargar datos del jugador 2 o usar el placeholder
+                if (player2Id) {
+                    const player2Data = allPlayersData.find(p => p.id == player2Id);
+                    player2Stats = allStats.find(p => p.id == player2Id) || { ...placeholderPlayerStats, name: player2Data.name, photo_url: player2Data.photo_url, id: player2Id };
+                } else {
+                    player2Stats = placeholderPlayerStats;
+                }
+
+                // Renderizar las tarjetas y las barras
+                document.getElementById('player1-card-display').innerHTML = createPlayerCard(player1Stats, 1);
+                document.getElementById('player2-card-display').innerHTML = createPlayerCard(player2Stats, 2);
+                document.getElementById('stats-bars-container').innerHTML = createComparisonBars(player1Stats, player2Stats);
+
+                displayArea.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+
+            } else {
+                // Si no hay ningún jugador, mostrar el mensaje inicial
+                displayArea.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                placeholder.textContent = 'Selecciona un jugador para comenzar la comparación.';
+            }
+        }
+        // --- FIN: Funciones del Comparador ---
+
         async function initializeApp() {
             try {
                 const { data: players, error: pError } = await supabaseClient.from('players').select('id, name, photo_url');
@@ -2268,7 +2752,10 @@
 
             ['click', 'scroll', 'keydown'].forEach(eventType => {
                 window.addEventListener(eventType, () => {
-                    FilterSessionManager.update(globalFilterState); 
+                    const activeTabId = document.querySelector('.tab-button.active')?.dataset.tab;
+                    if (activeTabId !== 'comparador-content') {
+                         FilterSessionManager.update(globalFilterState); 
+                    }
                 }, true);
             });
             
