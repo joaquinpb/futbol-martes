@@ -2694,7 +2694,6 @@
         }
         // --- FIN: Función para calcular estadísticas Head-to-Head ---
         
-        // Reemplaza la función existente por esta
         function updateComparison() {
             const player1Id = document.getElementById('comparador-player1-id')?.value;
             const player2Id = document.getElementById('comparador-player2-id')?.value;
@@ -2712,9 +2711,27 @@
                 return;
             }
         
-            const { players: allIndividualStats, teamStats, error } = calculateStatsForPeriod('comparador');
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Obtenemos los filtros específicos del comparador directamente del DOM
+            const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
+            let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
+            if (selectedYears.includes('all')) {
+                selectedYears = ['all'];
+            }
+            const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
+
+            // Verificación de seguridad: si los filtros no están listos, no continuamos.
+            if (!selectedYears || selectedYears.length === 0 || !selectedPeriod) {
+                displayArea.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                placeholder.textContent = 'Por favor, selecciona un período válido para comparar.';
+                return;
+            }
+            
+            // Pasamos los filtros explícitamente a la función de cálculo
+            const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
+
             const allFilteredMatches = allMatchesData.filter(match => {
-                const { selectedYears, selectedPeriod } = globalFilterState;
                 if (!match.result) return false;
         
                 const matchYear = parseDate(match.match_date).getFullYear();
@@ -2725,6 +2742,7 @@
         
                 return yearMatch && periodMatch;
             });
+            // --- FIN DE LA CORRECCIÓN ---
         
             const player1IndividualStats = allIndividualStats.find(p => p.id == player1Id);
             const player2IndividualStats = allIndividualStats.find(p => p.id == player2Id);
@@ -2782,6 +2800,7 @@
                 </div>
             `;
         }
+
         // --- FIN: Funciones del Comparador ---
 
         async function initializeApp() {
