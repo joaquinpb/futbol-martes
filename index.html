@@ -1679,7 +1679,7 @@
                     }
                 };
 
-                const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical[result];
+                const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical;
                 
                 if (currentTrophyPosition) {
                     Object.assign(trophyDiv.style, currentTrophyPosition);
@@ -1699,19 +1699,12 @@
             });
 
             // Una vez que todas las imágenes han cargado (o fallado), ajustamos la altura
-            const attemptAdjust = (retries = 5, delay = 100) => {
-                if (retries <= 0) return; // Dejamos de intentar si se acaban los reintentos
-                
-                adjustFixtureHeights();
-                
-                // Hacemos un reintento por si acaso
-                setTimeout(() => attemptAdjust(retries - 1, delay), delay);
-            };
-
-            // Esperamos a que todas las imágenes se carguen
             Promise.all(promises).then(() => {
-                // Una vez cargadas, iniciamos los intentos de ajuste
-                attemptAdjust();
+                // Usamos requestAnimationFrame para asegurarnos de que el navegador haya renderizado el layout
+                // antes de que midamos la altura. Esto previene el "glitch" visual.
+                requestAnimationFrame(() => {
+                    adjustFixtureHeights();
+                });
             });
         }
 
