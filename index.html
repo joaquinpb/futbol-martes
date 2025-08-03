@@ -34,6 +34,7 @@
             --accent-color-muted: #7e22ce; /* Color para header móvil */
             --danger-color: #ef4444;
             --warning-color: #f59e0b;
+            --success-color: #10b981;
             --button-text-color: #ffffff;
             --text-yellow-400: #facc15;
             --player-claros-bg: #ffffff;
@@ -183,6 +184,19 @@
         html.dark .filter-label {
             background-color: var(--filter-label-bg);
         }
+        
+        /* Estilos para los select nativos en el comparador */
+        #comparador-content select {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        html.dark #comparador-content select {
+            background-color: var(--bg-muted);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
 
         #side-menu {
             background-color: var(--bg-secondary);
@@ -480,6 +494,37 @@
             background-color: #d97706 !important;
         }
 
+        .comparador-header {
+            background-color: var(--success-color);
+            color: var(--button-text-color);
+            font-weight: 600;
+        }
+        .comparador-header:hover {
+            opacity: 0.9;
+        }
+        html.dark .comparador-header {
+            background-color: #059669;
+        }
+        .comparador-header.active {
+             background-color: var(--success-color) !important;
+             opacity: 1 !important;
+        }
+        html.dark .comparador-header.active {
+            background-color: #059669 !important;
+        }
+
+        .new-badge {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            margin-left: 8px;
+            line-height: 1;
+        }
+
+
         /* === INICIO: Corrección Buscador Histórico === */
         html.dark #individual-player-search {
             background-color: #374151 !important;
@@ -562,8 +607,15 @@
                 </div>
             </div>
 
-            <!-- Enlace Fixture -->
-            <a href="#fixture" class="tab-button fixture-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200 mt-2" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</a>
+            <!-- Enlaces Especiales -->
+            <div class="mt-2 space-y-1">
+                <a href="#fixture" class="tab-button fixture-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</a>
+                <a href="#comparador" class="tab-button comparador-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="comparador-content">
+                    <i class="fas fa-users w-5 text-center"></i>
+                    <span>Comparador</span>
+                    <span class="new-badge">New</span>
+                </a>
+            </div>
 
             <!-- Sección Vista PC -->
             <div class="mt-2">
@@ -574,7 +626,6 @@
                 <div class="collapsible-content hidden mt-1 space-y-1 pl-4">
                     <a href="#estadisticas" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="estadisticas-content"><i class="fas fa-chart-bar w-5 text-center"></i>Estadísticas</a>
                     <a href="#individual-stats" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="individual-stats-content"><i class="fas fa-history w-5 text-center"></i>Histórico</a>
-                    <a href="#comparador" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="comparador-content"><i class="fas fa-users w-5 text-center"></i>Comparador</a>
                 </div>
             </div>
             
@@ -1808,35 +1859,29 @@
                     break;
                 case 'comparador-content':
                     baseHtml += `
-                        <div class="p-2 md:p-6">
-                            <h2 class="text-2xl font-bold mb-6 text-center">Comparador de Jugadores</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-4xl mx-auto">
-                                <!-- Selector Jugador 1 -->
+                        <div class="p-2 md:p-6 space-y-8">
+                            <h2 class="text-2xl font-bold text-center">Comparador de Jugadores</h2>
+                            
+                            <!-- Selectores de Jugadores -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                                 <div>
                                     <label for="player1-select" class="block text-sm font-medium mb-1 text-text-secondary">Jugador 1</label>
-                                    <select id="player1-select" class="w-full p-3 border rounded-lg bg-bg-secondary dark:bg-bg-muted border-border-color focus:ring-2 focus:ring-accent-color focus:border-accent-color"></select>
+                                    <select id="player1-select" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-accent-color focus:border-accent-color"></select>
                                 </div>
-                                <!-- Selector Jugador 2 -->
                                 <div>
                                     <label for="player2-select" class="block text-sm font-medium mb-1 text-text-secondary">Jugador 2</label>
-                                    <select id="player2-select" class="w-full p-3 border rounded-lg bg-bg-secondary dark:bg-bg-muted border-border-color focus:ring-2 focus:ring-accent-color focus:border-accent-color"></select>
+                                    <select id="player2-select" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-accent-color focus:border-accent-color"></select>
                                 </div>
                             </div>
-                            <!-- Área de Comparación -->
-                            <div id="comparison-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start max-w-4xl mx-auto">
-                                <!-- Columna Jugador 1 -->
-                                <div id="player1-comparison" class="hidden">
-                                    <!-- Contenido se llenará con JS -->
-                                </div>
-                                <!-- Columna Jugador 2 -->
-                                <div id="player2-comparison" class="hidden">
-                                    <!-- Contenido se llenará con JS -->
-                                </div>
+
+                            <!-- Tarjetas de Jugadores -->
+                            <div id="comparison-players-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start max-w-4xl mx-auto">
+                                <div id="player1-comparison" class="hidden"></div>
+                                <div id="player2-comparison" class="hidden"></div>
                             </div>
-                             <!-- Contenedor de estadísticas comparativas -->
-                            <div id="stats-comparison-table-container" class="mt-8 hidden max-w-4xl mx-auto">
-                                <!-- La tabla comparativa se insertará aquí -->
-                            </div>
+
+                            <!-- Tabla Comparativa -->
+                            <div id="stats-comparison-table-container" class="hidden max-w-4xl mx-auto"></div>
                         </div>
                     `;
                     break;
@@ -2044,7 +2089,10 @@
                         renderEstadisticas();
                     } else if (prefix === 'fixture') {
                         renderFixture(true);
-                    } else {
+                    } else if (prefix === 'comparador') {
+                        updateComparison();
+                    }
+                    else {
                         renderFn();
                     }
                 }
@@ -2284,6 +2332,9 @@
 
             player1Select.addEventListener('change', updateComparison);
             player2Select.addEventListener('change', updateComparison);
+            
+            // Add listener for global filter changes
+            document.body.addEventListener('filterChanged', updateComparison);
         }
 
         function createPlayerCard(playerStats) {
@@ -2352,14 +2403,17 @@
         }
 
         function updateComparison() {
-            const player1Id = document.getElementById('player1-select').value;
-            const player2Id = document.getElementById('player2-select').value;
+            const player1Id = document.getElementById('player1-select')?.value;
+            const player2Id = document.getElementById('player2-select')?.value;
 
             const container1 = document.getElementById('player1-comparison');
             const container2 = document.getElementById('player2-comparison');
             const statsTableContainer = document.getElementById('stats-comparison-table-container');
+            
+            if(!container1 || !container2 || !statsTableContainer) return;
 
             if (player1Id && player2Id && player1Id !== player2Id) {
+                // Use the global filters for the calculation
                 const { players: allStats } = calculateStats(globalFilterState);
 
                 const player1Data = allPlayersData.find(p => p.id == player1Id);
@@ -2423,7 +2477,10 @@
 
             ['click', 'scroll', 'keydown'].forEach(eventType => {
                 window.addEventListener(eventType, () => {
-                    FilterSessionManager.update(globalFilterState); 
+                    const activeTabId = document.querySelector('.tab-button.active')?.dataset.tab;
+                    if (activeTabId !== 'comparador-content') {
+                         FilterSessionManager.update(globalFilterState); 
+                    }
                 }, true);
             });
             
@@ -2486,6 +2543,14 @@
                     icon.classList.add('rotate-180');
                 }
             }
+
+            // Custom event for filter changes
+            const originalUpdate = FilterSessionManager.update;
+            FilterSessionManager.update = function(filters) {
+                originalUpdate.call(this, filters);
+                document.body.dispatchEvent(new CustomEvent('filterChanged'));
+            };
+
 
             initializeApp();
         }
