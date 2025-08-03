@@ -1685,7 +1685,19 @@
 
             visualDetailsContainer.classList.remove('hidden');
 
-            adjustFixtureHeights();
+            // Esperamos a que todas las imágenes dentro del campo se carguen
+            const images = soccerFieldContainer.querySelectorAll('img');
+            const promises = [...images].map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.onload = img.onerror = resolve;
+                });
+            });
+
+            // Una vez que todas las imágenes han cargado (o fallado), ajustamos la altura
+            Promise.all(promises).then(() => {
+                adjustFixtureHeights();
+            });
         }
         
         function showPlayerModal(playerId) {
