@@ -1699,54 +1699,6 @@
                 adjustFixtureHeights();
             });
         }
-        
-        function showPlayerModal(playerId) {
-            const match = allMatchesData.find(m => m.id == lastSelectedFixtureMatchId);
-            if (!match) {
-                console.error("No se encontró el partido seleccionado para el modal.");
-                return;
-            }
-
-            const matchDate = parseDate(match.match_date);
-            const year = matchDate.getFullYear();
-            const month = matchDate.getMonth();
-            const period = (month <= 5) ? 'apertura' : 'clausura';
-            const tournamentName = `${year} - ${period.charAt(0).toUpperCase() + period.slice(1)}`;
-
-            const { players: statsForTournament, error } = calculateStats({
-                selectedYears: [String(year)],
-                selectedPeriod: period
-            });
-
-            if (error) {
-                console.error("No se pudieron calcular las estadísticas para el modal.");
-                return;
-            }
-            
-            const tournamentPlayerData = statsForTournament.find(p => p.id === playerId);
-            const basePlayerData = allPlayersData.find(p => p.id === playerId);
-
-            if (!basePlayerData) {
-                console.error(`No se encontraron datos base para el jugador con ID: ${playerId}`);
-                return;
-            }
-
-            const { playerModal } = DOMElements;
-            playerModal.photo.src = basePlayerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
-            playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
-            playerModal.name.textContent = basePlayerData.name;
-            playerModal.tournament.textContent = tournamentName;
-
-            playerModal.points.textContent = tournamentPlayerData ? tournamentPlayerData.points : 0;
-            playerModal.chamigo.textContent = tournamentPlayerData ? tournamentPlayerData.chamigos : 0;
-            playerModal.tt.textContent = tournamentPlayerData ? tournamentPlayerData.tt : 0;
-
-            playerModal.overlay.classList.remove('hidden');
-            setTimeout(() => {
-                playerModal.overlay.classList.add('visible');
-                DOMElements.body.classList.add('modal-open');
-            }, 10);
-        }
 
         function hidePlayerModal() {
             const { playerModal } = DOMElements;
