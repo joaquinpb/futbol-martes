@@ -17,9 +17,10 @@
 
     <style>
         :root {
-            --bg-primary: #f4f7fe;
+            --bg-primary: #ffffff;
             --bg-secondary: #ffffff;
             --bg-muted: #f9fafb;
+            --bg-even-row: #f3f4f6; /* Color para filas pares */
             --filter-label-bg: #e5e7eb; /* Gris más oscuro para tema claro */
             --sidebar-bg: #111827;
             --sidebar-text: #e5e7eb;
@@ -45,9 +46,10 @@
         }
 
         html.dark {
-            --bg-primary: #030712;
+            --bg-primary: #1f2937;
             --bg-secondary: #1f2937;
             --bg-muted: #111827;
+            --bg-even-row: #111827; /* Mantenemos el mismo para tema oscuro */
             --filter-label-bg: #111827; /* Fondo para tema oscuro */
             --sidebar-bg: #1f2937;
             --text-primary: #f9fafb;
@@ -230,66 +232,90 @@
             }
         }
 
+        /* === INICIO: Estilos de Tabla Modernos === */
         .table-container {
+            border-radius: 0.75rem; /* Puntas menos redondeadas */
+            box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
             max-height: 70vh;
             overflow-y: auto;
-            border-radius: 0.5rem;
             position: relative;
-            box-shadow: 0 1px 3px 0 rgba(0,0,0,.05), 0 1px 2px -1px rgba(0,0,0,.05);
-            border: 1px solid var(--border-color);
         }
+
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate; /* Cambiado para que el borde del contenedor funcione */
+            border-spacing: 0;
         }
+
         thead th {
-            background-color: var(--bg-muted);
-            color: var(--text-secondary);
+            background-color: var(--accent-color); /* CAMBIO: Color sólido */
+            color: var(--button-text-color);
             text-transform: uppercase;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
             position: sticky;
             top: 0;
             z-index: 10;
-            border-bottom: 2px solid var(--border-color);
+            border-bottom: none;
+            padding: 1rem 0.75rem;
+            text-align: center;
         }
-        html.dark thead th {
-            background-color: #111827;
-        }
-        thead th[data-sort] { cursor: pointer; transition: background-color 0.2s; }
-        thead th[data-sort]:hover { background-color: var(--border-color); }
-        html.dark thead th[data-sort]:hover { background-color: var(--sidebar-hover-bg); }
         
-        td {
-            border-top: 1px solid var(--border-color);
+        /* Asegura que el color se aplique también a los headers pegajosos */
+        thead th.sticky-col {
+            background-color: var(--accent-color); /* CAMBIO: Color sólido */
         }
+
+        thead th[data-sort]:hover { 
+            background-color: var(--accent-color-hover); /* CAMBIO: Color sólido hover */
+        }
+        thead th[data-sort] { 
+            cursor: pointer; 
+            transition: background-color 0.2s; 
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none; /* No border for the last row */
+        }
+
         tbody td {
+            padding: 0.85rem 0.75rem;
             color: var(--text-primary);
             transition: background-color 150ms ease-in-out;
+            background-color: var(--bg-secondary);
+            text-align: center; /* CAMBIO: Contenido centrado */
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tbody tr:nth-child(even) td {
+            background-color: var(--bg-even-row); /* CAMBIO: Fila par más oscura */
         }
         
-        tbody tr:nth-child(odd) { background-color: var(--bg-secondary); }
-        tbody tr:nth-child(even) { background-color: var(--bg-muted); }
-        
-        html.dark tbody tr:nth-child(odd) { background-color: #1f2937; }
-        html.dark tbody tr:nth-child(even) { background-color: #111827; }
+        html.dark tbody tr:nth-child(odd) td { background-color: #1f2937; }
+        html.dark tbody tr:nth-child(even) td { background-color: #111827; }
 
         tbody tr:hover td,
         tbody tr:hover td.sticky-col {
             background-color: #eef2ff;
         }
+
         html.dark tbody tr:hover td,
         html.dark tbody tr:hover td.sticky-col {
             background-color: var(--sidebar-hover-bg);
         }
-        
-        #estadisticas-table, #individual-stats-table { min-width: 800px; }
+
+        /* Manejo de columnas pegajosas */
         .sticky-col {
             position: sticky;
             z-index: 5;
-            background-color: var(--bg-muted);
-        }
-        tbody tr:nth-child(odd) .sticky-col {
             background-color: var(--bg-secondary);
+        }
+
+        tbody tr:nth-child(even) .sticky-col {
+            background-color: var(--bg-even-row); /* CAMBIO: Fila par más oscura */
         }
         html.dark .sticky-col {
             background-color: #111827;
@@ -297,24 +323,31 @@
         html.dark tbody tr:nth-child(odd) .sticky-col {
             background-color: #1f2937;
         }
-        
-        #individual-stats-table tr.font-bold td,
-        #individual-stats-table tr.font-bold td.sticky-col {
-            background-color: var(--accent-color) !important;
-            color: var(--button-text-color);
-        }
-        
-        #individual-stats-table tr.font-bold:hover td,
-        #individual-stats-table tr.font-bold:hover td.sticky-col {
-            background-color: var(--accent-color-hover) !important;
+
+        thead th.sticky-col {
+            z-index: 15;
         }
 
+        #estadisticas-table, #individual-stats-table { min-width: 800px; }
+
         #estadisticas-table .sticky-col-1 { left: 0; }
-        #estadisticas-table .sticky-col-2 { left: 32px; } /* Avatar */
-        #estadisticas-table .sticky-col-3 { left: 80px; } /* Jugador */
+        #estadisticas-table .sticky-col-2 { left: 56px; } /* Ajustado */
+        #estadisticas-table .sticky-col-3 { left: 112px; } /* Ajustado */
         #individual-stats-table .sticky-col-1 { left: 0; }
         #individual-stats-table .sticky-col-2 { left: 90px; }
-        thead th.sticky-col { z-index: 15; }
+
+        /* Fila TOTAL en tabla de histórico */
+        #individual-stats-table tr.font-bold td,
+        #individual-stats-table tr.font-bold td.sticky-col {
+            background: var(--accent-color) !important; /* CAMBIO: Color sólido */
+            color: var(--button-text-color);
+            font-weight: 700;
+        }
+        #individual-stats-table tr.font-bold:hover td,
+        #individual-stats-table tr.font-bold:hover td.sticky-col {
+            background: var(--accent-color-hover) !important; /* CAMBIO: Color sólido hover */
+        }
+        /* === FIN: Estilos de Tabla Modernos === */
         
         .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
         .button-primary:hover { background-color: var(--accent-color-hover); }
@@ -353,8 +386,56 @@
             .penalty-area.bottom.horizontal-layout { top: 20%; right: 0; left: auto; height: 60%; width: 18%; border-width: 2px 0 2px 2px; }
         }
 
-        #fixture-details-display { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
-        
+        /* === INICIO: Estilos Asistentes TT === */
+        #fixture-details-display {
+            background-color: var(--accent-color);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            display: flex; 
+            flex-direction: column; 
+        }
+        #fixture-details-display h3 {
+            color: var(--button-text-color);
+            padding: 1rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-align: center;
+            flex-shrink: 0; 
+        }
+        #fixture-details-display .table-container {
+            border: none;
+            box-shadow: none;
+            border-radius: 0;
+            overflow-y: auto; 
+            flex-grow: 1; 
+            max-height: none; 
+            background-color: var(--bg-secondary); /* Agregado para el fondo */
+        }
+        html.dark #fixture-details-display .table-container {
+            background-color: #1f2937; /* Fondo para modo oscuro */
+        }
+        @media (min-width: 768px) {
+            #fixture-details-display .table-container {
+                max-height: none; /* Aseguramos que no haya altura máxima en desktop */
+            }
+        }
+
+        #tt-attendees-table td {
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+        }
+        #tt-attendees-table tr:nth-child(even) td {
+            background-color: var(--bg-even-row);
+        }
+        #tt-attendees-table tr:last-child td {
+            border-bottom: none;
+        }
+        html.dark #tt-attendees-table td { background-color: #1f2937; }
+        html.dark #tt-attendees-table tr:nth-child(even) td { background-color: #111827; }
+        /* === FIN: Estilos Asistentes TT === */
+
         .player-marker { 
             border: 2px solid; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
@@ -364,8 +445,18 @@
         .player-marker:hover {
             transform: scale(1.1);
         }
-        .player-marker.claros { background-color: var(--player-claros-bg); color: var(--player-claros-text); border-color: var(--player-claros-text); }
-        .player-marker.oscuros { background-color: var(--player-oscuros-bg); color: var(--player-oscuros-text); border-color: var(--player-oscuros-text); }
+        
+        /* --- INICIO DE LA MODIFICACIÓN: Estilos de Jugadores en Fixture --- */
+        .player-marker.claros { 
+            background-color: var(--player-claros-bg); 
+            color: var(--player-claros-text); 
+            border-color: #FFFFFF; /* Borde blanco para avatares claros */
+        }
+        .player-marker.oscuros { 
+            background-color: var(--player-oscuros-bg); 
+            color: var(--player-oscuros-text); 
+            border-color: #000000; /* Borde negro para avatares oscuros */
+        }
         .player-name-label {
             font-size: 0.75rem;
             font-weight: 700;
@@ -375,13 +466,17 @@
         }
         .player-name-label.claros-label {
             background-color: #FFFFFF;
-            color: #d97706;
+            color: #d97706; /* Naranja */
             border: 1px solid #e2e8f0;
         }
         .player-name-label.oscuros-label {
             background-color: #1a202c;
-            color: #d97706;
+            color: #d97706; /* Naranja */
+            /* Se agrega sombra de texto para simular un contorno negro */
+            text-shadow: 0 0 3px #000, 0 0 3px #000;
         }
+        /* --- FIN DE LA MODIFICACIÓN --- */
+
         .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
         #individual-player-search { padding-right: 2.5rem !important; }
@@ -1161,11 +1256,13 @@
         }
 
         function renderGenericTable(section, filterFn, sortFn, renderRowFn, headers) {
-            const table = document.getElementById(`${section}-table`);
+            const tableContainer = document.getElementById(`${section}-content`).querySelector('.table-container');
             const loadingMessage = document.getElementById(`${section}-loading-message`);
-            if (!table || !loadingMessage) return;
+            if (!tableContainer || !loadingMessage) return;
 
-            table.classList.add('hidden');
+            // Hide table and show loader
+            const table = tableContainer.querySelector('table');
+            if(table) table.classList.add('hidden');
             loadingMessage.classList.remove('hidden');
             loadingMessage.innerHTML = `<span class="loading-spinner"></span>Calculando...`;
             
@@ -1179,11 +1276,18 @@
             const rankedPlayers = players.filter(filterFn).sort(sortFn);
             if (rankedPlayers.length === 0) {
                 loadingMessage.innerHTML = `No hay datos disponibles para los filtros seleccionados.`;
+                if(table) table.innerHTML = '';
                 return;
             }
             
+            if(!table) {
+                const newTable = document.createElement('table');
+                tableContainer.appendChild(newTable);
+                table = newTable;
+            }
+
             table.innerHTML = `
-                <thead><tr>${headers.map(h => `<th class="p-3 text-center">${h}</th>`).join('')}</tr></thead>
+                <thead><tr>${headers.map(h => `<th class="p-3 ${h === '' ? 'w-14' : ''}">${h}</th>`).join('')}</tr></thead>
                 <tbody>${rankedPlayers.map(renderRowFn).join('')}</tbody>`;
 
             loadingMessage.classList.add('hidden');
@@ -1197,15 +1301,15 @@
                 (a, b) => b.points - a.points,
                 (player, index) => `
                     <tr>
-                        <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-2 text-center">
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
                             <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
                                 <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
                             </a>
                         </td>
-                        <td class="p-3 text-center">${player.name}</td>
-                        <td class="p-3 text-center">${player.points}</td>
-                        <td class="p-3 text-center">${player.efectividad}%</td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.points}</td>
+                        <td>${player.efectividad}%</td>
                     </tr>`,
                 ['#', '', 'Jugador', 'Puntos', 'Efectividad']
             );
@@ -1218,14 +1322,14 @@
                 (a, b) => b.chamigos - a.chamigos,
                 (player, index) => `
                     <tr>
-                        <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-2 text-center">
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
                             <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
                                 <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
                             </a>
                         </td>
-                        <td class="p-3 text-center">${player.name}</td>
-                        <td class="p-3 text-center">${player.chamigos}</td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.chamigos}</td>
                     </tr>`,
                 ['#', '', 'Jugador', 'Chamigos']
             );
@@ -1238,19 +1342,19 @@
                 (a, b) => b.tt - a.tt,
                 (player, index) => `
                     <tr>
-                        <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-2 text-center">
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
                             <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
                                 <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
                             </a>
                         </td>
-                        <td class="p-3 text-center">${player.name}</td>
-                        <td class="p-3 text-center">${player.tt}</td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.tt}</td>
                     </tr>`,
                 ['#', '', 'Jugador', 'TT']
             );
         }
-
+        
         function renderPresentismo() {
             renderGenericTable(
                 'presentismo',
@@ -1258,14 +1362,14 @@
                 (a, b) => b.pj - a.pj,
                 (player, index) => `
                     <tr>
-                        <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-2 text-center">
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
                             <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
                                 <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
                             </a>
                         </td>
-                        <td class="p-3 text-center">${player.name}</td>
-                        <td class="p-3 text-center">${player.pj}</td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.pj}</td>
                     </tr>`,
                 ['#', '', 'Jugador', 'PJ']
             );
@@ -1278,14 +1382,14 @@
                 (a, b) => b.ausentes - a.ausentes,
                 (player, index) => `
                     <tr>
-                        <td class="p-3 text-center">${index + 1}</td>
-                        <td class="p-2 text-center">
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
                             <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
                                 <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
                             </a>
                         </td>
-                        <td class="p-3 text-center">${player.name}</td>
-                        <td class="p-3 text-center">${player.ausentes}</td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.ausentes}</td>
                     </tr>`,
                 ['#', '', 'Jugador', 'Ausentes']
             );
@@ -1317,43 +1421,48 @@
             table.innerHTML = `
                 <thead>
                     <tr>
-                        <th class="p-2 text-center sticky-col sticky-col-1">#</th>
-                        <th class="p-2 text-center sticky-col sticky-col-2"></th>
-                        <th class="p-3 text-left sticky-col sticky-col-3">Jugador</th>
-                        <th class="p-3 text-center" data-sort="points">Puntos</th>
-                        <th class="p-3 text-center" data-sort="pg">PG</th>
-                        <th class="p-3 text-center" data-sort="pe">PE</th>
-                        <th class="p-3 text-center" data-sort="pp">PP</th>
-                        <th class="p-3 text-center" data-sort="pj">PJ</th>
-                        <th class="p-3 text-center" data-sort="efectividad">Efectividad</th>
-                        <th class="p-3 text-center" data-sort="chamigos">Chamigo</th>
-                        <th class="p-3 text-center" data-sort="tt">TT</th>
-                        <th class="p-3 text-center" data-sort="ausentes">Ausentismo</th>
+                        <th class="sticky-col sticky-col-1 w-14 min-w-[3.5rem]">#</th>
+                        <th class="sticky-col sticky-col-2 w-14 min-w-[3.5rem]"></th>
+                        <th class="text-center sticky-col sticky-col-3">Jugador</th>
+                        <th data-sort="points">Puntos</th>
+                        <th data-sort="pg">PG</th>
+                        <th data-sort="pe">PE</th>
+                        <th data-sort="pp">PP</th>
+                        <th data-sort="pj">PJ</th>
+                        <th data-sort="efectividad">Efectividad</th>
+                        <th data-sort="chamigos">Chamigo</th>
+                        <th data-sort="tt">TT</th>
+                        <th data-sort="ausentes">Ausentismo</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${rankedPlayers.map((player, index) => `
                     <tr>
-                        <td class="p-2 text-center sticky-col sticky-col-1">${index + 1}</td>
-                        <td class="p-2 text-center sticky-col sticky-col-2">
+                        <td class="sticky-col sticky-col-1 font-semibold">${index + 1}</td>
+                        <td class="sticky-col sticky-col-2">
                             <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
                                 <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
                             </a>
                         </td>
-                        <td class="p-3 text-left sticky-col sticky-col-3">${player.name}</td>
-                        <td class="p-3 text-center">${player.points}</td><td class="p-3 text-center">${player.pg}</td><td class="p-3 text-center">${player.pe}</td>
-                        <td class="p-3 text-center">${player.pp}</td><td class="p-3 text-center">${player.pj}</td><td class="p-3 text-center">${player.efectividad}%</td>
-                        <td class="p-3 text-center">${player.chamigos}</td><td class="p-3 text-center">${player.tt}</td><td class="p-3 text-center">${player.ausentes}</td>
+                        <td class="text-center sticky-col sticky-col-3 font-medium">${player.name}</td>
+                        <td>${player.points}</td><td>${player.pg}</td><td>${player.pe}</td>
+                        <td>${player.pp}</td><td>${player.pj}</td><td>${player.efectividad}%</td>
+                        <td>${player.chamigos}</td><td>${player.tt}</td><td>${player.ausentes}</td>
                     </tr>`).join('')}
                 </tbody>`;
 
             loadingMessage.classList.add('hidden');
             table.classList.remove('hidden');
             
+            table.querySelectorAll(`thead th[data-sort]`).forEach(th => {
+                const icon = th.querySelector('.fas');
+                if(icon) icon.remove();
+            });
+
             const activeTh = table.querySelector(`thead th[data-sort="${sortCriterion}"]`);
             if (activeTh) {
                 const icon = document.createElement('i');
-                icon.className = `fas fa-chevron-${sortOrder === 'desc' ? 'down' : 'up'} ml-2`;
+                icon.className = `fas fa-chevron-${sortOrder === 'desc' ? 'down' : 'up'} ml-2 text-xs`;
                 activeTh.appendChild(icon);
             }
         }
@@ -1479,6 +1588,10 @@
             });
             
             renderFixtureDetails(matchId);
+            
+            // Forzamos un reajuste inmediato y otro después de un instante
+            adjustFixtureHeights();
+            setTimeout(adjustFixtureHeights, 100);
         }
 
         function renderFixtureDetails(matchId) {
@@ -1576,12 +1689,16 @@
                         Oscuros: { top: '92%', left: '5%' }
                     },
                     vertical: {
-                        Claros:  { top: '95%', left: '92%' },
-                        Oscuros: { top: '5%', left: '92%' }
+                        Claros:  { top: '95%', left: '93%' },
+                        Oscuros: { top: '5%', left: '93%' }
                     }
                 };
 
+                // --- INICIO DE LA MODIFICACIÓN: Corrección en la lógica de posicionamiento del trofeo ---
+                // Se corrige la obtención de la posición para el layout vertical, que antes no accedía
+                // a la propiedad correcta ("Claros" u "Oscuros") del objeto.
                 const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical[result];
+                // --- FIN DE LA MODIFICACIÓN ---
                 
                 if (currentTrophyPosition) {
                     Object.assign(trophyDiv.style, currentTrophyPosition);
@@ -1590,48 +1707,44 @@
             }
 
             visualDetailsContainer.classList.remove('hidden');
-        }
-        
-        function showPlayerModal(playerId) {
-            const match = allMatchesData.find(m => m.id == lastSelectedFixtureMatchId);
-            if (!match) {
-                console.error("No se encontró el partido seleccionado para el modal.");
-                return;
-            }
 
-            const matchDate = parseDate(match.match_date);
-            const year = matchDate.getFullYear();
-            const month = matchDate.getMonth();
-            const period = (month <= 5) ? 'apertura' : 'clausura';
-            const tournamentName = `${year} - ${period.charAt(0).toUpperCase() + period.slice(1)}`;
-
-            const { players: statsForTournament, error } = calculateStats({
-                selectedYears: [String(year)],
-                selectedPeriod: period
+            // Esperamos a que todas las imágenes dentro del campo se carguen
+            const images = soccerFieldContainer.querySelectorAll('img');
+            const promises = [...images].map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.onload = img.onerror = resolve;
+                });
             });
 
-            if (error) {
-                console.error("No se pudieron calcular las estadísticas para el modal.");
-                return;
-            }
-            
-            const tournamentPlayerData = statsForTournament.find(p => p.id === playerId);
-            const basePlayerData = allPlayersData.find(p => p.id === playerId);
+            // Una vez que todas las imágenes han cargado (o fallado), ajustamos la altura
+            Promise.all(promises).then(() => {
+                // Usamos requestAnimationFrame para asegurarnos de que el navegador haya renderizado el layout
+                // antes de que midamos la altura. Esto previene el "glitch" visual.
+                requestAnimationFrame(() => {
+                    adjustFixtureHeights();
+                });
+            });
+        }
 
-            if (!basePlayerData) {
-                console.error(`No se encontraron datos base para el jugador con ID: ${playerId}`);
-                return;
-            }
+        function showPlayerModal(playerId) {
+            const playerStats = calculateStats(globalFilterState).players.find(p => p.id === playerId);
+            const playerData = allPlayersData.find(p => p.id === playerId);
+            if (!playerData || !playerStats) return;
 
             const { playerModal } = DOMElements;
-            playerModal.photo.src = basePlayerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            playerModal.photo.src = playerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
             playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
-            playerModal.name.textContent = basePlayerData.name;
-            playerModal.tournament.textContent = tournamentName;
+            playerModal.name.textContent = playerData.name;
+            
+            const periodTextMap = { 'apertura': 'Apertura', 'clausura': 'Clausura', 'total': 'Totales' };
+            const yearText = (globalFilterState.years?.includes('all') || !globalFilterState.years) ? 'Todos' : globalFilterState.years.join(', ');
+            const periodText = periodTextMap[globalFilterState.period] || 'Apertura';
+            playerModal.tournament.textContent = `${periodText} ${yearText}`;
 
-            playerModal.points.textContent = tournamentPlayerData ? tournamentPlayerData.points : 0;
-            playerModal.chamigo.textContent = tournamentPlayerData ? tournamentPlayerData.chamigos : 0;
-            playerModal.tt.textContent = tournamentPlayerData ? tournamentPlayerData.tt : 0;
+            playerModal.points.textContent = playerStats.points;
+            playerModal.chamigo.textContent = playerStats.chamigos;
+            playerModal.tt.textContent = playerStats.tt;
 
             playerModal.overlay.classList.remove('hidden');
             setTimeout(() => {
@@ -1663,8 +1776,10 @@
             const statusIndicator = document.getElementById('player-status-indicator');
             if (playerData.status === 'Activo') {
                 statusIndicator.style.backgroundColor = 'var(--success-color)';
+                statusIndicator.style.borderColor = 'var(--bg-secondary)';
             } else {
                 statusIndicator.style.backgroundColor = 'var(--danger-color)';
+                statusIndicator.style.borderColor = 'var(--bg-secondary)';
             }
 
             simplePlayerModal.overlay.classList.remove('hidden');
@@ -1785,24 +1900,24 @@
             let tableHtml = `
                 <thead>
                     <tr>
-                        <th class="p-3 text-left pl-4 sticky-col sticky-col-1">Año</th>
-                        <th class="p-3 text-center sticky-col sticky-col-2">Torneo</th>
-                        <th class="p-3 text-center">Puntos</th><th class="p-3 text-center">PG</th><th class="p-3 text-center">PE</th>
-                        <th class="p-3 text-center">PP</th><th class="p-3 text-center">PJ</th><th class="p-3 text-center">Efectividad</th>
-                        <th class="p-3 text-center">Chamigo</th><th class="p-3 text-center">TT</th><th class="p-3 text-center">Ausentismo</th>
+                        <th class="text-center sticky-col sticky-col-1">Año</th>
+                        <th class="sticky-col sticky-col-2">Torneo</th>
+                        <th>Puntos</th><th>PG</th><th>PE</th>
+                        <th>PP</th><th>PJ</th><th>Efectividad</th>
+                        <th>Chamigo</th><th>TT</th><th>Ausentismo</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
             tableHtml += `
                 <tr class="font-bold">
-                    <td class="p-3 text-left pl-4 sticky-col sticky-col-1"><b>TOTAL</b></td>
-                    <td class="p-3 text-center sticky-col sticky-col-2"></td>
-                    <td class="p-3 text-center">${playerStats.overallTotal.points}</td><td class="p-3 text-center">${playerStats.overallTotal.pg}</td>
-                    <td class="p-3 text-center">${playerStats.overallTotal.pe}</td><td class="p-3 text-center">${playerStats.overallTotal.pp}</td>
-                    <td class="p-3 text-center">${playerStats.overallTotal.pj}</td><td class="p-3 text-center">${playerStats.overallTotal.efectividad}%</td>
-                    <td class="p-3 text-center">${playerStats.overallTotal.chamigos}</td><td class="p-3 text-center">${playerStats.overallTotal.tt}</td>
-                    <td class="p-3 text-center">${playerStats.overallTotal.ausentes}</td>
+                    <td class="text-center sticky-col sticky-col-1"><b>TOTAL</b></td>
+                    <td class="sticky-col sticky-col-2"></td>
+                    <td>${playerStats.overallTotal.points}</td><td>${playerStats.overallTotal.pg}</td>
+                    <td>${playerStats.overallTotal.pe}</td><td>${playerStats.overallTotal.pp}</td>
+                    <td>${playerStats.overallTotal.pj}</td><td>${playerStats.overallTotal.efectividad}%</td>
+                    <td>${playerStats.overallTotal.chamigos}</td><td>${playerStats.overallTotal.tt}</td>
+                    <td>${playerStats.overallTotal.ausentes}</td>
                 </tr>`;
 
             Object.keys(playerStats.years).sort((a,b) => b-a).forEach(year => {
@@ -1810,29 +1925,29 @@
                 if(yearData.total.pj > 0) {
                     tableHtml += `
                         <tr class="font-semibold cursor-pointer" data-year="${year}">
-                            <td class="p-3 text-left pl-4 sticky-col sticky-col-1"><i class="fas fa-plus-circle toggle-details mr-2 text-accent-color"></i><b>${year}</b></td>
-                            <td class="p-3 text-center sticky-col sticky-col-2"><b>TOTAL AÑO</b></td>
-                            <td class="p-3 text-center">${yearData.total.points}</td><td class="p-3 text-center">${yearData.total.pg}</td>
-                            <td class="p-3 text-center">${yearData.total.pe}</td><td class="p-3 text-center">${yearData.total.pp}</td>
-                            <td class="p-3 text-center">${yearData.total.pj}</td><td class="p-3 text-center">${yearData.total.efectividad}%</td>
-                            <td class="p-3 text-center">${yearData.total.chamigos}</td><td class="p-3 text-center">${yearData.total.tt}</td>
-                            <td class="p-3 text-center">${yearData.total.ausentes}</td>
+                            <td class="text-center sticky-col sticky-col-1"><i class="fas fa-plus-circle toggle-details mr-2 text-accent-color"></i><b>${year}</b></td>
+                            <td class="sticky-col sticky-col-2"><b>TOTAL AÑO</b></td>
+                            <td>${yearData.total.points}</td><td>${yearData.total.pg}</td>
+                            <td>${yearData.total.pe}</td><td>${yearData.total.pp}</td>
+                            <td>${yearData.total.pj}</td><td>${yearData.total.efectividad}%</td>
+                            <td>${yearData.total.chamigos}</td><td>${yearData.total.tt}</td>
+                            <td>${yearData.total.ausentes}</td>
                         </tr>
                         <tr class="period-details-row hidden" data-year-parent="${year}">
-                            <td class="p-3 text-left pl-12 sticky-col sticky-col-1"></td><td class="p-3 text-center sticky-col sticky-col-2">Clausura</td>
-                            <td class="p-3 text-center">${yearData.clausura.points}</td><td class="p-3 text-center">${yearData.clausura.pg}</td>
-                            <td class="p-3 text-center">${yearData.clausura.pe}</td><td class="p-3 text-center">${yearData.clausura.pp}</td>
-                            <td class="p-3 text-center">${yearData.clausura.pj}</td><td class="p-3 text-center">${yearData.clausura.efectividad}%</td>
-                            <td class="p-3 text-center">${yearData.clausura.chamigos}</td><td class="p-3 text-center">${yearData.clausura.tt}</td>
-                            <td class="p-3 text-center">${yearData.clausura.ausentes}</td>
+                            <td class="text-center sticky-col sticky-col-1"></td><td class="sticky-col sticky-col-2">Clausura</td>
+                            <td>${yearData.clausura.points}</td><td>${yearData.clausura.pg}</td>
+                            <td>${yearData.clausura.pe}</td><td>${yearData.clausura.pp}</td>
+                            <td>${yearData.clausura.pj}</td><td>${yearData.clausura.efectividad}%</td>
+                            <td>${yearData.clausura.chamigos}</td><td>${yearData.clausura.tt}</td>
+                            <td>${yearData.clausura.ausentes}</td>
                         </tr>
                         <tr class="period-details-row hidden" data-year-parent="${year}">
-                            <td class="p-3 text-left pl-12 sticky-col sticky-col-1"></td><td class="p-3 text-center sticky-col sticky-col-2">Apertura</td>
-                            <td class="p-3 text-center">${yearData.apertura.points}</td><td class="p-3 text-center">${yearData.apertura.pg}</td>
-                            <td class="p-3 text-center">${yearData.apertura.pe}</td><td class="p-3 text-center">${yearData.apertura.pp}</td>
-                            <td class="p-3 text-center">${yearData.apertura.pj}</td><td class="p-3 text-center">${yearData.apertura.efectividad}%</td>
-                            <td class="p-3 text-center">${yearData.apertura.chamigos}</td><td class="p-3 text-center">${yearData.apertura.tt}</td>
-                            <td class="p-3 text-center">${yearData.apertura.ausentes}</td>
+                            <td class="text-center sticky-col sticky-col-1"></td><td class="sticky-col sticky-col-2">Apertura</td>
+                            <td>${yearData.apertura.points}</td><td>${yearData.apertura.pg}</td>
+                            <td>${yearData.apertura.pe}</td><td>${yearData.apertura.pp}</td>
+                            <td>${yearData.apertura.pj}</td><td>${yearData.apertura.efectividad}%</td>
+                            <td>${yearData.apertura.chamigos}</td><td>${yearData.apertura.tt}</td>
+                            <td>${yearData.apertura.ausentes}</td>
                         </tr>`;
                 }
             });
@@ -1961,14 +2076,14 @@
                 case 'leaderboard-content': case 'chamigo-content': case 'tt-content': case 'presentismo-content': case 'ausentismo-content':
                     baseHtml += `<div class="table-container">
                                     <p id="${prefix}-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
-                                    <table id="${prefix}-table" class="hidden"></table>
+                                    <table id="${prefix}-table"></table>
                                  </div>`;
                     break;
                 case 'estadisticas-content':
                      baseHtml += `
                         <div class="table-container overflow-x-auto">
                             <p id="estadisticas-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
-                            <table id="estadisticas-table" class="hidden"></table>
+                            <table id="estadisticas-table"></table>
                         </div>`;
                     break;
                 case 'equipos-content':
@@ -1988,9 +2103,9 @@
                         </div>
                         <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
                             <div class="md:w-[65%] min-w-0"><div id="soccer-field-container" class="rounded-lg overflow-hidden"></div></div>
-                            <div id="fixture-details-display" class="flex-1 md:w-[35%] p-4 rounded-lg mt-6 md:mt-0">
-                                <h3 class="font-semibold text-center mb-2">Asistentes al TT</h3>
-                                <div class="table-container overflow-y-auto rounded-lg border shadow-sm">
+                            <div id="fixture-details-display" class="flex-1 md:w-[35%] mt-6 md:mt-0 flex flex-col border-2 border-black/10 dark:border-white/10">
+                                <h3>Asistentes al TT</h3>
+                                <div class="table-container flex-grow">
                                     <table id="tt-attendees-table">
                                         <tbody>
                                         </tbody>
@@ -2011,7 +2126,7 @@
                         </div>
                         <div class="table-container overflow-x-auto">
                             <p id="individual-stats-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
-                            <table id="individual-stats-table" class="hidden"></table>
+                            <table id="individual-stats-table"></table>
                         </div>`;
                     break;
                     
@@ -2110,6 +2225,11 @@
             
             if (renderFunctions[tabId]) {
                 renderFunctions[tabId]();
+            }
+
+            // Si estamos en la pestaña de Fixture, intentamos un reajuste después de un breve instante
+            if (tabId === 'fixture-content') {
+                setTimeout(adjustFixtureHeights, 100); // Un pequeño delay para dar tiempo al renderizado
             }
             
             localStorage.setItem('lastActiveTab', tabId);
@@ -2894,6 +3014,22 @@
         }
         // --- FIN: Funciones del Comparador ---
 
+        function adjustFixtureHeights() {
+            const soccerField = document.getElementById('soccer-field-container');
+            const detailsDisplay = document.getElementById('fixture-details-display');
+
+            if (!soccerField || !detailsDisplay) return;
+
+            // Solo aplicamos la altura fija en vistas de escritorio (horizontales)
+            if (window.innerWidth >= 768) { 
+                const fieldHeight = soccerField.offsetHeight;
+                detailsDisplay.style.height = `${fieldHeight}px`;
+            } else { 
+                // En móvil, reseteamos la altura para que se ajuste al contenido
+                detailsDisplay.style.height = 'auto';
+            }
+        }
+        
         async function initializeApp() {
             try {
                 const { data: players, error: pError } = await supabaseClient.from('players').select('id, name, photo_url, status');
@@ -2947,6 +3083,18 @@
             DOMElements.hamburgerButton.addEventListener('click', openSideMenu);
             DOMElements.overlay.addEventListener('click', closeSideMenu);
             window.addEventListener('resize', applyInitialResponsiveStyles);
+
+            // Listener para reajustar alturas en el fixture al cambiar tamaño de ventana
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    // Solo reajustar si la pestaña de fixture está visible
+                    if (document.getElementById('fixture-content')) {
+                        adjustFixtureHeights();
+                    }
+                }, 200); // Un pequeño delay para no sobrecargar el navegador
+            });
             
             DOMElements.tabButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
