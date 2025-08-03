@@ -2574,13 +2574,23 @@
             }
         }
 
-        function createPlayerCard(playerStats) {
+        function createPlayerCard(playerStats, playerNum) {
             if (!playerStats) return '';
+
+            const isPlaceholder = !playerStats.id;
             const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            
+            // Aplicar un color de borde distinto para cada jugador y uno neutral para el placeholder
+            let borderColorClass = 'border-gray-300 dark:border-gray-600';
+            if (!isPlaceholder) {
+                // Usamos colores diferentes para cada jugador para distinguirlos
+                borderColorClass = playerNum === 1 ? 'border-accent-color' : 'border-danger-color';
+            }
+            
             return `
                 <div class="flex flex-col items-center text-center space-y-3">
-                    <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 border-accent-color shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
-                    <h3 class="text-2xl font-bold text-text-primary">${playerStats.name}</h3>
+                    <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 ${borderColorClass} shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
+                    <h3 class="text-2xl font-bold text-text-primary ${isPlaceholder ? 'opacity-50' : ''}">${playerStats.name}</h3>
                 </div>
             `;
         }
@@ -2646,30 +2656,48 @@
             const placeholder = document.getElementById('comparador-placeholder');
             if (!displayArea || !placeholder) return;
 
-            if (player1Id && player2Id && player1Id !== player2Id) {
+            // Objeto para representar a un jugador no seleccionado
+            const placeholderPlayerStats = {
+                name: 'Sin Asignar',
+                photo_url: 'https://placehold.co/128x128/e2e8f0/64748b?text=?',
+                points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: null
+            };
+
+            // La vista de comparación se muestra si al menos un jugador está seleccionado
+            if (player1Id || player2Id) {
                 const { players: allStats } = calculateStatsForPeriod('comparador');
 
-                const player1Data = allPlayersData.find(p => p.id == player1Id);
-                const player1Stats = allStats.find(p => p.id == player1Id) || { name: player1Data.name, photo_url: player1Data.photo_url, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player1Data.id };
+                let player1Stats, player2Stats;
 
-                const player2Data = allPlayersData.find(p => p.id == player2Id);
-                const player2Stats = allStats.find(p => p.id == player2Id) || { name: player2Data.name, photo_url: player2Data.photo_url, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player2Data.id };
+                // Cargar datos del jugador 1 o usar el placeholder
+                if (player1Id) {
+                    const player1Data = allPlayersData.find(p => p.id == player1Id);
+                    player1Stats = allStats.find(p => p.id == player1Id) || { ...placeholderPlayerStats, name: player1Data.name, photo_url: player1Data.photo_url, id: player1Id };
+                } else {
+                    player1Stats = placeholderPlayerStats;
+                }
 
-                document.getElementById('player1-card-display').innerHTML = createPlayerCard(player1Stats);
-                document.getElementById('player2-card-display').innerHTML = createPlayerCard(player2Stats);
+                // Cargar datos del jugador 2 o usar el placeholder
+                if (player2Id) {
+                    const player2Data = allPlayersData.find(p => p.id == player2Id);
+                    player2Stats = allStats.find(p => p.id == player2Id) || { ...placeholderPlayerStats, name: player2Data.name, photo_url: player2Data.photo_url, id: player2Id };
+                } else {
+                    player2Stats = placeholderPlayerStats;
+                }
+
+                // Renderizar las tarjetas y las barras
+                document.getElementById('player1-card-display').innerHTML = createPlayerCard(player1Stats, 1);
+                document.getElementById('player2-card-display').innerHTML = createPlayerCard(player2Stats, 2);
                 document.getElementById('stats-bars-container').innerHTML = createComparisonBars(player1Stats, player2Stats);
 
                 displayArea.classList.remove('hidden');
                 placeholder.classList.add('hidden');
 
             } else {
+                // Si no hay ningún jugador, mostrar el mensaje inicial
                 displayArea.classList.add('hidden');
                 placeholder.classList.remove('hidden');
-                 if (player1Id && player2Id && player1Id === player2Id) {
-                    placeholder.textContent = 'Por favor, selecciona dos jugadores diferentes.';
-                } else {
-                    placeholder.textContent = 'Selecciona dos jugadores y un período para comenzar la comparación.';
-                }
+                placeholder.textContent = 'Selecciona un jugador para comenzar la comparación.';
             }
         }
         // --- FIN: Funciones del Comparador ---
