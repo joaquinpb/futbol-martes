@@ -211,10 +211,11 @@
         }
         
         /* Esta regla ahora está afuera del @media para que aplique siempre */
-        .flex-1.flex.flex-col { 
-            height: 100vh; 
-            display: flex; /* Aseguramos que sea flexbox */
-            flex-direction: column; /* Dirección vertical */
+        .flex-1.flex.flex-col {
+            flex: 1; /* Usar flex: 1 en lugar de height: 100vh */
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Clave para que el scroll funcione en contenedores flex */
         }
         
         @media (min-width: 768px) {
@@ -2381,6 +2382,7 @@
 
             const style = document.createElement('style');
             style.id = styleId;
+            // ESTILOS ACTUALIZADOS PARA EL GRÁFICO
             style.innerHTML = `
                 .comparator-results-dropdown {
                     background-color: var(--bg-secondary);
@@ -2401,20 +2403,43 @@
                 html.dark .comparator-results-dropdown .option-item:hover {
                     background-color: #374151;
                 }
-                .progress-bar-container.player1 .progress-bg {
-                    justify-content: flex-end;
-                }
-                .progress-bar-container .progress-bg {
-                    display: flex;
-                    flex-grow: 1;
+                .progress-bg {
+                    display: flex; /* Necesario para alinear el relleno */
                     background-color: var(--border-color);
                     border-radius: 9999px;
                     height: 1.25rem;
                     overflow: hidden;
                     position: relative;
                 }
-                html.dark .progress-bar-container .progress-bg {
+                html.dark .progress-bg {
                     background-color: #374151;
+                }
+                .progress-bg.player1 {
+                    justify-content: flex-end; /* Alinea la barra a la derecha */
+                }
+                .progress-bg.player2 {
+                    justify-content: flex-start; /* Alinea la barra a la izquierda */
+                }
+                .progress-fill {
+                    height: 100%;
+                    border-radius: 9999px;
+                    transition: width 0.5s ease-in-out;
+                }
+                .progress-fill.player1 {
+                    background-color: var(--accent-color);
+                }
+                .progress-fill.player2 {
+                    background-color: var(--danger-color);
+                }
+                .stat-value {
+                    font-weight: 600;
+                    min-width: 45px; /* Ancho mínimo para los números */
+                }
+                .stat-label {
+                    text-align: center;
+                    font-weight: 600;
+                    color: var(--text-secondary);
+                    white-space: nowrap;
                 }
             `;
             document.head.appendChild(style);
@@ -2526,31 +2551,33 @@
                     }
                 }
 
+                // ESTRUCTURA DE GRILLA ACTUALIZADA PARA ALINEACIÓN FIJA
                 return `
-                    <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
+                    <div class="grid grid-cols-[auto_1fr_auto_1fr_auto] gap-x-2 md:gap-x-4 items-center">
+                        <!-- Player 1 Value -->
+                        <span class="stat-value ${winnerClass1} text-right">${val1}${suffix}</span>
+                        
                         <!-- Player 1 Bar -->
-                        <div class="progress-bar-container player1 flex items-center justify-end gap-2 md:gap-4">
-                            <span class="stat-value ${winnerClass1} order-2">${val1}${suffix}</span>
-                            <div class="progress-bg order-1">
-                                <div class="progress-fill" style="width: ${width1}%"></div>
-                            </div>
+                        <div class="progress-bg player1">
+                            <div class="progress-fill player1" style="width: ${width1}%"></div>
                         </div>
+
                         <!-- Label -->
                         <div class="stat-label">${stat.label}</div>
+
                         <!-- Player 2 Bar -->
-                        <div class="progress-bar-container player2 flex items-center justify-start gap-2 md:gap-4">
-                            <div class="progress-bg">
-                                <div class="progress-fill" style="width: ${width2}%"></div>
-                            </div>
-                            <span class="stat-value ${winnerClass2}">${val2}${suffix}</span>
+                        <div class="progress-bg player2">
+                            <div class="progress-fill player2" style="width: ${width2}%"></div>
                         </div>
+
+                        <!-- Player 2 Value -->
+                        <span class="stat-value ${winnerClass2} text-left">${val2}${suffix}</span>
                     </div>
                 `;
             };
 
             return statsMeta.map(renderStatBar).join('');
         }
-
 
         function updateComparison() {
             const player1Id = document.getElementById('comparador-player1-id')?.value;
@@ -2587,7 +2614,6 @@
             }
         }
         // --- FIN: Funciones del Comparador ---
-
 
         async function initializeApp() {
             try {
