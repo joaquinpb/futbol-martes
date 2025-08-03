@@ -1876,7 +1876,7 @@
                     break;
                     
                 case 'comparador-content':
-                     // NUEVA ESTRUCTURA PARA COMPARADOR
+                     // ESTRUCTURA ACTUALIZADA PARA COMPARADOR
                     baseHtml = `
                         <div id="comparador-content" class="main-content-container space-y-4">
                             <!-- Filters Container -->
@@ -1912,19 +1912,19 @@
                             <hr class="border-border-color"/>
 
                             <!-- Player Selectors -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="grid grid-cols-2 gap-4">
                                 <div class="relative">
                                     <label class="block text-sm font-medium mb-1">Jugador 1</label>
-                                    <input type="text" id="comparador-player1-search" placeholder="Buscar Jugador 1..." class="w-full p-2 pr-8 shadow-sm" autocomplete="off">
+                                    <input type="text" id="comparador-player1-search" placeholder="Buscar Jugador 1..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
                                     <button id="comparador-clear-player1-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
-                                    <div id="comparador-player1-results" class="absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden" style="background-color: var(--bg-secondary); border: 1px solid var(--border-color);"></div>
+                                    <div id="comparador-player1-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                                     <input type="hidden" id="comparador-player1-id">
                                 </div>
                                 <div class="relative">
                                      <label class="block text-sm font-medium mb-1">Jugador 2</label>
-                                    <input type="text" id="comparador-player2-search" placeholder="Buscar Jugador 2..." class="w-full p-2 pr-8 shadow-sm" autocomplete="off">
+                                    <input type="text" id="comparador-player2-search" placeholder="Buscar Jugador 2..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
                                     <button id="comparador-clear-player2-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
-                                    <div id="comparador-player2-results" class="absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden" style="background-color: var(--bg-secondary); border: 1px solid var(--border-color);"></div>
+                                    <div id="comparador-player2-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                                     <input type="hidden" id="comparador-player2-id">
                                 </div>
                             </div>
@@ -2376,6 +2376,36 @@
 
         // --- INICIO: Funciones del Comparador ---
 
+        function injectComparatorStyles() {
+            const styleId = 'comparator-dynamic-styles';
+            if (document.getElementById(styleId)) return; // Inject only once
+
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.innerHTML = `
+                .comparator-results-dropdown {
+                    background-color: var(--bg-secondary);
+                    border: 1px solid var(--border-color);
+                }
+                .comparator-results-dropdown .option-item:hover {
+                    background-color: var(--bg-muted);
+                }
+                html.dark .comparator-search-input {
+                    background-color: var(--bg-muted) !important;
+                    color: var(--text-primary) !important;
+                    border-color: var(--border-color) !important;
+                }
+                html.dark .comparator-results-dropdown {
+                     background-color: #1f2937;
+                     border-color: #374151;
+                }
+                html.dark .comparator-results-dropdown .option-item:hover {
+                    background-color: #374151;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         function setupComparatorPlayerSearch(playerNum) {
             const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
             const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
@@ -2386,14 +2416,12 @@
 
             const filterAndDisplay = () => {
                 const searchTerm = searchInput.value.toLowerCase();
-                if (searchTerm.length === 0) {
-                    resultsDiv.innerHTML = '';
-                    resultsDiv.classList.add('hidden');
-                    clearButton.classList.add('hidden');
-                    return;
-                }
                 
-                clearButton.classList.remove('hidden');
+                if (searchTerm.length > 0) {
+                    clearButton.classList.remove('hidden');
+                } else {
+                    clearButton.classList.add('hidden');
+                }
                 
                 // Excluir al otro jugador seleccionado para no mostrarlo en los resultados
                 const otherPlayerNum = playerNum === 1 ? 2 : 1;
@@ -2403,7 +2431,7 @@
                     .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id != otherPlayerId)
                     .sort((a, b) => a.name.localeCompare(b.name));
                 
-                resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" data-player-id="${player.id}">${player.name}</div>`).join('');
+                resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
                 resultsDiv.classList.remove('hidden');
             };
 
@@ -2428,13 +2456,14 @@
                 e.preventDefault(); 
                 searchInput.value = '';
                 selectedIdInput.value = '';
-                clearButton.classList.add('hidden');
-                resultsDiv.classList.add('hidden');
                 updateComparison();
+                filterAndDisplay();
+                searchInput.focus();
             });
         }
 
         function renderComparador() {
+            injectComparatorStyles();
             setupComparatorPlayerSearch(1);
             setupComparatorPlayerSearch(2);
             
@@ -2548,8 +2577,6 @@
             }
         }
         // --- FIN: Funciones del Comparador ---
-
-
 
         async function initializeApp() {
             try {
