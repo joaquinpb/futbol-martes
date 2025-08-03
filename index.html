@@ -67,7 +67,8 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            min-height: 100vh; /* Asegura que el body ocupe al menos toda la pantalla */
+            height: 100vh; /* Cambiado de min-height a height */
+            overflow-y: hidden; /* Evita el scroll en el body */
         }
         body.overflow-hidden, body.modal-open { overflow: hidden; }
 
@@ -225,9 +226,11 @@
             #hamburger-button, #overlay { display: none !important; }
         }
         
+        /* Esta regla ahora está afuera del @media para que aplique siempre */
         .flex-1.flex.flex-col { 
-            display: flex;
-            flex-direction: column;
+            height: 100vh; 
+            display: flex; /* Aseguramos que sea flexbox */
+            flex-direction: column; /* Dirección vertical */
         }
         
         @media (min-width: 768px) {
@@ -1780,7 +1783,7 @@
             
             const prefix = tabId.replace('-content', '');
             
-            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas', 'fixture', 'comparador'].includes(prefix)) {
+            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas', 'fixture'].includes(prefix)) {
                 const yearFilterHTML = `
                     <div class="custom-select-container">
                         <label class="filter-label hidden md:block">Año(s):</label>
@@ -1817,17 +1820,16 @@
                     </div>`;
 
                  baseHtml += `
-                    <div id="${prefix}-filters-container" class="grid grid-cols-2 ${prefix === 'comparador' ? 'md:grid-cols-2' : 'md:grid-cols-5'} gap-4 items-stretch">
-                        <div class="col-span-1 ${prefix === 'comparador' ? '' : 'md:col-span-2 md:order-1'}">
+                    <div id="${prefix}-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
+                        <div class="col-span-1 md:col-span-2 md:order-1">
                             ${yearFilterHTML}
                         </div>
-                        <div class="col-span-1 ${prefix === 'comparador' ? '' : 'md:col-span-2 md:order-3'}">
+                        <div class="col-span-1 md:col-span-2 md:order-3">
                             ${periodOrMonthFilterHTML}
                         </div>
-                        ${prefix !== 'comparador' ? `
                         <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
                            <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm md:text-lg md:font-bold">Torneo Actual</button>
-                        </div>` : ''}
+                        </div>
                     </div>
                     <hr class="border-border-color"/>
                     `;
@@ -1892,20 +1894,58 @@
                         </div>`;
                     break;
                 case 'comparador-content':
-                    baseHtml += `
-                        <div class="p-2 md:p-6 space-y-8">
-                            <h2 class="text-2xl font-bold text-center">Comparador de Jugadores</h2>
-                            
-                            <!-- Display de Comparación -->
-                            <div id="comparison-display-area" class="hidden max-w-4xl mx-auto space-y-8">
-                                <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                                    <div id="player1-card-display" class="text-center"></div>
-                                    <div class="vs-separator">VS</div>
-                                    <div id="player2-card-display" class="text-center"></div>
+                    baseHtml = `
+                        <div id="comparador-content" class="main-content-container">
+                            <div class="p-2 md:p-6 space-y-6">
+                                <h2 class="text-2xl font-bold text-center">Comparador de Jugadores</h2>
+
+                                <!-- Filters -->
+                                <div id="comparador-filters-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch max-w-4xl mx-auto">
+                                    <!-- Year Filter -->
+                                    <div class="custom-select-container">
+                                        <label class="filter-label hidden md:block">Año(s):</label>
+                                        <button id="comparador-year-select-button" class="custom-select-button">
+                                            <span class="truncate">Seleccionar Años</span>
+                                            <i class="fas fa-chevron-down transition-transform"></i>
+                                        </button>
+                                        <div id="comparador-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto">
+                                        </div>
+                                    </div>
+                                    <!-- Period Filter -->
+                                    <div id="comparador-period-select-container" class="custom-select-container">
+                                        <label class="filter-label hidden md:block">Torneo:</label>
+                                        <input type="hidden" id="comparador-period-select" value="apertura">
+                                        <button id="comparador-period-select-button" class="custom-select-button">
+                                            <span class="truncate">Apertura</span>
+                                            <i class="fas fa-chevron-down transition-transform"></i>
+                                        </button>
+                                        <div id="comparador-period-select-dropdown" class="custom-select-options hidden">
+                                            <div class="option-item selected" data-value="apertura">Apertura</div>
+                                            <div class="option-item" data-value="clausura">Clausura</div>
+                                            <div class="option-item" data-value="total">Totales</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div id="stats-bars-container" class="space-y-4"></div>
+
+                                <!-- PLAYER SELECTORS -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                                    <div id="comparador-player1-select-container" class="custom-select-container"></div>
+                                    <div id="comparador-player2-select-container" class="custom-select-container"></div>
+                                </div>
+
+                                <hr class="border-border-color max-w-4xl mx-auto"/>
+
+                                <!-- COMPARISON DISPLAY -->
+                                <div id="comparison-display-area" class="hidden max-w-4xl mx-auto space-y-8">
+                                    <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                                        <div id="player1-card-display" class="text-center"></div>
+                                        <div class="vs-separator">VS</div>
+                                        <div id="player2-card-display" class="text-center"></div>
+                                    </div>
+                                    <div id="stats-bars-container" class="space-y-4"></div>
+                                </div>
+                                <p id="comparador-placeholder" class="text-center text-text-secondary">Selecciona dos jugadores y un período para comenzar la comparación.</p>
                             </div>
-                             <p id="comparador-placeholder" class="text-center text-text-secondary">Selecciona dos jugadores y un período para comenzar la comparación.</p>
                         </div>
                     `;
                     break;
@@ -2598,3 +2638,4 @@
     </script>
 </body>
 </html>
+"
