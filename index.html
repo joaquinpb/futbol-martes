@@ -593,29 +593,35 @@
         }
 
         #simple-player-modal-content {
-            background: linear-gradient(145deg, var(--bg-secondary) 0%, var(--bg-muted) 100%);
+            background-color: var(--bg-secondary);
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.2);
+        }
+
+        #simple-player-modal-photo {
+            border: 4px solid var(--bg-secondary);
+            box-shadow: 0 0 0 4px var(--accent-color);
         }
 
         #simple-player-modal-name {
+            /* Se elimina 'display: inline-block' para que ocupe el ancho disponible */
             background: linear-gradient(to right, var(--accent-color-muted), var(--accent-color));
             color: var(--button-text-color);
-            font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            box-shadow: 0 -4px 6px -1px rgba(0,0,0,.1); /* Sombra superior sutil */
-            
-            /* Hacemos que ocupe todo el ancho superando el padding del contenedor */
-            margin: 0 -1.5rem -1.5rem -1.5rem;
-            
-            /* Redondeamos solo las esquinas inferiores para que coincida con el modal */
-            border-bottom-left-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
+            padding: 0.75rem 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            margin-top: 1.5rem; /* Espacio entre la foto y el nombre */
+            font-size: 1.4rem;
+            font-weight: 700;
+            width: 100%; /* Hacemos que ocupe todo el ancho del contenedor */
         }
 
         #simple-player-modal-close {
             background-color: var(--bg-muted);
             border: 1px solid var(--border-color);
-            width: 32px; /* Ancho fijo */
-            height: 32px; /* Alto fijo */
+            width: 32px;
+            height: 32px;
+            border-radius: 9999px; /* Agregado para hacerlo circular */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -767,16 +773,19 @@
 
     <!-- INICIO: Modal de Jugador Simple (para Tablas) -->
     <div id="simple-player-modal-overlay" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
-        <div id="simple-player-modal-content" class="relative bg-bg-secondary rounded-lg shadow-xl w-full max-w-xs p-6 text-center transform scale-95 transition-transform duration-300">
-            <button id="simple-player-modal-close" class="absolute top-2 right-2 text-text-secondary hover:text-text-primary p-2 rounded-full z-10">
-                <i class="fas fa-times text-xl"></i>
+        <div id="simple-player-modal-content" class="relative w-full max-w-sm p-8 text-center transform scale-95 transition-transform duration-300">
+            <button id="simple-player-modal-close" class="absolute top-4 right-4 z-10">
+                <i class="fas fa-times"></i>
             </button>
-            <img id="simple-player-modal-photo" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Foto del jugador" class="w-40 h-40 rounded-full object-cover border-4 border-accent-color mx-auto mb-4 shadow-lg">
-            <h2 id="simple-player-modal-name" class="text-2xl font-bold text-text-primary">Nombre Jugador</h2>
+            <!-- Se vuelve a agregar "inline-block" para posicionar el punto de estado correctamente -->
+            <div class="relative inline-block">
+                <img id="simple-player-modal-photo" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Foto del jugador" class="w-32 h-32 rounded-full object-cover mx-auto">
+                <div id="player-status-indicator" class="absolute bottom-1 right-1 w-5 h-5 rounded-full border-2"></div>
+            </div>
+            <h2 id="simple-player-modal-name">Nombre Jugador</h2>
         </div>
     </div>
     <!-- FIN: Modal de Jugador Simple -->
-
 
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1642,6 +1651,14 @@
             simplePlayerModal.photo.onerror = () => { simplePlayerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
             simplePlayerModal.name.textContent = playerData.name;
 
+            // Lógica para el indicador de estado
+            const statusIndicator = document.getElementById('player-status-indicator');
+            if (playerData.status === 'Activo') {
+                statusIndicator.style.backgroundColor = 'var(--success-color)';
+            } else {
+                statusIndicator.style.backgroundColor = 'var(--danger-color)';
+            }
+
             simplePlayerModal.overlay.classList.remove('hidden');
             setTimeout(() => {
                 simplePlayerModal.overlay.classList.remove('opacity-0');
@@ -1925,7 +1942,7 @@
                             ${periodOrMonthFilterHTML}
                         </div>
                         <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
+                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
                         </div>
                     </div>
                     <hr class="border-border-color"/>
@@ -2020,7 +2037,7 @@
                                     </div>
                                 </div>
                                 <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                                   <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
+                                   <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
                                 </div>
                             </div>
                             
@@ -2871,7 +2888,7 @@
 
         async function initializeApp() {
             try {
-                const { data: players, error: pError } = await supabaseClient.from('players').select('id, name, photo_url');
+                const { data: players, error: pError } = await supabaseClient.from('players').select('id, name, photo_url, status');
                 const { data: matches, error: mError } = await supabaseClient.from('matches').select('*');
 
                 if (pError || mError) throw pError || mError;
