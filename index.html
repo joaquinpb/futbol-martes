@@ -2469,7 +2469,12 @@
 
             if(!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
 
-            // 1. Hacemos el input de solo lectura por defecto para evitar el teclado en el primer toque.
+            // --- INICIO DE LA MODIFICACIÓN ---
+
+            let clickTimer = null;
+            // Puedes ajustar este valor (en milisegundos) para cambiar la sensibilidad del doble toque.
+            const DOUBLE_CLICK_DELAY = 400; 
+
             searchInput.readOnly = true;
 
             const filterAndDisplay = () => {
@@ -2496,7 +2501,7 @@
                 const target = e.target.closest('.option-item');
                 if (target && target.dataset.playerId) {
                     e.preventDefault();
-                    searchInput.blur(); // Esto disparará el evento 'blur' para resetear el input
+                    searchInput.blur();
                     const player = allPlayersData.find(p => p.id == target.dataset.playerId);
                     searchInput.value = player.name;
                     selectedIdInput.value = player.id;
@@ -2506,37 +2511,41 @@
                 }
             });
 
-            // 2. Con un solo clic, solo mostramos la lista si el campo es de solo lectura.
+            // Reemplazamos los eventos 'click' y 'dblclick' con esta lógica única.
             searchInput.addEventListener('click', (e) => {
-                if (searchInput.readOnly) {
-                    e.preventDefault();
-                    filterAndDisplay();
+                e.preventDefault();
+
+                if (clickTimer === null) {
+                    // Es el PRIMER CLIC.
+                    clickTimer = setTimeout(() => {
+                        // El tiempo de espera terminó, así que fue un solo clic.
+                        clickTimer = null;
+                        if (searchInput.readOnly) {
+                            filterAndDisplay();
+                        }
+                    }, DOUBLE_CLICK_DELAY);
+                } else {
+                    // Es el SEGUNDO CLIC (dentro del tiempo de delay).
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                    searchInput.readOnly = false;
+                    searchInput.focus();
                 }
             });
 
-            // 3. Con doble clic, habilitamos la escritura y abrimos el teclado.
-            searchInput.addEventListener('dblclick', (e) => {
-                e.preventDefault();
-                searchInput.readOnly = false;
-                searchInput.focus();
-            });
-            
-            // 4. El evento 'input' ahora solo filtra cuando el campo NO es de solo lectura.
             searchInput.addEventListener('input', () => {
                 if (!searchInput.readOnly) {
                     filterAndDisplay();
                 }
             });
 
-            // 5. Al perder el foco, ocultamos la lista y reseteamos el campo a solo lectura.
             searchInput.addEventListener('blur', () => {
                 setTimeout(() => {
                     resultsDiv.classList.add('hidden');
                     searchInput.readOnly = true; 
-                }, 200); // Pequeño delay para permitir clics en la lista
+                }, 200);
             });
             
-            // La lógica del botón de limpiar no cambia.
             clearButton.addEventListener('mousedown', (e) => {
                 e.preventDefault(); 
                 searchInput.value = '';
@@ -2544,6 +2553,7 @@
                 updateComparison();
                 filterAndDisplay();
             });
+            // --- FIN DE LA MODIFICACIÓN ---
         }
 
         function renderComparador() {
