@@ -70,6 +70,12 @@
             display: flex; /* Siempre flex */
             flex-direction: column; /* Dirección por defecto para móvil */
         }
+
+        /* INICIO: Estilo para bloquear scroll cuando un modal está abierto */
+        body.modal-open {
+            overflow: hidden;
+        }
+        /* FIN: Estilo para bloquear scroll */
         
         @media (min-width: 768px) {
             body {
@@ -575,6 +581,16 @@
             border-radius: 9999px; /* Para que el contorno sea redondeado como la barra */
         }
         
+        /* INICIO: Estilos para foto clickeable en tablas */
+        .player-photo-clickable img {
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .player-photo-clickable:hover img {
+            transform: scale(1.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        /* FIN: Estilos para foto clickeable */
     </style>
     <script>
         (function() {
@@ -610,21 +626,16 @@
     <!-- Menú lateral -->
     <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 transform -translate-x-full transition-transform duration-300 ease-in-out md:transform-none md:relative md:w-64 flex flex-col">
         <div class="px-6 py-4 flex items-center">
-            <!-- INICIO: Texto agrandado -->
             <a href="#" class="text-2xl font-bold flex items-center gap-2">
                 <span class="text-3xl">⚽</span>
                 <span>LA CLANDE</span>
             </a>
-            <!-- FIN: Texto agrandado -->
         </div>
         
-        <!-- INICIO: Separador agregado -->
         <hr class="border-border-color my-2 mx-4">
-        <!-- FIN: Separador agregado -->
 
         <div class="flex-1 px-4 space-y-2 overflow-y-auto">
             
-            <!-- INICIO: Secciones "subidas de nivel" -->
             <div class="space-y-1">
                 <a href="#leaderboard" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="leaderboard-content"><i class="fas fa-trophy w-5 text-center"></i>Posiciones</a>
                 <a href="#chamigo" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="chamigo-content"><i class="fas fa-star w-5 text-center"></i>Chamigo</a>
@@ -633,7 +644,6 @@
                 <a href="#ausentismo" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="ausentismo-content"><i class="fas fa-times-circle w-5 text-center"></i>Ausentismo</a>
                 <a href="#equipos" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="equipos-content"><i class="fas fa-futbol w-5 text-center"></i>Equipos</a>
             </div>
-            <!-- FIN: Secciones "subidas de nivel" -->
 
             <!-- Enlaces Especiales -->
             <div class="mt-2 space-y-1">
@@ -645,7 +655,6 @@
                 </a>
             </div>
 
-            <!-- INICIO: Sección renombrada a "Optimizado PC" -->
             <div class="mt-2">
                 <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
                     <span class="flex items-center gap-3"><i class="fas fa-laptop w-5 text-center"></i>Optimizado PC</span>
@@ -656,7 +665,6 @@
                     <a href="#individual-stats" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="individual-stats-content"><i class="fas fa-history w-5 text-center"></i>Histórico</a>
                 </div>
             </div>
-            <!-- FIN: Sección renombrada -->
             
             <div class="mt-6">
                 <span class="px-4 text-xs font-semibold uppercase text-gray-400">Panel</span>
@@ -668,7 +676,6 @@
             </div>
         </div>
     </nav>
-
     <div id="overlay" class="hidden md:hidden"></div>
 
     <!-- Contenedor principal -->
@@ -690,7 +697,7 @@
         </main>
     </div>
 
-    <!-- Modal de Jugador -->
+    <!-- Modal de Jugador (Fixture) -->
     <div id="player-modal-overlay" class="hidden">
         <div id="player-modal-content">
             <button id="player-modal-close" class="absolute top-2 right-2 text-text-secondary hover:text-text-primary p-2 rounded-full z-10">
@@ -719,6 +726,18 @@
             </div>
         </div>
     </div>
+
+    <!-- INICIO: Modal de Jugador Simple (para Tablas) -->
+    <div id="simple-player-modal-overlay" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div id="simple-player-modal-content" class="relative bg-bg-secondary rounded-lg shadow-xl w-full max-w-xs p-6 text-center transform scale-95 transition-transform duration-300">
+            <button id="simple-player-modal-close" class="absolute top-2 right-2 text-text-secondary hover:text-text-primary p-2 rounded-full z-10">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <img id="simple-player-modal-photo" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Foto del jugador" class="w-40 h-40 rounded-full object-cover border-4 border-accent-color mx-auto mb-4 shadow-lg">
+            <h2 id="simple-player-modal-name" class="text-2xl font-bold text-text-primary">Nombre Jugador</h2>
+        </div>
+    </div>
+    <!-- FIN: Modal de Jugador Simple -->
 
 
     <script src="config.js"></script>
@@ -826,7 +845,16 @@
                 points: document.getElementById('player-modal-points'),
                 chamigo: document.getElementById('player-modal-chamigo'),
                 tt: document.getElementById('player-modal-tt'),
+            },
+            // INICIO: Referencias al nuevo modal simple
+            simplePlayerModal: {
+                overlay: document.getElementById('simple-player-modal-overlay'),
+                content: document.getElementById('simple-player-modal-content'),
+                closeBtn: document.getElementById('simple-player-modal-close'),
+                photo: document.getElementById('simple-player-modal-photo'),
+                name: document.getElementById('simple-player-modal-name'),
             }
+            // FIN: Referencias al nuevo modal simple
         };
         
         const PAGE_CONFIG = {
@@ -1116,7 +1144,9 @@
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
                         <td class="p-2 text-center">
-                            <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
                         </td>
                         <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.points}</td>
@@ -1135,7 +1165,9 @@
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
                         <td class="p-2 text-center">
-                            <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
                         </td>
                         <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.chamigos}</td>
@@ -1153,7 +1185,9 @@
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
                         <td class="p-2 text-center">
-                            <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
                         </td>
                         <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.tt}</td>
@@ -1171,7 +1205,9 @@
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
                         <td class="p-2 text-center">
-                            <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
                         </td>
                         <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.pj}</td>
@@ -1189,7 +1225,9 @@
                     <tr>
                         <td class="p-3 text-center">${index + 1}</td>
                         <td class="p-2 text-center">
-                            <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
                         </td>
                         <td class="p-3 text-center">${player.name}</td>
                         <td class="p-3 text-center">${player.ausentes}</td>
@@ -1243,7 +1281,9 @@
                     <tr>
                         <td class="p-2 text-center sticky-col sticky-col-1">${index + 1}</td>
                         <td class="p-2 text-center sticky-col sticky-col-2">
-                            <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
                         </td>
                         <td class="p-3 text-left sticky-col sticky-col-3">${player.name}</td>
                         <td class="p-3 text-center">${player.points}</td><td class="p-3 text-center">${player.pg}</td><td class="p-3 text-center">${player.pe}</td>
@@ -1554,6 +1594,35 @@
             }, 300);
         }
 
+        // INICIO: Funciones para el nuevo modal simple
+        function showSimplePlayerModal(playerId) {
+            const playerData = allPlayersData.find(p => p.id === playerId);
+            if (!playerData) return;
+
+            const { simplePlayerModal } = DOMElements;
+            simplePlayerModal.photo.src = playerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            simplePlayerModal.photo.onerror = () => { simplePlayerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
+            simplePlayerModal.name.textContent = playerData.name;
+
+            simplePlayerModal.overlay.classList.remove('hidden');
+            setTimeout(() => {
+                simplePlayerModal.overlay.classList.remove('opacity-0');
+                simplePlayerModal.content.classList.remove('scale-95');
+                DOMElements.body.classList.add('modal-open');
+            }, 10);
+        }
+
+        function hideSimplePlayerModal() {
+            const { simplePlayerModal } = DOMElements;
+            simplePlayerModal.overlay.classList.add('opacity-0');
+            simplePlayerModal.content.classList.add('scale-95');
+            DOMElements.body.classList.remove('modal-open');
+            setTimeout(() => {
+                simplePlayerModal.overlay.classList.add('hidden');
+            }, 300);
+        }
+        // FIN: Funciones para el nuevo modal simple
+
         function calculateIndividualPlayerStats(playerId, allPlayerMatches) {
             const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }};
             const allYearsInMatches = [...new Set(allPlayerMatches.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
@@ -1818,7 +1887,7 @@
                             ${periodOrMonthFilterHTML}
                         </div>
                         <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
+                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
                         </div>
                     </div>
                     <hr class="border-border-color"/>
@@ -1913,7 +1982,7 @@
                                     </div>
                                 </div>
                                 <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                                   <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
+                                   <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
                                 </div>
                             </div>
                             
@@ -2472,7 +2541,6 @@
 
             if (!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
 
-            // El input comienza como solo lectura para controlar la apertura del teclado
             searchInput.readOnly = true;
 
             const filterAndDisplay = () => {
@@ -2500,34 +2568,28 @@
                     resultsDiv.classList.add('hidden');
                     clearButton.classList.remove('hidden');
                     searchInput.readOnly = true;
-                    searchInput.blur(); // Cierra el teclado
+                    searchInput.blur();
                     updateComparison();
                 }
             });
 
-            // Lógica de 1 toque para abrir lista / 2do toque para abrir teclado
             searchInput.addEventListener('click', (e) => {
                 e.preventDefault();
-
-                // Si la lista está oculta, el primer clic la muestra.
                 if (resultsDiv.classList.contains('hidden')) {
                     filterAndDisplay();
                 } 
-                // Si la lista ya está visible, el siguiente clic abre el teclado.
                 else {
                     searchInput.readOnly = false;
                     searchInput.focus();
                 }
             });
 
-            // Filtrado en vivo solo cuando el teclado está abierto
             searchInput.addEventListener('input', () => {
                 if (!searchInput.readOnly) {
                     filterAndDisplay();
                 }
             });
 
-            // Cuando el campo pierde el foco, vuelve a su estado inicial
             searchInput.addEventListener('blur', () => {
                 setTimeout(() => {
                     if (!resultsDiv.contains(document.activeElement)) {
@@ -2537,15 +2599,14 @@
                 }, 150);
             });
             
-            // Lógica del botón de la cruz
             clearButton.addEventListener('mousedown', (e) => {
                 e.preventDefault(); 
                 searchInput.value = '';
                 selectedIdInput.value = '';
-                searchInput.readOnly = true; // Asegura que el teclado se cierre
-                searchInput.blur(); // Cierra el teclado
+                searchInput.readOnly = true;
+                searchInput.blur();
                 updateComparison();
-                filterAndDisplay(); // Muestra la lista completa de nuevo
+                filterAndDisplay();
             });
         }
 
@@ -2629,7 +2690,6 @@
             return statsMeta.map(renderStatBar).join('');
         }
 
-        // CORRECCIÓN 3: Excluir partidos suspendidos
         function calculateHeadToHeadStats(player1Id, player2Id, filteredMatches) {
             const stats = {
                 p1: { pj: 0, pg: 0, pe: 0, pp: 0, efectividad: "0.00" },
@@ -2645,7 +2705,6 @@
                 const p2Team = (match.team_white_players || []).includes(player2Id) ? 'claros'
                              : (match.team_dark_players || []).includes(player2Id) ? 'oscuros' : null;
         
-                // Solo contamos si ambos jugaron en equipos opuestos Y el partido no fue suspendido
                 if (p1Team && p2Team && p1Team !== p2Team && match.result && match.result !== 'Suspendido') {
                     stats.p1.pj++;
                     stats.p2.pj++;
@@ -2664,7 +2723,6 @@
                 }
             });
         
-            // Calcular efectividad
             const p1TotalPoints = (stats.p1.pg * 3) + stats.p1.pe;
             const p1PossiblePoints = stats.p1.pj * 3;
             stats.p1.efectividad = p1PossiblePoints > 0 ? ((p1TotalPoints / p1PossiblePoints) * 100).toFixed(2) : "0.00";
@@ -2676,7 +2734,6 @@
             return stats;
         }
         
-        // CORRECCIÓN 2: Manejar la comparación de un solo jugador
         function updateComparison() {
             const player1Id = document.getElementById('comparador-player1-id')?.value;
             const player2Id = document.getElementById('comparador-player2-id')?.value;
@@ -2725,7 +2782,6 @@
             placeholder.classList.add('hidden');
             displayArea.classList.remove('hidden');
         
-            // 1. Renderizar las tarjetas de los jugadores
             displayArea.innerHTML += `
                 <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
                     ${createPlayerCard(player1Data, 1)}
@@ -2733,7 +2789,6 @@
                     ${createPlayerCard(player2Data, 2)}
                 </div>`;
             
-            // 2. Calcular y renderizar estadísticas "ENTRE SÍ" (solo si ambos jugadores están seleccionados)
             if (player1Id && player2Id) {
                 const allFilteredMatches = allMatchesData.filter(match => {
                     if (!match.result) return false;
@@ -2760,7 +2815,6 @@
                 }
             }
             
-            // 3. Renderizar estadísticas "INDIVIDUALES"
             const individualMeta = [
                 { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
                 { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
@@ -2855,16 +2909,13 @@
                 });
             });
             
-            // CORRECCIÓN 1: Listener global para cerrar desplegables
             document.addEventListener('click', (e) => {
-                // Cerrar desplegables de filtros generales
                 document.querySelectorAll('.custom-select-options:not(.hidden)').forEach(dropdown => {
                     if (!dropdown.parentElement.contains(e.target)) {
                         dropdown.classList.add('hidden');
                         dropdown.previousElementSibling.querySelector('i').classList.remove('rotate-180');
                     }
                 });
-                // Cerrar desplegables del comparador
                 document.querySelectorAll('.comparator-results-dropdown:not(.hidden)').forEach(dropdown => {
                     const container = dropdown.closest('.relative');
                     if (container && !container.contains(e.target)) {
@@ -2879,6 +2930,24 @@
                     hidePlayerModal();
                 }
             });
+
+            // INICIO: Listeners para el nuevo modal simple
+            DOMElements.simplePlayerModal.closeBtn.addEventListener('click', hideSimplePlayerModal);
+            DOMElements.simplePlayerModal.overlay.addEventListener('click', (e) => {
+                if (e.target === DOMElements.simplePlayerModal.overlay) {
+                    hideSimplePlayerModal();
+                }
+            });
+
+            // Listener delegado para las fotos clickeables en las tablas
+            DOMElements.mainContentArea.addEventListener('click', (e) => {
+                const photoTrigger = e.target.closest('.player-photo-clickable');
+                if (photoTrigger && photoTrigger.dataset.playerId) {
+                    e.preventDefault();
+                    showSimplePlayerModal(photoTrigger.dataset.playerId);
+                }
+            });
+            // FIN: Listeners para el nuevo modal simple
 
             initializeApp();
         }
