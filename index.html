@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -2461,38 +2460,26 @@
             document.head.appendChild(style);
         }
 
+        // CORRECCIÓN 1: Lógica de búsqueda simplificada
         function setupComparatorPlayerSearch(playerNum) {
             const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
             const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
             const selectedIdInput = document.getElementById(`comparador-player${playerNum}-id`);
             const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
 
-            if(!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
-
-            // --- INICIO DE LA MODIFICACIÓN ---
-
-            let clickTimer = null;
-            // Puedes ajustar este valor (en milisegundos) para cambiar la sensibilidad del doble toque.
-            const DOUBLE_CLICK_DELAY = 1000; 
-
-            searchInput.readOnly = true;
+            if (!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
 
             const filterAndDisplay = () => {
                 const searchTerm = searchInput.value.toLowerCase();
-                
-                if (searchTerm.length > 0) {
-                    clearButton.classList.remove('hidden');
-                } else {
-                    clearButton.classList.add('hidden');
-                }
-                
+                clearButton.classList.toggle('hidden', searchTerm.length === 0);
+
                 const otherPlayerNum = playerNum === 1 ? 2 : 1;
                 const otherPlayerId = document.getElementById(`comparador-player${otherPlayerNum}-id`).value;
 
                 const filtered = allPlayersData
                     .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id != otherPlayerId)
                     .sort((a, b) => a.name.localeCompare(b.name));
-                
+
                 resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
                 resultsDiv.classList.remove('hidden');
             };
@@ -2501,7 +2488,6 @@
                 const target = e.target.closest('.option-item');
                 if (target && target.dataset.playerId) {
                     e.preventDefault();
-                    searchInput.blur();
                     const player = allPlayersData.find(p => p.id == target.dataset.playerId);
                     searchInput.value = player.name;
                     selectedIdInput.value = player.id;
@@ -2511,56 +2497,16 @@
                 }
             });
 
-            // Lógica de clic actualizada
-            searchInput.addEventListener('click', (e) => {
-                e.preventDefault();
+            searchInput.addEventListener('input', filterAndDisplay);
+            searchInput.addEventListener('focus', filterAndDisplay);
 
-                // Solo procesar clics si el campo está en modo "solo lectura".
-                if (searchInput.readOnly) {
-                    if (clickTimer === null) {
-                        // Es el PRIMER CLIC.
-                        // 1. Mostramos la lista de inmediato.
-                        filterAndDisplay();
-                        // 2. Iniciamos el temporizador para detectar un posible segundo clic.
-                        clickTimer = setTimeout(() => {
-                            // El tiempo de espera terminó, reseteamos el temporizador.
-                            clickTimer = null;
-                        }, DOUBLE_CLICK_DELAY);
-                    } else {
-                        // Es el SEGUNDO CLIC (dentro del tiempo de delay).
-                        // 1. Cancelamos el temporizador del primer clic.
-                        clearTimeout(clickTimer);
-                        clickTimer = null;
-                        // 2. Habilitamos la escritura y abrimos el teclado.
-                        searchInput.readOnly = false;
-                        searchInput.focus();
-                    }
-                }
-            });
-
-            searchInput.addEventListener('input', () => {
-                // El filtrado en vivo solo ocurre cuando el usuario está escribiendo.
-                if (!searchInput.readOnly) {
-                    filterAndDisplay();
-                }
-            });
-
-            searchInput.addEventListener('blur', () => {
-                // Al perder el foco, ocultamos la lista y volvemos al modo "solo lectura".
-                setTimeout(() => {
-                    resultsDiv.classList.add('hidden');
-                    searchInput.readOnly = true; 
-                }, 200);
-            });
-            
             clearButton.addEventListener('mousedown', (e) => {
-                e.preventDefault(); 
+                e.preventDefault();
                 searchInput.value = '';
                 selectedIdInput.value = '';
+                clearButton.classList.add('hidden');
                 updateComparison();
-                filterAndDisplay();
             });
-            // --- FIN DE LA MODIFICACIÓN ---
         }
 
         function renderComparador() {
@@ -2580,10 +2526,8 @@
             const isPlaceholder = !playerStats.id;
             const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
             
-            // Aplicar un color de borde distinto para cada jugador y uno neutral para el placeholder
             let borderColorClass = 'border-gray-300 dark:border-gray-600';
             if (!isPlaceholder) {
-                // Usamos colores diferentes para cada jugador para distinguirlos
                 borderColorClass = playerNum === 1 ? 'border-accent-color' : 'border-danger-color';
             }
             
@@ -2607,7 +2551,6 @@
                     width1 = (val1 / total) * 100;
                     width2 = (val2 / total) * 100;
                 } else if (val1 === 0 && val2 === 0) {
-                    // Si ambos son 0, las barras quedan vacías
                     width1 = 0;
                     width2 = 0;
                 } else if (val1 > 0) {
@@ -2646,7 +2589,7 @@
             return statsMeta.map(renderStatBar).join('');
         }
 
-        // --- INICIO: Función para calcular estadísticas Head-to-Head ---
+        // CORRECCIÓN 3: Excluir partidos suspendidos
         function calculateHeadToHeadStats(player1Id, player2Id, filteredMatches) {
             const stats = {
                 p1: { pj: 0, pg: 0, pe: 0, pp: 0, efectividad: "0.00" },
@@ -2662,8 +2605,8 @@
                 const p2Team = (match.team_white_players || []).includes(player2Id) ? 'claros'
                              : (match.team_dark_players || []).includes(player2Id) ? 'oscuros' : null;
         
-                // Solo contamos si ambos jugaron y en equipos opuestos
-                if (p1Team && p2Team && p1Team !== p2Team) {
+                // Solo contamos si ambos jugaron en equipos opuestos Y el partido no fue suspendido
+                if (p1Team && p2Team && p1Team !== p2Team && match.result && match.result !== 'Suspendido') {
                     stats.p1.pj++;
                     stats.p2.pj++;
         
@@ -2692,8 +2635,8 @@
         
             return stats;
         }
-        // --- FIN: Función para calcular estadísticas Head-to-Head ---
         
+        // CORRECCIÓN 2: Manejar la comparación de un solo jugador
         function updateComparison() {
             const player1Id = document.getElementById('comparador-player1-id')?.value;
             const player2Id = document.getElementById('comparador-player2-id')?.value;
@@ -2702,62 +2645,43 @@
             const placeholder = document.getElementById('comparador-placeholder');
             if (!displayArea || !placeholder) return;
         
-            displayArea.innerHTML = ''; // Limpiamos el área para reconstruirla
+            displayArea.innerHTML = '';
         
-            if (!player1Id || !player2Id) {
+            if (!player1Id && !player2Id) {
                 displayArea.classList.add('hidden');
                 placeholder.classList.remove('hidden');
-                placeholder.textContent = 'Selecciona dos jugadores para comenzar la comparación.';
+                placeholder.textContent = 'Selecciona un jugador para comenzar.';
                 return;
             }
         
-            // --- INICIO DE LA CORRECCIÓN ---
-            // Obtenemos los filtros específicos del comparador directamente del DOM
             const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
             let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
             if (selectedYears.includes('all')) {
                 selectedYears = ['all'];
             }
             const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
-
-            // Verificación de seguridad: si los filtros no están listos, no continuamos.
+        
             if (!selectedYears || selectedYears.length === 0 || !selectedPeriod) {
                 displayArea.classList.add('hidden');
                 placeholder.classList.remove('hidden');
                 placeholder.textContent = 'Por favor, selecciona un período válido para comparar.';
                 return;
             }
-            
-            // Pasamos los filtros explícitamente a la función de cálculo
+        
             const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
-
-            const allFilteredMatches = allMatchesData.filter(match => {
-                if (!match.result) return false;
+            
+            const placeholderPlayer = { name: 'Seleccionar...', photo_url: 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽', id: null };
+            const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
         
-                const matchYear = parseDate(match.match_date).getFullYear();
-                const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
+            let player1Data = player1Id ? allPlayersData.find(p => p.id == player1Id) : placeholderPlayer;
+            let player2Data = player2Id ? allPlayersData.find(p => p.id == player2Id) : placeholderPlayer;
+            
+            let player1IndividualStats = player1Id ? allIndividualStats.find(p => p.id == player1Id) : zeroStats;
+            let player2IndividualStats = player2Id ? allIndividualStats.find(p => p.id == player2Id) : zeroStats;
+            
+            if (player1Id && !player1IndividualStats) player1IndividualStats = { ...zeroStats, id: player1Id };
+            if (player2Id && !player2IndividualStats) player2IndividualStats = { ...zeroStats, id: player2Id };
         
-                const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
-                const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
-        
-                return yearMatch && periodMatch;
-            });
-            // --- FIN DE LA CORRECCIÓN ---
-        
-            const player1IndividualStats = allIndividualStats.find(p => p.id == player1Id);
-            const player2IndividualStats = allIndividualStats.find(p => p.id == player2Id);
-        
-            const player1Data = allPlayersData.find(p => p.id == player1Id);
-            const player2Data = allPlayersData.find(p => p.id == player2Id);
-        
-            if (!player1IndividualStats || !player2IndividualStats || !player1Data || !player2Data) {
-                displayArea.classList.add('hidden');
-                placeholder.classList.remove('hidden');
-                placeholder.textContent = 'No se encontraron datos para los jugadores seleccionados en este período.';
-                return;
-            }
-        
-            // --- Lógica de renderizado ---
             placeholder.classList.add('hidden');
             displayArea.classList.remove('hidden');
         
@@ -2768,23 +2692,34 @@
                     <div class="vs-separator">VS</div>
                     ${createPlayerCard(player2Data, 2)}
                 </div>`;
+            
+            // 2. Calcular y renderizar estadísticas "ENTRE SÍ" (solo si ambos jugadores están seleccionados)
+            if (player1Id && player2Id) {
+                const allFilteredMatches = allMatchesData.filter(match => {
+                    if (!match.result) return false;
+                    const matchYear = parseDate(match.match_date).getFullYear();
+                    const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
+                    const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
+                    const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
+                    return yearMatch && periodMatch;
+                });
         
-            // 2. Calcular y renderizar estadísticas "ENTRE SÍ"
-            const headToHeadStats = calculateHeadToHeadStats(player1Id, player2Id, allFilteredMatches);
-            if (headToHeadStats.p1.pj > 0) {
-                const h2hMeta = [
-                    { key: 'pj', label: 'Jugados' }, { key: 'pg', label: 'Ganados' },
-                    { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' },
-                    { key: 'efectividad', label: 'Efectividad', suffix: '%' }
-                ];
-                displayArea.innerHTML += `
-                    <div class="space-y-4">
-                        <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Entre Sí</h4>
-                        ${createComparisonBars(headToHeadStats.p1, headToHeadStats.p2, h2hMeta)}
-                    </div>
-                `;
+                const headToHeadStats = calculateHeadToHeadStats(player1Id, player2Id, allFilteredMatches);
+                if (headToHeadStats.p1.pj > 0) {
+                    const h2hMeta = [
+                        { key: 'pj', label: 'Jugados' }, { key: 'pg', label: 'Ganados' },
+                        { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' },
+                        { key: 'efectividad', label: 'Efectividad', suffix: '%' }
+                    ];
+                    displayArea.innerHTML += `
+                        <div class="space-y-4">
+                            <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Entre Sí</h4>
+                            ${createComparisonBars(headToHeadStats.p1, headToHeadStats.p2, h2hMeta)}
+                        </div>
+                    `;
+                }
             }
-        
+            
             // 3. Renderizar estadísticas "INDIVIDUALES"
             const individualMeta = [
                 { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
@@ -2800,7 +2735,6 @@
                 </div>
             `;
         }
-
         // --- FIN: Funciones del Comparador ---
 
         async function initializeApp() {
@@ -2881,11 +2815,20 @@
                 });
             });
             
+            // CORRECCIÓN 1: Listener global para cerrar desplegables
             document.addEventListener('click', (e) => {
+                // Cerrar desplegables de filtros generales
                 document.querySelectorAll('.custom-select-options:not(.hidden)').forEach(dropdown => {
                     if (!dropdown.parentElement.contains(e.target)) {
                         dropdown.classList.add('hidden');
                         dropdown.previousElementSibling.querySelector('i').classList.remove('rotate-180');
+                    }
+                });
+                // Cerrar desplegables del comparador
+                document.querySelectorAll('.comparator-results-dropdown:not(.hidden)').forEach(dropdown => {
+                    const container = dropdown.closest('.relative');
+                    if (container && !container.contains(e.target)) {
+                        dropdown.classList.add('hidden');
                     }
                 });
             });
