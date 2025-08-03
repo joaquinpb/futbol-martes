@@ -2600,7 +2600,7 @@
                 { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
                 { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
                 { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' },
-                { key: 'chamigos', label: 'Chamigos' }, { key: 'tt', label: 'Asistencias TT' },
+                { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' },
                 { key: 'ausentes', label: 'Ausencias' },
             ];
 
@@ -2610,36 +2610,42 @@
                 const suffix = stat.suffix || '';
                 const total = val1 + val2;
                 
-                let width1 = total > 0 ? (val1 / total) * 100 : 0;
-                let width2 = total > 0 ? (val2 / total) * 100 : 0;
+                let width1 = 0, width2 = 0;
+                if (total > 0) {
+                    width1 = (val1 / total) * 100;
+                    width2 = (val2 / total) * 100;
+                }
+
+                let winnerStyle1 = '';
+                let winnerStyle2 = '';
                 
-                let winnerClass1 = '', winnerClass2 = '';
-                
+                // Para 'pp' (perdidos) y 'ausentes', un número menor es mejor.
                 const isLowerBetter = stat.key === 'pp' || stat.key === 'ausentes';
+                
                 if (val1 !== val2) {
+                    const winnerCss = 'color: var(--success-color); font-weight: 800;';
                     if ((!isLowerBetter && val1 > val2) || (isLowerBetter && val1 < val2)) {
-                        winnerClass1 = 'winner';
+                        winnerStyle1 = winnerCss;
                     } else {
-                        winnerClass2 = 'winner';
+                        winnerStyle2 = winnerCss;
                     }
                 }
 
-                // NUEVA ESTRUCTURA PARA LAS BARRAS
                 return `
                     <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
-                        <!-- Contenedor Barra y Valor Jugador 1 -->
+                        <!-- Barra y Valor Jugador 1 -->
                         <div class="progress-bg player1">
                             <div class="progress-fill player1" style="width: ${width1}%"></div>
-                            <span class="stat-value player1 ${winnerClass1}">${val1}${suffix}</span>
+                            <span class="stat-value player1" style="${winnerStyle1}">${val1}${suffix}</span>
                         </div>
 
                         <!-- Etiqueta Central -->
                         <div class="stat-label">${stat.label}</div>
 
-                        <!-- Contenedor Barra y Valor Jugador 2 -->
+                        <!-- Barra y Valor Jugador 2 -->
                         <div class="progress-bg player2">
                             <div class="progress-fill player2" style="width: ${width2}%"></div>
-                            <span class="stat-value player2 ${winnerClass2}">${val2}${suffix}</span>
+                            <span class="stat-value player2" style="${winnerStyle2}">${val2}${suffix}</span>
                         </div>
                     </div>
                 `;
