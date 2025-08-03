@@ -2460,7 +2460,6 @@
             document.head.appendChild(style);
         }
 
-        // CORRECCIÓN 1: Lógica de búsqueda simplificada
         function setupComparatorPlayerSearch(playerNum) {
             const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
             const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
@@ -2468,6 +2467,12 @@
             const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
 
             if (!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
+
+            let clickTimer = null;
+            const DOUBLE_CLICK_DELAY = 800; // 800ms para el doble toque
+
+            // El input comienza como solo lectura para controlar la apertura del teclado
+            searchInput.readOnly = true;
 
             const filterAndDisplay = () => {
                 const searchTerm = searchInput.value.toLowerCase();
@@ -2493,19 +2498,59 @@
                     selectedIdInput.value = player.id;
                     resultsDiv.classList.add('hidden');
                     clearButton.classList.remove('hidden');
+                    searchInput.readOnly = true; // Vuelve a solo lectura
+                    searchInput.blur(); // <-- AGREGADO: Cierra el teclado
                     updateComparison();
                 }
             });
 
-            searchInput.addEventListener('input', filterAndDisplay);
-            searchInput.addEventListener('focus', filterAndDisplay);
-
-            clearButton.addEventListener('mousedown', (e) => {
+            // Lógica de 1 toque / 2 toques
+            searchInput.addEventListener('click', (e) => {
                 e.preventDefault();
+
+                if (searchInput.readOnly) {
+                    if (clickTimer === null) {
+                        // PRIMER TOQUE
+                        filterAndDisplay(); // Muestra la lista
+                        clickTimer = setTimeout(() => {
+                            clickTimer = null; // Resetea el timer si no hay segundo toque
+                        }, DOUBLE_CLICK_DELAY);
+                    } else {
+                        // SEGUNDO TOQUE (dentro del delay)
+                        clearTimeout(clickTimer);
+                        clickTimer = null;
+                        searchInput.readOnly = false; // Habilita escritura
+                        searchInput.focus(); // Abre el teclado
+                    }
+                }
+            });
+
+            // Filtrado en vivo solo cuando el teclado está abierto
+            searchInput.addEventListener('input', () => {
+                if (!searchInput.readOnly) {
+                    filterAndDisplay();
+                }
+            });
+
+            // Cuando el campo pierde el foco, vuelve a su estado inicial
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (!resultsDiv.contains(document.activeElement)) {
+                        resultsDiv.classList.add('hidden');
+                        searchInput.readOnly = true;
+                    }
+                }, 150);
+            });
+            
+            // Lógica del botón de la cruz
+            clearButton.addEventListener('mousedown', (e) => {
+                e.preventDefault(); 
                 searchInput.value = '';
                 selectedIdInput.value = '';
-                clearButton.classList.add('hidden');
+                searchInput.readOnly = true; // Asegura que el teclado se cierre
+                searchInput.blur(); // Cierra el teclado por si acaso
                 updateComparison();
+                filterAndDisplay(); // Muestra la lista completa de nuevo
             });
         }
 
