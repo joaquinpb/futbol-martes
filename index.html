@@ -574,6 +574,7 @@
                 <div class="collapsible-content hidden mt-1 space-y-1 pl-4">
                     <a href="#estadisticas" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="estadisticas-content"><i class="fas fa-chart-bar w-5 text-center"></i>Estadísticas</a>
                     <a href="#individual-stats" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="individual-stats-content"><i class="fas fa-history w-5 text-center"></i>Histórico</a>
+                    <a href="#comparador" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="comparador-content"><i class="fas fa-users w-5 text-center"></i>Comparador</a>
                 </div>
             </div>
             
@@ -720,7 +721,8 @@
         const renderFunctions = {
             'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
             'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
-            'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable
+            'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable,
+            'comparador-content': renderComparador
         };
 
         const DOMElements = {
@@ -755,13 +757,15 @@
             'equipos-content': { title: 'Equipos', icon: 'fa-futbol' },
             'fixture-content': { title: 'Fixture', icon: 'fa-calendar-alt' },
             'estadisticas-content': { title: 'Estadísticas', icon: 'fa-chart-bar' },
-            'individual-stats-content': { title: 'Histórico', icon: 'fa-history' }
+            'individual-stats-content': { title: 'Histórico', icon: 'fa-history' },
+            'comparador-content': { title: 'Comparador', icon: 'fa-users' }
         };
 
         const hashToTabMap = {
             "#leaderboard": "leaderboard-content", "#chamigo": "chamigo-content", "#tt": "tt-content",
             "#presentismo": "presentismo-content", "#ausentismo": "ausentismo-content", "#estadisticas": "estadisticas-content",
-            "#equipos": "equipos-content", "#fixture": "fixture-content", "#individual-stats": "individual-stats-content"
+            "#equipos": "equipos-content", "#fixture": "fixture-content", "#individual-stats": "individual-stats-content",
+            "#comparador": "comparador-content"
         };
         
         function applyTheme(theme) {
@@ -1802,6 +1806,40 @@
                             <table id="individual-stats-table" class="hidden"></table>
                         </div>`;
                     break;
+                case 'comparador-content':
+                    baseHtml += `
+                        <div class="p-2 md:p-6">
+                            <h2 class="text-2xl font-bold mb-6 text-center">Comparador de Jugadores</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-4xl mx-auto">
+                                <!-- Selector Jugador 1 -->
+                                <div>
+                                    <label for="player1-select" class="block text-sm font-medium mb-1 text-text-secondary">Jugador 1</label>
+                                    <select id="player1-select" class="w-full p-3 border rounded-lg bg-bg-secondary dark:bg-bg-muted border-border-color focus:ring-2 focus:ring-accent-color focus:border-accent-color"></select>
+                                </div>
+                                <!-- Selector Jugador 2 -->
+                                <div>
+                                    <label for="player2-select" class="block text-sm font-medium mb-1 text-text-secondary">Jugador 2</label>
+                                    <select id="player2-select" class="w-full p-3 border rounded-lg bg-bg-secondary dark:bg-bg-muted border-border-color focus:ring-2 focus:ring-accent-color focus:border-accent-color"></select>
+                                </div>
+                            </div>
+                            <!-- Área de Comparación -->
+                            <div id="comparison-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start max-w-4xl mx-auto">
+                                <!-- Columna Jugador 1 -->
+                                <div id="player1-comparison" class="hidden">
+                                    <!-- Contenido se llenará con JS -->
+                                </div>
+                                <!-- Columna Jugador 2 -->
+                                <div id="player2-comparison" class="hidden">
+                                    <!-- Contenido se llenará con JS -->
+                                </div>
+                            </div>
+                             <!-- Contenedor de estadísticas comparativas -->
+                            <div id="stats-comparison-table-container" class="mt-8 hidden max-w-4xl mx-auto">
+                                <!-- La tabla comparativa se insertará aquí -->
+                            </div>
+                        </div>
+                    `;
+                    break;
             }
             
             baseHtml += `</div>`;
@@ -2012,7 +2050,7 @@
                 }
             };
             
-            if (tabId.includes('content') && !tabId.includes('individual')) {
+            if (tabId.includes('content') && !tabId.includes('individual') && !tabId.includes('comparador')) {
                  populateMultiYearSelect(prefix, handleFilterChange);
             }
 
@@ -2091,7 +2129,7 @@
                 });
             }
 
-            if (tabId.includes('content') && !tabId.includes('individual')) {
+            if (tabId.includes('content') && !tabId.includes('individual') && !tabId.includes('comparador')) {
                 const isMonthFilter = prefix === 'fixture';
                 const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.months : globalFilterState.period);
                 
@@ -2228,6 +2266,124 @@
                     }
                 });
         }
+
+        // --- INICIO: Funciones del Comparador ---
+        function renderComparador() {
+            const player1Select = document.getElementById('player1-select');
+            const player2Select = document.getElementById('player2-select');
+            if (!player1Select || !player2Select) return;
+
+            const placeholderOption = '<option value="">Seleccionar jugador...</option>';
+            const playerOptions = allPlayersData
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(p => `<option value="${p.id}">${p.name}</option>`)
+                .join('');
+
+            player1Select.innerHTML = placeholderOption + playerOptions;
+            player2Select.innerHTML = placeholderOption + playerOptions;
+
+            player1Select.addEventListener('change', updateComparison);
+            player2Select.addEventListener('change', updateComparison);
+        }
+
+        function createPlayerCard(playerStats) {
+            const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            return `
+                <div class="flex flex-col items-center text-center bg-bg-muted dark:bg-bg-secondary p-6 rounded-xl shadow-lg">
+                    <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 border-accent-color shadow-lg mb-4" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
+                    <h3 class="text-2xl font-bold text-text-primary">${playerStats.name}</h3>
+                </div>
+            `;
+        }
+
+        function createComparisonTable(stats1, stats2) {
+            const statsMeta = [
+                { key: 'points', label: 'Puntos' },
+                { key: 'pj', label: 'Partidos Jugados' },
+                { key: 'pg', label: 'Ganados' },
+                { key: 'pe', label: 'Empatados' },
+                { key: 'pp', label: 'Perdidos' },
+                { key: 'efectividad', label: 'Efectividad', suffix: '%' },
+                { key: 'chamigos', label: 'Chamigos' },
+                { key: 'tt', label: 'Asistencias a TT' },
+                { key: 'ausentes', label: 'Ausencias' },
+            ];
+
+            const renderRow = (stat) => {
+                const val1 = stats1[stat.key];
+                const val2 = stats2[stat.key];
+                const suffix = stat.suffix || '';
+
+                let class1 = 'text-text-primary';
+                let class2 = 'text-text-primary';
+
+                const numVal1 = parseFloat(val1);
+                const numVal2 = parseFloat(val2);
+
+                if (stat.key === 'pp' || stat.key === 'ausentes') {
+                    // Lower is better
+                    if (numVal1 < numVal2) class1 = 'text-green-500 font-bold';
+                    else if (numVal2 < numVal1) class2 = 'text-green-500 font-bold';
+                } else {
+                    // Higher is better
+                    if (numVal1 > numVal2) class1 = 'text-green-500 font-bold';
+                    else if (numVal2 > numVal1) class2 = 'text-green-500 font-bold';
+                }
+
+                return `
+                    <tr class="border-b border-border-color last:border-b-0">
+                        <td class="py-4 px-4 text-left text-lg ${class1}">${val1}${suffix}</td>
+                        <td class="py-4 px-4 text-center font-semibold text-text-secondary">${stat.label}</td>
+                        <td class="py-4 px-4 text-right text-lg ${class2}">${val2}${suffix}</td>
+                    </tr>
+                `;
+            };
+
+            return `
+                <div class="bg-bg-secondary dark:bg-bg-muted rounded-xl shadow-lg overflow-hidden border border-border-color">
+                    <h3 class="text-xl font-bold p-4 text-center bg-bg-muted dark:bg-bg-secondary border-b border-border-color">Estadísticas Comparadas</h3>
+                    <table class="w-full">
+                        <tbody>
+                            ${statsMeta.map(renderRow).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function updateComparison() {
+            const player1Id = document.getElementById('player1-select').value;
+            const player2Id = document.getElementById('player2-select').value;
+
+            const container1 = document.getElementById('player1-comparison');
+            const container2 = document.getElementById('player2-comparison');
+            const statsTableContainer = document.getElementById('stats-comparison-table-container');
+
+            if (player1Id && player2Id && player1Id !== player2Id) {
+                const { players: allStats } = calculateStats(globalFilterState);
+
+                const player1Data = allPlayersData.find(p => p.id == player1Id);
+                const player1Stats = allStats.find(p => p.id == player1Id) || { name: player1Data.name, photo_url: player1Data.photo_url, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player1Data.id };
+
+                const player2Data = allPlayersData.find(p => p.id == player2Id);
+                const player2Stats = allStats.find(p => p.id == player2Id) || { name: player2Data.name, photo_url: player2Data.photo_url, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player2Data.id };
+
+                container1.innerHTML = createPlayerCard(player1Stats);
+                container2.innerHTML = createPlayerCard(player2Stats);
+                statsTableContainer.innerHTML = createComparisonTable(player1Stats, player2Stats);
+
+                container1.classList.remove('hidden');
+                container2.classList.remove('hidden');
+                statsTableContainer.classList.remove('hidden');
+
+            } else {
+                container1.classList.add('hidden');
+                container2.classList.add('hidden');
+                statsTableContainer.classList.add('hidden');
+            }
+        }
+        // --- FIN: Funciones del Comparador ---
+
 
         async function initializeApp() {
             try {
