@@ -1684,6 +1684,8 @@
             }
 
             visualDetailsContainer.classList.remove('hidden');
+
+            adjustFixtureHeights();
         }
         
         function showPlayerModal(playerId) {
@@ -2990,6 +2992,22 @@
         }
         // --- FIN: Funciones del Comparador ---
 
+        function adjustFixtureHeights() {
+            const soccerField = document.getElementById('soccer-field-container');
+            const detailsDisplay = document.getElementById('fixture-details-display');
+
+            if (!soccerField || !detailsDisplay) return;
+
+            // Solo aplicamos la altura fija en vistas de escritorio (horizontales)
+            if (window.innerWidth >= 768) { 
+                const fieldHeight = soccerField.offsetHeight;
+                detailsDisplay.style.height = `${fieldHeight}px`;
+            } else { 
+                // En móvil, reseteamos la altura para que se ajuste al contenido
+                detailsDisplay.style.height = 'auto';
+            }
+        }
+        
         async function initializeApp() {
             try {
                 const { data: players, error: pError } = await supabaseClient.from('players').select('id, name, photo_url, status');
@@ -3043,6 +3061,18 @@
             DOMElements.hamburgerButton.addEventListener('click', openSideMenu);
             DOMElements.overlay.addEventListener('click', closeSideMenu);
             window.addEventListener('resize', applyInitialResponsiveStyles);
+
+            // Listener para reajustar alturas en el fixture al cambiar tamaño de ventana
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    // Solo reajustar si la pestaña de fixture está visible
+                    if (document.getElementById('fixture-content')) {
+                        adjustFixtureHeights();
+                    }
+                }, 200); // Un pequeño delay para no sobrecargar el navegador
+            });
             
             DOMElements.tabButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
