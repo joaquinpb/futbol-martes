@@ -2468,9 +2468,6 @@
 
             if (!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
 
-            let clickTimer = null;
-            const DOUBLE_CLICK_DELAY = 800; // 800ms para el doble toque
-
             // El input comienza como solo lectura para controlar la apertura del teclado
             searchInput.readOnly = true;
 
@@ -2498,30 +2495,24 @@
                     selectedIdInput.value = player.id;
                     resultsDiv.classList.add('hidden');
                     clearButton.classList.remove('hidden');
-                    searchInput.readOnly = true; // Vuelve a solo lectura
-                    searchInput.blur(); // <-- AGREGADO: Cierra el teclado
+                    searchInput.readOnly = true;
+                    searchInput.blur(); // Cierra el teclado
                     updateComparison();
                 }
             });
 
-            // Lógica de 1 toque / 2 toques
+            // Lógica de 1 toque para abrir lista / 2do toque para abrir teclado
             searchInput.addEventListener('click', (e) => {
                 e.preventDefault();
 
-                if (searchInput.readOnly) {
-                    if (clickTimer === null) {
-                        // PRIMER TOQUE
-                        filterAndDisplay(); // Muestra la lista
-                        clickTimer = setTimeout(() => {
-                            clickTimer = null; // Resetea el timer si no hay segundo toque
-                        }, DOUBLE_CLICK_DELAY);
-                    } else {
-                        // SEGUNDO TOQUE (dentro del delay)
-                        clearTimeout(clickTimer);
-                        clickTimer = null;
-                        searchInput.readOnly = false; // Habilita escritura
-                        searchInput.focus(); // Abre el teclado
-                    }
+                // Si la lista está oculta, el primer clic la muestra.
+                if (resultsDiv.classList.contains('hidden')) {
+                    filterAndDisplay();
+                } 
+                // Si la lista ya está visible, el siguiente clic abre el teclado.
+                else {
+                    searchInput.readOnly = false;
+                    searchInput.focus();
                 }
             });
 
@@ -2548,7 +2539,7 @@
                 searchInput.value = '';
                 selectedIdInput.value = '';
                 searchInput.readOnly = true; // Asegura que el teclado se cierre
-                searchInput.blur(); // Cierra el teclado por si acaso
+                searchInput.blur(); // Cierra el teclado
                 updateComparison();
                 filterAndDisplay(); // Muestra la lista completa de nuevo
             });
