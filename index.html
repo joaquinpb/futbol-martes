@@ -2382,7 +2382,7 @@
 
             const style = document.createElement('style');
             style.id = styleId;
-            // ESTILOS ACTUALIZADOS PARA EL GRÁFICO
+            // ESTILOS ACTUALIZADOS PARA EL GRÁFICO CON VALORES DENTRO DE LAS BARRAS
             style.innerHTML = `
                 .comparator-results-dropdown {
                     background-color: var(--bg-secondary);
@@ -2404,21 +2404,21 @@
                     background-color: #374151;
                 }
                 .progress-bg {
-                    display: flex; /* Necesario para alinear el relleno */
+                    position: relative; /* Contenedor para el valor absoluto */
+                    display: flex;
                     background-color: var(--border-color);
                     border-radius: 9999px;
-                    height: 1.25rem;
+                    height: 1.75rem; /* Aumentamos la altura para el texto */
                     overflow: hidden;
-                    position: relative;
                 }
                 html.dark .progress-bg {
                     background-color: #374151;
                 }
                 .progress-bg.player1 {
-                    justify-content: flex-end; /* Alinea la barra a la derecha */
+                    justify-content: flex-end; /* Barra crece de derecha a izquierda */
                 }
                 .progress-bg.player2 {
-                    justify-content: flex-start; /* Alinea la barra a la izquierda */
+                    justify-content: flex-start; /* Barra crece de izquierda a derecha */
                 }
                 .progress-fill {
                     height: 100%;
@@ -2432,8 +2432,24 @@
                     background-color: var(--danger-color);
                 }
                 .stat-value {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: white;
                     font-weight: 600;
-                    min-width: 45px; /* Ancho mínimo para los números */
+                    font-size: 0.875rem;
+                    padding: 0 0.75rem; /* Padding horizontal */
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.6); /* Sombra para legibilidad */
+                    white-space: nowrap;
+                }
+                .stat-value.player1 {
+                    right: 0; /* Alineado a la derecha dentro de la barra */
+                }
+                .stat-value.player2 {
+                    left: 0; /* Alineado a la izquierda dentro de la barra */
+                }
+                .stat-value.winner {
+                    font-weight: 800; /* Hacemos más notorio al ganador */
                 }
                 .stat-label {
                     text-align: center;
@@ -2545,33 +2561,29 @@
                 const isLowerBetter = stat.key === 'pp' || stat.key === 'ausentes';
                 if (val1 !== val2) {
                     if ((!isLowerBetter && val1 > val2) || (isLowerBetter && val1 < val2)) {
-                        winnerClass1 = 'font-bold text-green-500';
+                        winnerClass1 = 'winner';
                     } else {
-                        winnerClass2 = 'font-bold text-green-500';
+                        winnerClass2 = 'winner';
                     }
                 }
 
-                // ESTRUCTURA DE GRILLA ACTUALIZADA PARA ALINEACIÓN FIJA
+                // NUEVA ESTRUCTURA PARA LAS BARRAS
                 return `
-                    <div class="grid grid-cols-[auto_1fr_auto_1fr_auto] gap-x-2 md:gap-x-4 items-center">
-                        <!-- Player 1 Value -->
-                        <span class="stat-value ${winnerClass1} text-right">${val1}${suffix}</span>
-                        
-                        <!-- Player 1 Bar -->
+                    <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
+                        <!-- Contenedor Barra y Valor Jugador 1 -->
                         <div class="progress-bg player1">
                             <div class="progress-fill player1" style="width: ${width1}%"></div>
+                            <span class="stat-value player1 ${winnerClass1}">${val1}${suffix}</span>
                         </div>
 
-                        <!-- Label -->
+                        <!-- Etiqueta Central -->
                         <div class="stat-label">${stat.label}</div>
 
-                        <!-- Player 2 Bar -->
+                        <!-- Contenedor Barra y Valor Jugador 2 -->
                         <div class="progress-bg player2">
                             <div class="progress-fill player2" style="width: ${width2}%"></div>
+                            <span class="stat-value player2 ${winnerClass2}">${val2}${suffix}</span>
                         </div>
-
-                        <!-- Player 2 Value -->
-                        <span class="stat-value ${winnerClass2} text-left">${val2}${suffix}</span>
                     </div>
                 `;
             };
