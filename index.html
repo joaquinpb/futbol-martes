@@ -67,15 +67,16 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            height: 100vh;
-            display: flex; /* Siempre flex */
-            flex-direction: column; /* Dirección por defecto para móvil */
-            overflow: hidden; /* El body nunca hace scroll */
+            height: 100vh; /* Cambiado de min-height a height */
+            overflow-y: hidden; /* Evita el scroll en el body */
         }
-        
+        body.overflow-hidden, body.modal-open { overflow: hidden; }
+
         @media (min-width: 768px) {
-            body {
-                flex-direction: row; /* Cambia a fila para desktop */
+            body { 
+                display: flex; 
+                height: 100vh;
+                overflow: hidden; /* Desactiva el scroll en desktop para que lo maneje el main */
             }
         }
         
@@ -211,11 +212,10 @@
         }
         
         /* Esta regla ahora está afuera del @media para que aplique siempre */
-        .flex-1.flex.flex-col {
-            flex: 1; /* Usar flex: 1 en lugar de height: 100vh */
-            display: flex;
-            flex-direction: column;
-            min-height: 0; /* Clave para que el scroll funcione en contenedores flex */
+        .flex-1.flex.flex-col { 
+            height: 100vh; 
+            display: flex; /* Aseguramos que sea flexbox */
+            flex-direction: column; /* Dirección vertical */
         }
         
         @media (min-width: 768px) {
@@ -498,7 +498,7 @@
             line-height: 1;
         }
         
-        /* Estilos del Comparador */
+        /* === INICIO: Estilos del Comparador Corregidos === */
         .vs-separator {
             color: var(--text-muted);
             font-size: 2.5rem;
@@ -507,44 +507,60 @@
         .progress-bar-container {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
         }
         .progress-bg {
             flex-grow: 1;
             background-color: var(--border-color);
             border-radius: 9999px;
-            height: 1.25rem;
+            height: 1.5rem;
             overflow: hidden;
-            position: relative;
+            width: 100%;
+            display: flex; /* Usar flexbox para alinear la barra interior */
         }
         html.dark .progress-bg {
             background-color: #374151;
         }
+
+        /* Alinear la barra del Jugador 1 a la derecha (hacia el centro) */
+        .progress-bar-container.player1 .progress-bg {
+            justify-content: flex-end;
+        }
+        /* Alinear la barra del Jugador 2 a la izquierda (hacia el centro) */
+        .progress-bar-container.player2 .progress-bg {
+            justify-content: flex-start;
+        }
+
         .progress-fill {
             height: 100%;
             border-radius: 9999px;
             transition: width 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
         }
+
         .progress-bar-container.player1 .progress-fill {
             background-color: var(--accent-color);
+            justify-content: flex-end; /* Alinear el número a la derecha dentro de la barra */
         }
         .progress-bar-container.player2 .progress-fill {
             background-color: var(--danger-color);
+            justify-content: flex-start; /* Alinear el número a la izquierda dentro de la barra */
         }
+
         .stat-value {
             font-weight: 600;
-            min-width: 40px;
-            text-align: right;
+            color: var(--button-text-color);
+            padding: 0 0.75rem;
+            white-space: nowrap;
         }
-        .progress-bar-container.player1 .stat-value {
-            text-align: left;
-        }
+
         .stat-label {
             text-align: center;
             font-weight: 600;
             color: var(--text-secondary);
             white-space: nowrap;
         }
+        /* === FIN: Estilos del Comparador Corregidos === */
 
 
         /* === INICIO: Corrección Buscador Histórico === */
@@ -1874,71 +1890,64 @@
                             <table id="individual-stats-table" class="hidden"></table>
                         </div>`;
                     break;
-                    
                 case 'comparador-content':
-                     // ESTRUCTURA ACTUALIZADA PARA COMPARADOR
                     baseHtml = `
-                        <div id="comparador-content" class="main-content-container space-y-4">
-                            <!-- Filters Container -->
-                            <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
-                                <div class="col-span-1 md:col-span-2 md:order-1">
-                                    <div class="custom-select-container">
-                                        <button id="comparador-year-select-button" class="custom-select-button">
-                                            <span class="truncate">Seleccionar Años</span>
-                                            <i class="fas fa-chevron-down transition-transform"></i>
-                                        </button>
-                                        <div id="comparador-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto"></div>
+                        <div id="comparador-content" class="main-content-container">
+                            <div class="p-2 md:p-6 space-y-6">
+                                <h2 class="text-2xl font-bold text-center">Comparador de Jugadores</h2>
+                                
+                                <!-- Filters -->
+                                <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch max-w-4xl mx-auto">
+                                    <!-- Year Filter -->
+                                    <div class="col-span-1 md:col-span-2 md:order-1">
+                                        <div class="custom-select-container">
+                                            <button id="comparador-year-select-button" class="custom-select-button">
+                                                <span class="truncate">Seleccionar Años</span>
+                                                <i class="fas fa-chevron-down transition-transform"></i>
+                                            </button>
+                                            <div id="comparador-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto"></div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-span-1 md:col-span-2 md:order-3">
-                                     <div id="comparador-period-select-container" class="custom-select-container">
-                                        <input type="hidden" id="comparador-period-select" value="apertura">
-                                        <button id="comparador-period-select-button" class="custom-select-button">
-                                            <span class="truncate">Apertura</span>
-                                            <i class="fas fa-chevron-down transition-transform"></i>
-                                        </button>
-                                        <div id="comparador-period-select-dropdown" class="custom-select-options hidden">
-                                            <div class="option-item selected" data-value="apertura">Apertura</div>
-                                            <div class="option-item" data-value="clausura">Clausura</div>
-                                            <div class="option-item" data-value="total">Totales</div>
+                                    <!-- Torneo Actual Button -->
+                                    <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
+                                        <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
+                                    </div>
+                                    <!-- Period Filter -->
+                                    <div class="col-span-1 md:col-span-2 md:order-3">
+                                        <div id="comparador-period-select-container" class="custom-select-container">
+                                            <input type="hidden" id="comparador-period-select" value="apertura">
+                                            <button id="comparador-period-select-button" class="custom-select-button">
+                                                <span class="truncate">Apertura</span>
+                                                <i class="fas fa-chevron-down transition-transform"></i>
+                                            </button>
+                                            <div id="comparador-period-select-dropdown" class="custom-select-options hidden">
+                                                <div class="option-item selected" data-value="apertura">Apertura</div>
+                                                <div class="option-item" data-value="clausura">Clausura</div>
+                                                <div class="option-item" data-value="total">Totales</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                                   <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
-                                </div>
-                            </div>
-                            
-                            <hr class="border-border-color"/>
 
-                            <!-- Player Selectors -->
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="relative">
-                                    <label class="block text-sm font-medium mb-1">Jugador 1</label>
-                                    <input type="text" id="comparador-player1-search" placeholder="Buscar Jugador 1..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
-                                    <button id="comparador-clear-player1-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
-                                    <div id="comparador-player1-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                                    <input type="hidden" id="comparador-player1-id">
-                                </div>
-                                <div class="relative">
-                                     <label class="block text-sm font-medium mb-1">Jugador 2</label>
-                                    <input type="text" id="comparador-player2-search" placeholder="Buscar Jugador 2..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
-                                    <button id="comparador-clear-player2-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
-                                    <div id="comparador-player2-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                                    <input type="hidden" id="comparador-player2-id">
-                                </div>
-                            </div>
+                                <hr class="border-border-color max-w-4xl mx-auto"/>
 
-                            <!-- Comparison Display -->
-                            <div id="comparison-display-area" class="hidden space-y-8 pt-4">
-                                <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                                    <div id="player1-card-display" class="text-center"></div>
-                                    <div class="vs-separator">VS</div>
-                                    <div id="player2-card-display" class="text-center"></div>
+                                <!-- PLAYER SELECTORS -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                                    <div id="comparador-player1-select-container" class="custom-select-container"></div>
+                                    <div id="comparador-player2-select-container" class="custom-select-container"></div>
                                 </div>
-                                <div id="stats-bars-container" class="space-y-4"></div>
+
+                                <!-- COMPARISON DISPLAY -->
+                                <div id="comparison-display-area" class="hidden max-w-4xl mx-auto space-y-8">
+                                    <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                                        <div id="player1-card-display" class="text-center"></div>
+                                        <div class="vs-separator">VS</div>
+                                        <div id="player2-card-display" class="text-center"></div>
+                                    </div>
+                                    <div id="stats-bars-container" class="space-y-4"></div>
+                                </div>
+                                <p id="comparador-placeholder" class="text-center text-text-secondary">Selecciona dos jugadores y un período para comenzar la comparación.</p>
                             </div>
-                            <p id="comparador-placeholder" class="text-center text-text-secondary pt-8">Selecciona dos jugadores y un período para comenzar la comparación.</p>
                         </div>
                     `;
                     break;
@@ -2375,160 +2384,58 @@
         }
 
         // --- INICIO: Funciones del Comparador ---
+        function renderComparador() {
+            const createPlayerSelector = (playerNum) => {
+                const container = document.getElementById(`comparador-player${playerNum}-select-container`);
+                if (!container) return;
 
-        function injectComparatorStyles() {
-            const styleId = 'comparator-dynamic-styles';
-            if (document.getElementById(styleId)) return; // Inject only once
+                container.innerHTML = `
+                    <input type="hidden" id="player${playerNum}-select-value">
+                    <button id="player${playerNum}-select-button" class="custom-select-button">
+                        <span class="truncate">Seleccionar Jugador ${playerNum}</span>
+                        <i class="fas fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="player${playerNum}-select-dropdown" class="custom-select-options hidden max-h-60 overflow-y-auto"></div>
+                `;
 
-            const style = document.createElement('style');
-            style.id = styleId;
-            // ESTILOS ACTUALIZADOS PARA EL GRÁFICO CON VALORES DENTRO DE LAS BARRAS
-            style.innerHTML = `
-                .comparator-results-dropdown {
-                    background-color: var(--bg-secondary);
-                    border: 1px solid var(--border-color);
-                }
-                .comparator-results-dropdown .option-item:hover {
-                    background-color: var(--bg-muted);
-                }
-                html.dark .comparator-search-input {
-                    background-color: var(--bg-muted) !important;
-                    color: var(--text-primary) !important;
-                    border-color: var(--border-color) !important;
-                }
-                html.dark .comparator-results-dropdown {
-                     background-color: #1f2937;
-                     border-color: #374151;
-                }
-                html.dark .comparator-results-dropdown .option-item:hover {
-                    background-color: #374151;
-                }
-                .progress-bg {
-                    position: relative; /* Contenedor para el valor absoluto */
-                    display: flex;
-                    background-color: var(--border-color);
-                    border-radius: 9999px;
-                    height: 1.75rem; /* Aumentamos la altura para el texto */
-                    overflow: hidden;
-                }
-                html.dark .progress-bg {
-                    background-color: #374151;
-                }
-                .progress-bg.player1 {
-                    justify-content: flex-end; /* Barra crece de derecha a izquierda */
-                }
-                .progress-bg.player2 {
-                    justify-content: flex-start; /* Barra crece de izquierda a derecha */
-                }
-                .progress-fill {
-                    height: 100%;
-                    border-radius: 9999px;
-                    transition: width 0.5s ease-in-out;
-                }
-                .progress-fill.player1 {
-                    background-color: var(--accent-color);
-                }
-                .progress-fill.player2 {
-                    background-color: var(--danger-color);
-                }
-                .stat-value {
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: white;
-                    font-weight: 600;
-                    font-size: 0.875rem;
-                    padding: 0 0.75rem; /* Padding horizontal */
-                    text-shadow: 0 1px 2px rgba(0,0,0,0.6); /* Sombra para legibilidad */
-                    white-space: nowrap;
-                }
-                .stat-value.player1 {
-                    right: 0; /* Alineado a la derecha dentro de la barra */
-                }
-                .stat-value.player2 {
-                    left: 0; /* Alineado a la izquierda dentro de la barra */
-                }
-                .stat-value.winner {
-                    font-weight: 800; /* Hacemos más notorio al ganador */
-                }
-                .stat-label {
-                    text-align: center;
-                    font-weight: 600;
-                    color: var(--text-secondary);
-                    white-space: nowrap;
-                }
-            `;
-            document.head.appendChild(style);
-        }
+                const valueInput = document.getElementById(`player${playerNum}-select-value`);
+                const button = document.getElementById(`player${playerNum}-select-button`);
+                const buttonSpan = button.querySelector('span');
+                const dropdown = document.getElementById(`player${playerNum}-select-dropdown`);
 
-        function setupComparatorPlayerSearch(playerNum) {
-            const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
-            const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
-            const selectedIdInput = document.getElementById(`comparador-player${playerNum}-id`);
-            const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
+                const playerOptions = allPlayersData
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(p => `<div class="option-item" data-value="${p.id}">${p.name}</div>`)
+                    .join('');
+                dropdown.innerHTML = playerOptions;
 
-            if(!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    button.querySelector('i').classList.toggle('rotate-180');
+                });
 
-            const filterAndDisplay = () => {
-                const searchTerm = searchInput.value.toLowerCase();
-                
-                if (searchTerm.length > 0) {
-                    clearButton.classList.remove('hidden');
-                } else {
-                    clearButton.classList.add('hidden');
-                }
-                
-                const otherPlayerNum = playerNum === 1 ? 2 : 1;
-                const otherPlayerId = document.getElementById(`comparador-player${otherPlayerNum}-id`).value;
-
-                const filtered = allPlayersData
-                    .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id != otherPlayerId)
-                    .sort((a, b) => a.name.localeCompare(b.name));
-                
-                resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
-                resultsDiv.classList.remove('hidden');
+                dropdown.addEventListener('click', (e) => {
+                    const option = e.target.closest('.option-item');
+                    if (option) {
+                        valueInput.value = option.dataset.value;
+                        buttonSpan.textContent = option.textContent;
+                        dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                        updateComparison();
+                        dropdown.classList.add('hidden');
+                        button.querySelector('i').classList.remove('rotate-180');
+                    }
+                });
             };
 
-            resultsDiv.addEventListener('mousedown', (e) => {
-                const target = e.target.closest('.option-item');
-                if (target && target.dataset.playerId) {
-                    e.preventDefault();
-                    searchInput.blur(); // Cierra el teclado
-                    const player = allPlayersData.find(p => p.id == target.dataset.playerId);
-                    searchInput.value = player.name;
-                    selectedIdInput.value = player.id;
-                    resultsDiv.classList.add('hidden');
-                    clearButton.classList.remove('hidden');
-                    updateComparison();
-                }
-            });
-
-            searchInput.addEventListener('input', filterAndDisplay);
-            searchInput.addEventListener('focus', filterAndDisplay);
-            searchInput.addEventListener('blur', () => setTimeout(() => resultsDiv.classList.add('hidden'), 200));
-
-            clearButton.addEventListener('mousedown', (e) => {
-                e.preventDefault(); 
-                searchInput.value = '';
-                selectedIdInput.value = '';
-                updateComparison();
-                filterAndDisplay();
-            });
-        }
-
-        function renderComparador() {
-            injectComparatorStyles();
-            setupComparatorPlayerSearch(1);
-            setupComparatorPlayerSearch(2);
+            createPlayerSelector(1);
+            createPlayerSelector(2);
             
-            if (!document.body.dataset.comparadorListener) {
-                document.body.addEventListener('filterChanged', updateComparison);
-                document.body.dataset.comparadorListener = 'true';
-            }
+            document.body.addEventListener('filterChanged', updateComparison);
         }
 
         function createPlayerCard(playerStats) {
-            if (!playerStats) return '';
             const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
             return `
                 <div class="flex flex-col items-center text-center space-y-3">
@@ -2561,28 +2468,31 @@
                 const isLowerBetter = stat.key === 'pp' || stat.key === 'ausentes';
                 if (val1 !== val2) {
                     if ((!isLowerBetter && val1 > val2) || (isLowerBetter && val1 < val2)) {
-                        winnerClass1 = 'winner';
+                        winnerClass1 = 'font-bold text-green-300';
                     } else {
-                        winnerClass2 = 'winner';
+                        winnerClass2 = 'font-bold text-green-300';
                     }
                 }
 
-                // NUEVA ESTRUCTURA PARA LAS BARRAS
                 return `
-                    <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
-                        <!-- Contenedor Barra y Valor Jugador 1 -->
-                        <div class="progress-bg player1">
-                            <div class="progress-fill player1" style="width: ${width1}%"></div>
-                            <span class="stat-value player1 ${winnerClass1}">${val1}${suffix}</span>
+                    <div class="grid grid-cols-[1fr_auto_1fr] gap-x-4 items-center">
+                        <!-- Player 1 Bar -->
+                        <div class="progress-bar-container player1">
+                            <div class="progress-bg">
+                                <div class="progress-fill" style="width: ${width1}%">
+                                    <span class="stat-value ${winnerClass1}">${val1}${suffix}</span>
+                                </div>
+                            </div>
                         </div>
-
-                        <!-- Etiqueta Central -->
+                        <!-- Center Label -->
                         <div class="stat-label">${stat.label}</div>
-
-                        <!-- Contenedor Barra y Valor Jugador 2 -->
-                        <div class="progress-bg player2">
-                            <div class="progress-fill player2" style="width: ${width2}%"></div>
-                            <span class="stat-value player2 ${winnerClass2}">${val2}${suffix}</span>
+                        <!-- Player 2 Bar -->
+                        <div class="progress-bar-container player2">
+                            <div class="progress-bg">
+                                <div class="progress-fill" style="width: ${width2}%">
+                                    <span class="stat-value ${winnerClass2}">${val2}${suffix}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2591,9 +2501,10 @@
             return statsMeta.map(renderStatBar).join('');
         }
 
+
         function updateComparison() {
-            const player1Id = document.getElementById('comparador-player1-id')?.value;
-            const player2Id = document.getElementById('comparador-player2-id')?.value;
+            const player1Id = document.getElementById('player1-select-value')?.value;
+            const player2Id = document.getElementById('player2-select-value')?.value;
 
             const displayArea = document.getElementById('comparison-display-area');
             const placeholder = document.getElementById('comparador-placeholder');
@@ -2618,14 +2529,10 @@
             } else {
                 displayArea.classList.add('hidden');
                 placeholder.classList.remove('hidden');
-                 if (player1Id && player2Id && player1Id === player2Id) {
-                    placeholder.textContent = 'Por favor, selecciona dos jugadores diferentes.';
-                } else {
-                    placeholder.textContent = 'Selecciona dos jugadores y un período para comenzar la comparación.';
-                }
             }
         }
         // --- FIN: Funciones del Comparador ---
+
 
         async function initializeApp() {
             try {
