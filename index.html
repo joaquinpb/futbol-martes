@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -445,8 +444,18 @@
         .player-marker:hover {
             transform: scale(1.1);
         }
-        .player-marker.claros { background-color: var(--player-claros-bg); color: var(--player-claros-text); border-color: var(--player-claros-text); }
-        .player-marker.oscuros { background-color: var(--player-oscuros-bg); color: var(--player-oscuros-text); border-color: var(--player-oscuros-text); }
+        
+        /* --- INICIO DE LA MODIFICACIÓN: Estilos de Jugadores en Fixture --- */
+        .player-marker.claros { 
+            background-color: var(--player-claros-bg); 
+            color: var(--player-claros-text); 
+            border-color: #FFFFFF; /* Borde blanco para avatares claros */
+        }
+        .player-marker.oscuros { 
+            background-color: var(--player-oscuros-bg); 
+            color: var(--player-oscuros-text); 
+            border-color: #000000; /* Borde negro para avatares oscuros */
+        }
         .player-name-label {
             font-size: 0.75rem;
             font-weight: 700;
@@ -456,13 +465,17 @@
         }
         .player-name-label.claros-label {
             background-color: #FFFFFF;
-            color: #d97706;
+            color: #d97706; /* Naranja */
             border: 1px solid #e2e8f0;
         }
         .player-name-label.oscuros-label {
             background-color: #1a202c;
-            color: #d97706;
+            color: #d97706; /* Naranja */
+            /* Se agrega sombra de texto para simular un contorno negro */
+            text-shadow: 0 0 3px #000, 0 0 3px #000;
         }
+        /* --- FIN DE LA MODIFICACIÓN --- */
+
         .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
         #individual-player-search { padding-right: 2.5rem !important; }
@@ -1680,7 +1693,11 @@
                     }
                 };
 
-                const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical;
+                // --- INICIO DE LA MODIFICACIÓN: Corrección en la lógica de posicionamiento del trofeo ---
+                // Se corrige la obtención de la posición para el layout vertical, que antes no accedía
+                // a la propiedad correcta ("Claros" u "Oscuros") del objeto.
+                const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical[result];
+                // --- FIN DE LA MODIFICACIÓN ---
                 
                 if (currentTrophyPosition) {
                     Object.assign(trophyDiv.style, currentTrophyPosition);
@@ -1707,6 +1724,32 @@
                     adjustFixtureHeights();
                 });
             });
+        }
+
+        function showPlayerModal(playerId) {
+            const playerStats = calculateStats(globalFilterState).players.find(p => p.id === playerId);
+            const playerData = allPlayersData.find(p => p.id === playerId);
+            if (!playerData || !playerStats) return;
+
+            const { playerModal } = DOMElements;
+            playerModal.photo.src = playerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
+            playerModal.name.textContent = playerData.name;
+            
+            const periodTextMap = { 'apertura': 'Apertura', 'clausura': 'Clausura', 'total': 'Totales' };
+            const yearText = (globalFilterState.years?.includes('all') || !globalFilterState.years) ? 'Todos' : globalFilterState.years.join(', ');
+            const periodText = periodTextMap[globalFilterState.period] || 'Apertura';
+            playerModal.tournament.textContent = `${periodText} ${yearText}`;
+
+            playerModal.points.textContent = playerStats.points;
+            playerModal.chamigo.textContent = playerStats.chamigos;
+            playerModal.tt.textContent = playerStats.tt;
+
+            playerModal.overlay.classList.remove('hidden');
+            setTimeout(() => {
+                playerModal.overlay.classList.add('visible');
+                DOMElements.body.classList.add('modal-open');
+            }, 10);
         }
 
         function hidePlayerModal() {
