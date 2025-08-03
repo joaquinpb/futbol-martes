@@ -2511,35 +2511,42 @@
                 }
             });
 
-            // Reemplazamos los eventos 'click' y 'dblclick' con esta lógica única.
+            // Lógica de clic actualizada
             searchInput.addEventListener('click', (e) => {
                 e.preventDefault();
 
-                if (clickTimer === null) {
-                    // Es el PRIMER CLIC.
-                    clickTimer = setTimeout(() => {
-                        // El tiempo de espera terminó, así que fue un solo clic.
+                // Solo procesar clics si el campo está en modo "solo lectura".
+                if (searchInput.readOnly) {
+                    if (clickTimer === null) {
+                        // Es el PRIMER CLIC.
+                        // 1. Mostramos la lista de inmediato.
+                        filterAndDisplay();
+                        // 2. Iniciamos el temporizador para detectar un posible segundo clic.
+                        clickTimer = setTimeout(() => {
+                            // El tiempo de espera terminó, reseteamos el temporizador.
+                            clickTimer = null;
+                        }, DOUBLE_CLICK_DELAY);
+                    } else {
+                        // Es el SEGUNDO CLIC (dentro del tiempo de delay).
+                        // 1. Cancelamos el temporizador del primer clic.
+                        clearTimeout(clickTimer);
                         clickTimer = null;
-                        if (searchInput.readOnly) {
-                            filterAndDisplay();
-                        }
-                    }, DOUBLE_CLICK_DELAY);
-                } else {
-                    // Es el SEGUNDO CLIC (dentro del tiempo de delay).
-                    clearTimeout(clickTimer);
-                    clickTimer = null;
-                    searchInput.readOnly = false;
-                    searchInput.focus();
+                        // 2. Habilitamos la escritura y abrimos el teclado.
+                        searchInput.readOnly = false;
+                        searchInput.focus();
+                    }
                 }
             });
 
             searchInput.addEventListener('input', () => {
+                // El filtrado en vivo solo ocurre cuando el usuario está escribiendo.
                 if (!searchInput.readOnly) {
                     filterAndDisplay();
                 }
             });
 
             searchInput.addEventListener('blur', () => {
+                // Al perder el foco, ocultamos la lista y volvemos al modo "solo lectura".
                 setTimeout(() => {
                     resultsDiv.classList.add('hidden');
                     searchInput.readOnly = true; 
