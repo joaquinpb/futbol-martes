@@ -2469,6 +2469,9 @@
 
             if(!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
 
+            // 1. Hacemos el input de solo lectura por defecto para evitar el teclado en el primer toque.
+            searchInput.readOnly = true;
+
             const filterAndDisplay = () => {
                 const searchTerm = searchInput.value.toLowerCase();
                 
@@ -2493,7 +2496,7 @@
                 const target = e.target.closest('.option-item');
                 if (target && target.dataset.playerId) {
                     e.preventDefault();
-                    searchInput.blur(); // Cierra el teclado
+                    searchInput.blur(); // Esto disparará el evento 'blur' para resetear el input
                     const player = allPlayersData.find(p => p.id == target.dataset.playerId);
                     searchInput.value = player.name;
                     selectedIdInput.value = player.id;
@@ -2503,10 +2506,37 @@
                 }
             });
 
-            searchInput.addEventListener('input', filterAndDisplay);
-            searchInput.addEventListener('focus', filterAndDisplay);
-            searchInput.addEventListener('blur', () => setTimeout(() => resultsDiv.classList.add('hidden'), 200));
+            // 2. Con un solo clic, solo mostramos la lista si el campo es de solo lectura.
+            searchInput.addEventListener('click', (e) => {
+                if (searchInput.readOnly) {
+                    e.preventDefault();
+                    filterAndDisplay();
+                }
+            });
 
+            // 3. Con doble clic, habilitamos la escritura y abrimos el teclado.
+            searchInput.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                searchInput.readOnly = false;
+                searchInput.focus();
+            });
+            
+            // 4. El evento 'input' ahora solo filtra cuando el campo NO es de solo lectura.
+            searchInput.addEventListener('input', () => {
+                if (!searchInput.readOnly) {
+                    filterAndDisplay();
+                }
+            });
+
+            // 5. Al perder el foco, ocultamos la lista y reseteamos el campo a solo lectura.
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    resultsDiv.classList.add('hidden');
+                    searchInput.readOnly = true; 
+                }, 200); // Pequeño delay para permitir clics en la lista
+            });
+            
+            // La lógica del botón de limpiar no cambia.
             clearButton.addEventListener('mousedown', (e) => {
                 e.preventDefault(); 
                 searchInput.value = '';
