@@ -170,21 +170,6 @@
             accent-color: var(--accent-color);
         }
         /* === FIN: Estilos unificados para menús desplegables === */
-
-        .filter-label {
-            background-color: var(--filter-label-bg);
-            color: var(--text-secondary);
-            font-weight: 700;
-            text-align: left; /* Alineación a la izquierda */
-            padding: 0.25rem 0.75rem; /* Ajuste de padding */
-            border-radius: 0.375rem;
-            display: block;
-            width: 100%;
-            margin-bottom: 0.5rem;
-        }
-        html.dark .filter-label {
-            background-color: var(--filter-label-bg);
-        }
         
         #side-menu {
             background-color: var(--bg-secondary);
@@ -1786,7 +1771,6 @@
             if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas', 'fixture'].includes(prefix)) {
                 const yearFilterHTML = `
                     <div class="custom-select-container">
-                        <label class="filter-label hidden md:block">Año(s):</label>
                         <button id="${prefix}-year-select-button" class="custom-select-button">
                             <span class="truncate">Seleccionar Años</span>
                             <i class="fas fa-chevron-down transition-transform"></i>
@@ -1797,7 +1781,6 @@
                  
                  const periodOrMonthFilterHTML = prefix === 'fixture' ? `
                     <div class="custom-select-container">
-                        <label class="filter-label hidden md:block">Mes(es):</label>
                         <button id="fixture-month-select-button" class="custom-select-button">
                             <span class="truncate">Seleccionar Meses</span>
                             <i class="fas fa-chevron-down transition-transform"></i>
@@ -1806,7 +1789,6 @@
                         </div>
                     </div>` : `
                     <div id="${prefix}-period-select-container" class="custom-select-container">
-                        <label class="filter-label hidden md:block">Torneo:</label>
                         <input type="hidden" id="${prefix}-period-select" value="apertura">
                         <button id="${prefix}-period-select-button" class="custom-select-button">
                             <span class="truncate">Apertura</span>
@@ -1828,7 +1810,7 @@
                             ${periodOrMonthFilterHTML}
                         </div>
                         <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm md:text-lg md:font-bold">Torneo Actual</button>
+                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
                         </div>
                     </div>
                     <hr class="border-border-color"/>
@@ -1880,9 +1862,8 @@
                 case 'individual-stats-content':
                     baseHtml += `
                         <div class="mb-6">
-                            <label for="individual-player-search" class="block text-sm font-medium mb-1">Buscar Jugador:</label>
                             <div class="relative z-20">
-                                <input type="text" id="individual-player-search" placeholder="Escribe para buscar..." class="mt-1 block w-full p-2 shadow-sm">
+                                <input type="text" id="individual-player-search" placeholder="Buscar Jugador..." class="mt-1 block w-full p-2 shadow-sm">
                                 <button id="clear-player-search" class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"><i class="fas fa-times-circle"></i></button>
                                 <div id="individual-player-results" class="absolute z-10 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                             </div>
@@ -1900,40 +1881,45 @@
                                 <h2 class="text-2xl font-bold text-center">Comparador de Jugadores</h2>
 
                                 <!-- Filters -->
-                                <div id="comparador-filters-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch max-w-4xl mx-auto">
+                                <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch max-w-4xl mx-auto">
                                     <!-- Year Filter -->
-                                    <div class="custom-select-container">
-                                        <label class="filter-label hidden md:block">Año(s):</label>
-                                        <button id="comparador-year-select-button" class="custom-select-button">
-                                            <span class="truncate">Seleccionar Años</span>
-                                            <i class="fas fa-chevron-down transition-transform"></i>
-                                        </button>
-                                        <div id="comparador-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto">
+                                    <div class="col-span-1 md:col-span-2 md:order-1">
+                                        <div class="custom-select-container">
+                                            <button id="comparador-year-select-button" class="custom-select-button">
+                                                <span class="truncate">Seleccionar Años</span>
+                                                <i class="fas fa-chevron-down transition-transform"></i>
+                                            </button>
+                                            <div id="comparador-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto"></div>
                                         </div>
                                     </div>
+                                    <!-- Torneo Actual Button -->
+                                    <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
+                                        <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Torneo Actual</button>
+                                    </div>
                                     <!-- Period Filter -->
-                                    <div id="comparador-period-select-container" class="custom-select-container">
-                                        <label class="filter-label hidden md:block">Torneo:</label>
-                                        <input type="hidden" id="comparador-period-select" value="apertura">
-                                        <button id="comparador-period-select-button" class="custom-select-button">
-                                            <span class="truncate">Apertura</span>
-                                            <i class="fas fa-chevron-down transition-transform"></i>
-                                        </button>
-                                        <div id="comparador-period-select-dropdown" class="custom-select-options hidden">
-                                            <div class="option-item selected" data-value="apertura">Apertura</div>
-                                            <div class="option-item" data-value="clausura">Clausura</div>
-                                            <div class="option-item" data-value="total">Totales</div>
+                                    <div class="col-span-1 md:col-span-2 md:order-3">
+                                        <div id="comparador-period-select-container" class="custom-select-container">
+                                            <input type="hidden" id="comparador-period-select" value="apertura">
+                                            <button id="comparador-period-select-button" class="custom-select-button">
+                                                <span class="truncate">Apertura</span>
+                                                <i class="fas fa-chevron-down transition-transform"></i>
+                                            </button>
+                                            <div id="comparador-period-select-dropdown" class="custom-select-options hidden">
+                                                <div class="option-item selected" data-value="apertura">Apertura</div>
+                                                <div class="option-item" data-value="clausura">Clausura</div>
+                                                <div class="option-item" data-value="total">Totales</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+
+                                <hr class="border-border-color max-w-4xl mx-auto"/>
 
                                 <!-- PLAYER SELECTORS -->
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                                     <div id="comparador-player1-select-container" class="custom-select-container"></div>
                                     <div id="comparador-player2-select-container" class="custom-select-container"></div>
                                 </div>
-
-                                <hr class="border-border-color max-w-4xl mx-auto"/>
 
                                 <!-- COMPARISON DISPLAY -->
                                 <div id="comparison-display-area" class="hidden max-w-4xl mx-auto space-y-8">
@@ -2155,7 +2141,10 @@
                         renderEstadisticas();
                     } else if (prefix === 'fixture') {
                         renderFixture(true);
-                    } else {
+                    } else if (prefix === 'comparador') {
+                        updateComparison();
+                    }
+                    else {
                         renderFn();
                     }
                 }
@@ -2385,7 +2374,6 @@
                 if (!container) return;
 
                 container.innerHTML = `
-                    <label class="filter-label hidden md:block">Jugador ${playerNum}</label>
                     <input type="hidden" id="player${playerNum}-select-value">
                     <button id="player${playerNum}-select-button" class="custom-select-button">
                         <span class="truncate">Seleccionar Jugador ${playerNum}</span>
@@ -2638,4 +2626,3 @@
     </script>
 </body>
 </html>
-"
