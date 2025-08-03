@@ -185,19 +185,6 @@
             background-color: var(--filter-label-bg);
         }
         
-        /* Estilos para los select nativos en el comparador */
-        #comparador-content select {
-            background-color: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-        html.dark #comparador-content select {
-            background-color: var(--bg-muted);
-            color: var(--text-primary);
-            border-color: var(--border-color);
-        }
-
-
         #side-menu {
             background-color: var(--bg-secondary);
             color: var(--text-primary);
@@ -241,12 +228,11 @@
         .flex-1.flex.flex-col { 
             display: flex;
             flex-direction: column;
-            /* Se elimina height: 100vh para permitir que el contenido crezca */
         }
         
         @media (min-width: 768px) {
             .flex-1.flex.flex-col {
-                height: 100vh; /* Se re-aplica solo para desktop */
+                height: 100vh; 
             }
         }
 
@@ -523,6 +509,54 @@
             margin-left: 8px;
             line-height: 1;
         }
+        
+        /* Estilos del Comparador */
+        .vs-separator {
+            color: var(--text-muted);
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+        .progress-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .progress-bg {
+            flex-grow: 1;
+            background-color: var(--border-color);
+            border-radius: 9999px;
+            height: 1.25rem;
+            overflow: hidden;
+            position: relative;
+        }
+        html.dark .progress-bg {
+            background-color: #374151;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out;
+        }
+        .progress-bar-container.player1 .progress-fill {
+            background-color: var(--accent-color);
+        }
+        .progress-bar-container.player2 .progress-fill {
+            background-color: var(--danger-color);
+        }
+        .stat-value {
+            font-weight: 600;
+            min-width: 40px;
+            text-align: right;
+        }
+        .progress-bar-container.player1 .stat-value {
+            text-align: left;
+        }
+        .stat-label {
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
 
 
         /* === INICIO: Corrección Buscador Histórico === */
@@ -530,7 +564,7 @@
             background-color: #374151 !important;
             color: var(--text-primary) !important;
             border-color: #4b5563 !important;
-            -webkit-box-shadow: 0 0 0 30px #374151 inset !important;
+     lo       -webkit-box-shadow: 0 0 0 30px #374151 inset !important;
             -webkit-text-fill-color: var(--text-primary) !important;
         }
         html.dark #individual-player-search::placeholder {
@@ -1741,13 +1775,12 @@
         
         function getTabContentHTML(tabId) {
             const config = PAGE_CONFIG[tabId] || PAGE_CONFIG['leaderboard-content'];
-            const title = config.desktopTitle || config.title;
             
             let baseHtml = `<div id="${tabId}" class="main-content-container space-y-4">`;
             
             const prefix = tabId.replace('-content', '');
             
-            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas', 'fixture'].includes(prefix)) {
+            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas', 'fixture', 'comparador'].includes(prefix)) {
                 const yearFilterHTML = `
                     <div class="custom-select-container">
                         <label class="filter-label hidden md:block">Año(s):</label>
@@ -1784,16 +1817,17 @@
                     </div>`;
 
                  baseHtml += `
-                    <div id="${prefix}-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
-                        <div class="col-span-1 md:col-span-2 md:order-1">
+                    <div id="${prefix}-filters-container" class="grid grid-cols-2 ${prefix === 'comparador' ? 'md:grid-cols-2' : 'md:grid-cols-5'} gap-4 items-stretch">
+                        <div class="col-span-1 ${prefix === 'comparador' ? '' : 'md:col-span-2 md:order-1'}">
                             ${yearFilterHTML}
                         </div>
-                        <div class="col-span-1 md:col-span-2 md:order-3">
+                        <div class="col-span-1 ${prefix === 'comparador' ? '' : 'md:col-span-2 md:order-3'}">
                             ${periodOrMonthFilterHTML}
                         </div>
+                        ${prefix !== 'comparador' ? `
                         <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
                            <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm md:text-lg md:font-bold">Torneo Actual</button>
-                        </div>
+                        </div>` : ''}
                     </div>
                     <hr class="border-border-color"/>
                     `;
@@ -1864,24 +1898,19 @@
                             
                             <!-- Selectores de Jugadores -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                                <div>
-                                    <label for="player1-select" class="block text-sm font-medium mb-1 text-text-secondary">Jugador 1</label>
-                                    <select id="player1-select" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-accent-color focus:border-accent-color"></select>
-                                </div>
-                                <div>
-                                    <label for="player2-select" class="block text-sm font-medium mb-1 text-text-secondary">Jugador 2</label>
-                                    <select id="player2-select" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-accent-color focus:border-accent-color"></select>
-                                </div>
+                                <div id="comparador-player1-select-container" class="custom-select-container"></div>
+                                <div id="comparador-player2-select-container" class="custom-select-container"></div>
                             </div>
 
-                            <!-- Tarjetas de Jugadores -->
-                            <div id="comparison-players-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start max-w-4xl mx-auto">
-                                <div id="player1-comparison" class="hidden"></div>
-                                <div id="player2-comparison" class="hidden"></div>
+                            <!-- Display de Comparación -->
+                            <div id="comparison-display-area" class="hidden max-w-4xl mx-auto space-y-8">
+                                <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                                    <div id="player1-card-display" class="text-center"></div>
+                                    <div class="vs-separator">VS</div>
+                                    <div id="player2-card-display" class="text-center"></div>
+                                </div>
+                                <div id="stats-bars-container" class="space-y-4"></div>
                             </div>
-
-                            <!-- Tabla Comparativa -->
-                            <div id="stats-comparison-table-container" class="hidden max-w-4xl mx-auto"></div>
                         </div>
                     `;
                     break;
@@ -2082,6 +2111,8 @@
                 }
                 
                 FilterSessionManager.update(globalFilterState);
+                document.body.dispatchEvent(new CustomEvent('filterChanged'));
+
 
                 if (renderFn) {
                     if (prefix === 'estadisticas') {
@@ -2089,16 +2120,13 @@
                         renderEstadisticas();
                     } else if (prefix === 'fixture') {
                         renderFixture(true);
-                    } else if (prefix === 'comparador') {
-                        updateComparison();
-                    }
-                    else {
+                    } else {
                         renderFn();
                     }
                 }
             };
             
-            if (tabId.includes('content') && !tabId.includes('individual') && !tabId.includes('comparador')) {
+            if (tabId.includes('content') && !tabId.includes('individual')) {
                  populateMultiYearSelect(prefix, handleFilterChange);
             }
 
@@ -2177,7 +2205,7 @@
                 });
             }
 
-            if (tabId.includes('content') && !tabId.includes('individual') && !tabId.includes('comparador')) {
+            if (tabId.includes('content') && !tabId.includes('individual')) {
                 const isMonthFilter = prefix === 'fixture';
                 const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.months : globalFilterState.period);
                 
@@ -2317,104 +2345,128 @@
 
         // --- INICIO: Funciones del Comparador ---
         function renderComparador() {
-            const player1Select = document.getElementById('player1-select');
-            const player2Select = document.getElementById('player2-select');
-            if (!player1Select || !player2Select) return;
+            const createPlayerSelector = (playerNum) => {
+                const container = document.getElementById(`comparador-player${playerNum}-select-container`);
+                if (!container) return;
 
-            const placeholderOption = '<option value="">Seleccionar jugador...</option>';
-            const playerOptions = allPlayersData
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map(p => `<option value="${p.id}">${p.name}</option>`)
-                .join('');
+                container.innerHTML = `
+                    <label class="filter-label hidden md:block">Jugador ${playerNum}</label>
+                    <input type="hidden" id="player${playerNum}-select-value">
+                    <button id="player${playerNum}-select-button" class="custom-select-button">
+                        <span class="truncate">Seleccionar Jugador ${playerNum}</span>
+                        <i class="fas fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="player${playerNum}-select-dropdown" class="custom-select-options hidden max-h-60 overflow-y-auto"></div>
+                `;
 
-            player1Select.innerHTML = placeholderOption + playerOptions;
-            player2Select.innerHTML = placeholderOption + playerOptions;
+                const valueInput = document.getElementById(`player${playerNum}-select-value`);
+                const button = document.getElementById(`player${playerNum}-select-button`);
+                const buttonSpan = button.querySelector('span');
+                const dropdown = document.getElementById(`player${playerNum}-select-dropdown`);
 
-            player1Select.addEventListener('change', updateComparison);
-            player2Select.addEventListener('change', updateComparison);
+                const playerOptions = allPlayersData
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(p => `<div class="option-item" data-value="${p.id}">${p.name}</div>`)
+                    .join('');
+                dropdown.innerHTML = playerOptions;
+
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    button.querySelector('i').classList.toggle('rotate-180');
+                });
+
+                dropdown.addEventListener('click', (e) => {
+                    const option = e.target.closest('.option-item');
+                    if (option) {
+                        valueInput.value = option.dataset.value;
+                        buttonSpan.textContent = option.textContent;
+                        dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                        updateComparison();
+                        dropdown.classList.add('hidden');
+                        button.querySelector('i').classList.remove('rotate-180');
+                    }
+                });
+            };
+
+            createPlayerSelector(1);
+            createPlayerSelector(2);
             
-            // Add listener for global filter changes
             document.body.addEventListener('filterChanged', updateComparison);
         }
 
         function createPlayerCard(playerStats) {
             const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
             return `
-                <div class="flex flex-col items-center text-center bg-bg-muted dark:bg-bg-secondary p-6 rounded-xl shadow-lg">
-                    <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 border-accent-color shadow-lg mb-4" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
+                <div class="flex flex-col items-center text-center space-y-3">
+                    <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 border-accent-color shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
                     <h3 class="text-2xl font-bold text-text-primary">${playerStats.name}</h3>
                 </div>
             `;
         }
-
-        function createComparisonTable(stats1, stats2) {
+        
+        function createComparisonBars(stats1, stats2) {
             const statsMeta = [
-                { key: 'points', label: 'Puntos' },
-                { key: 'pj', label: 'Partidos Jugados' },
-                { key: 'pg', label: 'Ganados' },
-                { key: 'pe', label: 'Empatados' },
-                { key: 'pp', label: 'Perdidos' },
-                { key: 'efectividad', label: 'Efectividad', suffix: '%' },
-                { key: 'chamigos', label: 'Chamigos' },
-                { key: 'tt', label: 'Asistencias a TT' },
+                { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
+                { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
+                { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' },
+                { key: 'chamigos', label: 'Chamigos' }, { key: 'tt', label: 'Asistencias TT' },
                 { key: 'ausentes', label: 'Ausencias' },
             ];
 
-            const renderRow = (stat) => {
-                const val1 = stats1[stat.key];
-                const val2 = stats2[stat.key];
+            const renderStatBar = (stat) => {
+                const val1 = parseFloat(stats1[stat.key]) || 0;
+                const val2 = parseFloat(stats2[stat.key]) || 0;
                 const suffix = stat.suffix || '';
-
-                let class1 = 'text-text-primary';
-                let class2 = 'text-text-primary';
-
-                const numVal1 = parseFloat(val1);
-                const numVal2 = parseFloat(val2);
-
-                if (stat.key === 'pp' || stat.key === 'ausentes') {
-                    // Lower is better
-                    if (numVal1 < numVal2) class1 = 'text-green-500 font-bold';
-                    else if (numVal2 < numVal1) class2 = 'text-green-500 font-bold';
-                } else {
-                    // Higher is better
-                    if (numVal1 > numVal2) class1 = 'text-green-500 font-bold';
-                    else if (numVal2 > numVal1) class2 = 'text-green-500 font-bold';
+                const total = val1 + val2;
+                
+                let width1 = total > 0 ? (val1 / total) * 100 : 50;
+                let width2 = total > 0 ? (val2 / total) * 100 : 50;
+                
+                let winnerClass1 = '', winnerClass2 = '';
+                
+                const isLowerBetter = stat.key === 'pp' || stat.key === 'ausentes';
+                if (val1 !== val2) {
+                    if ((!isLowerBetter && val1 > val2) || (isLowerBetter && val1 < val2)) {
+                        winnerClass1 = 'font-bold text-green-500';
+                    } else {
+                        winnerClass2 = 'font-bold text-green-500';
+                    }
                 }
 
                 return `
-                    <tr class="border-b border-border-color last:border-b-0">
-                        <td class="py-4 px-4 text-left text-lg ${class1}">${val1}${suffix}</td>
-                        <td class="py-4 px-4 text-center font-semibold text-text-secondary">${stat.label}</td>
-                        <td class="py-4 px-4 text-right text-lg ${class2}">${val2}${suffix}</td>
-                    </tr>
+                    <div class="grid grid-cols-[1fr_auto_1fr] gap-x-4 items-center">
+                        <div class="progress-bar-container player1">
+                            <span class="stat-value ${winnerClass1}">${val1}${suffix}</span>
+                            <div class="progress-bg">
+                                <div class="progress-fill" style="width: ${width1}%"></div>
+                            </div>
+                        </div>
+                        <div class="stat-label">${stat.label}</div>
+                        <div class="progress-bar-container player2">
+                            <div class="progress-bg">
+                                <div class="progress-fill" style="width: ${width2}%"></div>
+                            </div>
+                            <span class="stat-value ${winnerClass2}">${val2}${suffix}</span>
+                        </div>
+                    </div>
                 `;
             };
 
-            return `
-                <div class="bg-bg-secondary dark:bg-bg-muted rounded-xl shadow-lg overflow-hidden border border-border-color">
-                    <h3 class="text-xl font-bold p-4 text-center bg-bg-muted dark:bg-bg-secondary border-b border-border-color">Estadísticas Comparadas</h3>
-                    <table class="w-full">
-                        <tbody>
-                            ${statsMeta.map(renderRow).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+            return statsMeta.map(renderStatBar).join('');
         }
 
-        function updateComparison() {
-            const player1Id = document.getElementById('player1-select')?.value;
-            const player2Id = document.getElementById('player2-select')?.value;
 
-            const container1 = document.getElementById('player1-comparison');
-            const container2 = document.getElementById('player2-comparison');
-            const statsTableContainer = document.getElementById('stats-comparison-table-container');
-            
-            if(!container1 || !container2 || !statsTableContainer) return;
+        function updateComparison() {
+            const player1Id = document.getElementById('player1-select-value')?.value;
+            const player2Id = document.getElementById('player2-select-value')?.value;
+
+            const displayArea = document.getElementById('comparison-display-area');
+            if (!displayArea) return;
 
             if (player1Id && player2Id && player1Id !== player2Id) {
-                // Use the global filters for the calculation
-                const { players: allStats } = calculateStats(globalFilterState);
+                const { players: allStats } = calculateStatsForPeriod('comparador');
 
                 const player1Data = allPlayersData.find(p => p.id == player1Id);
                 const player1Stats = allStats.find(p => p.id == player1Id) || { name: player1Data.name, photo_url: player1Data.photo_url, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player1Data.id };
@@ -2422,18 +2474,14 @@
                 const player2Data = allPlayersData.find(p => p.id == player2Id);
                 const player2Stats = allStats.find(p => p.id == player2Id) || { name: player2Data.name, photo_url: player2Data.photo_url, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player2Data.id };
 
-                container1.innerHTML = createPlayerCard(player1Stats);
-                container2.innerHTML = createPlayerCard(player2Stats);
-                statsTableContainer.innerHTML = createComparisonTable(player1Stats, player2Stats);
+                document.getElementById('player1-card-display').innerHTML = createPlayerCard(player1Stats);
+                document.getElementById('player2-card-display').innerHTML = createPlayerCard(player2Stats);
+                document.getElementById('stats-bars-container').innerHTML = createComparisonBars(player1Stats, player2Stats);
 
-                container1.classList.remove('hidden');
-                container2.classList.remove('hidden');
-                statsTableContainer.classList.remove('hidden');
+                displayArea.classList.remove('hidden');
 
             } else {
-                container1.classList.add('hidden');
-                container2.classList.add('hidden');
-                statsTableContainer.classList.add('hidden');
+                displayArea.classList.add('hidden');
             }
         }
         // --- FIN: Funciones del Comparador ---
@@ -2543,14 +2591,6 @@
                     icon.classList.add('rotate-180');
                 }
             }
-
-            // Custom event for filter changes
-            const originalUpdate = FilterSessionManager.update;
-            FilterSessionManager.update = function(filters) {
-                originalUpdate.call(this, filters);
-                document.body.dispatchEvent(new CustomEvent('filterChanged'));
-            };
-
 
             initializeApp();
         }
