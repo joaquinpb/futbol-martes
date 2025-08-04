@@ -2131,7 +2131,7 @@
                     break;
                     
                 case 'comparador-content':
-                     // NUEVA ESTRUCTURA PARA EL COMPARADOR POR PASOS
+                     // ESTRUCTURA ACTUALIZADA PARA EL COMPARADOR POR PASOS
                     baseHtml = `
                         <div id="comparador-content" class="main-content-container space-y-4">
                             <!-- Filters Container (se mantiene igual) -->
@@ -2175,20 +2175,23 @@
                                 </div>
 
                                 <!-- PANTALLA 2: Estadísticas Individuales -->
-                                <div id="comparator-screen-2" class="hidden">
-                                    <button class="comparator-reset-btn"><i class="fas fa-times"></i></button>
-                                    <div id="individual-stats-display" class="space-y-6"></div>
+                                <div id="comparator-screen-2" class="hidden relative">
+                                    <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                                    <div id="individual-stats-display" class="space-y-6 pt-8"></div>
                                 </div>
 
                                 <!-- PANTALLA 3: Seleccionar Jugador 2 -->
-                                <div id="comparator-screen-3" class="hidden w-full max-w-sm mx-auto text-center space-y-4">
-                                    <!-- Contenido se insertará con JS -->
+                                <div id="comparator-screen-3" class="hidden relative w-full max-w-sm mx-auto text-center space-y-4">
+                                     <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                                    <div id="screen-3-content" class="pt-8">
+                                        <!-- Contenido se insertará con JS -->
+                                    </div>
                                 </div>
 
                                 <!-- PANTALLA 4: Comparación Completa -->
-                                <div id="comparator-screen-4" class="hidden">
-                                    <button class="comparator-reset-btn"><i class="fas fa-times"></i></button>
-                                    <div id="full-comparison-display" class="space-y-6"></div>
+                                <div id="comparator-screen-4" class="hidden relative">
+                                    <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                                    <div id="full-comparison-display" class="space-y-6 pt-8"></div>
                                 </div>
                             </div>
                         </div>
@@ -2795,12 +2798,13 @@
             });
         }
 
-        // ===== INICIO: NUEVA LÓGICA DEL COMPARADOR POR PASOS =====
+        // ===== INICIO: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN CORREGIDA) =====
 
         function renderComparador() {
             // Estado local para el wizard del comparador
             let selectedPlayer1 = null;
             let selectedPlayer2 = null;
+            const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
 
             // --- FUNCIONES DE RENDERIZADO DE PANTALLAS ---
 
@@ -2814,12 +2818,13 @@
                 const photoUrl = playerData?.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=👤';
                 const playerName = playerData?.name || 'Seleccionar Jugador';
                 
+                // Se añade la clase 'custom-select-options' para heredar los estilos de fondo sólido.
                 return `
                     <div class="relative">
                         <label class="block text-sm font-medium mb-1">Jugador ${playerNum}</label>
                         <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador ${playerNum}..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
                         <button id="comparador-clear-player${playerNum}-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted ${!playerData ? 'hidden' : ''}"><i class="fas fa-times-circle"></i></button>
-                        <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                        <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                         <input type="hidden" id="comparador-player${playerNum}-id" value="${playerData?.id || ''}">
                     </div>
                     <div class="mt-4">
@@ -2848,6 +2853,24 @@
                 setupPlayerSearch(1);
                 document.getElementById('go-to-screen-3-btn').addEventListener('click', () => showScreen(3));
                 document.getElementById('go-to-screen-2-btn').addEventListener('click', renderIndividualScreen);
+            }
+            
+            /**
+             * Renderiza la pantalla de selección del segundo jugador (Pantalla 3).
+             * CORREGIDO: Ahora es idéntica en estructura a la Pantalla 1.
+             */
+            function renderScreen3() {
+                const screen3Container = document.getElementById('screen-3-content');
+                 screen3Container.innerHTML = `
+                    ${createPlayerSelectorCard(2, selectedPlayer2)}
+                    <div class="pt-4">
+                        <button id="go-to-screen-4-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            ACEPTAR
+                        </button>
+                    </div>
+                `;
+                setupPlayerSearch(2);
+                document.getElementById('go-to-screen-4-btn').addEventListener('click', renderFullComparisonScreen);
             }
 
             /**
@@ -2882,41 +2905,15 @@
                 `;
                 showScreen(2);
             }
-            
-            /**
-             * Renderiza la pantalla de selección del segundo jugador (Pantalla 3).
-             */
-            function renderScreen3() {
-                const screen3Container = document.getElementById('comparator-screen-3');
-                 screen3Container.innerHTML = `
-                    <div class="grid grid-cols-2 gap-4 items-start">
-                        <div class="text-center">
-                             <img src="${selectedPlayer1.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=👤'}" class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-blue-600 shadow-md">
-                             <h4 class="font-semibold mt-2">${selectedPlayer1.name}</h4>
-                        </div>
-                        <div class="text-center">
-                            ${createPlayerSelectorCard(2, selectedPlayer2)}
-                        </div>
-                    </div>
-                    <div class="pt-4">
-                        <button id="go-to-screen-4-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                            ACEPTAR
-                        </button>
-                    </div>
-                `;
-                setupPlayerSearch(2);
-                document.getElementById('go-to-screen-4-btn').addEventListener('click', renderFullComparisonScreen);
-            }
 
             /**
              * Renderiza la pantalla final de comparación (Pantalla 4).
+             * CORREGIDO: Se reestableció toda la lógica de renderizado visual.
              */
             function renderFullComparisonScreen() {
                 const displayArea = document.getElementById('full-comparison-display');
                 if (!selectedPlayer1 || !selectedPlayer2) return;
                 
-                // Esta es la lógica que ya teníamos, la reusamos aquí.
-                // (Se ha copiado la última versión funcional de esta lógica)
                 const { players: allIndividualStats } = calculateStats(globalFilterState);
                 let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
                 let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, id: selectedPlayer2.id };
@@ -2968,25 +2965,14 @@
 
             // --- FUNCIONES DE LÓGICA Y EVENTOS ---
 
-            /**
-             * Muestra una pantalla específica y oculta las demás.
-             * @param {number} screenNum - El número de la pantalla a mostrar.
-             */
             function showScreen(screenNum) {
-                // Primero, renderizamos el contenido de la pantalla destino si es necesario
                 if (screenNum === 3) renderScreen3();
-
-                // Ocultamos todas las pantallas
                 for (let i = 1; i <= 4; i++) {
                     document.getElementById(`comparator-screen-${i}`).classList.add('hidden');
                 }
-                // Mostramos la pantalla deseada
                 document.getElementById(`comparator-screen-${screenNum}`).classList.remove('hidden');
             }
 
-            /**
-             * Resetea el comparador a su estado inicial (Pantalla 1).
-             */
             function resetComparator() {
                 selectedPlayer1 = null;
                 selectedPlayer2 = null;
@@ -2994,10 +2980,6 @@
                 showScreen(1);
             }
 
-            /**
-             * Configura el buscador para un jugador específico.
-             * @param {number} playerNum - El número del jugador (1 o 2).
-             */
             function setupPlayerSearch(playerNum) {
                 const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
                 const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
@@ -3043,11 +3025,6 @@
                 });
             }
 
-            /**
-             * Actualiza la UI de un jugador (avatar, nombre) y habilita/deshabilita botones.
-             * @param {number} playerNum - El número del jugador.
-             * @param {object|null} player - Los datos del jugador.
-             */
             function updatePlayerDisplay(playerNum, player) {
                 const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
                 const idInput = document.getElementById(`comparador-player${playerNum}-id`);
@@ -3071,13 +3048,10 @@
             
             // --- INICIALIZACIÓN Y EVENTOS GLOBALES DEL COMPARADOR ---
             
-            // Adjuntar listeners a los botones de reseteo
             document.querySelectorAll('.comparator-reset-btn').forEach(btn => btn.addEventListener('click', resetComparator));
             
-            // Listener para cuando cambian los filtros de año/período
             if (!document.body.dataset.comparadorListener) {
                 document.body.addEventListener('filterChanged', () => {
-                    // Si estamos en una pantalla que depende de los filtros, la re-renderizamos
                     const screen2 = document.getElementById('comparator-screen-2');
                     const screen4 = document.getElementById('comparator-screen-4');
                     if (!screen2.classList.contains('hidden')) renderIndividualScreen();
@@ -3086,11 +3060,10 @@
                 document.body.dataset.comparadorListener = 'true';
             }
 
-            // Iniciar el wizard
             resetComparator();
         }
 
-        // ===== FIN: NUEVA LÓGICA DEL COMPARADOR POR PASOS =====
+        // ===== FIN: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN CORREGIDA) =====
 
         function createPlayerCard(playerStats, playerNum) {
             if (!playerStats) return '';
