@@ -183,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- MODALS ---
     function showPlayerModal(playerId) {
-        // Lógica para mostrar modal con estadísticas del jugador
         const playerStats = currentStatsData.players.find(p => p.id == playerId);
         const playerData = allPlayersData.find(p => p.id == playerId);
         if (!playerData || !playerStats) return;
@@ -311,15 +310,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PAGE CONTROLLERS ---
     const pageControllers = {
         'leaderboard-content': () => setupFilteredView('leaderboard', (a, b) => b.points - a.points, ['#', '', 'Jugador', 'Puntos', 'Efectividad'], 
-            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.points}</td><td>${p.efectividad}%</td></tr>`),
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.points}</td><td>${p.efectividad}%</td></tr>`),
         'chamigo-content': () => setupFilteredView('chamigo', (a, b) => b.chamigos - a.chamigos, ['#', '', 'Jugador', 'Chamigos'], 
-            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.chamigos}</td></tr>`, p => p.chamigos > 0),
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.chamigos}</td></tr>`, p => p.chamigos > 0),
         'tt-content': () => setupFilteredView('tt', (a, b) => b.tt - a.tt, ['#', '', 'Jugador', 'TT'], 
-            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.tt}</td></tr>`, p => p.tt > 0),
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.tt}</td></tr>`, p => p.tt > 0),
         'presentismo-content': () => setupFilteredView('presentismo', (a, b) => b.pj - a.pj, ['#', '', 'Jugador', 'PJ'], 
-            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.pj}</td></tr>`),
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.pj}</td></tr>`),
         'ausentismo-content': () => setupFilteredView('ausentismo', (a, b) => b.ausentes - a.ausentes, ['#', '', 'Jugador', 'Ausentes'], 
-            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.ausentes}</td></tr>`),
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.ausentes}</td></tr>`),
         'equipos-content': () => {
             setupFilterEventListeners('equipos', () => {
                 const statsDisplay = document.getElementById('equipos-stats-display');
@@ -398,9 +397,44 @@ document.addEventListener('DOMContentLoaded', () => {
         let filterHTML = '';
 
         if (PAGE_CONFIG[tabId] && !['individual-stats-content', 'comparador-content'].includes(tabId)) {
-            const yearFilterHTML = `...`;
-            const periodOrMonthFilterHTML = `...`;
-            filterHTML = `...`;
+            const yearFilterHTML = `
+                <div class="custom-select-container">
+                    <button id="${prefix}-year-select-button" class="custom-select-button">
+                        <span class="truncate">Seleccionar Años</span>
+                        <i class="fas fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="${prefix}-year-select-dropdown" class="custom-select-options hidden"></div>
+                </div>`;
+                 
+            const periodOrMonthFilterHTML = prefix === 'fixture' ? `
+                <div class="custom-select-container">
+                    <button id="fixture-month-select-button" class="custom-select-button">
+                        <span class="truncate">Seleccionar Meses</span>
+                        <i class="fas fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="fixture-month-select-dropdown" class="custom-select-options hidden"></div>
+                </div>` : `
+                <div class="custom-select-container">
+                    <button id="${prefix}-period-select-button" class="custom-select-button">
+                        <span class="truncate">Apertura</span>
+                        <i class="fas fa-chevron-down transition-transform"></i>
+                    </button>
+                    <div id="${prefix}-period-select-dropdown" class="custom-select-options hidden">
+                        <div class="option-item selected" data-value="apertura">Apertura</div>
+                        <div class="option-item" data-value="clausura">Clausura</div>
+                        <div class="option-item" data-value="total">Total Anual</div>
+                    </div>
+                </div>`;
+
+            filterHTML = `
+                <div id="${prefix}-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
+                    <div class="col-span-1 md:col-span-2">${yearFilterHTML}</div>
+                    <div class="col-span-1 md:col-span-2">${periodOrMonthFilterHTML}</div>
+                    <div class="col-span-2 md:col-span-1">
+                       <button id="${prefix}-hoy-button" class="button button-primary w-full h-full">Ver Torneo Actual</button>
+                    </div>
+                </div>
+                <hr class="border-border-color"/>`;
         }
         
         let contentHTML = '';
@@ -416,10 +450,24 @@ document.addEventListener('DOMContentLoaded', () => {
                  contentHTML = `<p id="equipos-loading-message" class="loading-message p-4">Cargando...</p><div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden"></div>`;
                  break;
             case 'fixture-content':
-                 contentHTML = `...`;
+                 contentHTML = `<p id="fixture-loading-message" class="loading-message p-4">Cargando...</p>
+                    <div id="fixture-dropdown-container" class="custom-select-container relative hidden">
+                        <button class="custom-select-button"><span>Seleccionar Partido</span><i class="fas fa-chevron-down"></i></button>
+                        <div class="custom-select-options hidden max-h-72 overflow-y-auto"></div>
+                    </div>
+                    <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
+                        <div class="md:w-[65%]"><div id="soccer-field-container" class="relative"></div></div>
+                        <div id="fixture-details-display" class="flex-1 md:w-[35%] mt-6 md:mt-0">
+                            <h3 class="text-center font-semibold p-2 bg-accent-color text-white rounded-t-lg">Asistentes al TT</h3>
+                            <div class="table-container"><table id="tt-attendees-table" class="w-full"><tbody></tbody></table></div>
+                        </div>
+                    </div>`;
                  break;
             case 'estadisticas-content':
-                 contentHTML = `...`;
+                 contentHTML = `<div class="table-container overflow-x-auto">
+                    <p id="estadisticas-loading-message" class="loading-message p-4">Cargando...</p>
+                    <table id="estadisticas-table" class="w-full min-w-[800px]"></table>
+                 </div>`;
                  break;
         }
         return `<div id="${tabId}" class="main-content-container space-y-4">${filterHTML}${contentHTML}</div>`;
