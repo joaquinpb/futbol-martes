@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -2130,10 +2132,10 @@
                     break;
                     
                 case 'comparador-content':
-                     // ESTRUCTURA ACTUALIZADA PARA COMPARADOR
+                     // ESTRUCTURA FINAL PARA EL COMPARADOR POR PASOS
                     baseHtml = `
                         <div id="comparador-content" class="main-content-container space-y-4">
-                            <!-- Filters Container -->
+                            <!-- Filters Container (se mantiene igual) -->
                             <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
                                 <div class="col-span-1 md:col-span-2 md:order-1">
                                     <div class="custom-select-container">
@@ -2165,29 +2167,34 @@
                             
                             <hr class="border-border-color"/>
 
-                            <!-- Player Selectors -->
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="relative">
-                                    <label class="block text-sm font-medium mb-1">Jugador 1</label>
-                                    <input type="text" id="comparador-player1-search" placeholder="Buscar Jugador 1..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
-                                    <button id="comparador-clear-player1-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
-                                    <div id="comparador-player1-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                                    <input type="hidden" id="comparador-player1-id">
+                            <!-- Contenedor de la App del Comparador -->
+                            <div id="comparator-app-container" class="relative mt-6 min-h-[450px]">
+                                
+                                <!-- PANTALLA 1: Seleccionar Jugador 1 -->
+                                <div id="comparator-screen-1" class="comparator-screen-wrapper">
+                                    <!-- Contenido se insertará con JS -->
                                 </div>
-                                <div class="relative">
-                                     <label class="block text-sm font-medium mb-1">Jugador 2</label>
-                                    <input type="text" id="comparador-player2-search" placeholder="Buscar Jugador 2..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
-                                    <button id="comparador-clear-player2-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
-                                    <div id="comparador-player2-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                                    <input type="hidden" id="comparador-player2-id">
-                                </div>
-                            </div>
 
-                            <!-- Comparison Display -->
-                            <div id="comparison-display-area" class="hidden space-y-6 pt-4">
-                                <!-- Las tarjetas de jugador y las barras de stats se insertarán aquí con JS -->
+                                <!-- PANTALLA 2: Estadísticas Individuales -->
+                                <div id="comparator-screen-2" class="comparator-screen-wrapper hidden">
+                                    <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                                    <div id="individual-stats-display" class="space-y-6"></div>
+                                </div>
+
+                                <!-- PANTALLA 3: Seleccionar Jugador 2 -->
+                                <div id="comparator-screen-3" class="comparator-screen-wrapper hidden">
+                                     <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                                    <div id="screen-3-content">
+                                        <!-- Contenido se insertará con JS -->
+                                    </div>
+                                </div>
+
+                                <!-- PANTALLA 4: Comparación Completa -->
+                                <div id="comparator-screen-4" class="comparator-screen-wrapper hidden">
+                                    <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                                    <div id="full-comparison-display" class="space-y-6"></div>
+                                </div>
                             </div>
-                            <p id="comparador-placeholder" class="text-center text-text-secondary pt-8">Selecciona dos jugadores y un período para comenzar la comparación.</p>
                         </div>
                     `;
                     break;
@@ -2792,16 +2799,430 @@
             });
         }
 
+        // ===== INICIO: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
+
         function renderComparador() {
-            injectComparatorStyles();
-            setupComparatorPlayerSearch(1);
-            setupComparatorPlayerSearch(2);
+            // Estado local para el wizard del comparador
+            let selectedPlayer1 = null;
+            let selectedPlayer2 = null;
+            const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
+
+            // --- INYECCIÓN DE ESTILOS ---
+            (function injectComparatorStyles() {
+                const styleId = 'comparator-dynamic-styles';
+                if (document.getElementById(styleId)) return;
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.innerHTML = `
+                    .comparator-screen-wrapper {
+                        border: 1px solid var(--border-color);
+                        border-radius: 0.75rem;
+                        padding: 0;
+                        width: 100%;
+                        max-width: 500px; /* Default max-width for screens 1, 2, 3 */
+                        margin: 0 auto;
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    /* Screen 4 can be wider, but screen 2 will now respect the default max-width */
+                    #comparator-screen-4 {
+                        max-width: 100%;
+                    }
+                    .comparator-screen-header {
+                        background-color: var(--accent-color);
+                        color: var(--button-text-color);
+                        padding: 0.75rem;
+                        font-weight: 600;
+                        text-align: center;
+                        text-transform: uppercase;
+                        font-size: 0.8rem;
+                        letter-spacing: 0.05em;
+                        position: relative; /* For positioning the close button */
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    /* Mobile-first: Red button by default */
+                    .comparator-screen-header .modal-close-button {
+                        position: absolute;
+                        top: 50%;
+                        right: 0.75rem; /* 12px */
+                        transform: translateY(-50%);
+                        background-color: var(--danger-color); /* Red by default for mobile */
+                        border: 1px solid transparent;
+                        color: white;
+                    }
+                    /* Desktop: Subtle button with hover effect */
+                    @media (min-width: 768px) {
+                        .comparator-screen-header .modal-close-button {
+                            background-color: rgba(255,255,255,0.2);
+                            border: 1px solid rgba(255,255,255,0.3);
+                        }
+                        .comparator-screen-header .modal-close-button:hover {
+                            background-color: var(--danger-color);
+                            transform: translateY(-50%) scale(1.1) rotate(90deg);
+                            border-color: transparent;
+                        }
+                    }
+                    .comparator-search-input {
+                        padding-right: 2.5rem !important;
+                    }
+                    html.dark .comparator-search-input {
+                        background-color: #374151 !important; color: var(--text-primary) !important;
+                        border-color: #4b5563 !important;
+                        -webkit-box-shadow: 0 0 0 30px #374151 inset !important;
+                        -webkit-text-fill-color: var(--text-primary) !important;
+                    }
+                    html.dark .comparator-search-input::placeholder { color: var(--text-muted); }
+                    .progress-bg {
+                        position: relative; display: flex;
+                        background-color: var(--border-color);
+                        border-radius: 9999px; height: 1.75rem; overflow: hidden;
+                    }
+                    html.dark .progress-bg { background-color: #374151; }
+                    .progress-bg.player1 { justify-content: flex-end; }
+                    .progress-bg.player2 { justify-content: flex-start; }
+                    .progress-fill { 
+                        height: 100%; 
+                        border-radius: 9999px; 
+                        transition: width 0.5s ease-in-out;
+                        display: flex;
+                        align-items: center;
+                        overflow: hidden;
+                    }
+                    .progress-fill.player1 { 
+                        background-color: var(--accent-color); 
+                        justify-content: flex-end;
+                    }
+                    .progress-fill.player2 { 
+                        background-color: var(--danger-color); 
+                        justify-content: flex-start;
+                    }
+                    .stat-value-in-bar {
+                        color: white; font-weight: 600; font-size: 0.875rem;
+                        padding: 0 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+                        white-space: nowrap;
+                    }
+                `;
+                document.head.appendChild(style);
+            })();
+
+
+            // --- FUNCIONES DE RENDERIZADO DE PANTALLAS ---
+
+            function createPlayerSelectorCard(playerNum, playerData = null) {
+                const photoUrl = playerData?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';
+                const playerName = playerData?.name || 'Seleccionar Jugador';
+                return `
+                    <div class="p-4 space-y-4 text-center">
+                        <div class="relative">
+                            <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
+                            <button id="comparador-clear-player${playerNum}-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted ${!playerData ? 'hidden' : ''}"><i class="fas fa-times-circle"></i></button>
+                            <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                            <input type="hidden" id="comparador-player${playerNum}-id" value="${playerData?.id || ''}">
+                        </div>
+                        <div class="mt-4">
+                            <img src="${photoUrl}" alt="Avatar del jugador" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-border-color shadow-lg" id="player${playerNum}-avatar" onerror="this.onerror=null;this.src='https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';">
+                            <h3 class="text-2xl font-bold mt-3" id="player${playerNum}-name">${playerName}</h3>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderScreen1() {
+                const screen1Container = document.getElementById('comparator-screen-1');
+                screen1Container.innerHTML = `
+                    <div class="comparator-screen-header">
+                        <span>SELECCIONAR JUGADOR</span>
+                    </div>
+                    ${createPlayerSelectorCard(1, selectedPlayer1)}
+                    <div class="p-4 pt-0 space-y-3">
+                        <button id="go-to-screen-3-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            Agregar otro jugador
+                        </button>
+                        <button id="go-to-screen-2-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            Estadísticas Individuales
+                        </button>
+                    </div>
+                `;
+                setupPlayerSearch(1);
+                document.getElementById('go-to-screen-3-btn').addEventListener('click', () => showScreen(3));
+                document.getElementById('go-to-screen-2-btn').addEventListener('click', renderIndividualScreen);
+            }
+            
+            function renderScreen3() {
+                const screen3Container = document.getElementById('comparator-screen-3');
+                 screen3Container.innerHTML = `
+                    <div class="comparator-screen-header">
+                        <span>SELECCIONAR JUGADOR</span>
+                        <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="screen-3-content">
+                        ${createPlayerSelectorCard(2, selectedPlayer2)}
+                        <div class="p-4 pt-0 grid grid-cols-2 gap-3">
+                            <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700">
+                                VOLVER
+                            </button>
+                            <button id="go-to-screen-4-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                                COMPARAR
+                            </button>
+                        </div>
+                    </div>
+                `;
+                // The `true` argument makes the player list visible by default
+                setupPlayerSearch(2, true); 
+                updatePlayerDisplay(2, selectedPlayer2);
+                screen3Container.querySelector('#back-to-screen-1-btn').addEventListener('click', () => showScreen(1));
+                screen3Container.querySelector('#go-to-screen-4-btn').addEventListener('click', renderFullComparisonScreen);
+                screen3Container.querySelector('.comparator-reset-btn').addEventListener('click', resetComparator);
+            }
+
+            function renderIndividualScreen() {
+                if (!selectedPlayer1) return;
+                const screen2Container = document.getElementById('comparator-screen-2');
+
+                const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
+                let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
+                if (selectedYears.includes('all')) {
+                    selectedYears = ['all'];
+                }
+                const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
+                const localFilterState = { selectedYears, selectedPeriod };
+
+                const { players } = calculateStats(localFilterState);
+                const stats = players.find(p => p.id === selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
+                
+                const individualMeta = [
+                    { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
+                    { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
+                    { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' },
+                    { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'TT' },
+                    { key: 'ausentes', label: 'Ausencias' },
+                ];
+
+                const tableRows = individualMeta.map(meta => `
+                    <tr class="border-b border-border-color last:border-b-0">
+                        <td class="p-3 text-left font-semibold text-text-secondary">${meta.label}</td>
+                        <td class="p-3 text-right font-bold text-accent-color text-lg">${stats[meta.key]}${meta.suffix || ''}</td>
+                    </tr>
+                `).join('');
+
+                const statsHtml = `<div class="table-container"><table class="w-full"><tbody>${tableRows}</tbody></table></div>`;
+
+                screen2Container.innerHTML = `
+                    <div class="comparator-screen-header">
+                        <span>ESTADISTICAS INDIVIDUALES</span>
+                        <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="individual-stats-display" class="space-y-6">
+                        <div class="w-full max-w-md mx-auto text-center p-4">
+                            <img src="${selectedPlayer1.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'}" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-accent-color shadow-lg">
+                            <h3 class="text-3xl font-bold mt-3">${selectedPlayer1.name}</h3>
+                            <div class="mt-6">${statsHtml}</div>
+                        </div>
+                    </div>
+                `;
+                screen2Container.querySelector('.comparator-reset-btn').addEventListener('click', resetComparator);
+                showScreen(2);
+            }
+
+            function renderFullComparisonScreen() {
+                const screen4Container = document.getElementById('comparator-screen-4');
+                if (!selectedPlayer1 || !selectedPlayer2) return;
+                
+                const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
+                let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
+                if (selectedYears.includes('all')) {
+                    selectedYears = ['all'];
+                }
+                const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
+
+                const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
+                let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
+                let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, id: selectedPlayer2.id };
+
+                let comparisonHTML = `
+                    <div class="p-4">
+                        <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                            ${createPlayerCard(selectedPlayer1, 1).replace('<div class="p-4 space-y-4 text-center">','<div class="space-y-4 text-center">')}
+                            <div class="vs-separator">VS</div>
+                            ${createPlayerCard(selectedPlayer2, 2).replace('<div class="p-4 space-y-4 text-center">','<div class="space-y-4 text-center">')}
+                        </div>
+                    </div>`;
+
+                const allFilteredMatches = allMatchesData.filter(match => {
+                    if (!match.result) return false;
+                    const matchYear = parseDate(match.match_date).getFullYear();
+                    const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
+                    const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
+                    const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
+                    return yearMatch && periodMatch;
+                });
+        
+                const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
+                
+                if (headToHeadStats.pjTotal > 0) {
+                    const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, efectividad: headToHeadStats.p1_efectividad };
+                    const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, efectividad: headToHeadStats.p2_efectividad };
+                    const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
+                    const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
+
+                    comparisonHTML += `
+                        <div class="space-y-4 p-4">
+                            <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Entre Sí</h4>
+                            <div class="grid grid-cols-4 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
+                                ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
+                                ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'EN EQUIPO', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
+                                ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'RIVALES', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                                ${unifiedStatBox(headToHeadStats.empates, 'EMPATES', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
+                            </div>
+                            ${headToHeadStats.pjEnfrentados > 0 ? `<div><h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6 mb-4">Como Rivales</h4><div class="space-y-4">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div></div>` : ''}
+                        </div>`;
+                }
+            
+                const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
+                comparisonHTML += `<div class="space-y-4 p-4"><h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6">Individuales</h4>${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div>`;
+
+                screen4Container.innerHTML = `
+                    <div class="comparator-screen-header">
+                        <span>COMPARATIVA</span>
+                        <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="full-comparison-display" class="space-y-6 overflow-y-auto max-h-[70vh]">
+                        ${comparisonHTML}
+                    </div>
+                `;
+                screen4Container.querySelector('.comparator-reset-btn').addEventListener('click', resetComparator);
+                showScreen(4);
+            }
+
+            // --- FUNCIONES DE LÓGICA Y EVENTOS ---
+
+            function showScreen(screenNum) {
+                if (screenNum === 3) renderScreen3();
+                for (let i = 1; i <= 4; i++) {
+                    document.getElementById(`comparator-screen-${i}`).classList.add('hidden');
+                }
+                document.getElementById(`comparator-screen-${screenNum}`).classList.remove('hidden');
+            }
+
+            function resetComparator() {
+                selectedPlayer1 = null;
+                selectedPlayer2 = null;
+                renderScreen1();
+                showScreen(1);
+            }
+
+            function setupPlayerSearch(playerNum, initialOpen = false) {
+                const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
+                const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
+                const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
+                const isMobile = window.innerWidth < 768;
+
+                const filterAndDisplay = () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const otherPlayerId = playerNum === 1 ? selectedPlayer2?.id : selectedPlayer1?.id;
+                    const filtered = allPlayersData
+                        .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId)
+                        .sort((a, b) => a.name.localeCompare(b.name));
+                    resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
+                    resultsDiv.classList.remove('hidden');
+                };
+
+                if (initialOpen) {
+                    filterAndDisplay();
+                }
+
+                resultsDiv.addEventListener('mousedown', (e) => {
+                    const target = e.target.closest('.option-item');
+                    if (target?.dataset.playerId) {
+                        e.preventDefault();
+                        const player = allPlayersData.find(p => p.id == target.dataset.playerId);
+                        if (playerNum === 1) selectedPlayer1 = player;
+                        else selectedPlayer2 = player;
+                        updatePlayerDisplay(playerNum, player);
+                        resultsDiv.classList.add('hidden');
+                        searchInput.readOnly = true;
+                    }
+                });
+                
+                searchInput.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    if (isMobile) {
+                        if (resultsDiv.classList.contains('hidden')) {
+                            searchInput.readOnly = true;
+                            filterAndDisplay();
+                        } else {
+                            searchInput.readOnly = false;
+                            searchInput.focus();
+                        }
+                    } else {
+                        searchInput.readOnly = false;
+                        searchInput.focus();
+                        filterAndDisplay();
+                    }
+                });
+                
+                searchInput.addEventListener('input', filterAndDisplay);
+                
+                searchInput.addEventListener('blur', () => setTimeout(() => {
+                    if (!resultsDiv.contains(document.activeElement)) {
+                        resultsDiv.classList.add('hidden');
+                        searchInput.readOnly = true;
+                    }
+                }, 150));
+                
+                clearButton.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    if (playerNum === 1) selectedPlayer1 = null;
+                    else selectedPlayer2 = null;
+                    updatePlayerDisplay(playerNum, null);
+                    if (isMobile) {
+                        searchInput.readOnly = true;
+                    }
+                    searchInput.blur();
+                    filterAndDisplay();
+                });
+            }
+
+            function updatePlayerDisplay(playerNum, player) {
+                const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
+                const idInput = document.getElementById(`comparador-player${playerNum}-id`);
+                const avatar = document.getElementById(`player${playerNum}-avatar`);
+                const name = document.getElementById(`player${playerNum}-name`);
+                const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
+
+                searchInput.value = player?.name || '';
+                idInput.value = player?.id || '';
+                avatar.src = player?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';
+                name.textContent = player?.name || 'Seleccionar Jugador';
+                clearButton.classList.toggle('hidden', !player);
+
+                if (playerNum === 1) {
+                    document.getElementById('go-to-screen-2-btn').disabled = !player;
+                    document.getElementById('go-to-screen-3-btn').disabled = !player;
+                } else {
+                    document.getElementById('go-to-screen-4-btn').disabled = !player;
+                }
+            }
+            
+            // --- INICIALIZACIÓN Y EVENTOS GLOBALES DEL COMPARADOR ---
             
             if (!document.body.dataset.comparadorListener) {
-                document.body.addEventListener('filterChanged', updateComparison);
+                document.body.addEventListener('filterChanged', () => {
+                    const screen2 = document.getElementById('comparator-screen-2');
+                    const screen4 = document.getElementById('comparator-screen-4');
+                    // Re-renderiza la pantalla activa si los filtros cambian
+                    if (screen2 && !screen2.classList.contains('hidden')) renderIndividualScreen();
+                    if (screen4 && !screen4.classList.contains('hidden')) renderFullComparisonScreen();
+                });
                 document.body.dataset.comparadorListener = 'true';
             }
+
+            resetComparator();
         }
+
+        // ===== FIN: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
 
         function createPlayerCard(playerStats, playerNum) {
             if (!playerStats) return '';
@@ -2854,16 +3275,20 @@
                     }
                 }
         
+                // CORRECCIÓN: Se movió el <span> con el valor DENTRO del <div> .progress-fill
+                // y se cambió la clase a .stat-value-in-bar para que coincida con los nuevos estilos.
                 return `
                     <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
                         <div class="progress-bg player1 ${winnerClass1}">
-                            <div class="progress-fill player1" style="width: ${width1}%"></div>
-                            <span class="stat-value player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+                            <div class="progress-fill player1" style="width: ${width1}%">
+                                <span class="stat-value-in-bar player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+                            </div>
                         </div>
                         <div class="stat-label">${stat.label}</div>
                         <div class="progress-bg player2 ${winnerClass2}">
-                            <div class="progress-fill player2" style="width: ${width2}%"></div>
-                            <span class="stat-value player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+                            <div class="progress-fill player2" style="width: ${width2}%">
+                                <span class="stat-value-in-bar player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+                            </div>
                         </div>
                     </div>
                 `;
