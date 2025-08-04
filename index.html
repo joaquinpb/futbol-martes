@@ -2131,7 +2131,7 @@
                     break;
                     
                 case 'comparador-content':
-                     // ESTRUCTURA ACTUALIZADA PARA EL COMPARADOR POR PASOS
+                     // ESTRUCTURA FINAL PARA EL COMPARADOR POR PASOS
                     baseHtml = `
                         <div id="comparador-content" class="main-content-container space-y-4">
                             <!-- Filters Container (se mantiene igual) -->
@@ -2167,21 +2167,21 @@
                             <hr class="border-border-color"/>
 
                             <!-- Contenedor de la App del Comparador -->
-                            <div id="comparator-app-container" class="relative mt-6 min-h-[400px]">
+                            <div id="comparator-app-container" class="relative mt-6 min-h-[450px]">
                                 
                                 <!-- PANTALLA 1: Seleccionar Jugador 1 -->
-                                <div id="comparator-screen-1" class="w-full max-w-sm mx-auto text-center space-y-4">
+                                <div id="comparator-screen-1" class="comparator-screen-wrapper">
                                     <!-- Contenido se insertará con JS -->
                                 </div>
 
                                 <!-- PANTALLA 2: Estadísticas Individuales -->
-                                <div id="comparator-screen-2" class="hidden relative">
+                                <div id="comparator-screen-2" class="comparator-screen-wrapper hidden">
                                     <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
                                     <div id="individual-stats-display" class="space-y-6 pt-8"></div>
                                 </div>
 
                                 <!-- PANTALLA 3: Seleccionar Jugador 2 -->
-                                <div id="comparator-screen-3" class="hidden relative w-full max-w-sm mx-auto text-center space-y-4">
+                                <div id="comparator-screen-3" class="comparator-screen-wrapper hidden">
                                      <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
                                     <div id="screen-3-content" class="pt-8">
                                         <!-- Contenido se insertará con JS -->
@@ -2189,7 +2189,7 @@
                                 </div>
 
                                 <!-- PANTALLA 4: Comparación Completa -->
-                                <div id="comparator-screen-4" class="hidden relative">
+                                <div id="comparator-screen-4" class="comparator-screen-wrapper hidden">
                                     <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
                                     <div id="full-comparison-display" class="space-y-6 pt-8"></div>
                                 </div>
@@ -2807,13 +2807,24 @@
             const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
 
             // --- INYECCIÓN DE ESTILOS ---
-            // Se inyectan estilos específicos para que los buscadores y las barras de progreso se vean bien.
             (function injectComparatorStyles() {
                 const styleId = 'comparator-dynamic-styles';
                 if (document.getElementById(styleId)) return;
                 const style = document.createElement('style');
                 style.id = styleId;
                 style.innerHTML = `
+                    .comparator-screen-wrapper {
+                        border: 1px solid var(--border-color);
+                        border-radius: 0.75rem;
+                        padding: 1.5rem;
+                        width: 100%;
+                        max-width: 500px; /* Ancho máximo para pantallas de selección */
+                        margin: 0 auto;
+                        position: relative;
+                    }
+                    #comparator-screen-2, #comparator-screen-4 {
+                        max-width: 100%; /* Ancho completo para pantallas de resultados */
+                    }
                     .comparator-search-input {
                         padding-right: 2.5rem !important;
                     }
@@ -2828,16 +2839,13 @@
                         color: var(--text-muted);
                     }
                     .progress-bg {
-                        position: relative;
-                        display: flex;
+                        position: relative; display: flex;
                         background-color: var(--border-color);
-                        border-radius: 9999px;
-                        height: 1.75rem;
-                        overflow: hidden;
+                        border-radius: 9999px; height: 1.75rem; overflow: hidden;
                     }
                     html.dark .progress-bg { background-color: #374151; }
-                    .progress-bg.player1 { justify-content: flex-end; }
-                    .progress-bg.player2 { justify-content: flex-start; }
+                    .progress-bg.player1 { justify-content: flex-start; } /* Corregido */
+                    .progress-bg.player2 { justify-content: flex-end; } /* Corregido */
                     .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.5s ease-in-out; }
                     .progress-fill.player1 { background-color: var(--accent-color); }
                     .progress-fill.player2 { background-color: var(--danger-color); }
@@ -2847,8 +2855,8 @@
                         padding: 0 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
                         white-space: nowrap;
                     }
-                    .stat-value-in-bar.player1 { right: 0; }
-                    .stat-value-in-bar.player2 { left: 0; }
+                    .stat-value-in-bar.player1 { left: 0; } /* Corregido */
+                    .stat-value-in-bar.player2 { right: 0; } /* Corregido */
                 `;
                 document.head.appendChild(style);
             })();
@@ -2860,16 +2868,18 @@
                 const photoUrl = playerData?.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=👤';
                 const playerName = playerData?.name || 'Seleccionar Jugador';
                 return `
-                    <div class="relative">
-                        <label class="block text-sm font-medium mb-1">Jugador ${playerNum}</label>
-                        <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
-                        <button id="comparador-clear-player${playerNum}-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted ${!playerData ? 'hidden' : ''}"><i class="fas fa-times-circle"></i></button>
-                        <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                        <input type="hidden" id="comparador-player${playerNum}-id" value="${playerData?.id || ''}">
-                    </div>
-                    <div class="mt-4">
-                        <img src="${photoUrl}" alt="Avatar del jugador" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-border-color shadow-lg" id="player${playerNum}-avatar" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=👤';">
-                        <h3 class="text-2xl font-bold mt-3" id="player${playerNum}-name">${playerName}</h3>
+                    <div class="bg-bg-muted dark:bg-gray-800 p-3 rounded-t-lg font-bold text-lg">SELECCIONAR JUGADOR</div>
+                    <div class="p-4 space-y-4">
+                        <div class="relative">
+                            <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
+                            <button id="comparador-clear-player${playerNum}-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted ${!playerData ? 'hidden' : ''}"><i class="fas fa-times-circle"></i></button>
+                            <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                            <input type="hidden" id="comparador-player${playerNum}-id" value="${playerData?.id || ''}">
+                        </div>
+                        <div class="mt-4">
+                            <img src="${photoUrl}" alt="Avatar del jugador" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-border-color shadow-lg" id="player${playerNum}-avatar" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=👤';">
+                            <h3 class="text-2xl font-bold mt-3" id="player${playerNum}-name">${playerName}</h3>
+                        </div>
                     </div>
                 `;
             }
@@ -2897,7 +2907,7 @@
                  screen3Container.innerHTML = `
                     ${createPlayerSelectorCard(2, selectedPlayer2)}
                     <div class="pt-4 grid grid-cols-2 gap-3">
-                        <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500">
+                        <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700">
                             VOLVER
                         </button>
                         <button id="go-to-screen-4-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
@@ -2906,13 +2916,13 @@
                     </div>
                 `;
                 setupPlayerSearch(2);
+                updatePlayerDisplay(2, selectedPlayer2); // Asegura que el estado del botón ACEPTAR sea correcto
                 document.getElementById('back-to-screen-1-btn').addEventListener('click', () => showScreen(1));
                 document.getElementById('go-to-screen-4-btn').addEventListener('click', renderFullComparisonScreen);
             }
 
             function renderIndividualScreen() {
                 if (!selectedPlayer1) return;
-                // CORREGIDO: Usa la función que calcula el histórico total, ignorando filtros.
                 const playerAllTimeStats = calculateIndividualPlayerStats(selectedPlayer1.id, allMatchesData);
                 const stats = playerAllTimeStats.overallTotal;
                 
@@ -3090,9 +3100,7 @@
             
             if (!document.body.dataset.comparadorListener) {
                 document.body.addEventListener('filterChanged', () => {
-                    const screen2 = document.getElementById('comparator-screen-2');
                     const screen4 = document.getElementById('comparator-screen-4');
-                    if (!screen2.classList.contains('hidden')) renderIndividualScreen();
                     if (!screen4.classList.contains('hidden')) renderFullComparisonScreen();
                 });
                 document.body.dataset.comparadorListener = 'true';
