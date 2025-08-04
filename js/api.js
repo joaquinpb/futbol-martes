@@ -4,11 +4,10 @@
  */
 
 // ¡CORRECCIÓN!
-// En lugar de importar desde una URL, que causa el error,
-// usamos el objeto global `supabase` que es creado por el script
-// que se carga en el <head> de nuestros archivos HTML.
-// Hacemos una desestructuración para obtener la función createClient.
-const { createClient } = supabase;
+// Accedemos al cliente de Supabase a través del objeto `window`
+// porque este script es un módulo y no tiene acceso directo a las
+// variables globales definidas por otros scripts.
+const { createClient } = window.supabase;
 
 // Las variables de configuración se cargan globalmente desde config.js
 // en el HTML antes de que se ejecute este script de tipo módulo.
