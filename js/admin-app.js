@@ -182,60 +182,64 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 await Auth.signOutUser(); 
             },
-            onChangeName: (e) => { 
-                e.preventDefault();
-                // Lógica para abrir modal de nombre 
-            },
-            onChangePassword: (e) => { 
-                e.preventDefault();
-                // Lógica para abrir modal de contraseña 
-            },
-            onAvatarClick: (e) => { 
-                e.preventDefault();
-                // Lógica para abrir modal de avatar 
-            }
+            onChangeName: (e) => { e.preventDefault(); /* Lógica para abrir modal de nombre */ },
+            onChangePassword: (e) => { e.preventDefault(); /* Lógica para abrir modal de contraseña */ },
+            onAvatarClick: (e) => { e.preventDefault(); /* Lógica para abrir modal de avatar */ }
         });
     }
 
     function setupNavigationMenus() {
-        const navHtml = `
-            ${NAV_ITEMS.dashboard.map(item => `<a href="#${item.id}" data-tab="${item.id}" class="nav-link nav-link-dashboard ...">${item.name}</a>`).join('')}
+        let navHtml = `
+            ${NAV_ITEMS.dashboard.map(item => `
+                <a href="#${item.id}" data-tab="${item.id}" class="nav-link nav-link-dashboard w-full text-left flex items-center gap-3 px-4 py-3 mb-2 rounded-lg transition-colors duration-200">
+                    <i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span>
+                </a>`).join('')}
             
-            <!-- Grupos Colapsables -->
             <div>
-                <button class="collapsible-trigger ...">Principal <i class="fas fa-chevron-down"></i></button>
-                <div class="collapsible-content ...">
-                    ${NAV_ITEMS.main.map(item => `<a href="#${item.id}" data-tab="${item.id}" class="nav-link ...">${item.name}</a>`).join('')}
+                <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                    <span class="flex items-center gap-3"><i class="fas fa-cogs w-5 text-center"></i>Principal</span>
+                    <i class="fas fa-chevron-down transform transition-transform rotate-180"></i>
+                </button>
+                <div class="collapsible-content mt-1 space-y-1 pl-4">
+                    ${NAV_ITEMS.main.map(item => `<a href="#${item.id}" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg"><i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span></a>`).join('')}
                 </div>
             </div>
             
             ${AppState.userRole === 'Admin' ? `
-            <div>
-                <button class="collapsible-trigger ...">Administración <i class="fas fa-chevron-down"></i></button>
-                <div class="collapsible-content hidden ...">
-                    ${NAV_ITEMS.admin.map(item => `<a href="#${item.id}" data-tab="${item.id}" class="nav-link ...">${item.name}</a>`).join('')}
+            <div class="mt-2">
+                <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                    <span class="flex items-center gap-3"><i class="fas fa-user-shield w-5 text-center"></i>Administración</span>
+                    <i class="fas fa-chevron-down transform transition-transform"></i>
+                </button>
+                <div class="collapsible-content hidden mt-1 space-y-1 pl-4">
+                    ${NAV_ITEMS.admin.map(item => `<a href="#${item.id}" data-tab="${item.id}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg"><i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span></a>`).join('')}
                 </div>
-            </div>
-            ` : ''}
+            </div>` : ''}
 
-            <div>
-                <button class="collapsible-trigger ...">Enlaces <i class="fas fa-chevron-down"></i></button>
-                <div class="collapsible-content hidden ...">
-                    ${NAV_ITEMS.links.map(item => `<a href="${item.href}" target="${item.target || '_self'}" class="nav-link ...">${item.name}</a>`).join('')}
+            <div class="mt-2">
+                <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                    <span class="flex items-center gap-3"><i class="fas fa-link w-5 text-center"></i>Enlaces</span>
+                    <i class="fas fa-chevron-down transform transition-transform"></i>
+                </button>
+                <div class="collapsible-content hidden mt-1 space-y-1 pl-4">
+                    ${NAV_ITEMS.links.map(item => `<a href="${item.href}" target="${item.target || '_self'}" class="nav-link w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg"><i class="fas ${item.icon} w-5 text-center"></i><span>${item.name}</span></a>`).join('')}
                 </div>
             </div>
         `;
         DOMElements.mainNav.innerHTML = navHtml;
-        DOMElements.mobileMenu.innerHTML = `<div class="p-4 border-b">...</div><div class="p-2">${navHtml}</div>`; // Versión simplificada
+        // Simplificado para el menú móvil, se puede expandir si es necesario
+        DOMElements.mobileMenu.innerHTML = `<div class="p-4 border-b flex justify-between items-center"><span class="font-bold">Menú</span><button id="close-mobile-menu"><i class="fas fa-times"></i></button></div><div class="p-2">${navHtml}</div>`;
 
         // Añadir listeners a los nuevos elementos
-        DOMElements.appContainer.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+        document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
             trigger.addEventListener('click', () => {
                 const content = trigger.nextElementSibling;
                 content.classList.toggle('hidden');
-                trigger.querySelector('i')?.classList.toggle('rotate-180');
+                trigger.querySelector('i.fa-chevron-down')?.classList.toggle('rotate-180');
             });
         });
+
+        document.getElementById('close-mobile-menu')?.addEventListener('click', closeMobileMenu);
     }
 
     function openMobileMenu() {
@@ -267,78 +271,125 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.toggle('active', link.dataset.tab === tabId);
         });
-
-        // Aquí es donde el contenido se inyecta en el DOM
-        DOMElements.adminContentArea.innerHTML = getPageTemplate(tabId);
         
-        // Llamar a la función controladora de esa página para que añada la lógica
         const controller = pageControllers[tabId];
         if (controller && typeof controller === 'function') {
-            controller();
+            controller(DOMElements.adminContentArea);
         } else {
-            console.warn(`No controller found for tab: ${tabId}`);
+            DOMElements.adminContentArea.innerHTML = `<div class="p-8">Contenido para ${tabId} no implementado.</div>`;
         }
     }
-
-    function getPageTemplate(tabId) {
-        // Esta función devuelve el esqueleto HTML de cada sección.
-        // Es una forma de mantener el HTML fuera de la lógica de JS.
-        const templates = {
-            dashboard: `<div>Dashboard Content</div>`,
-            'team-formation': `<div>Team Formation Content</div>`,
-            'players-management': `
+    
+    // --- PAGE CONTROLLERS & TEMPLATES ---
+    const pageControllers = {
+        dashboard: (container) => {
+            container.innerHTML = `
+                <div class="p-4 sm:p-6 lg:p-8">
+                    <div class="mb-6 rounded-xl shadow-lg text-center card card-styled">
+                        <div class="p-4 bg-muted"><h1 class="text-3xl font-bold">Dashboard</h1></div>
+                        <div class="p-3 bg-secondary border-t"><p id="dashboard-match-date" class="text-text-secondary text-sm"></p></div>
+                    </div>
+                    <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Cards se insertan aquí -->
+                    </div>
+                </div>`;
+            renderDashboardContent();
+        },
+        'players-management': (container) => {
+            container.innerHTML = `
                 <div class="grid grid-cols-1 lg:grid-cols-3 h-full">
                     <div class="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-border-color">
                         <div class="card h-full">
-                            <h3 class="p-3 text-center font-semibold bg-muted">JUGADOR</h3>
+                            <h3 class="p-3 text-center font-semibold bg-muted border-b">JUGADOR</h3>
                             <div class="p-4">
-                                <form id="player-form"><!-- ... Formulario ... --></form>
+                                <form id="player-form" class="space-y-3">
+                                    <input type="hidden" id="player-id">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2 text-center">Foto</label>
+                                        <div class="flex justify-center">
+                                            <label for="player-photo-input" class="cursor-pointer group relative">
+                                                <img id="player-photo-preview" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" class="w-28 h-28 rounded-full object-cover border-4 border-border-color">
+                                                <div class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <i class="fas fa-camera text-white text-2xl"></i>
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <input type="file" id="player-photo-input" class="hidden" accept="image/png, image/jpeg">
+                                    </div>
+                                    <div>
+                                        <label for="player-name" class="block text-sm font-medium mb-1">Nombre</label>
+                                        <input type="text" id="player-name" class="w-full p-2" required>
+                                    </div>
+                                    <div>
+                                        <label for="player-status" class="block text-sm font-medium mb-1">Estado</label>
+                                        <select id="player-status" class="w-full p-2"><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select>
+                                    </div>
+                                    <div>
+                                        <label for="player-role" class="block text-sm font-medium mb-1">Rol</label>
+                                        <select id="player-role" class="w-full p-2"><option value="Titular">Titular</option><option value="Suplente">Suplente</option></select>
+                                    </div>
+                                    <div class="flex flex-col gap-2 pt-2">
+                                        <button type="submit" id="save-player-button" class="button button-success">Guardar Jugador</button>
+                                        <button type="button" id="delete-player-button" class="button button-danger">Eliminar Jugador</button>
+                                        <button type="button" id="clear-player-form-button" class="button button-secondary">Limpiar</button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
                     <div class="lg:col-span-2">
                         <div class="card h-full">
-                             <h3 class="p-3 text-center font-semibold bg-muted">JUGADORES</h3>
+                            <h3 class="p-3 text-center font-semibold bg-muted border-b">LISTA DE JUGADORES</h3>
                             <div class="p-4">
-                                <input type="text" id="player-search-input" placeholder="Buscar..." class="w-full p-2 border rounded-md mb-4">
+                                <input type="text" id="player-search-input" placeholder="Buscar por nombre..." class="w-full p-2 border rounded-md mb-4">
                                 <div id="players-table-container" class="overflow-y-auto max-h-[70vh]">
                                     <table class="w-full text-sm">
-                                        <thead><!-- ... Headers ... --></thead>
+                                        <thead class="text-xs uppercase">
+                                            <tr>
+                                                <th class="p-2" data-sort-by="id">ID</th>
+                                                <th class="p-2" data-sort-by="name">Nombre</th>
+                                                <th class="p-2" data-sort-by="status">Estado</th>
+                                                <th class="p-2" data-sort-by="role">Rol</th>
+                                            </tr>
+                                        </thead>
                                         <tbody id="players-list-admin"></tbody>
                                     </table>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `,
-            // ... más plantillas para cada sección
-        };
-        return templates[tabId] || `<div class="p-8">Contenido para ${tabId} no encontrado.</div>`;
-    }
-
-    // --- PAGE CONTROLLERS ---
-    // Cada controlador se encarga de la lógica de una página específica
-    const pageControllers = {
-        dashboard: () => {
-            // Lógica específica del dashboard
-            console.log('Initializing Dashboard');
-        },
-        'players-management': () => {
-            console.log('Initializing Players Management');
-            // Listeners para el formulario, búsqueda, tabla, etc.
-            const form = document.getElementById('player-form');
-            form.addEventListener('submit', handleSavePlayer);
+                </div>`;
             
-            const search = document.getElementById('player-search-input');
-            search.addEventListener('input', (e) => renderPlayersListAdmin(e.target.value));
+            // Adjuntar listeners específicos de esta página
+            document.getElementById('player-form').addEventListener('submit', handleSavePlayer);
+            document.getElementById('delete-player-button').addEventListener('click', handleDeletePlayer);
+            document.getElementById('clear-player-form-button').addEventListener('click', clearPlayerForm);
+            document.getElementById('player-search-input').addEventListener('input', (e) => renderPlayersListAdmin(e.target.value));
+            document.getElementById('players-table-container').querySelector('thead').addEventListener('click', (e) => {
+                const header = e.target.closest('th[data-sort-by]');
+                if (header) {
+                    const key = header.dataset.sortBy;
+                    if (AppState.playerSortState.key === key) {
+                        AppState.playerSortState.dir = AppState.playerSortState.dir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        AppState.playerSortState.key = key;
+                        AppState.playerSortState.dir = 'asc';
+                    }
+                    renderPlayersListAdmin(document.getElementById('player-search-input').value);
+                }
+            });
 
+            // Renderizado inicial
             renderPlayersListAdmin();
         },
-        // ... más controladores
+        // ... más controladores para las otras secciones
     };
     
     // --- RENDER FUNCTIONS (Llamadas por los controladores) ---
+    function renderDashboardContent() {
+        // Lógica para poblar el grid del dashboard
+    }
+
     function renderPlayersListAdmin(searchTerm = '') {
         const tableBody = document.getElementById('players-list-admin');
         if (!tableBody) return;
@@ -346,52 +397,54 @@ document.addEventListener('DOMContentLoaded', () => {
         const normalizedSearch = searchTerm.toLowerCase();
         let filteredPlayers = AppState.players.filter(p => p.name.toLowerCase().includes(normalizedSearch));
 
-        // Lógica de ordenamiento (usando AppState.playerSortState)
-        // ...
+        const { key, dir } = AppState.playerSortState;
+        filteredPlayers.sort((a, b) => {
+            const valA = a[key];
+            const valB = b[key];
+            const compareResult = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+            return dir === 'asc' ? compareResult : -compareResult;
+        });
 
         tableBody.innerHTML = filteredPlayers.map(p => `
-            <tr class="selectable-row cursor-pointer" data-player-id="${p.id}">
+            <tr class="selectable-row border-b border-border-color cursor-pointer" data-player-id="${p.id}">
                 <td class="p-2">${p.id}</td>
-                <td class="p-2">${p.name}</td>
+                <td class="p-2 text-left">${p.name}</td>
                 <td class="p-2">${p.status}</td>
                 <td class="p-2">${p.role}</td>
             </tr>
         `).join('');
 
-        // Re-attach listeners para las filas
         tableBody.querySelectorAll('.selectable-row').forEach(row => {
             row.addEventListener('click', () => {
-                // Lógica para poblar el formulario con el jugador seleccionado
+                tableBody.querySelectorAll('.selected').forEach(r => r.classList.remove('selected'));
+                row.classList.add('selected');
+                const player = AppState.players.find(p => p.id == row.dataset.playerId);
+                if (player) populatePlayerForm(player);
             });
         });
     }
 
-    // --- EVENT HANDLERS ---
-    async function handleSavePlayer(e) {
-        e.preventDefault();
-        // Lógica para guardar o actualizar un jugador
-        UI.showNotification('Jugador guardado!', 'success');
+    function populatePlayerForm(player) {
+        document.getElementById('player-id').value = player.id;
+        document.getElementById('player-name').value = player.name;
+        document.getElementById('player-status').value = player.status;
+        document.getElementById('player-role').value = player.role;
+        document.getElementById('player-photo-preview').src = player.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
     }
+
+    function clearPlayerForm() {
+        document.getElementById('player-form').reset();
+        document.getElementById('player-id').value = '';
+        document.getElementById('player-photo-preview').src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+        document.querySelectorAll('#players-list-admin .selected').forEach(r => r.classList.remove('selected'));
+    }
+
+    // --- EVENT HANDLERS ---
+    async function handleSavePlayer(e) { e.preventDefault(); /* ... */ }
+    async function handleDeletePlayer() { /* ... */ }
 
     // --- REALTIME ---
-    function setupRealtimeSubscriptions() {
-        const handleChanges = (payload) => {
-            console.log('Realtime change received:', payload);
-            // Actualizar AppState de forma inteligente
-            // ...
-            // Re-renderizar la vista actual
-            const currentTab = window.location.hash.substring(1) || 'dashboard';
-            renderPage(currentTab);
-        };
-
-        if (AppState.realtimeChannel) supabase.removeChannel(AppState.realtimeChannel);
-
-        AppState.realtimeChannel = supabase.channel('public:admin_changes')
-            .on('postgres_changes', { event: '*', schema: 'public' }, handleChanges)
-            .subscribe(status => {
-                if (status === 'SUBSCRIBED') console.log('Connected to realtime channel.');
-            });
-    }
+    function setupRealtimeSubscriptions() { /* ... */ }
 
     // --- GLOBAL EVENT LISTENERS ---
     function setupGlobalEventListeners() {
@@ -399,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
         DOMElements.mobileMenuToggle.addEventListener('click', openMobileMenu);
         DOMElements.mobileMenuOverlay.addEventListener('click', closeMobileMenu);
         
-        // Cerrar menús de usuario al hacer clic fuera
         document.addEventListener('click', (e) => {
             const openDropdown = document.querySelector('.user-menu-dropdown:not(.hidden)');
             if (openDropdown && !e.target.closest('.user-menu-button')) {
