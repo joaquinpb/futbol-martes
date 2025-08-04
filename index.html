@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1160,8 +1161,8 @@
             }
         }
         
-        
-            const { selectedYears, selectedPeriod, selectedMonths } = filters;
+        function calculateStats(filters) {
+            const { selectedYears, selectedPeriod } = filters;
 
             let timeFilteredMatches = allMatchesData;
 
@@ -1179,16 +1180,6 @@
                     return period === selectedPeriod;
                 });
             }
-
-            // --- NUEVO BLOQUE ---
-            // Se agrega la lógica para filtrar por los meses seleccionados.
-            if (selectedMonths && selectedMonths.length > 0 && !selectedMonths.includes('all')) {
-                timeFilteredMatches = timeFilteredMatches.filter(match => {
-                    const matchMonth = parseDate(match.match_date).getMonth() + 1; // 1-12
-                    return selectedMonths.includes(String(matchMonth));
-                });
-            }
-            // --- FIN DEL NUEVO BLOQUE ---
         
             const filteredMatches = timeFilteredMatches.filter(match => match.result);
         
@@ -1747,47 +1738,23 @@
         }
 
         function showPlayerModal(playerId) {
-            // 1. Leer los filtros directamente de los selectores del Fixture
-            const yearCheckboxes = document.querySelectorAll(`#fixture-year-select-dropdown input[type="checkbox"]:checked`);
-            let selectedYears = Array.from(yearCheckboxes).map(cb => cb.value);
-            
-            const monthCheckboxes = document.querySelectorAll(`#fixture-month-select-dropdown input[type="checkbox"]:checked`);
-            let selectedMonths = Array.from(monthCheckboxes).map(cb => cb.value);
-
-            // 2. Crear un objeto de filtros local para esta vista específica
-            const fixtureFilterState = {
-                selectedYears: selectedYears,
-                selectedMonths: selectedMonths
-            };
-
-            // 3. Calcular las estadísticas usando los filtros locales
-            const playerStats = calculateStats(fixtureFilterState).players.find(p => p.id === playerId);
+            const playerStats = calculateStats(globalFilterState).players.find(p => p.id === playerId);
             const playerData = allPlayersData.find(p => p.id === playerId);
-            
-            // Si el jugador no tiene estadísticas para el período, se crea un objeto con ceros para evitar errores.
-            const finalPlayerStats = playerStats || { points: 0, chamigos: 0, tt: 0, id: playerId };
-
-            if (!playerData) return;
+            if (!playerData || !playerStats) return;
 
             const { playerModal } = DOMElements;
-            playerModal.photo.src = playerData.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';
-            playerModal.photo.onerror = () => { playerModal.photo.src = 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'; };
+            playerModal.photo.src = playerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
             playerModal.name.textContent = playerData.name;
             
-            // 4. Mostrar el contexto de filtros correcto en el modal
-            const yearText = (selectedYears.includes('all') || selectedYears.length === 0) ? 'Todos los Años' : selectedYears.join(', ');
-            
-            const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-            const monthText = (selectedMonths.includes('all') || selectedMonths.length === 0) 
-                ? 'Todos los Meses' 
-                : selectedMonths.map(m => monthNames[parseInt(m)-1]).join(', ');
-            
-            playerModal.tournament.textContent = `${yearText} - ${monthText}`;
+            const periodTextMap = { 'apertura': 'Apertura', 'clausura': 'Clausura', 'total': 'Totales' };
+            const yearText = (globalFilterState.years?.includes('all') || !globalFilterState.years) ? 'Todos' : globalFilterState.years.join(', ');
+            const periodText = periodTextMap[globalFilterState.period] || 'Apertura';
+            playerModal.tournament.textContent = `${periodText} ${yearText}`;
 
-            // 5. Poblar el modal con las estadísticas filtradas
-            playerModal.points.textContent = finalPlayerStats.points;
-            playerModal.chamigo.textContent = finalPlayerStats.chamigos;
-            playerModal.tt.textContent = finalPlayerStats.tt;
+            playerModal.points.textContent = playerStats.points;
+            playerModal.chamigo.textContent = playerStats.chamigos;
+            playerModal.tt.textContent = playerStats.tt;
 
             playerModal.overlay.classList.remove('hidden');
             setTimeout(() => {
@@ -1795,6 +1762,7 @@
                 DOMElements.body.classList.add('modal-open');
             }, 10);
         }
+
         function hidePlayerModal() {
             const { playerModal } = DOMElements;
             playerModal.overlay.classList.remove('visible');
