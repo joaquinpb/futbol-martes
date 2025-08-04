@@ -2959,7 +2959,7 @@
                     <div id="screen-3-content">
                         ${createPlayerSelectorCard(2, selectedPlayer2)}
                         <div class="p-4 pt-0 grid grid-cols-2 gap-3">
-                            <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-gray-500 hover:bg-gray-600">
+                            <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700">
                                 VOLVER
                             </button>
                             <button id="go-to-screen-4-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
@@ -2968,7 +2968,8 @@
                         </div>
                     </div>
                 `;
-                setupPlayerSearch(2);
+                // The `true` argument makes the player list visible by default
+                setupPlayerSearch(2, true); 
                 updatePlayerDisplay(2, selectedPlayer2);
                 screen3Container.querySelector('#back-to-screen-1-btn').addEventListener('click', () => showScreen(1));
                 screen3Container.querySelector('#go-to-screen-4-btn').addEventListener('click', renderFullComparisonScreen);
@@ -3111,10 +3112,11 @@
                 showScreen(1);
             }
 
-            function setupPlayerSearch(playerNum) {
+            function setupPlayerSearch(playerNum, initialOpen = false) {
                 const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
                 const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
                 const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
+                const isMobile = window.innerWidth < 768;
 
                 const filterAndDisplay = () => {
                     const searchTerm = searchInput.value.toLowerCase();
@@ -3125,6 +3127,10 @@
                     resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
                     resultsDiv.classList.remove('hidden');
                 };
+
+                if (initialOpen) {
+                    filterAndDisplay();
+                }
 
                 resultsDiv.addEventListener('mousedown', (e) => {
                     const target = e.target.closest('.option-item');
@@ -3139,14 +3145,25 @@
                     }
                 });
                 
-                searchInput.addEventListener('click', () => {
-                    searchInput.readOnly = false;
-                    searchInput.select();
-                    filterAndDisplay();
+                searchInput.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    if (isMobile) {
+                        if (resultsDiv.classList.contains('hidden')) {
+                            searchInput.readOnly = true;
+                            filterAndDisplay();
+                        } else {
+                            searchInput.readOnly = false;
+                            searchInput.focus();
+                        }
+                    } else {
+                        searchInput.readOnly = false;
+                        searchInput.focus();
+                        filterAndDisplay();
+                    }
                 });
                 
                 searchInput.addEventListener('input', filterAndDisplay);
-                searchInput.addEventListener('focus', filterAndDisplay);
+                
                 searchInput.addEventListener('blur', () => setTimeout(() => {
                     if (!resultsDiv.contains(document.activeElement)) {
                         resultsDiv.classList.add('hidden');
@@ -3159,8 +3176,11 @@
                     if (playerNum === 1) selectedPlayer1 = null;
                     else selectedPlayer2 = null;
                     updatePlayerDisplay(playerNum, null);
-                    searchInput.readOnly = false;
-                    searchInput.focus();
+                    if (isMobile) {
+                        searchInput.readOnly = true;
+                    }
+                    searchInput.blur();
+                    filterAndDisplay();
                 });
             }
 
