@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1162,8 +1159,8 @@
         }
         
         function calculateStats(filters) {
-            const { selectedYears, selectedPeriod } = filters;
-
+            const { selectedYears, selectedPeriod, selectedMonths } = filters;
+        
             let timeFilteredMatches = allMatchesData;
 
             if (selectedYears && selectedYears.length > 0 && !selectedYears.includes('all')) {
@@ -1178,6 +1175,11 @@
                     const month = parseDate(match.match_date).getMonth(); // 0-11
                     const period = (month <= 5) ? 'apertura' : 'clausura';
                     return period === selectedPeriod;
+                });
+            } else if (selectedMonths && selectedMonths.length > 0 && !selectedMonths.includes('all')) {
+                timeFilteredMatches = timeFilteredMatches.filter(match => {
+                    const month = parseDate(match.match_date).getMonth() + 1; // 1-12
+                    return selectedMonths.includes(String(month));
                 });
             }
         
@@ -1551,16 +1553,31 @@
             today.setHours(0, 0, 0, 0);
             let currentOrFutureMatchFound = false;
 
+            const getPlayerName = id => (allPlayersData.find(p => p.id == id) || { name: '?' }).name;
+
             const optionsContainer = dropdownContainer.querySelector('.custom-select-options');
             optionsContainer.innerHTML = filteredMatches.map(match => {
                 const matchDateObj = parseDate(match.match_date);
                 let isCurrent = !currentOrFutureMatchFound && matchDateObj.getTime() >= today.getTime();
                 if(isCurrent) currentOrFutureMatchFound = true;
 
+                // --- LOGIC TO GET CHAMIGO NAMES ---
+                let chamigoText = '';
+                if (match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0) {
+                    const votesArray = Object.values(match.chamigo_votes);
+                    const maxVotes = Math.max(...votesArray);
+                    if (maxVotes > 0) {
+                        const chamigoIds = Object.keys(match.chamigo_votes).filter(id => match.chamigo_votes[id] === maxVotes);
+                        const chamigoNames = chamigoIds.map(getPlayerName).join(', ');
+                        chamigoText = ` - Chamigo: ${chamigoNames}`;
+                    }
+                }
+                // --- END OF LOGIC ---
+
                 return `
                     <div class="option-item ${isCurrent ? 'current-match' : ''}" data-match-id="${match.id}">
                         ${matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric'})}
-                        <span class="text-xs text-gray-400 ml-2">${match.result || 'Pendiente'}</span>
+                        <span class="text-xs text-gray-400 ml-2">${match.result || 'Pendiente'}${chamigoText}</span>
                     </div>`;
             }).join('');
 
@@ -1738,7 +1755,20 @@
         }
 
         function showPlayerModal(playerId) {
-            const playerStats = calculateStats(globalFilterState).players.find(p => p.id === playerId);
+            // Get filters specifically from the Fixture section
+            const yearCheckboxes = document.querySelectorAll(`#fixture-year-select-dropdown input[type="checkbox"]:checked`);
+            let selectedYears = Array.from(yearCheckboxes).map(cb => cb.value);
+            
+            const monthCheckboxes = document.querySelectorAll(`#fixture-month-select-dropdown input[type="checkbox"]:checked`);
+            let selectedMonths = Array.from(monthCheckboxes).map(cb => cb.value);
+            
+            // Calculate stats using these specific filters
+            const { players, error } = calculateStats({ selectedYears, selectedMonths });
+            if (error) {
+                console.error("Error calculating stats for modal:", error);
+                return;
+            }
+            const playerStats = players.find(p => p.id === playerId);
             const playerData = allPlayersData.find(p => p.id === playerId);
             if (!playerData || !playerStats) return;
 
@@ -1747,10 +1777,30 @@
             playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
             playerModal.name.textContent = playerData.name;
             
-            const periodTextMap = { 'apertura': 'Apertura', 'clausura': 'Clausura', 'total': 'Totales' };
-            const yearText = (globalFilterState.years?.includes('all') || !globalFilterState.years) ? 'Todos' : globalFilterState.years.join(', ');
-            const periodText = periodTextMap[globalFilterState.period] || 'Apertura';
-            playerModal.tournament.textContent = `${periodText} ${yearText}`;
+            // --- NEW LOGIC FOR TOURNAMENT TEXT ---
+            let tournamentText = '';
+            const allYearsSelected = selectedYears.includes('all') || selectedYears.length === 0;
+            const allMonthsSelected = selectedMonths.length === 0 || selectedMonths.includes('all');
+
+            if (allYearsSelected && allMonthsSelected) {
+                tournamentText = 'Totales';
+            } else if (selectedYears.length === 1 && !allYearsSelected && allMonthsSelected) {
+                tournamentText = `Total Año - ${selectedYears[0]}`;
+            } else if (selectedYears.length === 1 && !allYearsSelected && selectedMonths.length === 1 && !allMonthsSelected) {
+                const month = parseInt(selectedMonths[0]);
+                if (month <= 6) {
+                    tournamentText = `Apertura - ${selectedYears[0]}`;
+                } else {
+                    tournamentText = `Clausura - ${selectedYears[0]}`;
+                }
+            } else {
+                // Fallback for other combinations (e.g., multiple years, multiple specific months)
+                const yearText = allYearsSelected ? 'Varios Años' : selectedYears.join(', ');
+                const monthText = allMonthsSelected ? 'Todos los Meses' : `${selectedMonths.length} meses`;
+                tournamentText = `${monthText} - ${yearText}`;
+            }
+            playerModal.tournament.textContent = tournamentText;
+            // --- END OF NEW LOGIC ---
 
             playerModal.points.textContent = playerStats.points;
             playerModal.chamigo.textContent = playerStats.chamigos;
