@@ -2177,13 +2177,13 @@
                                 <!-- PANTALLA 2: Estadísticas Individuales -->
                                 <div id="comparator-screen-2" class="comparator-screen-wrapper hidden">
                                     <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                                    <div id="individual-stats-display" class="space-y-6 pt-8"></div>
+                                    <div id="individual-stats-display" class="space-y-6"></div>
                                 </div>
 
                                 <!-- PANTALLA 3: Seleccionar Jugador 2 -->
                                 <div id="comparator-screen-3" class="comparator-screen-wrapper hidden">
                                      <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                                    <div id="screen-3-content" class="pt-8">
+                                    <div id="screen-3-content">
                                         <!-- Contenido se insertará con JS -->
                                     </div>
                                 </div>
@@ -2191,7 +2191,7 @@
                                 <!-- PANTALLA 4: Comparación Completa -->
                                 <div id="comparator-screen-4" class="comparator-screen-wrapper hidden">
                                     <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                                    <div id="full-comparison-display" class="space-y-6 pt-8"></div>
+                                    <div id="full-comparison-display" class="space-y-6"></div>
                                 </div>
                             </div>
                         </div>
@@ -2816,36 +2816,44 @@
                     .comparator-screen-wrapper {
                         border: 1px solid var(--border-color);
                         border-radius: 0.75rem;
-                        padding: 1.5rem;
+                        padding: 0; /* Padding se maneja adentro */
                         width: 100%;
-                        max-width: 500px; /* Ancho máximo para pantallas de selección */
+                        max-width: 500px;
                         margin: 0 auto;
                         position: relative;
+                        overflow: hidden; /* Para que el header no se salga */
                     }
                     #comparator-screen-2, #comparator-screen-4 {
-                        max-width: 100%; /* Ancho completo para pantallas de resultados */
+                        max-width: 100%;
+                    }
+                    .comparator-screen-header {
+                        background-color: var(--accent-color);
+                        color: var(--button-text-color);
+                        padding: 0.75rem;
+                        font-weight: 600;
+                        text-align: center;
+                        text-transform: uppercase;
+                        font-size: 0.8rem;
+                        letter-spacing: 0.05em;
                     }
                     .comparator-search-input {
                         padding-right: 2.5rem !important;
                     }
                     html.dark .comparator-search-input {
-                        background-color: #374151 !important;
-                        color: var(--text-primary) !important;
+                        background-color: #374151 !important; color: var(--text-primary) !important;
                         border-color: #4b5563 !important;
                         -webkit-box-shadow: 0 0 0 30px #374151 inset !important;
                         -webkit-text-fill-color: var(--text-primary) !important;
                     }
-                    html.dark .comparator-search-input::placeholder {
-                        color: var(--text-muted);
-                    }
+                    html.dark .comparator-search-input::placeholder { color: var(--text-muted); }
                     .progress-bg {
                         position: relative; display: flex;
                         background-color: var(--border-color);
                         border-radius: 9999px; height: 1.75rem; overflow: hidden;
                     }
                     html.dark .progress-bg { background-color: #374151; }
-                    .progress-bg.player1 { justify-content: flex-start; } /* Corregido */
-                    .progress-bg.player2 { justify-content: flex-end; } /* Corregido */
+                    .progress-bg.player1 { justify-content: flex-end; }
+                    .progress-bg.player2 { justify-content: flex-start; }
                     .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.5s ease-in-out; }
                     .progress-fill.player1 { background-color: var(--accent-color); }
                     .progress-fill.player2 { background-color: var(--danger-color); }
@@ -2855,8 +2863,8 @@
                         padding: 0 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
                         white-space: nowrap;
                     }
-                    .stat-value-in-bar.player1 { left: 0; } /* Corregido */
-                    .stat-value-in-bar.player2 { right: 0; } /* Corregido */
+                    .stat-value-in-bar.player1 { right: 0; }
+                    .stat-value-in-bar.player2 { left: 0; }
                 `;
                 document.head.appendChild(style);
             })();
@@ -2868,7 +2876,7 @@
                 const photoUrl = playerData?.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=👤';
                 const playerName = playerData?.name || 'Seleccionar Jugador';
                 return `
-                    <div class="bg-bg-muted dark:bg-gray-800 p-3 rounded-t-lg font-bold text-lg">SELECCIONAR JUGADOR</div>
+                    <div class="comparator-screen-header">SELECCIONAR JUGADOR</div>
                     <div class="p-4 space-y-4">
                         <div class="relative">
                             <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
@@ -2888,7 +2896,7 @@
                 const screen1Container = document.getElementById('comparator-screen-1');
                 screen1Container.innerHTML = `
                     ${createPlayerSelectorCard(1, selectedPlayer1)}
-                    <div class="pt-4 space-y-3">
+                    <div class="p-4 pt-0 space-y-3">
                         <button id="go-to-screen-3-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
                             Agregar otro jugador
                         </button>
@@ -2906,7 +2914,7 @@
                 const screen3Container = document.getElementById('screen-3-content');
                  screen3Container.innerHTML = `
                     ${createPlayerSelectorCard(2, selectedPlayer2)}
-                    <div class="pt-4 grid grid-cols-2 gap-3">
+                    <div class="p-4 pt-0 grid grid-cols-2 gap-3">
                         <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700">
                             VOLVER
                         </button>
@@ -2916,15 +2924,15 @@
                     </div>
                 `;
                 setupPlayerSearch(2);
-                updatePlayerDisplay(2, selectedPlayer2); // Asegura que el estado del botón ACEPTAR sea correcto
+                updatePlayerDisplay(2, selectedPlayer2);
                 document.getElementById('back-to-screen-1-btn').addEventListener('click', () => showScreen(1));
                 document.getElementById('go-to-screen-4-btn').addEventListener('click', renderFullComparisonScreen);
             }
 
             function renderIndividualScreen() {
                 if (!selectedPlayer1) return;
-                const playerAllTimeStats = calculateIndividualPlayerStats(selectedPlayer1.id, allMatchesData);
-                const stats = playerAllTimeStats.overallTotal;
+                const { players } = calculateStats(globalFilterState);
+                const stats = players.find(p => p.id === selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
                 
                 const individualMeta = [
                     { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
@@ -3100,7 +3108,9 @@
             
             if (!document.body.dataset.comparadorListener) {
                 document.body.addEventListener('filterChanged', () => {
+                    const screen2 = document.getElementById('comparator-screen-2');
                     const screen4 = document.getElementById('comparator-screen-4');
+                    if (!screen2.classList.contains('hidden')) renderIndividualScreen();
                     if (!screen4.classList.contains('hidden')) renderFullComparisonScreen();
                 });
                 document.body.dataset.comparadorListener = 'true';
