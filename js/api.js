@@ -3,24 +3,27 @@
  * Centraliza todas las llamadas a la base de datos.
  */
 
-// Importamos el cliente de Supabase desde la CDN.
-// Es importante usar la misma versión que en los HTML originales.
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+// ¡CORRECCIÓN!
+// En lugar de importar desde una URL, que causa el error,
+// usamos el objeto global `supabase` que es creado por el script
+// que se carga en el <head> de nuestros archivos HTML.
+// Hacemos una desestructuración para obtener la función createClient.
+const { createClient } = supabase;
 
 // Las variables de configuración se cargan globalmente desde config.js
 // en el HTML antes de que se ejecute este script de tipo módulo.
-const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+const supabaseClient = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
-// Exportamos el cliente de Supabase como el valor por defecto para que
+// Exportamos el cliente ya inicializado de Supabase como el valor por defecto para que
 // otros módulos puedan importarlo y usarlo.
-export default supabase;
+export default supabaseClient;
 
 /**
  * Obtiene todos los jugadores de la base de datos.
  * @returns {Promise<Array>} Una promesa que se resuelve con un array de jugadores.
  */
 export async function getPlayers() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('players')
         .select('*')
         .order('id', { ascending: true });
@@ -37,7 +40,7 @@ export async function getPlayers() {
  * @returns {Promise<Array>} Una promesa que se resuelve con un array de partidos.
  */
 export async function getMatches() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('matches')
         .select('*')
         .order('match_date', { ascending: false });
@@ -54,7 +57,7 @@ export async function getMatches() {
  * @returns {Promise<Array>} Una promesa que se resuelve con un array de usuarios.
  */
 export async function getUsersWithRoles() {
-    const { data, error } = await supabase.rpc('get_all_users_with_roles');
+    const { data, error } = await supabaseClient.rpc('get_all_users_with_roles');
     
     if (error) {
         console.error('Error fetching users with roles:', error);
@@ -71,7 +74,7 @@ export async function getUsersWithRoles() {
  * @returns {Promise<object>} Un objeto con `publicUrl` o `error`.
  */
 export async function uploadFile(bucket, filePath, file) {
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseClient.storage
         .from(bucket)
         .upload(filePath, file, {
             cacheControl: '3600',
@@ -83,7 +86,7 @@ export async function uploadFile(bucket, filePath, file) {
         return { error: uploadError };
     }
 
-    const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    const { data } = supabaseClient.storage.from(bucket).getPublicUrl(filePath);
     
     return { publicUrl: data.publicUrl, error: null };
 }
