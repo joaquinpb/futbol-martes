@@ -1555,16 +1555,31 @@
             today.setHours(0, 0, 0, 0);
             let currentOrFutureMatchFound = false;
 
+            const getPlayerName = id => (allPlayersData.find(p => p.id == id) || { name: '?' }).name;
+
             const optionsContainer = dropdownContainer.querySelector('.custom-select-options');
             optionsContainer.innerHTML = filteredMatches.map(match => {
                 const matchDateObj = parseDate(match.match_date);
                 let isCurrent = !currentOrFutureMatchFound && matchDateObj.getTime() >= today.getTime();
                 if(isCurrent) currentOrFutureMatchFound = true;
 
+                // --- LOGIC TO GET CHAMIGO NAMES ---
+                let chamigoText = '';
+                if (match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0) {
+                    const votesArray = Object.values(match.chamigo_votes);
+                    const maxVotes = Math.max(...votesArray);
+                    if (maxVotes > 0) {
+                        const chamigoIds = Object.keys(match.chamigo_votes).filter(id => match.chamigo_votes[id] === maxVotes);
+                        const chamigoNames = chamigoIds.map(getPlayerName).join(', ');
+                        chamigoText = ` - Chamigo: ${chamigoNames}`;
+                    }
+                }
+                // --- END OF LOGIC ---
+
                 return `
                     <div class="option-item ${isCurrent ? 'current-match' : ''}" data-match-id="${match.id}">
                         ${matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric'})}
-                        <span class="text-xs text-gray-400 ml-2">${match.result || 'Pendiente'}</span>
+                        <span class="text-xs text-gray-400 ml-2">${match.result || 'Pendiente'}${chamigoText}</span>
                     </div>`;
             }).join('');
 
