@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners();
 
         try {
+            DOMElements.mainContentArea.innerHTML = `<div class="p-6 text-center"><i class="fas fa-spinner fa-spin text-3xl text-accent-color"></i><p class="mt-2 text-text-secondary">Cargando datos...</p></div>`;
             [allPlayersData, allMatchesData] = await Promise.all([getPlayers(), getMatches()]);
 
             const hash = window.location.hash;
@@ -160,8 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!config) return;
 
         const titleHTML = `<i class="fas ${config.icon} text-xl mr-3"></i><span>${config.title}</span>`;
-        DOMElements.desktopHeaderTitle.innerHTML = titleHTML;
-        DOMElements.mobileHeaderTitle.innerHTML = titleHTML;
+        if (DOMElements.desktopHeaderTitle) DOMElements.desktopHeaderTitle.innerHTML = titleHTML;
+        if (DOMElements.mobileHeaderTitle) DOMElements.mobileHeaderTitle.innerHTML = titleHTML;
 
         DOMElements.sideMenu.querySelectorAll('.tab-button').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabId);
@@ -237,12 +238,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
         if (selectedPeriod && selectedPeriod !== 'total') {
             timeFilteredMatches = timeFilteredMatches.filter(match => {
-                const month = new Date(match.match_date).getUTCMonth(); // 0-11
+                const month = new Date(match.match_date).getUTCMonth();
                 return selectedPeriod === 'apertura' ? month <= 5 : month > 5;
             });
         } else if (selectedMonths && selectedMonths.length > 0 && !selectedMonths.includes('all')) {
              timeFilteredMatches = timeFilteredMatches.filter(match => {
-                const month = new Date(match.match_date).getUTCMonth() + 1; // 1-12
+                const month = new Date(match.match_date).getUTCMonth() + 1;
                 return selectedMonths.includes(String(month));
             });
         }
@@ -303,8 +304,9 @@ document.addEventListener('DOMContentLoaded', () => {
             player.efectividad = maxPossiblePoints > 0 ? ((player.points / maxPossiblePoints) * 100).toFixed(2) : "0.00";
             player.ausentes = Math.max(0, teamStats.totalPJMatches - player.pj);
         });
-
-        return { players: Object.values(playerStats), teamStats };
+        
+        currentStatsData = { players: Object.values(playerStats), teamStats };
+        return currentStatsData;
     }
 
     // --- PAGE CONTROLLERS ---
@@ -321,11 +323,11 @@ document.addEventListener('DOMContentLoaded', () => {
             (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.ausentes}</td></tr>`),
         'equipos-content': () => {
             setupFilterEventListeners('equipos', () => {
+                const { teamStats } = calculateAllStats(getCurrentFilters('equipos'));
                 const statsDisplay = document.getElementById('equipos-stats-display');
                 const loadingMessage = document.getElementById('equipos-loading-message');
                 if (!statsDisplay || !loadingMessage) return;
 
-                const { teamStats } = currentStatsData;
                 const statCard = (value, label, bgColor, textColor = 'var(--button-text-color)') => `<div class="p-4 rounded-lg shadow-md flex flex-col items-center justify-center" style="background-color: ${bgColor}; color: ${textColor};"><span class="text-3xl font-bold">${value}</span><span class="text-sm uppercase mt-1">${label}</span></div>`;
                 
                 statsDisplay.innerHTML = 
@@ -348,17 +350,14 @@ document.addEventListener('DOMContentLoaded', () => {
              setupFilterEventListeners('estadisticas', renderEstadisticasTable);
              document.getElementById('estadisticas-hoy-button').click();
         },
-        'individual-stats-content': () => {
-            // Lógica para el histórico
-        },
-        'comparador-content': () => {
-            // Lógica para el comparador
-        }
+        'individual-stats-content': () => {},
+        'comparador-content': () => {}
     };
     
     function setupFilteredView(prefix, sortFn, headers, rowTemplateFn, filterFn = () => true) {
         setupFilterEventListeners(prefix, () => {
-            const rankedPlayers = [...currentStatsData.players].filter(filterFn).sort(sortFn);
+            const { players } = calculateAllStats(getCurrentFilters(prefix));
+            const rankedPlayers = [...players].filter(filterFn).sort(sortFn);
             renderGenericTable(prefix, rankedPlayers, headers, rowTemplateFn);
         });
         document.getElementById(`${prefix}-hoy-button`).click();
@@ -371,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadingMsg = container.querySelector('.loading-message');
         
         if (!data || data.length === 0) {
-            table.innerHTML = '';
+            if (table) table.innerHTML = '';
             loadingMsg.textContent = 'No hay datos para los filtros seleccionados.';
             loadingMsg.classList.remove('hidden');
             return;
@@ -386,10 +385,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- FILTERS ---
+    function getCurrentFilters(prefix) {
+        const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]:checked`);
+        let selectedYears = Array.from(yearCheckboxes).map(cb => cb.value);
+
+        let selectedPeriod = null;
+        const periodEl = document.getElementById(`${prefix}-period-select`);
+        if (periodEl) selectedPeriod = periodEl.value;
+
+        let selectedMonths = null;
+        const monthCheckboxes = document.querySelectorAll(`#${prefix}-month-select-dropdown input[type="checkbox"]:checked`);
+        if (monthCheckboxes.length > 0) selectedMonths = Array.from(monthCheckboxes).map(cb => cb.value);
+        
+        return { selectedYears, selectedPeriod, selectedMonths };
+    }
+    
     function setupFilterEventListeners(prefix, onFilterChangeCallback) {
         // Lógica para poblar los dropdowns de filtros y añadirles listeners
         // que al cambiar, llamen a `onFilterChangeCallback`
+        const yearDropdown = document.getElementById(`${prefix}-year-select-dropdown`);
+        const periodDropdown = document.getElementById(`${prefix}-period-select-dropdown`);
+        const monthDropdown = document.getElementById(`${prefix}-month-select-dropdown`);
+
+        const years = [...new Set(allMatchesData.map(m => new Date(m.match_date).getUTCFullYear()))].sort((a,b)=>b-a);
+        if (yearDropdown) {
+             let yearOptions = `<label><input type="checkbox" value="all"> Todos</label>`;
+             yearOptions += years.map(y => `<label><input type="checkbox" value="${y}"> ${y}</label>`).join('');
+             yearDropdown.innerHTML = yearOptions;
+        }
+
+        if (periodDropdown) {
+            periodDropdown.addEventListener('click', e => {
+                if (e.target.classList.contains('option-item')) {
+                    document.getElementById(`${prefix}-period-select`).value = e.target.dataset.value;
+                    onFilterChangeCallback();
+                }
+            });
+        }
+        
+        if(yearDropdown) {
+            yearDropdown.addEventListener('change', onFilterChangeCallback);
+        }
+
+        if (monthDropdown) {
+            monthDropdown.addEventListener('change', onFilterChangeCallback);
+        }
+
+        const hoyButton = document.getElementById(`${prefix}-hoy-button`);
+        if(hoyButton) {
+            hoyButton.addEventListener('click', () => {
+                // Lógica para setear filtros a "hoy" y luego llamar al callback
+                onFilterChangeCallback();
+            });
+        }
     }
+    
+    function renderFixtureList() { /* ... */ }
+    function renderEstadisticasTable() { /* ... */ }
 
     // --- HTML TEMPLATES ---
     function getTabContentHTML(tabId) {
@@ -400,8 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const yearFilterHTML = `
                 <div class="custom-select-container">
                     <button id="${prefix}-year-select-button" class="custom-select-button">
-                        <span class="truncate">Seleccionar Años</span>
-                        <i class="fas fa-chevron-down transition-transform"></i>
+                        <span class="truncate">Seleccionar Años</span><i class="fas fa-chevron-down transition-transform"></i>
                     </button>
                     <div id="${prefix}-year-select-dropdown" class="custom-select-options hidden"></div>
                 </div>`;
@@ -409,15 +460,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const periodOrMonthFilterHTML = prefix === 'fixture' ? `
                 <div class="custom-select-container">
                     <button id="fixture-month-select-button" class="custom-select-button">
-                        <span class="truncate">Seleccionar Meses</span>
-                        <i class="fas fa-chevron-down transition-transform"></i>
+                        <span class="truncate">Seleccionar Meses</span><i class="fas fa-chevron-down transition-transform"></i>
                     </button>
                     <div id="fixture-month-select-dropdown" class="custom-select-options hidden"></div>
                 </div>` : `
                 <div class="custom-select-container">
+                    <input type="hidden" id="${prefix}-period-select" value="apertura">
                     <button id="${prefix}-period-select-button" class="custom-select-button">
-                        <span class="truncate">Apertura</span>
-                        <i class="fas fa-chevron-down transition-transform"></i>
+                        <span class="truncate">Apertura</span><i class="fas fa-chevron-down transition-transform"></i>
                     </button>
                     <div id="${prefix}-period-select-dropdown" class="custom-select-options hidden">
                         <div class="option-item selected" data-value="apertura">Apertura</div>
@@ -439,18 +489,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let contentHTML = '';
         switch(tabId) {
-            case 'leaderboard-content':
-            case 'chamigo-content':
-            case 'tt-content':
-            case 'presentismo-content':
-            case 'ausentismo-content':
-                 contentHTML = `<div class="table-container"><p class="loading-message p-4">Cargando...</p><table id="${prefix}-table" class="w-full"></table></div>`;
+            case 'leaderboard-content': case 'chamigo-content': case 'tt-content': case 'presentismo-content': case 'ausentismo-content':
+                 contentHTML = `<div id="${prefix}-content" class="table-container"><p class="loading-message p-4">Cargando...</p><table class="w-full"></table></div>`;
                  break;
             case 'equipos-content':
                  contentHTML = `<p id="equipos-loading-message" class="loading-message p-4">Cargando...</p><div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden"></div>`;
                  break;
             case 'fixture-content':
-                 contentHTML = `<p id="fixture-loading-message" class="loading-message p-4">Cargando...</p>
+                 contentHTML = `<div id="fixture-content"><p id="fixture-loading-message" class="loading-message p-4">Cargando...</p>
                     <div id="fixture-dropdown-container" class="custom-select-container relative hidden">
                         <button class="custom-select-button"><span>Seleccionar Partido</span><i class="fas fa-chevron-down"></i></button>
                         <div class="custom-select-options hidden max-h-72 overflow-y-auto"></div>
@@ -461,14 +507,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h3 class="text-center font-semibold p-2 bg-accent-color text-white rounded-t-lg">Asistentes al TT</h3>
                             <div class="table-container"><table id="tt-attendees-table" class="w-full"><tbody></tbody></table></div>
                         </div>
-                    </div>`;
+                    </div></div>`;
                  break;
             case 'estadisticas-content':
-                 contentHTML = `<div class="table-container overflow-x-auto">
+                 contentHTML = `<div id="${prefix}-content" class="table-container overflow-x-auto">
                     <p id="estadisticas-loading-message" class="loading-message p-4">Cargando...</p>
                     <table id="estadisticas-table" class="w-full min-w-[800px]"></table>
                  </div>`;
                  break;
+            default:
+                contentHTML = `<div class="p-8">Contenido para ${prefix} no implementado.</div>`;
         }
         return `<div id="${tabId}" class="main-content-container space-y-4">${filterHTML}${contentHTML}</div>`;
     }
