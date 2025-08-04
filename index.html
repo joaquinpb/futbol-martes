@@ -2846,25 +2846,57 @@
                         -webkit-text-fill-color: var(--text-primary) !important;
                     }
                     html.dark .comparator-search-input::placeholder { color: var(--text-muted); }
+                    
+                    /* --- ESTILOS CORREGIDOS PARA LA BARRA DE PROGRESO --- */
                     .progress-bg {
-                        position: relative; display: flex;
+                        display: flex;
                         background-color: var(--border-color);
-                        border-radius: 9999px; height: 1.75rem; overflow: hidden;
+                        border-radius: 9999px; 
+                        height: 1.75rem; 
+                        overflow: hidden;
                     }
                     html.dark .progress-bg { background-color: #374151; }
-                    .progress-bg.player1 { justify-content: flex-end; }
-                    .progress-bg.player2 { justify-content: flex-start; }
-                    .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.5s ease-in-out; }
-                    .progress-fill.player1 { background-color: var(--accent-color); }
-                    .progress-fill.player2 { background-color: var(--danger-color); }
+                    
+                    .progress-bg.player1 { 
+                        justify-content: flex-end; /* Alinea la barra de color a la derecha */
+                    }
+                    .progress-bg.player2 { 
+                        justify-content: flex-start; /* Alinea la barra de color a la izquierda */
+                    }
+                    
+                    .progress-fill { 
+                        height: 100%; 
+                        border-radius: 9999px; 
+                        transition: width 0.5s ease-in-out;
+                        display: flex;
+                        align-items: center; /* Centra el texto verticalmente */
+                        overflow: hidden;
+                    }
+                    .progress-fill.player1 { 
+                        background-color: var(--accent-color); 
+                        justify-content: flex-end; /* Alinea el texto a la derecha (dentro de la barra) */
+                    }
+                    .progress-fill.player2 { 
+                        background-color: var(--danger-color); 
+                        justify-content: flex-start; /* Alinea el texto a la izquierda (dentro de la barra) */
+                    }
+                    
                     .stat-value-in-bar {
-                        position: absolute; top: 50%; transform: translateY(-50%);
-                        color: white; font-weight: 600; font-size: 0.875rem;
-                        padding: 0 0.75rem; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+                        color: white;
+                        font-weight: 600;
+                        font-size: 0.875rem;
+                        padding: 0 0.75rem;
+                        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
                         white-space: nowrap;
                     }
-                    .stat-value-in-bar.player1 { right: 0; }
-                    .stat-value-in-bar.player2 { left: 0; }
+                    /* --- FIN DE ESTILOS CORREGIDOS --- */
+
+                    .stat-label {
+                        text-align: center;
+                        font-weight: 600;
+                        color: var(--text-secondary);
+                        white-space: nowrap;
+                    }
                 `;
                 document.head.appendChild(style);
             })();
@@ -3172,16 +3204,20 @@
                     }
                 }
         
+                // CORRECCIÓN: Se movió el <span> con el valor DENTRO del <div> .progress-fill
+                // y se cambió la clase a .stat-value-in-bar para que coincida con los nuevos estilos.
                 return `
                     <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
                         <div class="progress-bg player1 ${winnerClass1}">
-                            <div class="progress-fill player1" style="width: ${width1}%"></div>
-                            <span class="stat-value player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+                            <div class="progress-fill player1" style="width: ${width1}%">
+                                <span class="stat-value-in-bar player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+                            </div>
                         </div>
                         <div class="stat-label">${stat.label}</div>
                         <div class="progress-bg player2 ${winnerClass2}">
-                            <div class="progress-fill player2" style="width: ${width2}%"></div>
-                            <span class="stat-value player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+                            <div class="progress-fill player2" style="width: ${width2}%">
+                                <span class="stat-value-in-bar player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+                            </div>
                         </div>
                     </div>
                 `;
