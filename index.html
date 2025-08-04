@@ -2818,12 +2818,13 @@
                         border-radius: 0.75rem;
                         padding: 0;
                         width: 100%;
-                        max-width: 500px;
+                        max-width: 500px; /* Default max-width for screens 1, 2, 3 */
                         margin: 0 auto;
                         position: relative;
                         overflow: hidden;
                     }
-                    #comparator-screen-2, #comparator-screen-4 {
+                    /* Screen 4 can be wider, but screen 2 will now respect the default max-width */
+                    #comparator-screen-4 {
                         max-width: 100%;
                     }
                     .comparator-screen-header {
@@ -2840,20 +2841,27 @@
                         align-items: center;
                         justify-content: center;
                     }
+                    /* Mobile-first: Red button by default */
                     .comparator-screen-header .modal-close-button {
                         position: absolute;
                         top: 50%;
                         right: 0.75rem; /* 12px */
                         transform: translateY(-50%);
-                        background-color: rgba(255,255,255,0.2);
-                        border: 1px solid rgba(255,255,255,0.3);
+                        background-color: var(--danger-color); /* Red by default for mobile */
+                        border: 1px solid transparent;
                         color: white;
                     }
-                    .comparator-screen-header .modal-close-button:hover {
-                        background-color: var(--danger-color);
-                        color: var(--button-text-color);
-                        transform: translateY(-50%) scale(1.1) rotate(90deg);
-                        border-color: transparent;
+                    /* Desktop: Subtle button with hover effect */
+                    @media (min-width: 768px) {
+                        .comparator-screen-header .modal-close-button {
+                            background-color: rgba(255,255,255,0.2);
+                            border: 1px solid rgba(255,255,255,0.3);
+                        }
+                        .comparator-screen-header .modal-close-button:hover {
+                            background-color: var(--danger-color);
+                            transform: translateY(-50%) scale(1.1) rotate(90deg);
+                            border-color: transparent;
+                        }
                     }
                     .comparator-search-input {
                         padding-right: 2.5rem !important;
@@ -3034,9 +3042,9 @@
                 let comparisonHTML = `
                     <div class="p-4">
                         <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                            ${createPlayerCard(selectedPlayer1, 1).replace('<div class="comparator-screen-header">SELECCIONAR JUGADOR</div>','')}
+                            ${createPlayerCard(selectedPlayer1, 1).replace('<div class="p-4 space-y-4 text-center">','<div class="space-y-4 text-center">')}
                             <div class="vs-separator">VS</div>
-                            ${createPlayerCard(selectedPlayer2, 2).replace('<div class="comparator-screen-header">SELECCIONAR JUGADOR</div>','')}
+                            ${createPlayerCard(selectedPlayer2, 2).replace('<div class="p-4 space-y-4 text-center">','<div class="space-y-4 text-center">')}
                         </div>
                     </div>`;
 
@@ -3165,7 +3173,7 @@
 
                 searchInput.value = player?.name || '';
                 idInput.value = player?.id || '';
-                avatar.src = player?.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=�';
+                avatar.src = player?.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=👤';
                 name.textContent = player?.name || 'Seleccionar Jugador';
                 clearButton.classList.toggle('hidden', !player);
 
