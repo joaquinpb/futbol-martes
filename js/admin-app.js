@@ -182,9 +182,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 await Auth.signOutUser(); 
             },
-            onChangeName: (e) => { e.preventDefault(); /* Lógica para abrir modal de nombre */ },
-            onChangePassword: (e) => { e.preventDefault(); /* Lógica para abrir modal de contraseña */ },
-            onAvatarClick: (e) => { e.preventDefault(); /* Lógica para abrir modal de avatar */ }
+            onChangeName: (e) => { 
+                e.preventDefault(); 
+                // Aquí podrías agregar lógica para mostrar un modal de cambio de nombre
+                console.log("Cambiar nombre clickeado");
+            },
+            onChangePassword: (e) => { 
+                e.preventDefault();
+                // Lógica para el modal de cambio de contraseña
+                console.log("Cambiar contraseña clickeado");
+            },
+            onAvatarClick: (e) => { 
+                e.preventDefault(); 
+                // Lógica para el modal de avatar
+                console.log("Avatar clickeado");
+            }
         });
     }
 
@@ -227,10 +239,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         DOMElements.mainNav.innerHTML = navHtml;
-        // Simplificado para el menú móvil, se puede expandir si es necesario
         DOMElements.mobileMenu.innerHTML = `<div class="p-4 border-b flex justify-between items-center"><span class="font-bold">Menú</span><button id="close-mobile-menu"><i class="fas fa-times"></i></button></div><div class="p-2">${navHtml}</div>`;
 
-        // Añadir listeners a los nuevos elementos
         document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
             trigger.addEventListener('click', () => {
                 const content = trigger.nextElementSibling;
@@ -265,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pageConfig = [...NAV_ITEMS.dashboard, ...NAV_ITEMS.main, ...NAV_ITEMS.admin].find(i => i.id === tabId);
         if (pageConfig) {
             const desktopTitle = document.getElementById('desktop-header-title');
-            if (desktopTitle) desktopTitle.textContent = pageConfig.name;
+            if (desktopTitle) desktopTitle.innerHTML = `<i class="fas ${pageConfig.icon} text-2xl mr-3"></i><span>${pageConfig.name}</span>`;
         }
 
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -290,8 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="p-3 bg-secondary border-t"><p id="dashboard-match-date" class="text-text-secondary text-sm"></p></div>
                     </div>
                     <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <!-- Cards se insertan aquí -->
-                    </div>
+                        </div>
                 </div>`;
             renderDashboardContent();
         },
@@ -360,7 +369,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>`;
             
-            // Adjuntar listeners específicos de esta página
             document.getElementById('player-form').addEventListener('submit', handleSavePlayer);
             document.getElementById('delete-player-button').addEventListener('click', handleDeletePlayer);
             document.getElementById('clear-player-form-button').addEventListener('click', clearPlayerForm);
@@ -379,15 +387,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Renderizado inicial
             renderPlayersListAdmin();
         },
-        // ... más controladores para las otras secciones
     };
     
-    // --- RENDER FUNCTIONS (Llamadas por los controladores) ---
+    // --- RENDER FUNCTIONS ---
     function renderDashboardContent() {
-        // Lógica para poblar el grid del dashboard
+        const grid = document.getElementById('dashboard-grid');
+        const matchDateEl = document.getElementById('dashboard-match-date');
+        if (!grid || !matchDateEl) return;
+
+        const latestMatch = AppState.matches[0];
+        if (!latestMatch) {
+            grid.innerHTML = '<p>No hay partidos cargados.</p>';
+            return;
+        }
+
+        const matchDate = new Date(latestMatch.match_date + 'T00:00:00');
+        matchDateEl.textContent = `Próximo partido: ${matchDate.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
     }
 
     function renderPlayersListAdmin(searchTerm = '') {
@@ -439,12 +456,99 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#players-list-admin .selected').forEach(r => r.classList.remove('selected'));
     }
 
-    // --- EVENT HANDLERS ---
-    async function handleSavePlayer(e) { e.preventDefault(); /* ... */ }
-    async function handleDeletePlayer() { /* ... */ }
+    // --- EVENT HANDLERS (CRUD) ---
+    async function handleSavePlayer(e) {
+        e.preventDefault();
+        const id = document.getElementById('player-id').value;
+        const name = document.getElementById('player-name').value;
+        const status = document.getElementById('player-status').value;
+        const role = document.getElementById('player-role').value;
+        const photoFile = document.getElementById('player-photo-input').files[0];
+
+        const playerData = { name, status, role };
+
+        try {
+            let error, data;
+            if (id) {
+                ({ error, data } = await supabase.from('players').update(playerData).eq('id', id).select().single());
+            } else {
+                ({ error, data } = await supabase.from('players').insert(playerData).select().single());
+            }
+            if (error) throw error;
+
+            if (photoFile) {
+                const newPlayerId = data.id;
+                const filePath = `${newPlayerId}/${photoFile.name}`;
+                const { publicUrl, error: uploadError } = await uploadFile('player-photos', filePath, photoFile);
+                if (uploadError) throw uploadError;
+                
+                const { error: updateError } = await supabase.from('players').update({ photo_url: publicUrl }).eq('id', newPlayerId);
+                if (updateError) throw updateError;
+            }
+
+            UI.showNotification('Jugador guardado con éxito', 'success');
+            clearPlayerForm();
+            // Recargar datos y renderizar
+            AppState.players = await getPlayers();
+            renderPlayersListAdmin();
+
+        } catch (error) {
+            UI.showNotification(`Error al guardar jugador: ${error.message}`, 'error');
+        }
+    }
+
+    async function handleDeletePlayer() {
+        const id = document.getElementById('player-id').value;
+        if (!id) {
+            UI.showNotification('Selecciona un jugador para eliminar.', 'warning');
+            return;
+        }
+
+        const confirmed = await UI.showConfirmModal({
+            title: 'Confirmar Eliminación',
+            message: `¿Estás seguro de que quieres eliminar a este jugador? Esta acción no se puede deshacer.`
+        });
+
+        if (confirmed) {
+            const { error } = await supabase.from('players').delete().eq('id', id);
+            if (error) {
+                UI.showNotification(`Error al eliminar: ${error.message}`, 'error');
+            } else {
+                UI.showNotification('Jugador eliminado.', 'success');
+                clearPlayerForm();
+                // Recargar datos y renderizar
+                AppState.players = await getPlayers();
+                renderPlayersListAdmin();
+            }
+        }
+    }
 
     // --- REALTIME ---
-    function setupRealtimeSubscriptions() { /* ... */ }
+    function setupRealtimeSubscriptions() {
+        if (AppState.realtimeChannel) {
+            supabase.removeChannel(AppState.realtimeChannel);
+        }
+        const channel = supabase.channel('public:admin_changes');
+        channel
+            .on('postgres_changes', { event: '*', schema: 'public' }, async (payload) => {
+                console.log('Change received!', payload);
+                // Recargar todos los datos para mantener la consistencia
+                const [players, matches, users] = await Promise.all([
+                    getPlayers(), 
+                    getMatches(), 
+                    AppState.userRole === 'Admin' ? getUsersWithRoles() : Promise.resolve(AppState.users)
+                ]);
+                AppState.players = players;
+                AppState.matches = matches;
+                AppState.users = users;
+
+                // Re-renderizar la vista actual
+                const currentTab = window.location.hash.substring(1) || 'dashboard';
+                renderPage(currentTab);
+            })
+            .subscribe();
+        AppState.realtimeChannel = channel;
+    }
 
     // --- GLOBAL EVENT LISTENERS ---
     function setupGlobalEventListeners() {
