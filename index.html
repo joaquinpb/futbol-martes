@@ -1,4 +1,2934 @@
-function updateComparison() {
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas - LA CLANDE</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
+
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #ffffff;
+            --bg-muted: #f9fafb;
+            --bg-even-row: #f3f4f6; /* Color para filas pares */
+            --filter-label-bg: #e5e7eb; /* Gris más oscuro para tema claro */
+            --sidebar-bg: #111827;
+            --sidebar-text: #e5e7eb;
+            --sidebar-active-bg: #4f46e5;
+            --sidebar-active-text: #ffffff;
+            --sidebar-hover-bg: #374151;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --accent-color: #4f46e5;
+            --accent-color-hover: #4338ca;
+            --accent-color-muted: #7e22ce; /* Color para header móvil */
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --success-color: #10b981;
+            --button-text-color: #ffffff;
+            --text-yellow-400: #facc15;
+            --player-claros-bg: #ffffff;
+            --player-claros-text: #1a202c;
+            --player-oscuros-bg: #1a202c;
+            --player-oscuros-text: #ffffff;
+        }
+
+        html.dark {
+            --bg-primary: #1f2937;
+            --bg-secondary: #1f2937;
+            --bg-muted: #111827;
+            --bg-even-row: #111827; /* Mantenemos el mismo para tema oscuro */
+            --filter-label-bg: #111827; /* Fondo para tema oscuro */
+            --sidebar-bg: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --border-color: #374151;
+            --accent-color: #6366f1;
+            --accent-color-hover: #818cf8;
+            --accent-color-muted: #9333ea; /* Color para header móvil en dark mode */
+        }
+
+        html {
+            background-color: var(--bg-primary);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+            display: flex; /* Siempre flex */
+            flex-direction: column; /* Dirección por defecto para móvil */
+        }
+
+        /* INICIO: Estilo para bloquear scroll cuando un modal está abierto */
+        body.modal-open {
+            overflow: hidden;
+        }
+        /* FIN: Estilo para bloquear scroll */
+        
+        @media (min-width: 768px) {
+            body {
+                flex-direction: row;
+                overflow: hidden;
+            }
+        }
+        
+        .main-content-container {
+            background-color: var(--bg-secondary);
+            padding: 1rem; /* Padding reducido */
+        }
+
+        /* === INICIO: Estilos unificados para menús desplegables === */
+        .custom-select-container {
+            position: relative;
+        }
+        .custom-select-button {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            transition: background-color 0.2s, border-color 0.2s;
+            width: 100%;
+            padding: 0.75rem; /* Padding aumentado para consistencia */
+            border-radius: 0.375rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+            height: 100%; /* Para que ocupe toda la altura en la grilla */
+        }
+        .custom-select-button:hover {
+            border-color: var(--accent-color);
+        }
+        html.dark .custom-select-button {
+            background-color: var(--bg-muted);
+        }
+        .custom-select-options {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            transition: opacity 0.2s, transform 0.2s;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            margin-top: 0.25rem;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
+            z-index: 30; /* Aumentado para que se superponga a todo */
+        }
+        html.dark .custom-select-options {
+             background-color: #1f2937;
+             border-color: #374151;
+        }
+        .custom-select-options .option-item {
+            transition: background-color 0.2s;
+            padding: 0.75rem;
+            cursor: pointer;
+        }
+        .custom-select-options .option-item:hover {
+            background-color: var(--bg-muted);
+        }
+        html.dark .custom-select-options .option-item:hover {
+            background-color: #374151;
+        }
+        .custom-select-options .option-item.selected {
+            background-color: var(--accent-color);
+            color: var(--sidebar-active-text);
+        }
+        .custom-select-options .option-item.current-match {
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+        html.dark .custom-select-options .option-item.current-match {
+            color: var(--accent-color-hover);
+        }
+        .multi-year-select-dropdown label,
+        .multi-month-select-dropdown label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .multi-year-select-dropdown label:hover,
+        .multi-month-select-dropdown label:hover {
+            background-color: var(--bg-muted);
+        }
+        html.dark .multi-year-select-dropdown label:hover,
+        html.dark .multi-month-select-dropdown label:hover {
+            background-color: #374151;
+        }
+        .multi-year-select-dropdown input[type="checkbox"],
+        .multi-month-select-dropdown input[type="checkbox"] {
+            margin-right: 0.5rem;
+            accent-color: var(--accent-color);
+        }
+        /* === FIN: Estilos unificados para menús desplegables === */
+        
+        #side-menu {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: transform 0.3s ease-in-out;
+            z-index: 40;
+            border-right: 1px solid var(--border-color);
+        }
+        html.dark #side-menu {
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+        }
+        
+        #side-menu .tab-button.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); font-weight: 600; }
+        
+        html:not(.dark) #side-menu .tab-button:hover:not(.active) { background-color: #eef2ff; }
+        html.dark #side-menu .tab-button:hover:not(.active) { background-color: var(--sidebar-hover-bg); }
+
+        #overlay { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); z-index: 30; }
+        
+        header.md\:hidden {
+            background-color: var(--accent-color-muted);
+            color: var(--button-text-color);
+            border-bottom: 1px solid transparent;
+        }
+
+        html.dark header.md\:hidden {
+            background-color: var(--accent-color-muted);
+        }
+        
+        header.md\:hidden #hamburger-button,
+        header.md\:hidden #mobile-header-title,
+        header.md\:hidden #dark-mode-toggle-mobile {
+            color: var(--button-text-color);
+        }
+        
+        @media (min-width: 768px) {
+            #side-menu { position: relative; transform: translateX(0); flex-shrink: 0; height: 100vh; }
+            #hamburger-button, #overlay { display: none !important; }
+        }
+        
+        /* Esta regla ahora está afuera del @media para que aplique siempre */
+        .flex-1.flex.flex-col {
+            flex: 1; /* Usar flex: 1 en lugar de height: 100vh */
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Clave para que el scroll funcione en contenedores flex */
+        }
+        
+        @media (min-width: 768px) {
+            .flex-1.flex.flex-col {
+                height: 100vh; 
+            }
+        }
+
+        /* === INICIO: Estilos de Tabla Modernos === */
+        .table-container {
+            border-radius: 0.75rem; /* Puntas menos redondeadas */
+            box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            max-height: 70vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate; /* Cambiado para que el borde del contenedor funcione */
+            border-spacing: 0;
+        }
+
+        thead th {
+            background-color: var(--accent-color); /* CAMBIO: Color sólido */
+            color: var(--button-text-color);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: none;
+            padding: 1rem 0.75rem;
+            text-align: center;
+        }
+        
+        /* Asegura que el color se aplique también a los headers pegajosos */
+        thead th.sticky-col {
+            background-color: var(--accent-color); /* CAMBIO: Color sólido */
+        }
+
+        thead th[data-sort]:hover { 
+            background-color: var(--accent-color-hover); /* CAMBIO: Color sólido hover */
+        }
+        thead th[data-sort] { 
+            cursor: pointer; 
+            transition: background-color 0.2s; 
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none; /* No border for the last row */
+        }
+
+        tbody td {
+            padding: 0.85rem 0.75rem;
+            color: var(--text-primary);
+            transition: background-color 150ms ease-in-out;
+            background-color: var(--bg-secondary);
+            text-align: center; /* CAMBIO: Contenido centrado */
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tbody tr:nth-child(even) td {
+            background-color: var(--bg-even-row); /* CAMBIO: Fila par más oscura */
+        }
+        
+        html.dark tbody tr:nth-child(odd) td { background-color: #1f2937; }
+        html.dark tbody tr:nth-child(even) td { background-color: #111827; }
+
+        tbody tr:hover td,
+        tbody tr:hover td.sticky-col {
+            background-color: #eef2ff;
+        }
+
+        html.dark tbody tr:hover td,
+        html.dark tbody tr:hover td.sticky-col {
+            background-color: var(--sidebar-hover-bg);
+        }
+
+        /* Manejo de columnas pegajosas */
+        .sticky-col {
+            position: sticky;
+            z-index: 5;
+            background-color: var(--bg-secondary);
+        }
+
+        tbody tr:nth-child(even) .sticky-col {
+            background-color: var(--bg-even-row); /* CAMBIO: Fila par más oscura */
+        }
+        html.dark .sticky-col {
+            background-color: #111827;
+        }
+        html.dark tbody tr:nth-child(odd) .sticky-col {
+            background-color: #1f2937;
+        }
+
+        thead th.sticky-col {
+            z-index: 15;
+        }
+
+        #estadisticas-table, #individual-stats-table { min-width: 800px; }
+
+        #estadisticas-table .sticky-col-1 { left: 0; }
+        #estadisticas-table .sticky-col-2 { left: 56px; } /* Ajustado */
+        #estadisticas-table .sticky-col-3 { left: 112px; } /* Ajustado */
+        #individual-stats-table .sticky-col-1 { left: 0; }
+        #individual-stats-table .sticky-col-2 { left: 90px; }
+
+        /* Fila TOTAL en tabla de histórico */
+        #individual-stats-table tr.font-bold td,
+        #individual-stats-table tr.font-bold td.sticky-col {
+            background: var(--accent-color) !important; /* CAMBIO: Color sólido */
+            color: var(--button-text-color);
+            font-weight: 700;
+        }
+        #individual-stats-table tr.font-bold:hover td,
+        #individual-stats-table tr.font-bold:hover td.sticky-col {
+            background: var(--accent-color-hover) !important; /* CAMBIO: Color sólido hover */
+        }
+        /* === FIN: Estilos de Tabla Modernos === */
+        
+        .button-primary { background-color: var(--accent-color); color: var(--button-text-color); }
+        .button-primary:hover { background-color: var(--accent-color-hover); }
+
+        #soccer-field-container {
+            position: relative;
+            width: 100%;
+            padding-top: 168.75%;
+            background-color: #0f8d48;
+            border: 2px solid white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        #soccer-field-container::before {
+            content: ''; position: absolute; top: 50%; left: 0; right: 0;
+            height: 2px; background-color: rgba(255,255,255,0.7); transform: translateY(-50%); z-index: 1;
+        }
+        #soccer-field-container::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 20%; padding-top: 20%; border: 2px solid rgba(255,255,255,0.7);
+            border-radius: 50%; transform: translate(-50%, -50%); z-index: 1;
+        }
+        .goal-area, .penalty-area { position: absolute; box-sizing: border-box; border-style: solid; border-color: rgba(255,255,255,0.7); z-index: 1; }
+        .goal-area.top { top: 0; left: 35%; width: 30%; height: 8%; border-width: 0 2px 2px 2px; }
+        .goal-area.bottom { bottom: 0; left: 35%; width: 30%; height: 8%; border-width: 2px 2px 0 2px; }
+        .penalty-area.top { top: 0; left: 20%; width: 60%; height: 18%; border-width: 0 2px 2px 2px; }
+        .penalty-area.bottom { bottom: 0; left: 20%; width: 60%; height: 18%; border-width: 2px 2px 0 2px; }
+        
+        @media (min-width: 768px) {
+            #soccer-field-container.horizontal-layout { padding-top: 60%; }
+            #soccer-field-container.horizontal-layout::before { top: 0; left: 50%; height: 100%; width: 2px; transform: translateX(-50%); }
+            #soccer-field-container.horizontal-layout::after { width: 15%; padding-top: 15%; }
+            .goal-area.top.horizontal-layout { top: 35%; left: 0; height: 30%; width: 8%; border-width: 2px 2px 2px 0; }
+            .goal-area.bottom.horizontal-layout { top: 35%; right: 0; left: auto; height: 30%; width: 8%; border-width: 2px 0 2px 2px; }
+            .penalty-area.top.horizontal-layout { top: 20%; left: 0; height: 60%; width: 18%; border-width: 2px 2px 2px 0; }
+            .penalty-area.bottom.horizontal-layout { top: 20%; right: 0; left: auto; height: 60%; width: 18%; border-width: 2px 0 2px 2px; }
+        }
+
+        /* === INICIO: Estilos Asistentes TT === */
+        #fixture-details-display {
+            background-color: var(--accent-color);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            display: flex; 
+            flex-direction: column; 
+        }
+        #fixture-details-display h3 {
+            color: var(--button-text-color);
+            padding: 1rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-align: center;
+            flex-shrink: 0; 
+        }
+        #fixture-details-display .table-container {
+            border: none;
+            box-shadow: none;
+            border-radius: 0;
+            overflow-y: auto; 
+            flex-grow: 1; 
+            max-height: none; 
+            background-color: var(--bg-secondary); /* Agregado para el fondo */
+        }
+        html.dark #fixture-details-display .table-container {
+            background-color: #1f2937; /* Fondo para modo oscuro */
+        }
+        @media (min-width: 768px) {
+            #fixture-details-display .table-container {
+                max-height: none; /* Aseguramos que no haya altura máxima en desktop */
+            }
+        }
+
+        #tt-attendees-table td {
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-secondary);
+        }
+        #tt-attendees-table tr:nth-child(even) td {
+            background-color: var(--bg-even-row);
+        }
+        #tt-attendees-table tr:last-child td {
+            border-bottom: none;
+        }
+        html.dark #tt-attendees-table td { background-color: #1f2937; }
+        html.dark #tt-attendees-table tr:nth-child(even) td { background-color: #111827; }
+        /* === FIN: Estilos Asistentes TT === */
+
+        .player-marker { 
+            border: 2px solid; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .player-marker:hover {
+            transform: scale(1.1);
+        }
+        
+        /* --- INICIO DE LA MODIFICACIÓN: Estilos de Jugadores en Fixture --- */
+        .player-marker.claros { 
+            background-color: var(--player-claros-bg); 
+            color: var(--player-claros-text); 
+            border-color: #FFFFFF; /* Borde blanco para avatares claros */
+        }
+        .player-marker.oscuros { 
+            background-color: var(--player-oscuros-bg); 
+            color: var(--player-oscuros-text); 
+            border-color: #000000; /* Borde negro para avatares oscuros */
+        }
+        .player-name-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .player-name-label.claros-label {
+            background-color: #FFFFFF;
+            color: #d97706; /* Naranja */
+            border: 1px solid #e2e8f0;
+        }
+        .player-name-label.oscuros-label {
+            background-color: #1a202c;
+            color: #d97706; /* Naranja */
+            /* Se agrega sombra de texto para simular un contorno negro */
+            text-shadow: 0 0 3px #000, 0 0 3px #000;
+        }
+        /* --- FIN DE LA MODIFICACIÓN --- */
+
+        .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+
+        #individual-player-search { padding-right: 2.5rem !important; }
+        #clear-player-search { color: var(--text-muted); }
+
+        #player-modal-overlay {
+            position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.7);
+            z-index: 50; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+        }
+        #player-modal-overlay.visible { opacity: 1; pointer-events: auto; }
+
+        #player-modal-content {
+            background-color: var(--bg-secondary);
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+            width: 90%; max-width: 320px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        #player-modal-overlay.visible #player-modal-content { transform: scale(1); }
+
+        #player-modal-photo {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--accent-color);
+            margin-top: -60px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            background-color: var(--bg-muted);
+            border: 1px solid var(--border-color);
+        }
+        .stat-item .value { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            color: var(--accent-color);
+            line-height: 1;
+        }
+        .stat-item .label { 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            color: var(--text-secondary); 
+            text-transform: uppercase; 
+            margin-top: 0.35rem;
+        }
+        
+        .loading-spinner { border: 4px solid var(--border-color); border-top: 4px solid var(--accent-color); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-message { color: var(--text-secondary); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        html.dark ::-webkit-scrollbar-thumb { background: #555; }
+        html.dark ::-webkit-scrollbar-thumb:hover { background: #888; }
+        
+        .sidebar-group-header {
+            background-color: var(--bg-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+        html.dark .sidebar-group-header {
+            background-color: #111827;
+        }
+        .fixture-header {
+            background-color: var(--warning-color);
+            color: var(--button-text-color);
+            font-weight: 600;
+        }
+        .fixture-header:hover {
+            opacity: 0.9;
+        }
+        html.dark .fixture-header {
+            background-color: #d97706;
+        }
+        .fixture-header.active {
+             background-color: var(--warning-color) !important;
+             opacity: 1 !important;
+        }
+        html.dark .fixture-header.active {
+            background-color: #d97706 !important;
+        }
+
+        .comparador-header {
+            background-color: var(--success-color);
+            color: var(--button-text-color);
+            font-weight: 600;
+        }
+        .comparador-header:hover {
+            opacity: 0.9;
+        }
+        html.dark .comparador-header {
+            background-color: #059669;
+        }
+        .comparador-header.active {
+             background-color: var(--success-color) !important;
+             opacity: 1 !important;
+        }
+        html.dark .comparador-header.active {
+            background-color: #059669 !important;
+        }
+
+        .new-badge {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            margin-left: 8px;
+            line-height: 1;
+        }
+        
+        /* Estilos del Comparador */
+        .vs-separator {
+            color: var(--text-muted);
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+        .progress-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .progress-bg {
+            flex-grow: 1;
+            background-color: var(--border-color);
+            border-radius: 9999px;
+            height: 1.25rem;
+            overflow: hidden;
+            position: relative;
+        }
+        html.dark .progress-bg {
+            background-color: #374151;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out;
+        }
+        .progress-bar-container.player1 .progress-fill {
+            background-color: var(--accent-color);
+        }
+        .progress-bar-container.player2 .progress-fill {
+            background-color: var(--danger-color);
+        }
+        .stat-value {
+            font-weight: 600;
+            min-width: 40px;
+            text-align: right;
+        }
+        .progress-bar-container.player1 .stat-value {
+            text-align: left;
+        }
+        .stat-label {
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+
+        /* === INICIO: Corrección Buscador Histórico === */
+        html.dark #individual-player-search {
+            background-color: #374151 !important;
+            color: var(--text-primary) !important;
+            border-color: #4b5563 !important;
+            -webkit-box-shadow: 0 0 0 30px #374151 inset !important;
+            -webkit-text-fill-color: var(--text-primary) !important;
+        }
+        html.dark #individual-player-search::placeholder {
+            color: var(--text-muted);
+        }
+        #individual-player-results {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            z-index: 100; /* Aumentado drásticamente para asegurar que esté por encima de todo */
+        }
+        #individual-player-results > div {
+            color: var(--text-primary);
+        }
+        #individual-player-results > div:hover {
+            background-color: var(--bg-muted);
+        }
+        /* === FIN: Corrección Buscador Histórico === */
+
+        .winner-bar {
+            box-shadow: 0 0 0 3px var(--success-color);
+            border-radius: 9999px; /* Para que el contorno sea redondeado como la barra */
+        }
+        
+        /* INICIO: Estilos para foto clickeable en tablas */
+        .player-photo-clickable img {
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .player-photo-clickable:hover img {
+            transform: scale(1.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        #simple-player-modal-content {
+            background-color: var(--bg-secondary);
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.2);
+        }
+
+        #simple-player-modal-photo {
+            border: 4px solid var(--bg-secondary);
+            box-shadow: 0 0 0 4px var(--accent-color);
+        }
+
+        #simple-player-modal-name {
+            /* Se elimina 'display: inline-block' para que ocupe el ancho disponible */
+            background: linear-gradient(to right, var(--accent-color-muted), var(--accent-color));
+            color: var(--button-text-color);
+            padding: 0.75rem 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            margin-top: 1.5rem; /* Espacio entre la foto y el nombre */
+            font-size: 1.4rem;
+            font-weight: 700;
+            width: 100%; /* Hacemos que ocupe todo el ancho del contenedor */
+        }
+        
+        /* FIN: Estilos para foto clickeable */
+
+        /* === INICIO: Estilos para Botón de Cierre de Modales === */
+        .modal-close-button {
+            background-color: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            width: 32px;
+            height: 32px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease-in-out;
+            position: absolute;
+            top: 0.75rem; /* 12px */
+            right: 0.75rem; /* 12px */
+            z-index: 10;
+        }
+        .modal-close-button:hover {
+            background-color: var(--danger-color);
+            color: var(--button-text-color);
+            transform: scale(1.1) rotate(90deg);
+            border-color: transparent;
+        }
+        /* === FIN: Estilos para Botón de Cierre de Modales === */
+        
+    </style>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+</head>
+<body class="antialiased">
+
+    <!-- Header para móvil -->
+    <header class="sticky top-0 z-30 flex items-center justify-between p-4 md:hidden">
+        <div class="w-10">
+            <button id="hamburger-button" class="p-2 rounded-md -ml-2">
+                <i class="fas fa-bars text-lg"></i>
+            </button>
+        </div>
+        <div class="flex-1 text-center">
+            <div id="mobile-header-title" class="text-xl font-bold flex items-center gap-2 justify-center">
+                <!-- El título dinámico se insertará aquí -->
+            </div>
+        </div>
+        <div class="w-10 flex justify-end items-center">
+             <button id="dark-mode-toggle-mobile" class="p-2 rounded-full">
+                <i class="fas fa-moon text-lg"></i>
+            </button>
+        </div>
+    </header>
+    
+    <!-- Menú lateral -->
+    <nav id="side-menu" class="fixed top-0 left-0 h-full w-64 transform -translate-x-full transition-transform duration-300 ease-in-out md:transform-none md:relative md:w-64 flex flex-col">
+        <div class="px-6 py-4 flex items-center">
+            <a href="#" class="text-2xl font-bold flex items-center gap-2">
+                <span class="text-3xl">⚽</span>
+                <span>LA CLANDE</span>
+            </a>
+        </div>
+        
+        <hr class="border-border-color my-2 mx-4">
+
+        <div class="flex-1 px-4 space-y-2 overflow-y-auto">
+            
+            <div class="space-y-1">
+                <a href="#leaderboard" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="leaderboard-content"><i class="fas fa-trophy w-5 text-center"></i>Posiciones</a>
+                <a href="#chamigo" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="chamigo-content"><i class="fas fa-star w-5 text-center"></i>Chamigo</a>
+                <a href="#tt" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="tt-content"><i class="fas fa-beer w-5 text-center"></i>TT</a>
+                <a href="#presentismo" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="presentismo-content"><i class="fas fa-check-circle w-5 text-center"></i>Presentismo</a>
+                <a href="#ausentismo" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="ausentismo-content"><i class="fas fa-times-circle w-5 text-center"></i>Ausentismo</a>
+                <a href="#equipos" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="equipos-content"><i class="fas fa-futbol w-5 text-center"></i>Equipos</a>
+            </div>
+
+            <!-- Enlaces Especiales -->
+            <div class="mt-2 space-y-1">
+                <a href="#fixture" class="tab-button fixture-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="fixture-content"><i class="fas fa-calendar-alt w-5 text-center"></i>Fixture</a>
+                <a href="#comparador" class="tab-button comparador-header w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="comparador-content">
+                    <i class="fas fa-users w-5 text-center"></i>
+                    <span>Comparador</span>
+                    <span class="new-badge">New</span>
+                </a>
+            </div>
+
+            <div class="mt-2">
+                <button class="collapsible-trigger sidebar-group-header w-full flex justify-between items-center px-4 py-2.5 text-left font-semibold rounded-lg">
+                    <span class="flex items-center gap-3"><i class="fas fa-laptop w-5 text-center"></i>Optimizado PC</span>
+                    <i class="fas fa-chevron-down transform transition-transform"></i>
+                </button>
+                <div class="collapsible-content hidden mt-1 space-y-1 pl-4">
+                    <a href="#estadisticas" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="estadisticas-content"><i class="fas fa-chart-bar w-5 text-center"></i>Estadísticas</a>
+                    <a href="#individual-stats" class="tab-button w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200" data-tab="individual-stats-content"><i class="fas fa-history w-5 text-center"></i>Histórico</a>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <span class="px-4 text-xs font-semibold uppercase text-gray-400">Panel</span>
+                <div class="mt-2 space-y-1">
+                    <a href="admin.html" target="_blank" rel="noopener noreferrer" class="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors duration-200">
+                        <i class="fas fa-user-shield w-5 text-center"></i><span>Admin</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div id="overlay" class="hidden md:hidden"></div>
+
+    <!-- Contenedor principal -->
+    <div class="flex-1 flex flex-col">
+        <!-- Header para Escritorio -->
+        <header class="hidden md:flex items-center justify-between p-4 border-b border-border-color bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-700 dark:to-purple-700 shadow-lg shrink-0">
+            <div class="w-10"></div>
+            <div class="flex-1 text-center text-2xl font-bold text-white uppercase tracking-wider">
+                <span id="desktop-header-title"></span>
+            </div>
+            <div class="w-10">
+                <button id="dark-mode-toggle-desktop" class="p-2 w-10 h-10 rounded-full hover:bg-white/20 text-white">
+                   <i class="fas fa-moon text-lg"></i>
+               </button>
+            </div>
+       </header>
+
+        <main class="flex-1 md:overflow-y-auto">
+        </main>
+    </div>
+
+    <!-- Modal de Jugador (Fixture) -->
+    <div id="player-modal-overlay" class="hidden">
+        <div id="player-modal-content">
+            <!-- BOTÓN ACTUALIZADO -->
+            <button id="player-modal-close" class="modal-close-button">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="flex flex-col items-center pt-8 pb-6 px-6">
+                <div class="w-full h-[60px]"></div>
+                <img id="player-modal-photo" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Foto del jugador">
+                <h2 id="player-modal-name" class="text-2xl font-bold mt-4 text-center">Nombre Jugador</h2>
+                <p id="player-modal-tournament" class="text-sm text-text-secondary mb-6"></p>
+    
+                <div class="grid grid-cols-3 gap-4 w-full">
+                    <div class="stat-item">
+                        <div id="player-modal-points" class="value">0</div>
+                        <div class="label">Puntos</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="player-modal-chamigo" class="value">0</div>
+                        <div class="label">Chamigo</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="player-modal-tt" class="value">0</div>
+                        <div class="label">TT</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INICIO: Modal de Jugador Simple (para Tablas) -->
+    <div id="simple-player-modal-overlay" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div id="simple-player-modal-content" class="relative w-full max-w-sm p-8 text-center transform scale-95 transition-transform duration-300">
+            <!-- BOTÓN ACTUALIZADO -->
+            <button id="simple-player-modal-close" class="modal-close-button">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="relative inline-block">
+                <img id="simple-player-modal-photo" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Foto del jugador" class="w-32 h-32 rounded-full object-cover mx-auto">
+                <div id="player-status-indicator" class="absolute bottom-1 right-1 w-5 h-5 rounded-full border-2"></div>
+            </div>
+            <h2 id="simple-player-modal-name">Nombre Jugador</h2>
+        </div>
+    </div>
+    <!-- FIN: Modal de Jugador Simple -->
+
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
+            console.error("Error: Las variables de configuración de Supabase no están definidas. Asegúrate de que config.js se cargue correctamente.");
+            document.querySelector('main').innerHTML = `<div class="main-content-container text-center text-red-500"><p>Error de configuración. No se pudo conectar a la base de datos.</p></div>`;
+            return;
+        }
+
+        const FilterSessionManager = {
+            SESSION_KEY: 'laClandeFilterSession',
+            TIMEOUT_MS: 10 * 60 * 1000, 
+
+            getSession: function() {
+                const sessionData = localStorage.getItem(this.SESSION_KEY);
+                if (!sessionData) return null;
+                try {
+                    return JSON.parse(sessionData);
+                } catch (e) {
+                    console.error("Error parsing filter session", e);
+                    return null;
+                }
+            },
+
+            isExpired: function(session) {
+                if (!session || !session.lastActivity) return true;
+                const now = new Date().getTime();
+                return (now - session.lastActivity) > this.TIMEOUT_MS;
+            },
+
+            startOrResume: function() {
+                const session = this.getSession();
+                if (this.isExpired(session)) {
+                    this.clear();
+                    return null;
+                }
+                return session.filters;
+            },
+
+            update: function(filters) {
+                if (!filters || Object.keys(filters).length === 0) {
+                    const existingSession = this.getSession();
+                     if (existingSession) { 
+                        const sessionData = {
+                            filters: existingSession.filters,
+                            lastActivity: new Date().getTime()
+                        };
+                        localStorage.setItem(this.SESSION_KEY, JSON.stringify(sessionData));
+                    }
+                    return;
+                }
+                const sessionData = {
+                    filters: filters,
+                    lastActivity: new Date().getTime()
+                };
+                localStorage.setItem(this.SESSION_KEY, JSON.stringify(sessionData));
+            },
+
+            clear: function() {
+                localStorage.removeItem(this.SESSION_KEY);
+            }
+        };
+
+        const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+        let allPlayersData = [];
+        let allMatchesData = [];
+        let lastSelectedFixtureMatchId = null;
+        let currentEstadisticasData = []; 
+        let globalFilterState = {}; 
+        let statsChannel = null;
+        let heartbeatInterval = null;
+
+        let estadisticasSortState = { criterion: 'points', order: 'desc' };
+
+        const renderFunctions = {
+            'leaderboard-content': renderLeaderboard, 'chamigo-content': renderChamigo, 'tt-content': renderTT,
+            'presentismo-content': renderPresentismo, 'ausentismo-content': renderAusentismo, 'estadisticas-content': renderEstadisticas,
+            'equipos-content': renderEquipos, 'fixture-content': renderFixture, 'individual-stats-content': renderIndividualStatsTable,
+            'comparador-content': renderComparador
+        };
+
+        const DOMElements = {
+            body: document.body,
+            hamburgerButton: document.getElementById('hamburger-button'),
+            sideMenu: document.getElementById('side-menu'),
+            overlay: document.getElementById('overlay'),
+            darkModeToggleMobile: document.getElementById('dark-mode-toggle-mobile'),
+            darkModeToggleDesktop: document.getElementById('dark-mode-toggle-desktop'),
+            mainContentArea: document.querySelector('main'),
+            tabButtons: document.querySelectorAll('.tab-button'),
+            collapsibleTriggers: document.querySelectorAll('.collapsible-trigger'),
+            playerModal: {
+                overlay: document.getElementById('player-modal-overlay'),
+                content: document.getElementById('player-modal-content'),
+                closeBtn: document.getElementById('player-modal-close'),
+                photo: document.getElementById('player-modal-photo'),
+                name: document.getElementById('player-modal-name'),
+                tournament: document.getElementById('player-modal-tournament'),
+                points: document.getElementById('player-modal-points'),
+                chamigo: document.getElementById('player-modal-chamigo'),
+                tt: document.getElementById('player-modal-tt'),
+            },
+            // INICIO: Referencias al nuevo modal simple
+            simplePlayerModal: {
+                overlay: document.getElementById('simple-player-modal-overlay'),
+                content: document.getElementById('simple-player-modal-content'),
+                closeBtn: document.getElementById('simple-player-modal-close'),
+                photo: document.getElementById('simple-player-modal-photo'),
+                name: document.getElementById('simple-player-modal-name'),
+            }
+            // FIN: Referencias al nuevo modal simple
+        };
+        
+        const PAGE_CONFIG = {
+            'leaderboard-content': { title: 'Posiciones', icon: 'fa-trophy' },
+            'chamigo-content': { title: 'Chamigo', icon: 'fa-star' },
+            'tt-content': { title: 'Tercer Tiempo - TT', icon: 'fa-beer', desktopTitle: 'Tercer Tiempo - TT' },
+            'presentismo-content': { title: 'Presentismo', icon: 'fa-check-circle' },
+            'ausentismo-content': { title: 'Ausentismo', icon: 'fa-times-circle' },
+            'equipos-content': { title: 'Equipos', icon: 'fa-futbol' },
+            'fixture-content': { title: 'Fixture', icon: 'fa-calendar-alt' },
+            'estadisticas-content': { title: 'Estadísticas', icon: 'fa-chart-bar' },
+            'individual-stats-content': { title: 'Histórico', icon: 'fa-history' },
+            'comparador-content': { title: 'Comparador', icon: 'fa-users' }
+        };
+
+        const hashToTabMap = {
+            "#leaderboard": "leaderboard-content", "#chamigo": "chamigo-content", "#tt": "tt-content",
+            "#presentismo": "presentismo-content", "#ausentismo": "ausentismo-content", "#estadisticas": "estadisticas-content",
+            "#equipos": "equipos-content", "#fixture": "fixture-content", "#individual-stats": "individual-stats-content",
+            "#comparador": "comparador-content"
+        };
+        
+        function applyTheme(theme) {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            localStorage.setItem('theme', theme);
+            
+            const isDark = theme === 'dark';
+            const icons = [
+                DOMElements.darkModeToggleMobile.querySelector('i'),
+                DOMElements.darkModeToggleDesktop.querySelector('i')
+            ];
+            
+            icons.forEach(icon => {
+                if (icon) {
+                    icon.classList.toggle('fa-sun', isDark);
+                    icon.classList.toggle('fa-moon', !isDark);
+                }
+            });
+
+            if (document.querySelector('.tab-button.active')?.dataset.tab === 'fixture-content' && lastSelectedFixtureMatchId) {
+                renderFixtureDetails(lastSelectedFixtureMatchId);
+            }
+        }
+
+        function toggleTheme() {
+            const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+        }
+        
+        function openSideMenu() {
+            DOMElements.overlay.classList.remove('hidden');
+            DOMElements.sideMenu.classList.remove('-translate-x-full');
+            DOMElements.sideMenu.classList.add('translate-x-0');
+            DOMElements.body.classList.add('overflow-hidden');
+        }
+
+        function closeSideMenu() {
+            DOMElements.sideMenu.classList.add('-translate-x-full');
+            DOMElements.sideMenu.classList.remove('translate-x-0');
+            DOMElements.overlay.classList.add('hidden');
+            DOMElements.body.classList.remove('overflow-hidden');
+        }
+
+        function applyInitialResponsiveStyles() {
+             if (window.innerWidth >= 768) {
+                DOMElements.sideMenu.classList.remove('-translate-x-full', 'translate-x-0');
+                DOMElements.overlay.classList.add('hidden');
+                DOMElements.body.classList.remove('overflow-hidden');
+            } else {
+                DOMElements.sideMenu.classList.add('-translate-x-full');
+            }
+        }
+        
+        function parseDate(dateString) { 
+            if (!dateString) return new Date();
+            return new Date(dateString + 'T00:00:00'); 
+        }
+        
+        function setTodayFilters(prefix, isMonthFilter = false) {
+            const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
+            yearCheckboxes.forEach(cb => cb.checked = false);
+            
+            const today = new Date();
+            const currentYearCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="${today.getFullYear()}"]`);
+            if (currentYearCheckbox) {
+                currentYearCheckbox.checked = true;
+            }
+            updateMultiYearButtonText(prefix);
+            
+            if (isMonthFilter) {
+                const monthDropdown = document.getElementById(`${prefix}-month-select-dropdown`);
+                if (!monthDropdown) return;
+                monthDropdown.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+
+                let targetMonth = today.getMonth() + 1;
+                const hasMatchesInMonth = (year, month) => allMatchesData.some(m => {
+                    const d = parseDate(m.match_date);
+                    return d.getFullYear() === year && (d.getMonth() + 1) == month;
+                });
+
+                let searchDate = new Date();
+                let found = false;
+                for (let i=0; i < 12; i++) {
+                    if (hasMatchesInMonth(searchDate.getFullYear(), searchDate.getMonth() + 1)) {
+                        found = true;
+                        break;
+                    }
+                    searchDate.setMonth(searchDate.getMonth() - 1);
+                }
+                
+                if (found) {
+                    targetMonth = searchDate.getMonth() + 1;
+                    const targetYearCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="${searchDate.getFullYear()}"]`);
+                    if(targetYearCheckbox && !targetYearCheckbox.checked) {
+                        yearCheckboxes.forEach(cb => cb.checked = false);
+                        targetYearCheckbox.checked = true;
+                        updateMultiYearButtonText(prefix);
+                    }
+                }
+
+                const targetMonthCheckbox = monthDropdown.querySelector(`input[value="${targetMonth}"]`);
+                if (targetMonthCheckbox) {
+                    targetMonthCheckbox.checked = true;
+                }
+                updateMultiMonthButtonText(prefix);
+
+            } else {
+                const periodContainer = document.getElementById(`${prefix}-period-select-container`);
+                if (!periodContainer) return;
+                
+                const valueInput = periodContainer.querySelector('input[type=hidden]');
+                const buttonSpan = periodContainer.querySelector('button span');
+                const dropdown = periodContainer.querySelector('.custom-select-options');
+                
+                const defaultPeriod = today.getMonth() <= 5 ? 'apertura' : 'clausura';
+                valueInput.value = defaultPeriod;
+                
+                const selectedOption = dropdown.querySelector(`.option-item[data-value="${defaultPeriod}"]`);
+                if (selectedOption) {
+                    buttonSpan.textContent = selectedOption.textContent;
+                    dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                    selectedOption.classList.add('selected');
+                }
+            }
+        }
+        
+        function calculateStats(filters) {
+            const { selectedYears, selectedPeriod } = filters;
+
+            let timeFilteredMatches = allMatchesData;
+
+            if (selectedYears && selectedYears.length > 0 && !selectedYears.includes('all')) {
+                timeFilteredMatches = timeFilteredMatches.filter(match => {
+                    const matchYear = parseDate(match.match_date).getFullYear();
+                    return selectedYears.includes(String(matchYear));
+                });
+            }
+        
+            if (selectedPeriod && selectedPeriod !== 'total') {
+                timeFilteredMatches = timeFilteredMatches.filter(match => {
+                    const month = parseDate(match.match_date).getMonth(); // 0-11
+                    const period = (month <= 5) ? 'apertura' : 'clausura';
+                    return period === selectedPeriod;
+                });
+            }
+        
+            const filteredMatches = timeFilteredMatches.filter(match => match.result);
+        
+            const playerStats = {};
+            allPlayersData.forEach(player => {
+                playerStats[player.id] = { name: player.name, photo_url: player.photo_url, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0, id: player.id };
+            });
+        
+            let clarosWins = 0, oscurosWins = 0, empates = 0, suspendidos = 0, totalPJMatches = 0;
+            (filteredMatches || []).forEach(match => {
+                const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
+                const allPlayersInMatch = [...new Set([...(team_white_players || []), ...(team_dark_players || [])])];
+                
+                if (result !== 'Suspendido') totalPJMatches++;
+                else suspendidos++;
+        
+                allPlayersInMatch.forEach(pId => {
+                    if (playerStats[pId]) {
+                        if (result === 'Claros' && (team_white_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
+                        else if (result === 'Oscuros' && (team_dark_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
+                        else if (result === 'Empate') { playerStats[pId].points += 1; playerStats[pId].pe++; }
+                        else if (result !== 'Suspendido') { playerStats[pId].pp++; }
+                        if (result !== 'Suspendido') playerStats[pId].pj++;
+                    }
+                });
+                if (result === 'Claros') clarosWins++;
+                else if (result === 'Oscuros') oscurosWins++;
+                else if (result === 'Empate') empates++;
+                if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
+                    const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
+                    if (votosArray.length > 0) {
+                        const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                        votosArray.filter(v => v.votos === maxVotes).forEach(chamigo => {
+                            if (playerStats[chamigo.id]) playerStats[chamigo.id].chamigos++;
+                        });
+                    }
+                }
+                if (tt_attendees) {
+                    tt_attendees.forEach(pId => { if (playerStats[pId]) playerStats[pId].tt++; });
+                }
+            });
+            Object.values(playerStats).forEach(player => {
+                const maxPossiblePoints = player.pj * 3;
+                let currentEfectividad = (maxPossiblePoints > 0) ? (player.points / maxPossiblePoints) * 100 : 0;
+                if (totalPJMatches > 0) {
+                    const participationRatio = player.pj / totalPJMatches;
+                    player.efectividad = (participationRatio < 0.20) ? (currentEfectividad * participationRatio).toFixed(2) : currentEfectividad.toFixed(2);
+                } else {
+                    player.efectividad = "0.00";
+                }
+                player.ausentes = Math.max(0, totalPJMatches - player.pj);
+            });
+        
+            let playersToShow;
+            if (selectedYears && selectedYears.length > 0 && !selectedYears.includes('all')) {
+                const yearlyPlayerIds = new Set();
+                timeFilteredMatches.forEach(match => {
+                    (match.team_white_players || []).forEach(id => yearlyPlayerIds.add(id));
+                    (match.team_dark_players || []).forEach(id => yearlyPlayerIds.add(id));
+                });
+                playersToShow = Object.values(playerStats).filter(p => yearlyPlayerIds.has(p.id));
+            } else {
+                playersToShow = Object.values(playerStats).filter(p => p.pj > 0 || (selectedYears && selectedYears.includes('all')));
+            }
+        
+            return {
+                players: playersToShow,
+                teamStats: { clarosWins, oscurosWins, empates, suspendidos, totalPJMatches },
+                error: null
+            };
+        }
+
+        function calculateStatsForPeriod(prefix) {
+            const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]:checked`);
+            let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+            
+            if (selectedYears.includes('all')) {
+                selectedYears = ['all'];
+            }
+
+            const selectedPeriod = document.getElementById(`${prefix}-period-select`)?.value;
+            
+            return calculateStats({ selectedYears, selectedPeriod });
+        }
+
+        function renderGenericTable(section, filterFn, sortFn, renderRowFn, headers) {
+            const tableContainer = document.getElementById(`${section}-content`).querySelector('.table-container');
+            const loadingMessage = document.getElementById(`${section}-loading-message`);
+            if (!tableContainer || !loadingMessage) return;
+
+            // Hide table and show loader
+            const table = tableContainer.querySelector('table');
+            if(table) table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.innerHTML = `<span class="loading-spinner"></span>Calculando...`;
+            
+            const { players, error } = calculateStatsForPeriod(section);
+            
+            if (error) {
+                loadingMessage.innerHTML = 'Error al calcular los datos.';
+                return;
+            }
+
+            const rankedPlayers = players.filter(filterFn).sort(sortFn);
+            if (rankedPlayers.length === 0) {
+                loadingMessage.innerHTML = `No hay datos disponibles para los filtros seleccionados.`;
+                if(table) table.innerHTML = '';
+                return;
+            }
+            
+            if(!table) {
+                const newTable = document.createElement('table');
+                tableContainer.appendChild(newTable);
+                table = newTable;
+            }
+
+            table.innerHTML = `
+                <thead><tr>${headers.map(h => `<th class="p-3 ${h === '' ? 'w-14' : ''}">${h}</th>`).join('')}</tr></thead>
+                <tbody>${rankedPlayers.map(renderRowFn).join('')}</tbody>`;
+
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
+        }
+
+        function renderLeaderboard() {
+            renderGenericTable(
+                'leaderboard',
+                () => true,
+                (a, b) => b.points - a.points,
+                (player, index) => `
+                    <tr>
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
+                        </td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.points}</td>
+                        <td>${player.efectividad}%</td>
+                    </tr>`,
+                ['#', '', 'Jugador', 'Puntos', 'Efectividad']
+            );
+        }
+
+        function renderChamigo() {
+            renderGenericTable(
+                'chamigo',
+                p => p.chamigos > 0,
+                (a, b) => b.chamigos - a.chamigos,
+                (player, index) => `
+                    <tr>
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
+                        </td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.chamigos}</td>
+                    </tr>`,
+                ['#', '', 'Jugador', 'Chamigos']
+            );
+        }
+        
+        function renderTT() {
+            renderGenericTable(
+                'tt',
+                p => p.tt > 0,
+                (a, b) => b.tt - a.tt,
+                (player, index) => `
+                    <tr>
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
+                        </td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.tt}</td>
+                    </tr>`,
+                ['#', '', 'Jugador', 'TT']
+            );
+        }
+        
+        function renderPresentismo() {
+            renderGenericTable(
+                'presentismo',
+                () => true,
+                (a, b) => b.pj - a.pj,
+                (player, index) => `
+                    <tr>
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
+                        </td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.pj}</td>
+                    </tr>`,
+                ['#', '', 'Jugador', 'PJ']
+            );
+        }
+        
+        function renderAusentismo() {
+            renderGenericTable(
+                'ausentismo',
+                () => true,
+                (a, b) => b.ausentes - a.ausentes,
+                (player, index) => `
+                    <tr>
+                        <td class="font-semibold">${index + 1}</td>
+                        <td class="w-14 min-w-[3.5rem]">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
+                        </td>
+                        <td class="text-center font-medium">${player.name}</td>
+                        <td>${player.ausentes}</td>
+                    </tr>`,
+                ['#', '', 'Jugador', 'Ausentes']
+            );
+        }
+
+        function renderEstadisticas(fromSort = false) {
+            const table = document.getElementById('estadisticas-table');
+            const loadingMessage = document.getElementById('estadisticas-loading-message');
+            if (!table || !loadingMessage) return;
+            
+            if (!fromSort) {
+                table.classList.add('hidden');
+                loadingMessage.classList.remove('hidden');
+                const { players, error } = calculateStatsForPeriod('estadisticas');
+                if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
+                currentEstadisticasData = players;
+            }
+
+            const sortCriterion = estadisticasSortState.criterion;
+            const sortOrder = estadisticasSortState.order;
+            const rankedPlayers = [...currentEstadisticasData].sort((a, b) => {
+                let valA = parseFloat(a[sortCriterion]) || 0;
+                let valB = parseFloat(b[sortCriterion]) || 0;
+                return sortOrder === 'asc' ? valA - valB : valB - valA;
+            });
+            
+            if (rankedPlayers.length === 0) { loadingMessage.innerHTML = `No hay datos disponibles.`; return; }
+
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th class="sticky-col sticky-col-1 w-14 min-w-[3.5rem]">#</th>
+                        <th class="sticky-col sticky-col-2 w-14 min-w-[3.5rem]"></th>
+                        <th class="text-center sticky-col sticky-col-3">Jugador</th>
+                        <th data-sort="points">Puntos</th>
+                        <th data-sort="pg">PG</th>
+                        <th data-sort="pe">PE</th>
+                        <th data-sort="pp">PP</th>
+                        <th data-sort="pj">PJ</th>
+                        <th data-sort="efectividad">Efectividad</th>
+                        <th data-sort="chamigos">Chamigo</th>
+                        <th data-sort="tt">TT</th>
+                        <th data-sort="ausentes">Ausentismo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rankedPlayers.map((player, index) => `
+                    <tr>
+                        <td class="sticky-col sticky-col-1 font-semibold">${index + 1}</td>
+                        <td class="sticky-col sticky-col-2">
+                            <a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}">
+                                <img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar de ${player.name}" class="w-8 h-8 rounded-full object-cover mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=⚽';">
+                            </a>
+                        </td>
+                        <td class="text-center sticky-col sticky-col-3 font-medium">${player.name}</td>
+                        <td>${player.points}</td><td>${player.pg}</td><td>${player.pe}</td>
+                        <td>${player.pp}</td><td>${player.pj}</td><td>${player.efectividad}%</td>
+                        <td>${player.chamigos}</td><td>${player.tt}</td><td>${player.ausentes}</td>
+                    </tr>`).join('')}
+                </tbody>`;
+
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
+            
+            table.querySelectorAll(`thead th[data-sort]`).forEach(th => {
+                const icon = th.querySelector('.fas');
+                if(icon) icon.remove();
+            });
+
+            const activeTh = table.querySelector(`thead th[data-sort="${sortCriterion}"]`);
+            if (activeTh) {
+                const icon = document.createElement('i');
+                icon.className = `fas fa-chevron-${sortOrder === 'desc' ? 'down' : 'up'} ml-2 text-xs`;
+                activeTh.appendChild(icon);
+            }
+        }
+
+        function renderEquipos() {
+            const statsDisplay = document.getElementById('equipos-stats-display');
+            const loadingMessage = document.getElementById('equipos-loading-message');
+            if (!statsDisplay || !loadingMessage) return;
+
+            statsDisplay.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+
+            const { teamStats, error } = calculateStatsForPeriod('equipos');
+
+            if (error) { loadingMessage.innerHTML = 'Error al cargar los datos.'; return; }
+            
+            const statCard = (value, label, bgColor, textColor = 'var(--button-text-color)') => `
+                <div class="p-4 rounded-lg shadow-md flex flex-col items-center justify-center w-full min-h-[120px]" style="background-color: ${bgColor}; color: ${textColor};">
+                    <span class="text-3xl font-bold">${value}</span><span class="text-sm uppercase mt-1 font-semibold">${label}</span>
+                </div>`;
+            
+            const clarosBgColor = '#E2E8F0';
+            const clarosTextColor = '#1A202C';
+            const empatesBgColor = 'var(--warning-color)';
+
+            statsDisplay.innerHTML = 
+                statCard(teamStats.oscurosWins, 'Oscuros Ganados', '#1a202c') +
+                statCard(teamStats.clarosWins, 'Claros Ganados', clarosBgColor, clarosTextColor) +
+                statCard(teamStats.empates, 'Empates', empatesBgColor) +
+                statCard(teamStats.suspendidos, 'Suspendidos', 'var(--danger-color)') +
+                statCard(teamStats.totalPJMatches, 'Partidos Jugados', 'var(--accent-color)');
+
+            loadingMessage.classList.add('hidden');
+            statsDisplay.classList.remove('hidden');
+        }
+        
+        function renderFixture(isFilterChange = false) {
+            const dropdownContainer = document.getElementById('fixture-dropdown-container');
+            const loadingMessage = document.getElementById('fixture-loading-message');
+            
+            const selectedYearsCheckboxes = document.querySelectorAll(`#fixture-year-select-dropdown input[type="checkbox"]:checked:not([value="all"])`);
+            let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+            if (document.querySelector(`#fixture-year-select-dropdown input[value="all"]`)?.checked) {
+                selectedYears = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].map(String);
+            }
+
+            const selectedMonthCheckboxes = document.querySelectorAll(`#fixture-month-select-dropdown input[type="checkbox"]:checked:not([value="all"])`);
+            let selectedMonths = Array.from(selectedMonthCheckboxes).map(cb => cb.value);
+            if (document.querySelector(`#fixture-month-select-dropdown input[value="all"]`)?.checked) {
+                selectedMonths = []; // Empty array means all months
+            }
+            
+            if (!dropdownContainer || !loadingMessage) return;
+
+            dropdownContainer.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+
+            let filteredMatches = allMatchesData;
+            if (selectedYears.length > 0) {
+                filteredMatches = filteredMatches.filter(m => selectedYears.includes(String(parseDate(m.match_date).getFullYear())));
+            }
+            if (selectedMonths.length > 0) {
+                filteredMatches = filteredMatches.filter(m => selectedMonths.includes(String(parseDate(m.match_date).getMonth() + 1)));
+            }
+
+            if (!filteredMatches || filteredMatches.length === 0) { 
+                loadingMessage.innerHTML = `No hay partidos disponibles.`; 
+                lastSelectedFixtureMatchId = null; 
+                document.getElementById('fixture-visual-details-container').classList.add('hidden');
+                return; 
+            }
+
+            filteredMatches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let currentOrFutureMatchFound = false;
+
+            const optionsContainer = dropdownContainer.querySelector('.custom-select-options');
+            optionsContainer.innerHTML = filteredMatches.map(match => {
+                const matchDateObj = parseDate(match.match_date);
+                let isCurrent = !currentOrFutureMatchFound && matchDateObj.getTime() >= today.getTime();
+                if(isCurrent) currentOrFutureMatchFound = true;
+
+                return `
+                    <div class="option-item ${isCurrent ? 'current-match' : ''}" data-match-id="${match.id}">
+                        ${matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric'})}
+                        <span class="text-xs text-gray-400 ml-2">${match.result || 'Pendiente'}</span>
+                    </div>`;
+            }).join('');
+
+            loadingMessage.classList.add('hidden');
+            dropdownContainer.classList.remove('hidden');
+
+            const firstMatchToSelect = document.querySelector('.current-match') || optionsContainer.querySelector('[data-match-id]');
+
+            if (firstMatchToSelect) {
+                if (isFilterChange || !lastSelectedFixtureMatchId || !filteredMatches.some(m => m.id == lastSelectedFixtureMatchId)) {
+                    handleFixtureSelection(firstMatchToSelect.dataset.matchId);
+                } else {
+                    handleFixtureSelection(lastSelectedFixtureMatchId);
+                }
+            } else {
+                 document.getElementById('fixture-visual-details-container').classList.add('hidden');
+                 lastSelectedFixtureMatchId = null;
+            }
+        }
+
+        function handleFixtureSelection(matchId) {
+            const match = allMatchesData.find(m => m.id == matchId);
+            if (!match) return;
+
+            lastSelectedFixtureMatchId = matchId;
+
+            const dropdownButton = document.querySelector('#fixture-dropdown-container .custom-select-button span');
+            const optionsContainer = document.querySelector('#fixture-dropdown-container .custom-select-options');
+
+            const matchDateObj = parseDate(match.match_date);
+            dropdownButton.textContent = matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric'});
+
+            optionsContainer.querySelectorAll('.option-item').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.matchId === matchId);
+            });
+            
+            renderFixtureDetails(matchId);
+            
+            // Forzamos un reajuste inmediato y otro después de un instante
+            adjustFixtureHeights();
+            setTimeout(adjustFixtureHeights, 100);
+        }
+
+        function renderFixtureDetails(matchId) {
+            const match = allMatchesData.find(m => m.id == matchId);
+            if (!match) {
+                console.error("Detalles del partido no encontrados localmente para el ID:", matchId);
+                return;
+            }
+
+            lastSelectedFixtureMatchId = matchId;
+
+            const visualDetailsContainer = document.getElementById('fixture-visual-details-container');
+            const soccerFieldContainer = document.getElementById('soccer-field-container');
+            const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
+
+            if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
+
+            soccerFieldContainer.innerHTML = `
+                <div class="goal-area top"></div><div class="goal-area bottom"></div>
+                <div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
+
+            const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
+            const getPlayerName = id => (allPlayersData.find(p => p.id === id) || { name: 'ID Desconocido' }).name;
+
+            ttAttendeesTableBody.innerHTML = (Array.isArray(tt_attendees) && tt_attendees.length > 0)
+                ? tt_attendees.map(id => `
+                    <tr><td class="p-3 text-center">${getPlayerName(id)}</td></tr>`
+                  ).join('')
+                : `<tr><td class="p-4 text-center text-gray-500" colspan="1">No hay asistentes al TT.</td></tr>`;
+
+            const isHorizontalField = window.innerWidth >= 768;
+            soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
+            soccerFieldContainer.querySelectorAll('.goal-area, .penalty-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
+
+            const playerPositions = {
+                vertical: {
+                    claros:  [{ x: 0.5, y: 0.94 }, { x: 0.25, y: 0.78 }, { x: 0.75, y: 0.78 }, { x: 0.35, y: 0.62 }, { x: 0.65, y: 0.57 }],
+                    oscuros: [{ x: 0.5, y: 0.06 }, { x: 0.25, y: 0.22 }, { x: 0.75, y: 0.22 }, { x: 0.35, y: 0.38 }, { x: 0.65, y: 0.43 }]
+                },
+                horizontal: {
+                    claros:  [{ x: 0.94, y: 0.50 }, { x: 0.80, y: 0.25 }, { x: 0.80, y: 0.75 }, { x: 0.62, y: 0.35 }, { x: 0.57, y: 0.65 }],
+                    oscuros: [{ x: 0.06, y: 0.50 }, { x: 0.20, y: 0.25 }, { x: 0.20, y: 0.75 }, { x: 0.38, y: 0.35 }, { x: 0.43, y: 0.65 }]
+                }
+            };
+            const currentPositions = isHorizontalField ? playerPositions.horizontal : playerPositions.vertical;
+
+            let chamigoPlayerIds = [];
+            if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
+                const votesArray = Object.values(chamigo_votes);
+                const maxVotes = Math.max(...votesArray);
+                if (maxVotes > 0) {
+                    chamigoPlayerIds = Object.keys(chamigo_votes).filter(id => chamigo_votes[id] === maxVotes);
+                }
+            }
+
+            const createPlayerMarker = (playerId, team, index) => {
+                const playerWrapper = document.createElement('div');
+                playerWrapper.className = `player-wrapper absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10`;
+                playerWrapper.style.top = `${currentPositions[team][index].y * 100}%`;
+                playerWrapper.style.left = `${currentPositions[team][index].x * 100}%`;
+
+                const player = allPlayersData.find(p => p.id === playerId) || {name: 'ID Desconocido'};
+                const isChamigo = chamigoPlayerIds.includes(String(playerId));
+                const photoUrl = player.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+                
+                const labelClass = team === 'claros' ? 'claros-label' : 'oscuros-label';
+
+                let markerHTML = `
+                    <div class="player-marker ${team} relative w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center" data-player-id="${playerId}">
+                        <img src="${photoUrl}" alt="Foto de ${player.name}" class="w-full h-full rounded-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
+                        ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-2 -right-2 text-lg md:text-3xl" style="text-shadow: 0 0 4px black;"></i>' : ''}
+                    </div>
+                    <div class="player-name-label ${labelClass}">${player.name}</div>`;
+                
+                playerWrapper.innerHTML = markerHTML;
+                playerWrapper.querySelector('.player-marker').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showPlayerModal(playerId);
+                });
+
+                soccerFieldContainer.appendChild(playerWrapper);
+            };
+
+            (team_white_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'claros', i));
+            (team_dark_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'oscuros', i));
+
+            if (result && result !== 'Empate' && result !== 'Suspendido') {
+                const trophyDiv = document.createElement('div');
+                trophyDiv.className = 'winner-trophy absolute text-3xl md:text-5xl z-20 transform -translate-x-1/2 -translate-y-1/2';
+                trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
+
+                const trophyPositions = {
+                    horizontal: {
+                        Claros:  { top: '92%', left: '95%' },
+                        Oscuros: { top: '92%', left: '5%' }
+                    },
+                    vertical: {
+                        Claros:  { top: '95%', left: '93%' },
+                        Oscuros: { top: '5%', left: '93%' }
+                    }
+                };
+
+                // --- INICIO DE LA MODIFICACIÓN: Corrección en la lógica de posicionamiento del trofeo ---
+                // Se corrige la obtención de la posición para el layout vertical, que antes no accedía
+                // a la propiedad correcta ("Claros" u "Oscuros") del objeto.
+                const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical[result];
+                // --- FIN DE LA MODIFICACIÓN ---
+                
+                if (currentTrophyPosition) {
+                    Object.assign(trophyDiv.style, currentTrophyPosition);
+                    soccerFieldContainer.appendChild(trophyDiv);
+                }
+            }
+
+            visualDetailsContainer.classList.remove('hidden');
+
+            // Esperamos a que todas las imágenes dentro del campo se carguen
+            const images = soccerFieldContainer.querySelectorAll('img');
+            const promises = [...images].map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.onload = img.onerror = resolve;
+                });
+            });
+
+            // Una vez que todas las imágenes han cargado (o fallado), ajustamos la altura
+            Promise.all(promises).then(() => {
+                // Usamos requestAnimationFrame para asegurarnos de que el navegador haya renderizado el layout
+                // antes de que midamos la altura. Esto previene el "glitch" visual.
+                requestAnimationFrame(() => {
+                    adjustFixtureHeights();
+                });
+            });
+        }
+
+        function showPlayerModal(playerId) {
+            const playerStats = calculateStats(globalFilterState).players.find(p => p.id === playerId);
+            const playerData = allPlayersData.find(p => p.id === playerId);
+            if (!playerData || !playerStats) return;
+
+            const { playerModal } = DOMElements;
+            playerModal.photo.src = playerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
+            playerModal.name.textContent = playerData.name;
+            
+            const periodTextMap = { 'apertura': 'Apertura', 'clausura': 'Clausura', 'total': 'Totales' };
+            const yearText = (globalFilterState.years?.includes('all') || !globalFilterState.years) ? 'Todos' : globalFilterState.years.join(', ');
+            const periodText = periodTextMap[globalFilterState.period] || 'Apertura';
+            playerModal.tournament.textContent = `${periodText} ${yearText}`;
+
+            playerModal.points.textContent = playerStats.points;
+            playerModal.chamigo.textContent = playerStats.chamigos;
+            playerModal.tt.textContent = playerStats.tt;
+
+            playerModal.overlay.classList.remove('hidden');
+            setTimeout(() => {
+                playerModal.overlay.classList.add('visible');
+                DOMElements.body.classList.add('modal-open');
+            }, 10);
+        }
+
+        function hidePlayerModal() {
+            const { playerModal } = DOMElements;
+            playerModal.overlay.classList.remove('visible');
+            DOMElements.body.classList.remove('modal-open');
+            setTimeout(() => {
+                playerModal.overlay.classList.add('hidden');
+            }, 300);
+        }
+
+        // INICIO: Funciones para el nuevo modal simple
+        function showSimplePlayerModal(playerId) {
+            const playerData = allPlayersData.find(p => p.id === playerId);
+            if (!playerData) return;
+
+            const { simplePlayerModal } = DOMElements;
+            simplePlayerModal.photo.src = playerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            simplePlayerModal.photo.onerror = () => { simplePlayerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
+            simplePlayerModal.name.textContent = playerData.name;
+
+            // Lógica para el indicador de estado
+            const statusIndicator = document.getElementById('player-status-indicator');
+            if (playerData.status === 'Activo') {
+                statusIndicator.style.backgroundColor = 'var(--success-color)';
+                statusIndicator.style.borderColor = 'var(--bg-secondary)';
+            } else {
+                statusIndicator.style.backgroundColor = 'var(--danger-color)';
+                statusIndicator.style.borderColor = 'var(--bg-secondary)';
+            }
+
+            simplePlayerModal.overlay.classList.remove('hidden');
+            setTimeout(() => {
+                simplePlayerModal.overlay.classList.remove('opacity-0');
+                simplePlayerModal.content.classList.remove('scale-95');
+                DOMElements.body.classList.add('modal-open');
+            }, 10);
+        }
+
+        function hideSimplePlayerModal() {
+            const { simplePlayerModal } = DOMElements;
+            simplePlayerModal.overlay.classList.add('opacity-0');
+            simplePlayerModal.content.classList.add('scale-95');
+            DOMElements.body.classList.remove('modal-open');
+            setTimeout(() => {
+                simplePlayerModal.overlay.classList.add('hidden');
+            }, 300);
+        }
+        // FIN: Funciones para el nuevo modal simple
+
+        function calculateIndividualPlayerStats(playerId, allPlayerMatches) {
+            const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }};
+            const allYearsInMatches = [...new Set(allPlayerMatches.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
+        
+            allYearsInMatches.forEach(year => {
+                playerStats.years[year] = {
+                    apertura: { name: 'Apertura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
+                    clausura: { name: 'Clausura', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 },
+                    total: { name: year, points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }
+                };
+            });
+            
+            allPlayerMatches.forEach(match => {
+                 const { match_date, team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
+                 if (!result || !match_date) return;
+        
+                 const matchDate = parseDate(match_date);
+                 const year = matchDate.getFullYear();
+                 const period = matchDate.getMonth() <= 5 ? 'apertura' : 'clausura';
+        
+                 if (!playerStats.years[year]) return;
+                 
+                 const playerIsInMatch = (team_white_players || []).includes(playerId) || (team_dark_players || []).includes(playerId);
+                 
+                 if (playerIsInMatch) {
+                     const statsToUpdate = [playerStats.years[year][period], playerStats.years[year].total, playerStats.overallTotal];
+                     
+                     if (result !== 'Suspendido') {
+                         statsToUpdate.forEach(s => s.pj++);
+                         if (result === 'Claros' && (team_white_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                         else if (result === 'Oscuros' && (team_dark_players || []).includes(playerId)) statsToUpdate.forEach(s => { s.points += 3; s.pg++; });
+                         else if (result === 'Empate') statsToUpdate.forEach(s => { s.points += 1; s.pe++; });
+                         else statsToUpdate.forEach(s => s.pp++);
+                     }
+            
+                     if (chamigo_votes) {
+                         const votosArray = Object.entries(chamigo_votes).map(([id, votos]) => ({ id, votos }));
+                         if (votosArray.length > 0) {
+                             const maxVotes = Math.max(...votosArray.map(v => v.votos));
+                             if (votosArray.some(v => v.id === playerId && v.votos === maxVotes)) {
+                                 statsToUpdate.forEach(s => s.chamigos++);
+                             }
+                         }
+                     }
+                     if (tt_attendees && tt_attendees.includes(playerId)) {
+                         statsToUpdate.forEach(s => s.tt++);
+                     }
+                 }
+            });
+        
+            allYearsInMatches.forEach(year => {
+                const yearData = playerStats.years[year];
+                ['apertura', 'clausura', 'total'].forEach(periodType => {
+                    const stats = yearData[periodType];
+                    const totalMatchesInPeriod = allPlayerMatches.filter(m => {
+                        if (!m.match_date || !m.result || m.result === 'Suspendido') return false;
+                        const d = parseDate(m.match_date);
+                        const p = d.getMonth() <= 5 ? 'apertura' : 'clausura';
+                        const y = d.getFullYear();
+                        if (periodType === 'total') return y === year;
+                        return y === year && p === periodType;
+                    }).length;
+        
+                    const maxPoints = stats.pj * 3;
+                    stats.efectividad = maxPoints > 0 ? ((stats.points / maxPoints) * 100).toFixed(2) : "0.00";
+                    stats.ausentes = Math.max(0, totalMatchesInPeriod - stats.pj);
+                });
+            });
+        
+            const totalNonSuspendedMatches = allPlayerMatches.filter(m => m.result && m.result !== 'Suspendido').length;
+            const overall = playerStats.overallTotal;
+            const maxTotalPoints = overall.pj * 3;
+            overall.efectividad = maxTotalPoints > 0 ? ((overall.points / maxTotalPoints) * 100).toFixed(2) : "0.00";
+            overall.ausentes = Math.max(0, totalNonSuspendedMatches - overall.pj);
+        
+            return playerStats;
+        }
+
+        async function renderIndividualStatsTable() {
+            const selectedPlayerId = document.getElementById('selected-player-id').value;
+            const table = document.getElementById('individual-stats-table');
+            const loadingMessage = document.getElementById('individual-stats-loading-message');
+            if (!table || !loadingMessage) return;
+            
+            table.classList.add('hidden');
+            loadingMessage.classList.remove('hidden');
+            
+            if(!selectedPlayerId) {
+                loadingMessage.textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                return;
+            }
+
+            const playerStats = calculateIndividualPlayerStats(selectedPlayerId, allMatchesData);
+
+            if (!playerStats) { loadingMessage.textContent = 'No se pudieron calcular las estadísticas.'; return; }
+            
+            let tableHtml = `
+                <thead>
+                    <tr>
+                        <th class="text-center sticky-col sticky-col-1">Año</th>
+                        <th class="sticky-col sticky-col-2">Torneo</th>
+                        <th>Puntos</th><th>PG</th><th>PE</th>
+                        <th>PP</th><th>PJ</th><th>Efectividad</th>
+                        <th>Chamigo</th><th>TT</th><th>Ausentismo</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            tableHtml += `
+                <tr class="font-bold">
+                    <td class="text-center sticky-col sticky-col-1"><b>TOTAL</b></td>
+                    <td class="sticky-col sticky-col-2"></td>
+                    <td>${playerStats.overallTotal.points}</td><td>${playerStats.overallTotal.pg}</td>
+                    <td>${playerStats.overallTotal.pe}</td><td>${playerStats.overallTotal.pp}</td>
+                    <td>${playerStats.overallTotal.pj}</td><td>${playerStats.overallTotal.efectividad}%</td>
+                    <td>${playerStats.overallTotal.chamigos}</td><td>${playerStats.overallTotal.tt}</td>
+                    <td>${playerStats.overallTotal.ausentes}</td>
+                </tr>`;
+
+            Object.keys(playerStats.years).sort((a,b) => b-a).forEach(year => {
+                const yearData = playerStats.years[year];
+                if(yearData.total.pj > 0) {
+                    tableHtml += `
+                        <tr class="font-semibold cursor-pointer" data-year="${year}">
+                            <td class="text-center sticky-col sticky-col-1"><i class="fas fa-plus-circle toggle-details mr-2 text-accent-color"></i><b>${year}</b></td>
+                            <td class="sticky-col sticky-col-2"><b>TOTAL AÑO</b></td>
+                            <td>${yearData.total.points}</td><td>${yearData.total.pg}</td>
+                            <td>${yearData.total.pe}</td><td>${yearData.total.pp}</td>
+                            <td>${yearData.total.pj}</td><td>${yearData.total.efectividad}%</td>
+                            <td>${yearData.total.chamigos}</td><td>${yearData.total.tt}</td>
+                            <td>${yearData.total.ausentes}</td>
+                        </tr>
+                        <tr class="period-details-row hidden" data-year-parent="${year}">
+                            <td class="text-center sticky-col sticky-col-1"></td><td class="sticky-col sticky-col-2">Clausura</td>
+                            <td>${yearData.clausura.points}</td><td>${yearData.clausura.pg}</td>
+                            <td>${yearData.clausura.pe}</td><td>${yearData.clausura.pp}</td>
+                            <td>${yearData.clausura.pj}</td><td>${yearData.clausura.efectividad}%</td>
+                            <td>${yearData.clausura.chamigos}</td><td>${yearData.clausura.tt}</td>
+                            <td>${yearData.clausura.ausentes}</td>
+                        </tr>
+                        <tr class="period-details-row hidden" data-year-parent="${year}">
+                            <td class="text-center sticky-col sticky-col-1"></td><td class="sticky-col sticky-col-2">Apertura</td>
+                            <td>${yearData.apertura.points}</td><td>${yearData.apertura.pg}</td>
+                            <td>${yearData.apertura.pe}</td><td>${yearData.apertura.pp}</td>
+                            <td>${yearData.apertura.pj}</td><td>${yearData.apertura.efectividad}%</td>
+                            <td>${yearData.apertura.chamigos}</td><td>${yearData.apertura.tt}</td>
+                            <td>${yearData.apertura.ausentes}</td>
+                        </tr>`;
+                }
+            });
+            
+            table.innerHTML = tableHtml + '</tbody>';
+            loadingMessage.classList.add('hidden');
+            table.classList.remove('hidden');
+            
+            table.querySelectorAll('[data-year]').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    const year = row.dataset.year;
+                    const toggleIcon = row.querySelector('.toggle-details');
+                    document.querySelectorAll(`.period-details-row[data-year-parent="${year}"]`).forEach(r => r.classList.toggle('hidden'));
+                    toggleIcon?.classList.toggle('fa-plus-circle');
+                    toggleIcon?.classList.toggle('fa-minus-circle');
+                });
+            });
+        }
+
+        function setupPlayerSearch() {
+            const searchInput = document.getElementById('individual-player-search');
+            const resultsDiv = document.getElementById('individual-player-results');
+            const selectedIdInput = document.getElementById('selected-player-id');
+            const clearButton = document.getElementById('clear-player-search');
+            if(!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
+
+            const filterAndDisplay = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm)).sort((a, b) => a.name.localeCompare(b.name));
+                resultsDiv.innerHTML = filtered.map(player => `<div class="p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
+                resultsDiv.classList.remove('hidden');
+            };
+
+            resultsDiv.addEventListener('mousedown', (e) => {
+                if (e.target.dataset.playerId) {
+                    const player = allPlayersData.find(p => p.id == e.target.dataset.playerId);
+                    searchInput.value = player.name;
+                    selectedIdInput.value = player.id;
+                    resultsDiv.classList.add('hidden');
+                    renderIndividualStatsTable();
+                }
+            });
+
+            searchInput.addEventListener('input', filterAndDisplay);
+            searchInput.addEventListener('focus', filterAndDisplay);
+            searchInput.addEventListener('blur', () => setTimeout(() => resultsDiv.classList.add('hidden'), 150));
+
+            clearButton.addEventListener('mousedown', (e) => {
+                e.preventDefault(); 
+                searchInput.value = '';
+                selectedIdInput.value = '';
+                document.getElementById('individual-stats-table').innerHTML = ''; // Limpia la tabla
+                const loadingMsg = document.getElementById('individual-stats-loading-message');
+                if(loadingMsg) {
+                    loadingMsg.textContent = 'Selecciona un jugador para ver sus estadísticas.';
+                }
+                filterAndDisplay(); // Vuelve a mostrar la lista completa
+            });
+            
+            if(allPlayersData.length > 0) {
+                const defaultPlayer = allPlayersData.find(p => p.id === 'J001') || allPlayersData[0];
+                if (defaultPlayer) {
+                    searchInput.value = defaultPlayer.name;
+                    selectedIdInput.value = defaultPlayer.id;
+                }
+            }
+        }
+        
+        function getTabContentHTML(tabId) {
+            const config = PAGE_CONFIG[tabId] || PAGE_CONFIG['leaderboard-content'];
+            
+            let baseHtml = `<div id="${tabId}" class="main-content-container space-y-4">`;
+            
+            const prefix = tabId.replace('-content', '');
+            
+            if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas', 'fixture'].includes(prefix)) {
+                const yearFilterHTML = `
+                    <div class="custom-select-container">
+                        <button id="${prefix}-year-select-button" class="custom-select-button">
+                            <span class="truncate">Seleccionar Años</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div id="${prefix}-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto">
+                        </div>
+                    </div>`;
+                 
+                 const periodOrMonthFilterHTML = prefix === 'fixture' ? `
+                    <div class="custom-select-container">
+                        <button id="fixture-month-select-button" class="custom-select-button">
+                            <span class="truncate">Seleccionar Meses</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div id="fixture-month-select-dropdown" class="custom-select-options multi-month-select-dropdown hidden max-h-60 overflow-y-auto">
+                        </div>
+                    </div>` : `
+                    <div id="${prefix}-period-select-container" class="custom-select-container">
+                        <input type="hidden" id="${prefix}-period-select" value="apertura">
+                        <button id="${prefix}-period-select-button" class="custom-select-button">
+                            <span class="truncate">Apertura</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div id="${prefix}-period-select-dropdown" class="custom-select-options hidden">
+                            <div class="option-item selected" data-value="apertura">Apertura</div>
+                            <div class="option-item" data-value="clausura">Clausura</div>
+                            <div class="option-item" data-value="total">Totales</div>
+                        </div>
+                    </div>`;
+
+                 baseHtml += `
+                    <div id="${prefix}-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
+                        <div class="col-span-1 md:col-span-2 md:order-1">
+                            ${yearFilterHTML}
+                        </div>
+                        <div class="col-span-1 md:col-span-2 md:order-3">
+                            ${periodOrMonthFilterHTML}
+                        </div>
+                        <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
+                           <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
+                        </div>
+                    </div>
+                    <hr class="border-border-color"/>
+                    `;
+            }
+            
+            switch(tabId) {
+                case 'leaderboard-content': case 'chamigo-content': case 'tt-content': case 'presentismo-content': case 'ausentismo-content':
+                    baseHtml += `<div class="table-container">
+                                    <p id="${prefix}-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                                    <table id="${prefix}-table"></table>
+                                 </div>`;
+                    break;
+                case 'estadisticas-content':
+                     baseHtml += `
+                        <div class="table-container overflow-x-auto">
+                            <p id="estadisticas-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                            <table id="estadisticas-table"></table>
+                        </div>`;
+                    break;
+                case 'equipos-content':
+                    baseHtml += `<p id="equipos-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                                 <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>`;
+                    break;
+                case 'fixture-content':
+                     baseHtml += `
+                        <p id="fixture-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando partidos...</p>
+                        <div id="fixture-dropdown-container" class="custom-select-container relative hidden">
+                            <button class="custom-select-button">
+                                <span>Seleccionar Partido</span>
+                                <i class="fas fa-chevron-down transition-transform"></i>
+                            </button>
+                            <div class="custom-select-options hidden max-h-72 overflow-y-auto">
+                            </div>
+                        </div>
+                        <div id="fixture-visual-details-container" class="flex flex-col md:flex-row md:space-x-6 mt-6 hidden">
+                            <div class="md:w-[65%] min-w-0"><div id="soccer-field-container" class="rounded-lg overflow-hidden"></div></div>
+                            <div id="fixture-details-display" class="flex-1 md:w-[35%] mt-6 md:mt-0 flex flex-col border-2 border-black/10 dark:border-white/10">
+                                <h3>Asistentes al TT</h3>
+                                <div class="table-container flex-grow">
+                                    <table id="tt-attendees-table">
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>`;
+                    break;
+                case 'individual-stats-content':
+                    baseHtml += `
+                        <div class="mb-6">
+                            <div class="relative z-20">
+                                <input type="text" id="individual-player-search" placeholder="Buscar Jugador..." class="mt-1 block w-full p-2 shadow-sm">
+                                <button id="clear-player-search" class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"><i class="fas fa-times-circle"></i></button>
+                                <div id="individual-player-results" class="absolute z-10 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                            </div>
+                            <input type="hidden" id="selected-player-id">
+                        </div>
+                        <div class="table-container overflow-x-auto">
+                            <p id="individual-stats-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
+                            <table id="individual-stats-table"></table>
+                        </div>`;
+                    break;
+                    
+                case 'comparador-content':
+                     // ESTRUCTURA ACTUALIZADA PARA COMPARADOR
+                    baseHtml = `
+                        <div id="comparador-content" class="main-content-container space-y-4">
+                            <!-- Filters Container -->
+                            <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
+                                <div class="col-span-1 md:col-span-2 md:order-1">
+                                    <div class="custom-select-container">
+                                        <button id="comparador-year-select-button" class="custom-select-button">
+                                            <span class="truncate">Seleccionar Años</span>
+                                            <i class="fas fa-chevron-down transition-transform"></i>
+                                        </button>
+                                        <div id="comparador-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto"></div>
+                                    </div>
+                                </div>
+                                <div class="col-span-1 md:col-span-2 md:order-3">
+                                     <div id="comparador-period-select-container" class="custom-select-container">
+                                        <input type="hidden" id="comparador-period-select" value="apertura">
+                                        <button id="comparador-period-select-button" class="custom-select-button">
+                                            <span class="truncate">Apertura</span>
+                                            <i class="fas fa-chevron-down transition-transform"></i>
+                                        </button>
+                                        <div id="comparador-period-select-dropdown" class="custom-select-options hidden">
+                                            <div class="option-item selected" data-value="apertura">Apertura</div>
+                                            <div class="option-item" data-value="clausura">Clausura</div>
+                                            <div class="option-item" data-value="total">Totales</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
+                                   <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
+                                </div>
+                            </div>
+                            
+                            <hr class="border-border-color"/>
+
+                            <!-- Player Selectors -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="relative">
+                                    <label class="block text-sm font-medium mb-1">Jugador 1</label>
+                                    <input type="text" id="comparador-player1-search" placeholder="Buscar Jugador 1..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
+                                    <button id="comparador-clear-player1-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
+                                    <div id="comparador-player1-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                                    <input type="hidden" id="comparador-player1-id">
+                                </div>
+                                <div class="relative">
+                                     <label class="block text-sm font-medium mb-1">Jugador 2</label>
+                                    <input type="text" id="comparador-player2-search" placeholder="Buscar Jugador 2..." class="w-full p-2 pr-8 shadow-sm comparator-search-input" autocomplete="off">
+                                    <button id="comparador-clear-player2-search" class="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
+                                    <div id="comparador-player2-results" class="comparator-results-dropdown absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                                    <input type="hidden" id="comparador-player2-id">
+                                </div>
+                            </div>
+
+                            <!-- Comparison Display -->
+                            <div id="comparison-display-area" class="hidden space-y-6 pt-4">
+                                <!-- Las tarjetas de jugador y las barras de stats se insertarán aquí con JS -->
+                            </div>
+                            <p id="comparador-placeholder" class="text-center text-text-secondary pt-8">Selecciona dos jugadores y un período para comenzar la comparación.</p>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            baseHtml += `</div>`;
+            return baseHtml;
+        }
+
+        function activateTab(tabId) {
+            const config = PAGE_CONFIG[tabId] || PAGE_CONFIG['leaderboard-content'];
+            
+            const desktopTitleEl = document.getElementById('desktop-header-title');
+            if (desktopTitleEl) {
+                desktopTitleEl.innerHTML = `
+                    <i class="fas ${config.icon} text-2xl mr-3"></i>
+                    <span>${config.desktopTitle || config.title}</span>`;
+            }
+            
+            const mobileTitleEl = document.getElementById('mobile-header-title');
+            if(mobileTitleEl) {
+                mobileTitleEl.innerHTML = `
+                    <i class="fas ${config.icon} text-lg mr-2"></i>
+                    <span class="font-bold uppercase tracking-wider">${config.title}</span>`;
+            }
+
+            DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
+            
+            DOMElements.tabButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabId);
+            });
+            
+            setupDynamicEventListeners(tabId);
+            
+            if (renderFunctions[tabId]) {
+                renderFunctions[tabId]();
+            }
+
+            // Si estamos en la pestaña de Fixture, intentamos un reajuste después de un breve instante
+            if (tabId === 'fixture-content') {
+                setTimeout(adjustFixtureHeights, 100); // Un pequeño delay para dar tiempo al renderizado
+            }
+            
+            localStorage.setItem('lastActiveTab', tabId);
+            const hash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === tabId);
+            if (hash && window.location.hash !== hash) {
+                history.pushState(null, '', hash);
+            }
+        }
+        
+        function updateMultiYearButtonText(prefix) {
+            const button = document.getElementById(`${prefix}-year-select-button`);
+            if (!button) return;
+            const buttonSpan = button.querySelector('span');
+            const allYearsCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="all"]`);
+            const checked = document.querySelectorAll(`#${prefix}-year-select-dropdown input[value]:not([value="all"]):checked`);
+            
+            if (allYearsCheckbox && allYearsCheckbox.checked) {
+                buttonSpan.textContent = 'Todos los Años';
+            } else if (checked.length === 0) {
+                 buttonSpan.textContent = 'Seleccionar Años';
+            } else if (checked.length === 1) {
+                buttonSpan.textContent = checked[0].value;
+            } else {
+                buttonSpan.textContent = `${checked.length} Años seleccionados`;
+            }
+        }
+
+        function populateMultiYearSelect(prefix, changeCallback) {
+            const dropdown = document.getElementById(`${prefix}-year-select-dropdown`);
+            const button = document.getElementById(`${prefix}-year-select-button`);
+            if (!dropdown || !button) return;
+
+            const years = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
+            
+            let optionsHTML = `
+                <label class="font-bold border-b border-border-color">
+                    <input type="checkbox" value="all" class="year-checkbox">
+                    <span>Todos los Años</span>
+                </label>`;
+            
+            optionsHTML += years.map(year => `
+                <label>
+                    <input type="checkbox" value="${year}" class="year-checkbox">
+                    <span>${year}</span>
+                </label>
+            `).join('');
+            dropdown.innerHTML = optionsHTML;
+
+            const savedYears = globalFilterState.years || [];
+            if (savedYears.length > 0) {
+                dropdown.querySelectorAll('input').forEach(cb => {
+                    if (savedYears.includes(cb.value)) {
+                        cb.checked = true;
+                    }
+                });
+            } else {
+                const currentYear = new Date().getFullYear().toString();
+                const currentYearCb = dropdown.querySelector(`input[value="${currentYear}"]`);
+                if (currentYearCb) currentYearCb.checked = true;
+            }
+            updateMultiYearButtonText(prefix);
+
+            dropdown.addEventListener('change', (e) => {
+                const allCheckbox = dropdown.querySelector('input[value="all"]');
+                const yearCheckboxes = dropdown.querySelectorAll('input[value]:not([value="all"])');
+
+                if (e.target.value === 'all') {
+                    yearCheckboxes.forEach(cb => cb.checked = e.target.checked);
+                } else {
+                    allCheckbox.checked = [...yearCheckboxes].every(cb => cb.checked);
+                }
+                
+                updateMultiYearButtonText(prefix);
+                changeCallback();
+            });
+
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                button.querySelector('i').classList.toggle('rotate-180');
+            });
+        }
+
+        function updateMultiMonthButtonText(prefix) {
+            const button = document.getElementById(`${prefix}-month-select-button`);
+            if (!button) return;
+            const buttonSpan = button.querySelector('span');
+            const allMonthsCheckbox = document.querySelector(`#${prefix}-month-select-dropdown input[value="all"]`);
+            const checked = document.querySelectorAll(`#${prefix}-month-select-dropdown input[value]:not([value="all"]):checked`);
+            
+            if (allMonthsCheckbox && allMonthsCheckbox.checked) {
+                buttonSpan.textContent = 'Todos los Meses';
+            } else if (checked.length === 0) {
+                 buttonSpan.textContent = 'Seleccionar Meses';
+            } else if (checked.length === 1) {
+                const monthIndex = parseInt(checked[0].value) - 1;
+                const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                buttonSpan.textContent = months[monthIndex];
+            } else {
+                buttonSpan.textContent = `${checked.length} Meses seleccionados`;
+            }
+        }
+
+        function populateMultiMonthSelect(prefix, changeCallback) {
+            const dropdown = document.getElementById(`${prefix}-month-select-dropdown`);
+            const button = document.getElementById(`${prefix}-month-select-button`);
+            if (!dropdown || !button) return;
+
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            
+            let optionsHTML = `<label class="font-bold border-b border-border-color"><input type="checkbox" value="all" class="month-checkbox"><span>Todos los Meses</span></label>`;
+            optionsHTML += months.map((month, index) => `<label><input type="checkbox" value="${index + 1}" class="month-checkbox"><span>${month}</span></label>`).join('');
+            dropdown.innerHTML = optionsHTML;
+
+            const savedMonths = globalFilterState.months || [];
+            if (savedMonths.length > 0) {
+                dropdown.querySelectorAll('input').forEach(cb => {
+                    if (savedMonths.includes(cb.value)) {
+                        cb.checked = true;
+                    }
+                });
+            }
+            updateMultiMonthButtonText(prefix);
+
+            dropdown.addEventListener('change', (e) => {
+                const allCheckbox = dropdown.querySelector('input[value="all"]');
+                const monthCheckboxes = dropdown.querySelectorAll('input[value]:not([value="all"])');
+
+                if (e.target.value === 'all') {
+                    monthCheckboxes.forEach(cb => cb.checked = e.target.checked);
+                } else {
+                    allCheckbox.checked = [...monthCheckboxes].every(cb => cb.checked);
+                }
+                
+                updateMultiMonthButtonText(prefix);
+                changeCallback();
+            });
+
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                button.querySelector('i').classList.toggle('rotate-180');
+            });
+        }
+
+        function setupDynamicEventListeners(tabId) {
+            const prefix = tabId.replace('-content', '');
+            const renderFn = renderFunctions[tabId];
+
+            const handleFilterChange = () => {
+                const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`);
+                globalFilterState.years = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+                
+                const periodSelect = document.getElementById(`${prefix}-period-select`);
+                if (periodSelect) globalFilterState.period = periodSelect.value;
+                
+                const monthCheckboxes = document.querySelectorAll(`#${prefix}-month-select-dropdown input[type=checkbox]:checked`);
+                if (monthCheckboxes.length > 0) {
+                    globalFilterState.months = Array.from(monthCheckboxes).map(cb => cb.value);
+                } else {
+                    delete globalFilterState.months;
+                }
+                
+                FilterSessionManager.update(globalFilterState);
+                document.body.dispatchEvent(new CustomEvent('filterChanged'));
+
+
+                if (renderFn) {
+                    if (prefix === 'estadisticas') {
+                        currentEstadisticasData = [];
+                        renderEstadisticas();
+                    } else if (prefix === 'fixture') {
+                        renderFixture(true);
+                    } else if (prefix === 'comparador') {
+                        updateComparison();
+                    }
+                    else {
+                        renderFn();
+                    }
+                }
+            };
+            
+            if (tabId.includes('content') && !tabId.includes('individual')) {
+                 populateMultiYearSelect(prefix, handleFilterChange);
+            }
+
+            const periodContainer = document.getElementById(`${prefix}-period-select-container`);
+            if (periodContainer) {
+                const button = periodContainer.querySelector('button');
+                const dropdown = periodContainer.querySelector('.custom-select-options');
+                const valueInput = periodContainer.querySelector('input[type=hidden]');
+                const buttonSpan = button.querySelector('span');
+
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    button.querySelector('i').classList.toggle('rotate-180');
+                });
+
+                dropdown.addEventListener('click', (e) => {
+                    const option = e.target.closest('.option-item');
+                    if (option) {
+                        const newValue = option.dataset.value;
+                        valueInput.value = newValue;
+                        buttonSpan.textContent = option.textContent;
+                        dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                        dropdown.classList.add('hidden');
+                        button.querySelector('i').classList.remove('rotate-180');
+                        handleFilterChange();
+                    }
+                });
+            }
+
+            if (prefix === 'fixture') {
+                populateMultiMonthSelect(prefix, handleFilterChange);
+            }
+
+            document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => {
+                const isMonthFilter = prefix === 'fixture';
+                setTodayFilters(prefix, isMonthFilter);
+                handleFilterChange();
+            });
+
+            if (tabId === 'estadisticas-content') {
+                 const table = document.getElementById('estadisticas-table');
+                 table?.addEventListener('click', (e) => {
+                     const th = e.target.closest('th[data-sort]');
+                     if (!th) return;
+                     const newCriterion = th.dataset.sort;
+                     if (estadisticasSortState.criterion === newCriterion) {
+                         estadisticasSortState.order = estadisticasSortState.order === 'desc' ? 'asc' : 'desc';
+                     } else {
+                         estadisticasSortState.criterion = newCriterion;
+                         estadisticasSortState.order = 'desc';
+                     }
+                     renderEstadisticas(true);
+                 });
+            }
+            
+            if (tabId === 'fixture-content') {
+                const dropdownContainer = document.getElementById('fixture-dropdown-container');
+                const button = dropdownContainer?.querySelector('.custom-select-button');
+                const options = dropdownContainer?.querySelector('.custom-select-options');
+
+                button?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    options.classList.toggle('hidden');
+                    button.querySelector('i').classList.toggle('rotate-180');
+                });
+
+                options?.addEventListener('click', (e) => {
+                    const optionItem = e.target.closest('.option-item');
+                    if (optionItem) {
+                        handleFixtureSelection(optionItem.dataset.matchId);
+                        options.classList.add('hidden');
+                        button.querySelector('i').classList.remove('rotate-180');
+                    }
+                });
+            }
+
+            if (tabId.includes('content') && !tabId.includes('individual')) {
+                const isMonthFilter = prefix === 'fixture';
+                const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.months : globalFilterState.period);
+                
+                if (hasSavedState) {
+                    if (isMonthFilter && globalFilterState.months) {
+                        const monthDropdown = document.getElementById('fixture-month-select-dropdown');
+                        monthDropdown.querySelectorAll('input').forEach(cb => {
+                            cb.checked = globalFilterState.months.includes(cb.value);
+                        });
+                        updateMultiMonthButtonText('fixture');
+                    } else if (!isMonthFilter && globalFilterState.period) {
+                        const periodContainer = document.getElementById(`${prefix}-period-select-container`);
+                        const valueInput = periodContainer.querySelector('input[type=hidden]');
+                        const buttonSpan = periodContainer.querySelector('button span');
+                        const dropdown = periodContainer.querySelector('.custom-select-options');
+                        
+                        valueInput.value = globalFilterState.period;
+                        const selectedOption = dropdown.querySelector(`.option-item[data-value="${globalFilterState.period}"]`);
+                         if (selectedOption) {
+                            buttonSpan.textContent = selectedOption.textContent;
+                            dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                            selectedOption.classList.add('selected');
+                        }
+                    }
+                } else {
+                    setTodayFilters(prefix, isMonthFilter);
+                    
+                    const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`);
+                    globalFilterState.years = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
+                    
+                    const periodSelect = document.getElementById(`${prefix}-period-select`);
+                    if (periodSelect) globalFilterState.period = periodSelect.value;
+                    
+                    const monthCheckboxes = document.querySelectorAll(`#${prefix}-month-select-dropdown input[type=checkbox]:checked`);
+                    if (monthCheckboxes.length > 0) {
+                        globalFilterState.months = Array.from(monthCheckboxes).map(cb => cb.value);
+                    }
+                    FilterSessionManager.update(globalFilterState);
+                }
+            }
+            
+            if (tabId === 'individual-stats-content') {
+                setupPlayerSearch();
+            }
+        }
+        
+        function setupRealtimeSubscriptions() {
+            if (statsChannel) {
+                supabaseClient.removeChannel(statsChannel);
+                statsChannel = null;
+            }
+            clearInterval(heartbeatInterval);
+            
+            console.log('Setting up Realtime subscriptions for stats page...');
+            
+            const handleChanges = (payload) => {
+                console.log('Change received on stats page!', payload);
+                const { table, eventType, new: newRecord, old: oldRecord } = payload;
+                
+                let dataArray;
+                let sortNeeded = false;
+
+                switch(table) {
+                    case 'players': dataArray = allPlayersData; break;
+                    case 'matches': dataArray = allMatchesData; sortNeeded = true; break;
+                    default: return;
+                }
+
+                if (eventType === 'INSERT') {
+                    if (!dataArray.some(item => item.id === newRecord.id)) {
+                       dataArray.push(newRecord);
+                    }
+                }
+                else if (eventType === 'UPDATE') {
+                    const index = dataArray.findIndex(item => item.id === newRecord.id);
+                    if (index !== -1) dataArray[index] = { ...dataArray[index], ...newRecord };
+                }
+                else if (eventType === 'DELETE') {
+                    const idToDelete = oldRecord.id;
+                    const index = dataArray.findIndex(item => item.id === idToDelete);
+                    if (index !== -1) dataArray.splice(index, 1);
+                }
+                
+                if (sortNeeded) {
+                    allMatchesData.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+                }
+
+                const activeTabButton = document.querySelector('.tab-button.active');
+                if (activeTabButton) {
+                    const tabId = activeTabButton.dataset.tab;
+                    activateTab(tabId);
+                }
+            };
+
+            statsChannel = supabaseClient.channel('public:stats_changes', {
+                config: {
+                    broadcast: { ack: true }
+                }
+            });
+
+            const startHeartbeat = () => {
+                clearInterval(heartbeatInterval); 
+                heartbeatInterval = setInterval(() => {
+                    if (statsChannel.state === 'joined') {
+                        statsChannel.send({
+                            type: 'broadcast',
+                            event: 'heartbeat',
+                            payload: { message: 'alive' },
+                        });
+                        console.log('Stats page heartbeat sent.');
+                    }
+                }, 30000); 
+            };
+
+            const stopHeartbeat = () => {
+                clearInterval(heartbeatInterval);
+            };
+
+            statsChannel
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
+                .subscribe((status, err) => {
+                    console.log(`Stats page Realtime status: ${status}`);
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Stats page subscribed to Realtime channel!');
+                        startHeartbeat(); 
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        console.error(`Stats page Realtime issue: ${status}`, err);
+                        stopHeartbeat();
+                        setTimeout(setupRealtimeSubscriptions, 5000);
+                    } else if (status === 'CLOSED') {
+                        console.warn('Stats page Realtime channel closed.');
+                        stopHeartbeat();
+                    }
+                });
+        }
+
+        // --- INICIO: Funciones del Comparador ---
+
+        function injectComparatorStyles() {
+            const styleId = 'comparator-dynamic-styles';
+            if (document.getElementById(styleId)) return; // Inject only once
+
+            const style = document.createElement('style');
+            style.id = styleId;
+            // ESTILOS ACTUALIZADOS PARA EL GRÁFICO CON VALORES DENTRO DE LAS BARRAS
+            style.innerHTML = `
+                .comparator-results-dropdown {
+                    background-color: var(--bg-secondary);
+                    border: 1px solid var(--border-color);
+                }
+                .comparator-results-dropdown .option-item:hover {
+                    background-color: var(--bg-muted);
+                }
+                html.dark .comparator-search-input {
+                    background-color: var(--bg-muted) !important;
+                    color: var(--text-primary) !important;
+                    border-color: var(--border-color) !important;
+                }
+                html.dark .comparator-results-dropdown {
+                     background-color: #1f2937;
+                     border-color: #374151;
+                }
+                html.dark .comparator-results-dropdown .option-item:hover {
+                    background-color: #374151;
+                }
+                .progress-bg {
+                    position: relative; /* Contenedor para el valor absoluto */
+                    display: flex;
+                    background-color: var(--border-color);
+                    border-radius: 9999px;
+                    height: 1.75rem; /* Aumentamos la altura para el texto */
+                    overflow: hidden;
+                }
+                html.dark .progress-bg {
+                    background-color: #374151;
+                }
+                .progress-bg.player1 {
+                    justify-content: flex-end; /* Barra crece de derecha a izquierda */
+                }
+                .progress-bg.player2 {
+                    justify-content: flex-start; /* Barra crece de izquierda a derecha */
+                }
+                .progress-fill {
+                    height: 100%;
+                    border-radius: 9999px;
+                    transition: width 0.5s ease-in-out;
+                }
+                .progress-fill.player1 {
+                    background-color: var(--accent-color);
+                }
+                .progress-fill.player2 {
+                    background-color: var(--danger-color);
+                }
+                .stat-value {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: white;
+                    font-weight: 600;
+                    font-size: 0.875rem;
+                    padding: 0 0.75rem; /* Padding horizontal */
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.6); /* Sombra para legibilidad */
+                    white-space: nowrap;
+                }
+                .stat-value.player1 {
+                    right: 0; /* Alineado a la derecha dentro de la barra */
+                }
+                .stat-value.player2 {
+                    left: 0; /* Alineado a la izquierda dentro de la barra */
+                }
+                .stat-value.winner {
+                    font-weight: 800; /* Hacemos más notorio al ganador */
+                }
+                .stat-label {
+                    text-align: center;
+                    font-weight: 600;
+                    color: var(--text-secondary);
+                    white-space: nowrap;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function setupComparatorPlayerSearch(playerNum) {
+            const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
+            const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
+            const selectedIdInput = document.getElementById(`comparador-player${playerNum}-id`);
+            const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
+
+            if (!searchInput || !resultsDiv || !selectedIdInput || !clearButton) return;
+
+            searchInput.readOnly = true;
+
+            const filterAndDisplay = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                clearButton.classList.toggle('hidden', searchTerm.length === 0);
+
+                const otherPlayerNum = playerNum === 1 ? 2 : 1;
+                const otherPlayerId = document.getElementById(`comparador-player${otherPlayerNum}-id`).value;
+
+                const filtered = allPlayersData
+                    .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id != otherPlayerId)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+
+                resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
+                resultsDiv.classList.remove('hidden');
+            };
+
+            resultsDiv.addEventListener('mousedown', (e) => {
+                const target = e.target.closest('.option-item');
+                if (target && target.dataset.playerId) {
+                    e.preventDefault();
+                    const player = allPlayersData.find(p => p.id == target.dataset.playerId);
+                    searchInput.value = player.name;
+                    selectedIdInput.value = player.id;
+                    resultsDiv.classList.add('hidden');
+                    clearButton.classList.remove('hidden');
+                    searchInput.readOnly = true;
+                    searchInput.blur();
+                    updateComparison();
+                }
+            });
+
+            searchInput.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (resultsDiv.classList.contains('hidden')) {
+                    filterAndDisplay();
+                } 
+                else {
+                    searchInput.readOnly = false;
+                    searchInput.focus();
+                }
+            });
+
+            searchInput.addEventListener('input', () => {
+                if (!searchInput.readOnly) {
+                    filterAndDisplay();
+                }
+            });
+
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (!resultsDiv.contains(document.activeElement)) {
+                        resultsDiv.classList.add('hidden');
+                        searchInput.readOnly = true;
+                    }
+                }, 150);
+            });
+            
+            clearButton.addEventListener('mousedown', (e) => {
+                e.preventDefault(); 
+                searchInput.value = '';
+                selectedIdInput.value = '';
+                searchInput.readOnly = true;
+                searchInput.blur();
+                updateComparison();
+                filterAndDisplay();
+            });
+        }
+
+        function renderComparador() {
+            injectComparatorStyles();
+            setupComparatorPlayerSearch(1);
+            setupComparatorPlayerSearch(2);
+            
+            if (!document.body.dataset.comparadorListener) {
+                document.body.addEventListener('filterChanged', updateComparison);
+                document.body.dataset.comparadorListener = 'true';
+            }
+        }
+
+        function createPlayerCard(playerStats, playerNum) {
+            if (!playerStats) return '';
+
+            const isPlaceholder = !playerStats.id;
+            const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+            
+            let borderColorClass = 'border-gray-300 dark:border-gray-600';
+            if (!isPlaceholder) {
+                borderColorClass = playerNum === 1 ? 'border-accent-color' : 'border-danger-color';
+            }
+            
+            return `
+                <div class="flex flex-col items-center text-center space-y-3">
+                    <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 ${borderColorClass} shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
+                    <h3 class="text-2xl font-bold text-text-primary ${isPlaceholder ? 'opacity-50' : ''}">${playerStats.name}</h3>
+                </div>
+            `;
+        }
+        
+        function createComparisonBars(stats1, stats2, statsMeta) {
+            const renderStatBar = (stat) => {
+                const val1 = parseFloat(stats1[stat.key]) || 0;
+                const val2 = parseFloat(stats2[stat.key]) || 0;
+                const suffix = stat.suffix || '';
+                const total = val1 + val2;
+        
+                let width1 = 0, width2 = 0;
+                if (total > 0) {
+                    width1 = (val1 / total) * 100;
+                    width2 = (val2 / total) * 100;
+                } else if (val1 === 0 && val2 === 0) {
+                    width1 = 0;
+                    width2 = 0;
+                } else if (val1 > 0) {
+                    width1 = 100;
+                } else {
+                    width2 = 100;
+                }
+        
+                let winnerClass1 = '', winnerClass2 = '';
+                const isLowerBetter = stat.key === 'pp' || stat.key === 'ausentes';
+        
+                if (val1 !== val2) {
+                    const winnerCssClass = 'winner-bar';
+                    if ((!isLowerBetter && val1 > val2) || (isLowerBetter && val1 < val2)) {
+                        winnerClass1 = winnerCssClass;
+                    } else {
+                        winnerClass2 = winnerCssClass;
+                    }
+                }
+        
+                return `
+                    <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
+                        <div class="progress-bg player1 ${winnerClass1}">
+                            <div class="progress-fill player1" style="width: ${width1}%"></div>
+                            <span class="stat-value player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+                        </div>
+                        <div class="stat-label">${stat.label}</div>
+                        <div class="progress-bg player2 ${winnerClass2}">
+                            <div class="progress-fill player2" style="width: ${width2}%"></div>
+                            <span class="stat-value player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+                        </div>
+                    </div>
+                `;
+            };
+        
+            return statsMeta.map(renderStatBar).join('');
+        }
+
+        function calculateHeadToHeadStats(player1Id, player2Id, filteredMatches) {
+            // Objeto para almacenar las estadísticas del "Entre Sí"
+            const h2h = {
+                pjTotal: 0,
+                pjEnEquipo: 0,
+                pjEnfrentados: 0,
+                p1_wins: 0,
+                p2_wins: 0,
+                empates: 0,
+                p1_efectividad: "0.00",
+                p2_efectividad: "0.00"
+            };
+
+            if (!player1Id || !player2Id) return h2h;
+
+            filteredMatches.forEach(match => {
+                const p1Team = (match.team_white_players || []).includes(player1Id) ? 'claros'
+                             : (match.team_dark_players || []).includes(player1Id) ? 'oscuros' : null;
+
+                const p2Team = (match.team_white_players || []).includes(player2Id) ? 'claros'
+                             : (match.team_dark_players || []).includes(player2Id) ? 'oscuros' : null;
+
+                // Solo contamos si ambos jugaron en el partido y no fue suspendido
+                if (p1Team && p2Team && match.result && match.result !== 'Suspendido') {
+                    h2h.pjTotal++;
+
+                    if (p1Team === p2Team) {
+                        h2h.pjEnEquipo++;
+                    } else { // Se enfrentaron en equipos opuestos
+                        h2h.pjEnfrentados++;
+                        const result = match.result;
+
+                        if (result === 'Empate') {
+                            h2h.empates++;
+                        } else if ((result === 'Claros' && p1Team === 'claros') || (result === 'Oscuros' && p1Team === 'oscuros')) {
+                            h2h.p1_wins++;
+                        } else {
+                            h2h.p2_wins++;
+                        }
+                    }
+                }
+            });
+
+            // Calculamos efectividad en base a los enfrentamientos
+            const p1TotalPoints = (h2h.p1_wins * 3) + h2h.empates;
+            const p1PossiblePoints = h2h.pjEnfrentados * 3;
+            h2h.p1_efectividad = p1PossiblePoints > 0 ? ((p1TotalPoints / p1PossiblePoints) * 100).toFixed(2) : "0.00";
+
+            const p2TotalPoints = (h2h.p2_wins * 3) + h2h.empates;
+            const p2PossiblePoints = h2h.pjEnfrentados * 3;
+            h2h.p2_efectividad = p2PossiblePoints > 0 ? ((p2TotalPoints / p2PossiblePoints) * 100).toFixed(2) : "0.00";
+
+            return h2h;
+        }
+        
+        function updateComparison() {
             const player1Id = document.getElementById('comparador-player1-id')?.value;
             const player2Id = document.getElementById('comparador-player2-id')?.value;
         
@@ -137,3 +3067,160 @@ function updateComparison() {
                 </div>
             `;
         }
+
+        // --- FIN: Funciones del Comparador ---
+
+        function adjustFixtureHeights() {
+            const soccerField = document.getElementById('soccer-field-container');
+            const detailsDisplay = document.getElementById('fixture-details-display');
+
+            if (!soccerField || !detailsDisplay) return;
+
+            // Solo aplicamos la altura fija en vistas de escritorio (horizontales)
+            if (window.innerWidth >= 768) { 
+                const fieldHeight = soccerField.offsetHeight;
+                detailsDisplay.style.height = `${fieldHeight}px`;
+            } else { 
+                // En móvil, reseteamos la altura para que se ajuste al contenido
+                detailsDisplay.style.height = 'auto';
+            }
+        }
+        
+        async function initializeApp() {
+            try {
+                const { data: players, error: pError } = await supabaseClient.from('players').select('id, name, photo_url, status');
+                const { data: matches, error: mError } = await supabaseClient.from('matches').select('*');
+
+                if (pError || mError) throw pError || mError;
+                
+                allPlayersData = players;
+                allMatchesData = matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+
+                setupRealtimeSubscriptions();
+
+                const hash = window.location.hash;
+                const storedTabId = localStorage.getItem('lastActiveTab');
+                let initialTabId = 'leaderboard-content';
+
+                if (hash && hashToTabMap[hash]) {
+                    initialTabId = hashToTabMap[hash];
+                } else if (storedTabId && document.querySelector(`.tab-button[data-tab="${storedTabId}"]`)) {
+                    initialTabId = storedTabId;
+                }
+                
+                activateTab(initialTabId);
+
+            } catch (error) {
+                console.error("Error fatal durante la inicialización:", error);
+                DOMElements.mainContentArea.innerHTML = `<div class="main-content-container text-center text-red-500"><p>Error al cargar datos: ${error.message}</p></div>`;
+            }
+        }
+
+        function init() {
+            const sessionFilters = FilterSessionManager.startOrResume();
+            if (sessionFilters) {
+                globalFilterState = sessionFilters;
+            }
+
+            ['click', 'scroll', 'keydown'].forEach(eventType => {
+                window.addEventListener(eventType, () => {
+                    const activeTabId = document.querySelector('.tab-button.active')?.dataset.tab;
+                    if (activeTabId !== 'comparador-content') {
+                         FilterSessionManager.update(globalFilterState); 
+                    }
+                }, true);
+            });
+            
+            applyInitialResponsiveStyles();
+            applyTheme(localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+            DOMElements.darkModeToggleMobile.addEventListener('click', toggleTheme);
+            DOMElements.darkModeToggleDesktop.addEventListener('click', toggleTheme);
+            
+            DOMElements.hamburgerButton.addEventListener('click', openSideMenu);
+            DOMElements.overlay.addEventListener('click', closeSideMenu);
+            window.addEventListener('resize', applyInitialResponsiveStyles);
+
+            // Listener para reajustar alturas en el fixture al cambiar tamaño de ventana
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    // Solo reajustar si la pestaña de fixture está visible
+                    if (document.getElementById('fixture-content')) {
+                        adjustFixtureHeights();
+                    }
+                }, 200); // Un pequeño delay para no sobrecargar el navegador
+            });
+            
+            DOMElements.tabButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const tabId = e.currentTarget.dataset.tab;
+                    if (tabId) { 
+                        activateTab(tabId);
+                        if (window.innerWidth < 768) closeSideMenu();
+                    }
+                });
+            });
+            window.addEventListener('hashchange', () => {
+                const tabId = hashToTabMap[window.location.hash] || 'leaderboard-content';
+                activateTab(tabId);
+            });
+
+            DOMElements.collapsibleTriggers.forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    const content = trigger.nextElementSibling;
+                    const icon = trigger.querySelector('i.fa-chevron-down');
+                    content.classList.toggle('hidden');
+                    icon?.classList.toggle('rotate-180');
+                });
+            });
+            
+            document.addEventListener('click', (e) => {
+                document.querySelectorAll('.custom-select-options:not(.hidden)').forEach(dropdown => {
+                    if (!dropdown.parentElement.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                        dropdown.previousElementSibling.querySelector('i').classList.remove('rotate-180');
+                    }
+                });
+                document.querySelectorAll('.comparator-results-dropdown:not(.hidden)').forEach(dropdown => {
+                    const container = dropdown.closest('.relative');
+                    if (container && !container.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            });
+
+            DOMElements.playerModal.closeBtn.addEventListener('click', hidePlayerModal);
+            DOMElements.playerModal.overlay.addEventListener('click', (e) => {
+                if (e.target === DOMElements.playerModal.overlay) {
+                    hidePlayerModal();
+                }
+            });
+
+            // INICIO: Listeners para el nuevo modal simple
+            DOMElements.simplePlayerModal.closeBtn.addEventListener('click', hideSimplePlayerModal);
+            DOMElements.simplePlayerModal.overlay.addEventListener('click', (e) => {
+                if (e.target === DOMElements.simplePlayerModal.overlay) {
+                    hideSimplePlayerModal();
+                }
+            });
+
+            // Listener delegado para las fotos clickeables en las tablas
+            DOMElements.mainContentArea.addEventListener('click', (e) => {
+                const photoTrigger = e.target.closest('.player-photo-clickable');
+                if (photoTrigger && photoTrigger.dataset.playerId) {
+                    e.preventDefault();
+                    showSimplePlayerModal(photoTrigger.dataset.playerId);
+                }
+            });
+            // FIN: Listeners para el nuevo modal simple
+
+            initializeApp();
+        }
+
+        init();
+    });
+    </script>
+</body>
+</html>
