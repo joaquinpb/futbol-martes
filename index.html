@@ -2993,69 +2993,57 @@
                 });
         
                 const headToHeadStats = calculateHeadToHeadStats(player1Id, player2Id, allFilteredMatches);
-                // ESTE ES EL NUEVO CÓDIGO DE REEMPLAZO
-                if (player1Id && player2Id) {
-                    const allFilteredMatches = allMatchesData.filter(match => {
-                        if (!match.result) return false;
-                        const matchYear = parseDate(match.match_date).getFullYear();
-                        const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
-                        const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
-                        const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
-                        return yearMatch && periodMatch;
-                    });
-        
-                    const headToHeadStats = calculateHeadToHeadStats(player1Id, player2Id, allFilteredMatches);
-                    
-                    if (headToHeadStats.pjTotal > 0) {
-                        const p1_vs_stats = {
-                            pg: headToHeadStats.p1_wins,
-                            pp: headToHeadStats.p2_wins, // Las perdidas de P1 son las ganadas de P2
-                            efectividad: headToHeadStats.p1_efectividad
-                        };
-                        const p2_vs_stats = {
-                            pg: headToHeadStats.p2_wins,
-                            pp: headToHeadStats.p1_wins, // Las perdidas de P2 son las ganadas de P1
-                            efectividad: headToHeadStats.p2_efectividad
-                        };
-        
-                        const h2hMeta = [
-                            { key: 'pg', label: 'Ganados' },
-                            { key: 'pp', label: 'Perdidos' },
-                            { key: 'efectividad', label: 'Efectividad', suffix: '%' }
-                        ];
-        
-                        const entreSiHtml = `
-                            <div class="space-y-4">
-                                <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Entre Sí</h4>
-                                
-                                <div class="grid grid-cols-2 gap-4 text-center">
-                                    <div class="stat-item">
-                                        <div class="value">${headToHeadStats.pjTotal}</div>
-                                        <div class="label">PJ TOTAL</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="value">${headToHeadStats.pjEnEquipo}</div>
-                                        <div class="label">PJ EN EQUIPO</div>
-                                    </div>
+                
+                if (headToHeadStats.pjTotal > 0) {
+                    const p1_vs_stats = {
+                        pg: headToHeadStats.p1_wins,
+                        pp: headToHeadStats.p2_wins,
+                        efectividad: headToHeadStats.p1_efectividad
+                    };
+                    const p2_vs_stats = {
+                        pg: headToHeadStats.p2_wins,
+                        pp: headToHeadStats.p1_wins,
+                        efectividad: headToHeadStats.p2_efectividad
+                    };
+    
+                    const h2hMeta = [
+                        { key: 'pg', label: 'Ganados' },
+                        { key: 'pp', label: 'Perdidos' },
+                        { key: 'efectividad', label: 'Efectividad', suffix: '%' }
+                    ];
+    
+                    const entreSiHtml = `
+                        <div class="space-y-4">
+                            <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Entre Sí</h4>
+                            
+                            <div class="grid grid-cols-4 gap-2 md:gap-4 text-center">
+                                <div class="stat-item">
+                                    <div class="value">${headToHeadStats.pjTotal}</div>
+                                    <div class="label">PJ</div>
                                 </div>
-        
-                                ${headToHeadStats.pjEnfrentados > 0 ? `
-                                    <div class="text-center my-4 space-x-2">
-                                        <div class="inline-block bg-gray-200 dark:bg-gray-700 rounded-lg px-3 py-1.5">
-                                            <span class="font-bold text-base">${headToHeadStats.pjEnfrentados}</span>
-                                            <span class="text-text-secondary ml-2 text-sm">PJ ENFRENTADOS</span>
-                                        </div>
-                                        <div class="inline-block bg-gray-200 dark:bg-gray-700 rounded-lg px-3 py-1.5">
-                                            <span class="font-bold text-base">${headToHeadStats.empates}</span>
-                                            <span class="text-text-secondary ml-2 text-sm">EMPATADOS</span>
-                                        </div>
-                                    </div>
-                                    ${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}
-                                ` : ''}
+                                <div class="stat-item">
+                                    <div class="value">${headToHeadStats.pjEnEquipo}</div>
+                                    <div class="label">EN EQUIPO</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="value">${headToHeadStats.pjEnfrentados}</div>
+                                    <div class="label">RIVALES</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="value">${headToHeadStats.empates}</div>
+                                    <div class="label">PE</div>
+                                </div>
                             </div>
-                        `;
-                        displayArea.innerHTML += entreSiHtml;
-                    }
+    
+                            ${headToHeadStats.pjEnfrentados > 0 ? `
+                                <div>
+                                    <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6 mb-4">Como Rivales</h4>
+                                    ${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                    displayArea.innerHTML += entreSiHtml;
                 }
             }
             
@@ -3073,6 +3061,22 @@
                 </div>
             `;
         }
+            
+            const individualMeta = [
+                { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
+                { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
+                { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' },
+                { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' },
+                { key: 'ausentes', label: 'Ausencias' },
+            ];
+            displayArea.innerHTML += `
+                <div class="space-y-4">
+                    <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6">Individuales</h4>
+                    ${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}
+                </div>
+            `;
+        }
+
         // --- FIN: Funciones del Comparador ---
 
         function adjustFixtureHeights() {
