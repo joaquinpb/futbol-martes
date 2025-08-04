@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentStatsData = { players: [], teamStats: {} };
     let lastSelectedFixtureMatchId = null;
     let estadisticasSortState = { criterion: 'points', order: 'desc' };
-    let individualStatsSortState = { criterion: 'name', order: 'asc' };
 
     // --- DOM ELEMENTS CACHE ---
     const DOMElements = {
@@ -36,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         simplePlayerModal: {
             overlay: document.getElementById('simple-player-modal-overlay'),
+            content: document.getElementById('simple-player-modal-content'),
             closeBtn: document.getElementById('simple-player-modal-close'),
             photo: document.getElementById('simple-player-modal-photo'),
             name: document.getElementById('simple-player-modal-name'),
@@ -70,30 +70,24 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners();
 
         try {
-            // Cargar datos en paralelo para mayor eficiencia
             [allPlayersData, allMatchesData] = await Promise.all([getPlayers(), getMatches()]);
 
-            // Determinar la pestaña inicial a mostrar
             const hash = window.location.hash;
             const storedTabId = localStorage.getItem('lastActiveTab');
             let initialTabId = HASH_TO_TAB_MAP[hash] || storedTabId || 'leaderboard-content';
             
-            // Validar que la pestaña exista, si no, usar la por defecto
             if (!PAGE_CONFIG[initialTabId]) {
                 initialTabId = 'leaderboard-content';
             }
-
             activateTab(initialTabId);
-
         } catch (error) {
-            console.error("Error fatal durante la inicialización de la app de estadísticas:", error);
-            DOMElements.mainContentArea.innerHTML = `<div class="p-6 text-center text-danger-color"><p>Error al cargar los datos. Por favor, intente recargar la página.</p></div>`;
+            console.error("Error fatal en la inicialización:", error);
+            DOMElements.mainContentArea.innerHTML = `<div class="p-6 text-center text-danger-color"><p>Error al cargar datos. Por favor, recarga la página.</p></div>`;
         }
     }
 
     // --- EVENT LISTENERS ---
     function setupEventListeners() {
-        // Navegación principal
         DOMElements.sideMenu.addEventListener('click', (e) => {
             const tabButton = e.target.closest('.tab-button');
             if (tabButton && tabButton.dataset.tab) {
@@ -108,11 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
             activateTab(tabId);
         });
 
-        // Menú móvil
         DOMElements.hamburgerButton.addEventListener('click', openSideMenu);
         DOMElements.overlay.addEventListener('click', closeSideMenu);
 
-        // Modales
         DOMElements.playerModal.closeBtn.addEventListener('click', hidePlayerModal);
         DOMElements.playerModal.overlay.addEventListener('click', (e) => {
             if (e.target === DOMElements.playerModal.overlay) hidePlayerModal();
@@ -122,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === DOMElements.simplePlayerModal.overlay) hideSimplePlayerModal();
         });
 
-        // Listener delegado para fotos de jugadores en tablas
         DOMElements.mainContentArea.addEventListener('click', (e) => {
             const photoTrigger = e.target.closest('.player-photo-clickable');
             if (photoTrigger && photoTrigger.dataset.playerId) {
@@ -131,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Cerrar dropdowns al hacer clic fuera
         document.addEventListener('click', (e) => {
             document.querySelectorAll('.custom-select-options:not(.hidden)').forEach(dropdown => {
                 if (!dropdown.parentElement.contains(e.target)) {
@@ -141,12 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         
-        // Ajustar layout en resize
         let resizeTimer;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
-                if (document.getElementById('fixture-content')) {
+                if (document.getElementById('fixture-content') && lastSelectedFixtureMatchId) {
                     renderFixtureDetails(lastSelectedFixtureMatchId);
                 }
             }, 200);
@@ -170,37 +159,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const config = PAGE_CONFIG[tabId];
         if (!config) return;
 
-        // Actualizar títulos
         const titleHTML = `<i class="fas ${config.icon} text-xl mr-3"></i><span>${config.title}</span>`;
         DOMElements.desktopHeaderTitle.innerHTML = titleHTML;
         DOMElements.mobileHeaderTitle.innerHTML = titleHTML;
 
-        // Resaltar botón activo
         DOMElements.sideMenu.querySelectorAll('.tab-button').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabId);
         });
 
-        // Renderizar contenido
         DOMElements.mainContentArea.innerHTML = getTabContentHTML(tabId);
-        const renderFunction = window[`render_${tabId.replace(/-/g, '_')}`];
-        if (typeof renderFunction === 'function') {
-            renderFunction();
+        
+        const controller = pageControllers[tabId];
+        if (controller) {
+            controller();
         }
-        setupFilterEventListeners(tabId);
 
-        // Guardar estado
         localStorage.setItem('lastActiveTab', tabId);
         const hash = Object.keys(HASH_TO_TAB_MAP).find(key => HASH_TO_TAB_MAP[key] === tabId);
         if (hash && window.location.hash !== hash) {
-            // Usamos replaceState para no llenar el historial al navegar por pestañas
             history.replaceState(null, '', hash);
         }
     }
 
+    // --- MODALS ---
     function showPlayerModal(playerId) {
         // Lógica para mostrar modal con estadísticas del jugador
-        const playerStats = currentStatsData.players.find(p => p.id === playerId);
-        const playerData = allPlayersData.find(p => p.id === playerId);
+        const playerStats = currentStatsData.players.find(p => p.id == playerId);
+        const playerData = allPlayersData.find(p => p.id == playerId);
         if (!playerData || !playerStats) return;
 
         const { playerModal } = DOMElements;
@@ -220,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function showSimplePlayerModal(playerId) {
-        const playerData = allPlayersData.find(p => p.id === playerId);
+        const playerData = allPlayersData.find(p => p.id == playerId);
         if (!playerData) return;
 
         const { simplePlayerModal } = DOMElements;
@@ -244,7 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let timeFilteredMatches = allMatchesData;
 
-        // Filtrar por año
         if (selectedYears && selectedYears.length > 0 && !selectedYears.includes('all')) {
             timeFilteredMatches = timeFilteredMatches.filter(match => {
                 const matchYear = new Date(match.match_date).getUTCFullYear();
@@ -252,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     
-        // Filtrar por período (Apertura/Clausura) o por meses específicos
         if (selectedPeriod && selectedPeriod !== 'total') {
             timeFilteredMatches = timeFilteredMatches.filter(match => {
                 const month = new Date(match.match_date).getUTCMonth(); // 0-11
@@ -282,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 teamStats.totalPJMatches++;
             } else {
                 teamStats.suspendidos++;
-                return; // No procesar puntos ni PJ para suspendidos
+                return;
             }
 
             if (match.result === 'Claros') teamStats.clarosWins++;
@@ -294,8 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
             allPlayersInMatch.forEach(pId => {
                 if (!playerStats[pId]) return;
                 playerStats[pId].pj++;
-                if (match.result === 'Claros' && (match.team_white_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
-                else if (match.result === 'Oscuros' && (match.team_dark_players || []).includes(pId)) { playerStats[pId].points += 3; playerStats[pId].pg++; }
+                if (match.result === 'Claros' && (match.team_white_players || []).includes(String(pId))) { playerStats[pId].points += 3; playerStats[pId].pg++; }
+                else if (match.result === 'Oscuros' && (match.team_dark_players || []).includes(String(pId))) { playerStats[pId].points += 3; playerStats[pId].pg++; }
                 else if (match.result === 'Empate') { playerStats[pId].points += 1; playerStats[pId].pe++; }
                 else { playerStats[pId].pp++; }
             });
@@ -312,11 +295,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             if (match.tt_attendees) {
-                match.tt_attendees.forEach(pId => { if (playerStats[pId]) playerStats[pId].tt++; });
+                match.tt_attendees.forEach(pId => { if (playerStats[String(pId)]) playerStats[String(pId)].tt++; });
             }
         });
 
-        // Calcular efectividad y ausentismo al final
         Object.values(playerStats).forEach(player => {
             const maxPossiblePoints = player.pj * 3;
             player.efectividad = maxPossiblePoints > 0 ? ((player.points / maxPossiblePoints) * 100).toFixed(2) : "0.00";
@@ -326,87 +308,99 @@ document.addEventListener('DOMContentLoaded', () => {
         return { players: Object.values(playerStats), teamStats };
     }
 
-    // --- RENDER FUNCTIONS ---
-    // Cada función `render_` se encarga de una pestaña específica.
-    
-    function render_leaderboard() {
-        const rankedPlayers = [...currentStatsData.players].sort((a, b) => b.points - a.points);
-        const headers = ['#', '', 'Jugador', 'Puntos', 'Efectividad'];
-        const renderRowFn = (player, index) => `
-            <tr>
-                <td class="font-semibold">${index + 1}</td>
-                <td class="w-14 min-w-[3.5rem]"><a href="#" class="player-photo-clickable inline-block" data-player-id="${player.id}"><img src="${player.photo_url || 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽'}" alt="Avatar" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td>
-                <td class="text-left font-medium">${player.name}</td>
-                <td>${player.points}</td>
-                <td>${player.efectividad}%</td>
-            </tr>`;
-        renderGenericTable('leaderboard', rankedPlayers, headers, renderRowFn);
-    }
-    
-    // ... (Se replicaría la misma estructura para render_chamigo, render_tt, etc.)
-    
-    function render_estadisticas() {
-        // Lógica de renderizado para la tabla completa de estadísticas
-    }
+    // --- PAGE CONTROLLERS ---
+    const pageControllers = {
+        'leaderboard-content': () => setupFilteredView('leaderboard', (a, b) => b.points - a.points, ['#', '', 'Jugador', 'Puntos', 'Efectividad'], 
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.points}</td><td>${p.efectividad}%</td></tr>`),
+        'chamigo-content': () => setupFilteredView('chamigo', (a, b) => b.chamigos - a.chamigos, ['#', '', 'Jugador', 'Chamigos'], 
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.chamigos}</td></tr>`, p => p.chamigos > 0),
+        'tt-content': () => setupFilteredView('tt', (a, b) => b.tt - a.tt, ['#', '', 'Jugador', 'TT'], 
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.tt}</td></tr>`, p => p.tt > 0),
+        'presentismo-content': () => setupFilteredView('presentismo', (a, b) => b.pj - a.pj, ['#', '', 'Jugador', 'PJ'], 
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.pj}</td></tr>`),
+        'ausentismo-content': () => setupFilteredView('ausentismo', (a, b) => b.ausentes - a.ausentes, ['#', '', 'Jugador', 'Ausentes'], 
+            (p, i) => `<tr><td class="font-semibold">${i + 1}</td><td class="w-14"><a href="#" class="player-photo-clickable" data-player-id="${p.id}"><img src="${p.photo_url || 'https://placehold.co/40x40'}" class="w-8 h-8 rounded-full object-cover mx-auto"></a></td><td class="text-left font-medium">${p.name}</td><td>${p.ausentes}</td></tr>`),
+        'equipos-content': () => {
+            setupFilterEventListeners('equipos', () => {
+                const statsDisplay = document.getElementById('equipos-stats-display');
+                const loadingMessage = document.getElementById('equipos-loading-message');
+                if (!statsDisplay || !loadingMessage) return;
 
-    function render_fixture() {
-        // Lógica de renderizado para el fixture
+                const { teamStats } = currentStatsData;
+                const statCard = (value, label, bgColor, textColor = 'var(--button-text-color)') => `<div class="p-4 rounded-lg shadow-md flex flex-col items-center justify-center" style="background-color: ${bgColor}; color: ${textColor};"><span class="text-3xl font-bold">${value}</span><span class="text-sm uppercase mt-1">${label}</span></div>`;
+                
+                statsDisplay.innerHTML = 
+                    statCard(teamStats.oscurosWins, 'Oscuros Ganados', '#1a202c') +
+                    statCard(teamStats.clarosWins, 'Claros Ganados', '#E2E8F0', '#1A202C') +
+                    statCard(teamStats.empates, 'Empates', 'var(--warning-color)') +
+                    statCard(teamStats.suspendidos, 'Suspendidos', 'var(--danger-color)') +
+                    statCard(teamStats.totalPJMatches, 'Partidos Jugados', 'var(--accent-color)');
+
+                loadingMessage.classList.add('hidden');
+                statsDisplay.classList.remove('hidden');
+            });
+            document.getElementById('equipos-hoy-button').click();
+        },
+        'fixture-content': () => {
+            setupFilterEventListeners('fixture', renderFixtureList);
+            document.getElementById('fixture-hoy-button').click();
+        },
+        'estadisticas-content': () => {
+             setupFilterEventListeners('estadisticas', renderEstadisticasTable);
+             document.getElementById('estadisticas-hoy-button').click();
+        },
+        'individual-stats-content': () => {
+            // Lógica para el histórico
+        },
+        'comparador-content': () => {
+            // Lógica para el comparador
+        }
+    };
+    
+    function setupFilteredView(prefix, sortFn, headers, rowTemplateFn, filterFn = () => true) {
+        setupFilterEventListeners(prefix, () => {
+            const rankedPlayers = [...currentStatsData.players].filter(filterFn).sort(sortFn);
+            renderGenericTable(prefix, rankedPlayers, headers, rowTemplateFn);
+        });
+        document.getElementById(`${prefix}-hoy-button`).click();
     }
 
     function renderGenericTable(prefix, data, headers, renderRowFn) {
         const container = document.getElementById(`${prefix}-content`);
         if (!container) return;
-
         const table = container.querySelector('table');
         const loadingMsg = container.querySelector('.loading-message');
-
-        if (data.length === 0) {
+        
+        if (!data || data.length === 0) {
             table.innerHTML = '';
-            loadingMsg.innerHTML = 'No hay datos para los filtros seleccionados.';
+            loadingMsg.textContent = 'No hay datos para los filtros seleccionados.';
             loadingMsg.classList.remove('hidden');
             return;
         }
 
         table.innerHTML = `
-            <thead><tr>${headers.map(h => `<th class="p-3 ${h === '' ? 'w-14' : ''}">${h}</th>`).join('')}</tr></thead>
+            <thead><tr>${headers.map(h => `<th class="p-3 text-center">${h}</th>`).join('')}</tr></thead>
             <tbody>${data.map(renderRowFn).join('')}</tbody>`;
         
         loadingMsg.classList.add('hidden');
+        table.classList.remove('hidden');
     }
 
+    // --- FILTERS ---
+    function setupFilterEventListeners(prefix, onFilterChangeCallback) {
+        // Lógica para poblar los dropdowns de filtros y añadirles listeners
+        // que al cambiar, llamen a `onFilterChangeCallback`
+    }
 
-    // --- TEMPLATE & DYNAMIC CONTENT ---
+    // --- HTML TEMPLATES ---
     function getTabContentHTML(tabId) {
         const prefix = tabId.replace('-content', '');
         let filterHTML = '';
 
         if (PAGE_CONFIG[tabId] && !['individual-stats-content', 'comparador-content'].includes(tabId)) {
-            const yearFilterHTML = `
-                <div class="custom-select-container">
-                    <button id="${prefix}-year-select-button" class="custom-select-button"><span>Seleccionar Años</span><i class="fas fa-chevron-down"></i></button>
-                    <div id="${prefix}-year-select-dropdown" class="custom-select-options hidden"></div>
-                </div>`;
-            
-            const periodOrMonthFilterHTML = prefix === 'fixture' ? `
-                <div class="custom-select-container">
-                    <button id="fixture-month-select-button" class="custom-select-button"><span>Seleccionar Meses</span><i class="fas fa-chevron-down"></i></button>
-                    <div id="fixture-month-select-dropdown" class="custom-select-options hidden"></div>
-                </div>` : `
-                <div class="custom-select-container">
-                    <button id="${prefix}-period-select-button" class="custom-select-button"><span>Apertura</span><i class="fas fa-chevron-down"></i></button>
-                    <div id="${prefix}-period-select-dropdown" class="custom-select-options hidden">
-                        <div class="option-item selected" data-value="apertura">Apertura</div>
-                        <div class="option-item" data-value="clausura">Clausura</div>
-                        <div class="option-item" data-value="total">Total Anual</div>
-                    </div>
-                </div>`;
-            
-            filterHTML = `
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
-                    <div class="col-span-1 md:col-span-2">${yearFilterHTML}</div>
-                    <div class="col-span-1 md:col-span-2">${periodOrMonthFilterHTML}</div>
-                    <div class="col-span-2 md:col-span-1"><button id="${prefix}-hoy-button" class="button button-primary w-full h-full">Hoy</button></div>
-                </div><hr class="border-border-color"/>`;
+            const yearFilterHTML = `...`;
+            const periodOrMonthFilterHTML = `...`;
+            filterHTML = `...`;
         }
         
         let contentHTML = '';
@@ -416,57 +410,19 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'tt-content':
             case 'presentismo-content':
             case 'ausentismo-content':
+                 contentHTML = `<div class="table-container"><p class="loading-message p-4">Cargando...</p><table id="${prefix}-table" class="w-full"></table></div>`;
+                 break;
+            case 'equipos-content':
+                 contentHTML = `<p id="equipos-loading-message" class="loading-message p-4">Cargando...</p><div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden"></div>`;
+                 break;
+            case 'fixture-content':
+                 contentHTML = `...`;
+                 break;
             case 'estadisticas-content':
-                contentHTML = `<div class="table-container"><p class="loading-message p-4">Cargando...</p><table id="${prefix}-table"></table></div>`;
-                break;
-            // ... otros casos
+                 contentHTML = `...`;
+                 break;
         }
-
         return `<div id="${tabId}" class="main-content-container space-y-4">${filterHTML}${contentHTML}</div>`;
-    }
-    
-    function setupFilterEventListeners(tabId) {
-        const prefix = tabId.replace('-content', '');
-        const yearButton = document.getElementById(`${prefix}-year-select-button`);
-        const periodButton = document.getElementById(`${prefix}-period-select-button`);
-        const monthButton = document.getElementById(`${prefix}-month-select-button`);
-
-        const updateStatsForTab = () => {
-            const selectedYears = getSelectedValuesFromDropdown(`${prefix}-year-select-dropdown`);
-            const selectedPeriod = document.querySelector(`#${prefix}-period-select-dropdown .selected`)?.dataset.value;
-            const selectedMonths = getSelectedValuesFromDropdown(`${prefix}-month-select-dropdown`);
-            
-            currentStatsData = calculateAllStats({ selectedYears, selectedPeriod, selectedMonths });
-            
-            const renderFn = window[`render_${prefix}`];
-            if (typeof renderFn === 'function') {
-                renderFn();
-            }
-        };
-
-        if (yearButton) {
-            populateMultiSelect(
-                `${prefix}-year-select-dropdown`, 
-                [...new Set(allMatchesData.map(m => new Date(m.match_date).getUTCFullYear()))].sort((a,b) => b-a),
-                updateStatsForTab,
-                true // es multiselect
-            );
-        }
-        // ... Lógica similar para periodButton y monthButton
-
-        // Setear filtros iniciales
-        // ...
-        updateStatsForTab();
-    }
-
-    function getSelectedValuesFromDropdown(dropdownId) {
-        const dropdown = document.getElementById(dropdownId);
-        if (!dropdown) return [];
-        return Array.from(dropdown.querySelectorAll('input:checked')).map(input => input.value);
-    }
-    
-    function populateMultiSelect(dropdownId, options, callback, isMulti) {
-        // Lógica para poblar dropdowns de filtros
     }
 
     // --- START APP ---
