@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -334,8 +333,17 @@
         #estadisticas-table .sticky-col-1 { left: 0; }
         #estadisticas-table .sticky-col-2 { left: 56px; } /* Ajustado */
         #estadisticas-table .sticky-col-3 { left: 112px; } /* Ajustado */
-        #individual-stats-table .sticky-col-1 { left: 0; }
-        #individual-stats-table .sticky-col-2 { left: 90px; }
+        #individual-stats-table .sticky-col-1 {
+            left: 0;
+            /* Forzamos un ancho fijo a la primera columna */
+            width: 90px;
+            min-width: 90px;
+            max-width: 90px;
+        }
+        #individual-stats-table .sticky-col-2 {
+            /* Ahora la segunda columna empieza justo donde termina la primera */
+            left: 90px;
+        }
 
         /* Fila TOTAL en tabla de histórico */
         #individual-stats-table tr.font-bold td,
@@ -616,72 +624,105 @@
             text-align: left;
         }
 
-        /* INICIO: Nuevos estilos para el gráfico de barras divergente */
+        /* INICIO: Estilos finales para el gráfico con grilla de anchos fijos */
         .comparison-row {
             display: grid;
-            grid-template-columns: 1fr auto 1fr; /* Columna izq, central, der */
+            /* Grilla de 5 columnas con anchos fijos en porcentaje */
+            grid-template-columns: 35% 7% 16% 7% 35%; 
             align-items: center;
-            gap: 0.75rem; /* Espacio entre columnas */
-            margin-bottom: 0.5rem; /* Espacio entre filas */
+            /* Eliminamos el gap para un control total, pero puedes añadirlo si prefieres */
+            gap: 0; 
+            margin-bottom: 0.5rem;
         }
         
+        /* Columna 3: Etiqueta central */
         .central-label {
             text-align: center;
             font-weight: 600;
             color: var(--text-secondary);
             white-space: nowrap;
-            padding: 0 1rem;
+            padding: 0 0.5rem; /* Pequeño padding para que no se pegue el texto */
         }
         
-        .stat-bar-container {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background-color: var(--border-color);
-            border-radius: 0.25rem;
-        }
-        
-        html.dark .stat-bar-container {
-            background-color: #374151;
-        }
-        
-        /* Contenedor de la barra izquierda, para que crezca de derecha a izquierda */
-        .stat-bar-container.bar-left {
-            flex-direction: row-reverse;
-        }
-        
+        /* Columnas 2 y 4: Valores numéricos */
         .value-label {
             font-weight: 700;
             font-size: 0.875rem;
-            padding: 0 0.5rem;
-            min-width: 40px;
-            text-align: center;
+            text-align: center; /* Texto centrado como pediste */
         }
-        
         .value-label.player1 {
             color: var(--accent-color);
         }
-        
         .value-label.player2 {
             color: var(--danger-color);
         }
         
-        /* La barra de progreso en sí */
-        .comparison-row .progress-fill {
+        /* Columnas 1 y 5: Contenedores de las barras */
+        .stat-bar-container {
+            display: flex;
+            background-color: var(--border-color); /* Fondo gris para el "riel" de la barra */
+            border-radius: 0.25rem;
             height: 1.25rem; /* 20px */
+        }
+        html.dark .stat-bar-container {
+            background-color: #374151;
+        }
+        
+        /* Hacemos que la barra izquierda crezca de derecha a izquierda */
+        .stat-bar-container.bar-left {
+            flex-direction: row-reverse; 
+        }
+        /* La barra derecha ya crece de izquierda a derecha por defecto */
+        .stat-bar-container.bar-right {
+            justify-content: flex-start;
+        }
+        
+        /* La barra de progreso de color */
+        .comparison-row .progress-fill {
+            height: 100%;
             transition: width 0.5s ease-in-out;
         }
+        /* Aseguramos que las puntas redondeadas queden en los extremos exteriores */
         .comparison-row .progress-fill.player1 {
             background-color: var(--accent-color);
-            border-radius: 0.25rem 0 0 0.25rem;
+            border-radius: 0.25rem 0 0 0.25rem; /* Puntas izquierdas redondeadas */
         }
         .comparison-row .progress-fill.player2 {
             background-color: var(--danger-color);
-            border-radius: 0 0.25rem 0.25rem 0;
+            border-radius: 0 0.25rem 0.25rem 0; /* Puntas derechas redondeadas */
         }
+        /* FIN: Estilos finales */
 
-        /* FIN: Estilos del Comparador */
+        /* --- INICIO: Media Query para solucionar layout en móvil --- */
 
+        /* Estas reglas se aplicarán solo en pantallas con un ancho máximo de 640px (tamaño de móvil típico) */
+        /* --- INICIO: Media Query para ajustar anchos en móvil --- */
+
+        /* Estas reglas se aplicarán solo en pantallas con un ancho máximo de 640px */
+        @media (max-width: 640px) {
+            .comparison-row {
+                /*
+                 * Barras: 20% c/u (como pediste)
+                 * Centro: El 60% restante se distribuye manteniendo 
+                 * la proporción del diseño de escritorio.
+                */
+                grid-template-columns: 18% 15% 34% 15% 18%;
+                gap: 0 0.25rem; /* Un pequeño gap solo horizontal para que no se peguen */
+            }
+        
+            /* Opcional: Reducir un poco el texto para asegurar que todo entre bien */
+            .value-label,
+            .central-label {
+                font-size: 0.75rem; /* 12px */
+                /* Evita que el texto largo se parta en dos líneas y rompa el layout */
+                white-space: nowrap; 
+            }
+        }
+        /* --- FIN: Media Query para ajustar anchos en móvil --- */
+        /* --- FIN: Media Query para solucionar layout en móvil --- */
+        
+        /* --- FIN: ESTILOS COMPARADOR --- */
+        
         /* === INICIO: Corrección Buscador Histórico === */
         
         html.dark #individual-player-search {
@@ -3041,11 +3082,11 @@
                     </div>
                     ${createPlayerSelectorCard(1, selectedPlayer1)}
                     <div class="p-4 pt-0 space-y-3">
-                        <button id="go-to-screen-3-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                            Agregar otro jugador
-                        </button>
-                        <button id="go-to-screen-2-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                        <button id="go-to-screen-2-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
                             Estadísticas Individuales
+                        </button>
+                        <button id="go-to-screen-3-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            Agregar otro jugador
                         </button>
                     </div>
                 `;
@@ -3358,25 +3399,25 @@
                 const val2 = parseFloat(stats2[stat.key]) || 0;
                 const suffix = stat.suffix || '';
                 const total = val1 + val2;
-
-                // Mantenemos la lógica de cálculo de ancho, pero ajustamos para el nuevo diseño.
-                // Si el total es 0, ambas barras tienen 0% de ancho.
-                // Si no, se calcula el porcentaje relativo al 100% del total.
+                
+                // El cálculo de los anchos sigue siendo el mismo
                 const width1 = total > 0 ? (val1 / total) * 100 : 0;
                 const width2 = total > 0 ? (val2 / total) * 100 : 0;
 
-                // Nueva estructura HTML para la fila de comparación
+                // Nueva estructura HTML con 5 columnas para una alineación perfecta
                 return `
                     <div class="comparison-row">
                         <div class="stat-bar-container bar-left">
-                            <span class="value-label player1">${val1.toLocaleString('es-AR')}${suffix}</span>
                             <div class="progress-fill player1" style="width: ${width1}%"></div>
                         </div>
 
+                        <span class="value-label player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+
                         <div class="central-label">${stat.label}</div>
 
+                        <span class="value-label player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+
                         <div class="stat-bar-container bar-right">
-                            <span class="value-label player2">${val2.toLocaleString('es-AR')}${suffix}</span>
                             <div class="progress-fill player2" style="width: ${width2}%"></div>
                         </div>
                     </div>
