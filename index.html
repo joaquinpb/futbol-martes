@@ -235,13 +235,19 @@
 
         /* === INICIO: Estilos de Tabla Modernos === */
         .table-container {
-            border-radius: 0.75rem; /* Puntas menos redondeadas */
+            border-radius: 0.75rem;
             box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.07);
-            overflow: hidden;
+            overflow: hidden; /* Mantenemos el overflow hidden aquí */
             border: 1px solid var(--border-color);
-            max-height: 70vh;
-            overflow-y: auto;
-            position: relative;
+            /* Usamos 'display: flex' para controlar mejor el contenido interno */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Este nuevo contenedor interno será el que tenga el scroll */
+        .table-container > table {
+            overflow-y: auto; /* Movemos el scroll al elemento hijo (la tabla) */
+            flex-grow: 1; /* Hacemos que la tabla ocupe todo el espacio vertical disponible */
         }
 
         table {
@@ -880,6 +886,60 @@
         }
         
         /* --- FIN: Estilos para el botón de hamburguesa --- */
+
+        /* --- INICIO: Estilos para layout full-width en móvil --- */
+
+        /* Estas reglas se aplican solo a pantallas con ancho máximo de 768px */
+        @media (max-width: 768px) {
+            
+            /* 1. Eliminamos el padding lateral de todos los contenedores principales,
+               EXCEPTO el del comparador, usando la pseudo-clase :not() */
+            .main-content-container:not(#comparador-content) {
+                padding-left: 0.1rem;
+                padding-right: 0.1rem;
+            }
+        
+            /* 2. (Opcional pero recomendado) Para que las tablas se vean realmente
+               a pantalla completa, eliminamos sus bordes y redondeos laterales. */
+            .main-content-container:not(#comparador-content) .table-container {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+                box-shadow: none; /* Quitamos la sombra que ya no se verá bien */
+            }
+        }
+        
+        /* --- FIN: Estilos para layout full-width en móvil --- */
+
+        /* --- INICIO: Estilos finales y responsivos para el botón 'Hoy' --- */
+
+        /* 1. ESTADO POR DEFECTO PARA ESCRITORIO (Y BASE PARA MÓVIL) */
+        /* Hacemos el selector más específico para que gane la batalla de CSS */
+        .main-content-container .button-primary {
+            background-color: var(--accent-color);
+            color: var(--button-text-color);
+            transition: background-color 0.2s ease-in-out; /* Agregamos una transición suave */
+        }
+        
+        /* 2. EFECTO HOVER SOLO PARA ESCRITORIO */
+        /* Usamos una media query para que el hover solo se aplique en pantallas grandes */
+        @media (min-width: 769px) {
+            .main-content-container .button-primary:hover {
+                background-color: var(--accent-color-hover);
+            }
+        }
+        
+        /* 3. AJUSTES PARA MÓVIL */
+        @media (max-width: 768px) {
+            /* En móvil, nos aseguramos de que el color de fondo sea el correcto y no cambie.
+               Al no tener una regla :hover aquí, no habrá efecto de cambio de color al tocar. */
+            .main-content-container:not(#comparador-content) .button-primary {
+                background-color: var(--accent-color);
+                color: var(--button-text-color);
+            }
+        }
+        
+        /* --- FIN: Estilos finales y responsivos para el botón 'Hoy' --- */
         
     </style>
     <script>
