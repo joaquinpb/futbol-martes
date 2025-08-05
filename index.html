@@ -2725,46 +2725,44 @@
                     }
                     /* --- INICIO DE ESTILOS CORREGIDOS --- */
                     .progress-bg {
-                        position: relative; /* Necesario para posicionar el texto encima */
+                        display: flex; /* Usamos flexbox para alinear la barra interior */
                         background-color: var(--border-color);
                         border-radius: 9999px;
                         height: 1.75rem;
-                        overflow: hidden; /* Recorta la barra de color para que sea redondeada */
+                        overflow: hidden;
                     }
                     html.dark .progress-bg {
                         background-color: #374151;
+                    }
+                    .progress-bg.player1 {
+                        justify-content: flex-end; /* Alinea la barra de color a la derecha */
+                    }
+                    .progress-bg.player2 {
+                        justify-content: flex-start; /* Alinea la barra de color a la izquierda */
                     }
                     .progress-fill {
                         height: 100%;
                         border-radius: 9999px;
                         transition: width 0.5s ease-in-out;
+                        display: flex; /* Usamos flexbox para alinear el texto */
+                        align-items: center;
+                        overflow: hidden; /* Importante para que el texto no se desborde */
                     }
                     .progress-fill.player1 {
                         background-color: var(--accent-color);
-                        float: right; /* Hace que la barra crezca desde la derecha */
+                        justify-content: flex-end; /* Alinea el texto a la derecha (dentro de la barra) */
                     }
                     .progress-fill.player2 {
                         background-color: var(--danger-color);
-                        float: left; /* Hace que la barra crezca desde la izquierda */
+                        justify-content: flex-start; /* Alinea el texto a la izquierda (dentro de la barra) */
                     }
-                    .stat-value-overlay { /* Nueva clase para el texto */
-                        position: absolute;
-                        top: 0;
-                        height: 100%;
-                        display: flex;
-                        align-items: center;
+                    .stat-value-in-bar { /* Nueva clase para el texto dentro de la barra */
                         color: white;
                         font-weight: 600;
                         font-size: 0.875rem;
                         padding: 0 0.75rem;
                         text-shadow: 0 1px 2px rgba(0,0,0,0.6);
                         white-space: nowrap;
-                    }
-                    .stat-value-overlay.player1 {
-                        right: 0; /* Alinea el texto a la derecha del contenedor */
-                    }
-                    .stat-value-overlay.player2 {
-                        left: 0; /* Alinea el texto a la izquierda del contenedor */
                     }
                     .stat-label {
                         text-align: center;
@@ -3329,11 +3327,14 @@
                     width1 = (val1 / total) * 100;
                     width2 = (val2 / total) * 100;
                 } else if (val1 === 0 && val2 === 0) {
+                    // Si ambos son 0, las barras no tienen ancho
                     width1 = 0;
                     width2 = 0;
                 } else if (val1 > 0) {
+                    // Si solo el jugador 1 tiene valor, su barra ocupa todo el espacio
                     width1 = 100;
                 } else {
+                    // Si solo el jugador 2 tiene valor, su barra ocupa todo el espacio
                     width2 = 100;
                 }
         
@@ -3350,17 +3351,19 @@
                 }
         
                 // --- ESTRUCTURA HTML CORREGIDA ---
-                // El <span> con el valor ahora es hermano de ".progress-fill" y tiene una nueva clase.
+                // Ahora el <span> con el valor está DENTRO del <div> ".progress-fill"
                 return `
                     <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
                         <div class="progress-bg player1 ${winnerClass1}">
-                            <div class="progress-fill player1" style="width: ${width1}%"></div>
-                            <span class="stat-value-overlay player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+                            <div class="progress-fill player1" style="width: ${width1}%">
+                                <span class="stat-value-in-bar">${val1.toLocaleString('es-AR')}${suffix}</span>
+                            </div>
                         </div>
                         <div class="stat-label">${stat.label}</div>
                         <div class="progress-bg player2 ${winnerClass2}">
-                            <div class="progress-fill player2" style="width: ${width2}%"></div>
-                            <span class="stat-value-overlay player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+                            <div class="progress-fill player2" style="width: ${width2}%">
+                                <span class="stat-value-in-bar">${val2.toLocaleString('es-AR')}${suffix}</span>
+                            </div>
                         </div>
                     </div>
                 `;
