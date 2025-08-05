@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -599,37 +601,11 @@
         }
         
         /* Estilos del Comparador */
+        
         .vs-separator {
             color: var(--text-muted);
             font-size: 2.5rem;
             font-weight: 800;
-        }
-        .progress-bar-container {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .progress-bg {
-            flex-grow: 1;
-            background-color: var(--border-color);
-            border-radius: 9999px;
-            height: 1.25rem;
-            overflow: hidden;
-            position: relative;
-        }
-        html.dark .progress-bg {
-            background-color: #374151;
-        }
-        .progress-fill {
-            height: 100%;
-            border-radius: 9999px;
-            transition: width 0.5s ease-in-out;
-        }
-        .progress-bar-container.player1 .progress-fill {
-            background-color: var(--accent-color);
-        }
-        .progress-bar-container.player2 .progress-fill {
-            background-color: var(--danger-color);
         }
         .stat-value {
             font-weight: 600;
@@ -639,12 +615,72 @@
         .progress-bar-container.player1 .stat-value {
             text-align: left;
         }
-        .stat-label {
+
+        /* INICIO: Nuevos estilos para el gráfico de barras divergente */
+        .comparison-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr; /* Columna izq, central, der */
+            align-items: center;
+            gap: 0.75rem; /* Espacio entre columnas */
+            margin-bottom: 0.5rem; /* Espacio entre filas */
+        }
+        
+        .central-label {
             text-align: center;
             font-weight: 600;
             color: var(--text-secondary);
             white-space: nowrap;
+            padding: 0 1rem;
         }
+        
+        .stat-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--border-color);
+            border-radius: 0.25rem;
+        }
+        
+        html.dark .stat-bar-container {
+            background-color: #374151;
+        }
+        
+        /* Contenedor de la barra izquierda, para que crezca de derecha a izquierda */
+        .stat-bar-container.bar-left {
+            flex-direction: row-reverse;
+        }
+        
+        .value-label {
+            font-weight: 700;
+            font-size: 0.875rem;
+            padding: 0 0.5rem;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .value-label.player1 {
+            color: var(--accent-color);
+        }
+        
+        .value-label.player2 {
+            color: var(--danger-color);
+        }
+        
+        /* La barra de progreso en sí */
+        .comparison-row .progress-fill {
+            height: 1.25rem; /* 20px */
+            transition: width 0.5s ease-in-out;
+        }
+        .comparison-row .progress-fill.player1 {
+            background-color: var(--accent-color);
+            border-radius: 0.25rem 0 0 0.25rem;
+        }
+        .comparison-row .progress-fill.player2 {
+            background-color: var(--danger-color);
+            border-radius: 0 0.25rem 0.25rem 0;
+        }
+
+        /* FIN: Estilos del Comparador */
 
         /* === INICIO: Corrección Buscador Histórico === */
         
@@ -678,11 +714,6 @@
         }
         
         /* === FIN: Corrección Buscador Histórico === */
-
-        .winner-bar {
-            box-shadow: 0 0 0 3px var(--success-color);
-            border-radius: 9999px; /* Para que el contorno sea redondeado como la barra */
-        }
         
         /* INICIO: Estilos para foto clickeable en tablas */
         .player-photo-clickable img {
@@ -3327,51 +3358,31 @@
                 const val2 = parseFloat(stats2[stat.key]) || 0;
                 const suffix = stat.suffix || '';
                 const total = val1 + val2;
-        
-                let width1 = 0, width2 = 0;
-                if (total > 0) {
-                    width1 = (val1 / total) * 100;
-                    width2 = (val2 / total) * 100;
-                } else if (val1 === 0 && val2 === 0) {
-                    width1 = 0;
-                    width2 = 0;
-                } else if (val1 > 0) {
-                    width1 = 100;
-                } else {
-                    width2 = 100;
-                }
-        
-                let winnerClass1 = '', winnerClass2 = '';
-                const isLowerBetter = stat.key === 'pp' || stat.key === 'ausentes';
-        
-                if (val1 !== val2) {
-                    const winnerCssClass = 'winner-bar';
-                    if ((!isLowerBetter && val1 > val2) || (isLowerBetter && val1 < val2)) {
-                        winnerClass1 = winnerCssClass;
-                    } else {
-                        winnerClass2 = winnerCssClass;
-                    }
-                }
-        
-                // CORRECCIÓN: Se movió el <span> con el valor DENTRO del <div> .progress-fill
-                // y se cambió la clase a .stat-value-in-bar para que coincida con los nuevos estilos.
+
+                // Mantenemos la lógica de cálculo de ancho, pero ajustamos para el nuevo diseño.
+                // Si el total es 0, ambas barras tienen 0% de ancho.
+                // Si no, se calcula el porcentaje relativo al 100% del total.
+                const width1 = total > 0 ? (val1 / total) * 100 : 0;
+                const width2 = total > 0 ? (val2 / total) * 100 : 0;
+
+                // Nueva estructura HTML para la fila de comparación
                 return `
-                    <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
-                        <div class="progress-bg player1 ${winnerClass1}">
-                            <div class="progress-fill player1" style="width: ${width1}%">
-                                <span class="stat-value-in-bar player1">${val1.toLocaleString('es-AR')}${suffix}</span>
-                            </div>
+                    <div class="comparison-row">
+                        <div class="stat-bar-container bar-left">
+                            <span class="value-label player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+                            <div class="progress-fill player1" style="width: ${width1}%"></div>
                         </div>
-                        <div class="stat-label">${stat.label}</div>
-                        <div class="progress-bg player2 ${winnerClass2}">
-                            <div class="progress-fill player2" style="width: ${width2}%">
-                                <span class="stat-value-in-bar player2">${val2.toLocaleString('es-AR')}${suffix}</span>
-                            </div>
+
+                        <div class="central-label">${stat.label}</div>
+
+                        <div class="stat-bar-container bar-right">
+                            <span class="value-label player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+                            <div class="progress-fill player2" style="width: ${width2}%"></div>
                         </div>
                     </div>
                 `;
             };
-        
+
             return statsMeta.map(renderStatBar).join('');
         }
 
