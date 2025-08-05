@@ -615,13 +615,14 @@
             text-align: left;
         }
 
-        /* INICIO: Nuevos estilos para el gráfico de barras divergente */
+        /* INICIO: Nuevos estilos para el gráfico ALINEADO */
         .comparison-row {
             display: grid;
-            grid-template-columns: 1fr auto 1fr; /* Columna izq, central, der */
+            /* 5 columnas: [Barra Izq] [Valor Izq] [Etiqueta Central] [Valor Der] [Barra Der] */
+            grid-template-columns: 1fr auto auto auto 1fr;
             align-items: center;
-            gap: 0.75rem; /* Espacio entre columnas */
-            margin-bottom: 0.5rem; /* Espacio entre filas */
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
         }
         
         .central-label {
@@ -629,45 +630,30 @@
             font-weight: 600;
             color: var(--text-secondary);
             white-space: nowrap;
-            padding: 0 1rem;
         }
         
+        /* El contenedor de la barra ahora es el "riel" gris de fondo */
         .stat-bar-container {
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
             background-color: var(--border-color);
             border-radius: 0.25rem;
+            height: 1.25rem; /* 20px */
         }
-        
         html.dark .stat-bar-container {
             background-color: #374151;
         }
         
-        /* Contenedor de la barra izquierda, para que crezca de derecha a izquierda */
+        /* Alinea la barra de color hacia el borde exterior */
         .stat-bar-container.bar-left {
-            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+        .stat-bar-container.bar-right {
+            justify-content: flex-start;
         }
         
-        .value-label {
-            font-weight: 700;
-            font-size: 0.875rem;
-            padding: 0 0.5rem;
-            min-width: 40px;
-            text-align: center;
-        }
-        
-        .value-label.player1 {
-            color: var(--accent-color);
-        }
-        
-        .value-label.player2 {
-            color: var(--danger-color);
-        }
-        
-        /* La barra de progreso en sí */
+        /* La barra de progreso de color */
         .comparison-row .progress-fill {
-            height: 1.25rem; /* 20px */
+            height: 100%;
             transition: width 0.5s ease-in-out;
         }
         .comparison-row .progress-fill.player1 {
@@ -678,8 +664,22 @@
             background-color: var(--danger-color);
             border-radius: 0 0.25rem 0.25rem 0;
         }
-
-        /* FIN: Estilos del Comparador */
+        
+        /* El valor numérico ahora es una columna independiente */
+        .value-label {
+            font-weight: 700;
+            font-size: 0.875rem;
+            min-width: 50px; /* Ancho mínimo para alinear todos los números */
+        }
+        .value-label.player1 {
+            color: var(--accent-color);
+            text-align: right; /* Alineamos el número a la derecha */
+        }
+        .value-label.player2 {
+            color: var(--danger-color);
+            text-align: left; /* Alineamos el número a la izquierda */
+        }
+        /* FIN: Nuevos estilos */
 
         /* === INICIO: Corrección Buscador Histórico === */
         
@@ -3357,25 +3357,25 @@
                 const val2 = parseFloat(stats2[stat.key]) || 0;
                 const suffix = stat.suffix || '';
                 const total = val1 + val2;
-
-                // Mantenemos la lógica de cálculo de ancho, pero ajustamos para el nuevo diseño.
-                // Si el total es 0, ambas barras tienen 0% de ancho.
-                // Si no, se calcula el porcentaje relativo al 100% del total.
+                
+                // El cálculo de los anchos sigue siendo el mismo
                 const width1 = total > 0 ? (val1 / total) * 100 : 0;
                 const width2 = total > 0 ? (val2 / total) * 100 : 0;
 
-                // Nueva estructura HTML para la fila de comparación
+                // Nueva estructura HTML con 5 columnas para una alineación perfecta
                 return `
                     <div class="comparison-row">
                         <div class="stat-bar-container bar-left">
-                            <span class="value-label player1">${val1.toLocaleString('es-AR')}${suffix}</span>
                             <div class="progress-fill player1" style="width: ${width1}%"></div>
                         </div>
 
+                        <span class="value-label player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+
                         <div class="central-label">${stat.label}</div>
 
+                        <span class="value-label player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+
                         <div class="stat-bar-container bar-right">
-                            <span class="value-label player2">${val2.toLocaleString('es-AR')}${suffix}</span>
                             <div class="progress-fill player2" style="width: ${width2}%"></div>
                         </div>
                     </div>
