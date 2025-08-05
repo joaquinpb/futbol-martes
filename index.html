@@ -2723,61 +2723,59 @@
                     html.dark .comparator-results-dropdown .option-item:hover {
                         background-color: #374151;
                     }
-                    /* --- INICIO DE ESTILOS CORREGIDOS (Versión Definitiva) --- */
-                    .progress-bg {
-                        position: relative; /* Clave: establece el contexto para el texto */
-                        display: flex; /* Usamos Flexbox para alinear la barra de color */
+                    /* --- INICIO DE ESTILOS PARA EL NUEVO GRÁFICO DE TORNADO --- */
+                    .comparison-row {
+                        display: grid;
+                        grid-template-columns: 50px 1fr auto 1fr 50px; /* Valor | Barra | Etiqueta | Barra | Valor */
+                        gap: 0.75rem; /* 12px */
+                        align-items: center;
+                        min-height: 2.25rem; /* 36px */
+                    }
+                    .stat-value-side {
+                        font-weight: 600;
+                        font-size: 0.875rem; /* 14px */
+                        color: var(--text-secondary);
+                    }
+                    .stat-value-side.player1 {
+                        text-align: right;
+                    }
+                    .stat-value-side.player2 {
+                        text-align: left;
+                    }
+                    .stat-value-side.winner-value {
+                        font-weight: 800;
+                        color: var(--success-color); /* Color verde para el ganador */
+                    }
+                    .bar-container {
                         background-color: var(--border-color);
                         border-radius: 9999px;
-                        height: 1.75rem;
+                        height: 0.75rem; /* 12px */
                     }
-                    html.dark .progress-bg {
+                    html.dark .bar-container {
                         background-color: #374151;
                     }
-                    .progress-bg.player1 {
-                        justify-content: flex-end; /* Empuja la barra de color hacia la derecha (centro) */
+                    .bar-container.player1 {
+                        direction: rtl; /* Hace que la barra interior crezca de derecha a izquierda */
                     }
-                    .progress-bg.player2 {
-                        justify-content: flex-start; /* Empuja la barra de color hacia la izquierda (centro) */
-                    }
-                    .progress-fill {
+                    .bar-fill {
                         height: 100%;
+                        border-radius: 9999px;
                         transition: width 0.5s ease-in-out;
-                        border-radius: 9999px; /* La barra de color también es redondeada */
                     }
-                    .progress-fill.player1 {
+                    .bar-fill.player1 {
                         background-color: var(--accent-color);
                     }
-                    .progress-fill.player2 {
+                    .bar-fill.player2 {
                         background-color: var(--danger-color);
                     }
-                    .stat-value-overlay { /* Clase para el texto que se superpone */
-                        position: absolute; /* Se posiciona relativo al contenedor gris (.progress-bg) */
-                        z-index: 2; /* Asegura que el texto esté por encima de la barra de color */
-                        top: 0;
-                        bottom: 0;
-                        display: flex;
-                        align-items: center; /* Centrado verticalmente */
-                        color: white;
-                        font-weight: 600;
-                        font-size: 0.875rem;
-                        padding: 0 0.75rem;
-                        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-                        white-space: nowrap;
-                    }
-                    .stat-value-overlay.player1 {
-                        right: 0; /* Ancla el texto al borde derecho del contenedor gris */
-                    }
-                    .stat-value-overlay.player2 {
-                        left: 0; /* Ancla el texto al borde izquierdo del contenedor gris */
-                    }
-                    .stat-label {
+                    .stat-label-center {
                         text-align: center;
                         font-weight: 600;
-                        color: var(--text-secondary);
+                        color: var(--text-primary);
                         white-space: nowrap;
+                        padding: 0 0.5rem;
                     }
-                     /* --- FIN DE ESTILOS CORREGIDOS --- */
+                     /* --- FIN DE ESTILOS --- */
                 `;
             document.head.appendChild(style);
         }
@@ -3331,46 +3329,38 @@
                 const val1 = parseFloat(stats1[stat.key]) || 0;
                 const val2 = parseFloat(stats2[stat.key]) || 0;
                 const suffix = stat.suffix || '';
-                const total = val1 + val2;
-        
-                let width1 = 0, width2 = 0;
-                if (total > 0) {
-                    width1 = (val1 / total) * 100;
-                    width2 = (val2 / total) * 100;
-                } else if (val1 === 0 && val2 === 0) {
-                    width1 = 0;
-                    width2 = 0;
-                } else if (val1 > 0) {
-                    width1 = 100;
-                } else {
-                    width2 = 100;
-                }
+                
+                // El valor máximo entre los dos jugadores para esta estadística específica.
+                // Esto asegura que la barra más larga siempre ocupe el 100% de su espacio.
+                const maxVal = Math.max(val1, val2);
+
+                let width1 = maxVal > 0 ? (val1 / maxVal) * 100 : 0;
+                let width2 = maxVal > 0 ? (val2 / maxVal) * 100 : 0;
         
                 let winnerClass1 = '', winnerClass2 = '';
                 const isLowerBetter = stat.key === 'pp' || stat.key === 'ausentes';
         
                 if (val1 !== val2) {
-                    const winnerCssClass = 'winner-bar';
+                    // La clase de ganador ahora se aplica al valor numérico
                     if ((!isLowerBetter && val1 > val2) || (isLowerBetter && val1 < val2)) {
-                        winnerClass1 = winnerCssClass;
+                        winnerClass1 = 'winner-value';
                     } else {
-                        winnerClass2 = winnerCssClass;
+                        winnerClass2 = 'winner-value';
                     }
                 }
         
-                // --- ESTRUCTURA HTML CORREGIDA ---
-                // El <span> con el valor ahora es hermano de ".progress-fill" y tiene una nueva clase.
+                // --- NUEVA ESTRUCTURA HTML PARA EL GRÁFICO DE TORNADO ---
                 return `
-                    <div class="grid grid-cols-[1fr_auto_1fr] gap-x-2 md:gap-x-4 items-center">
-                        <div class="progress-bg player1 ${winnerClass1}">
-                            <div class="progress-fill player1" style="width: ${width1}%"></div>
-                            <span class="stat-value-overlay player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+                    <div class="comparison-row">
+                        <div class="stat-value-side player1 ${winnerClass1}">${val1.toLocaleString('es-AR')}${suffix}</div>
+                        <div class="bar-container player1">
+                            <div class="bar-fill player1" style="width: ${width1}%"></div>
                         </div>
-                        <div class="stat-label">${stat.label}</div>
-                        <div class="progress-bg player2 ${winnerClass2}">
-                            <div class="progress-fill player2" style="width: ${width2}%"></div>
-                            <span class="stat-value-overlay player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+                        <div class="stat-label-center">${stat.label}</div>
+                        <div class="bar-container player2">
+                            <div class="bar-fill player2" style="width: ${width2}%"></div>
                         </div>
+                        <div class="stat-value-side player2 ${winnerClass2}">${val2.toLocaleString('es-AR')}${suffix}</div>
                     </div>
                 `;
             };
