@@ -3337,13 +3337,22 @@
         
                 const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
                 
-                // ==================================================================
-                // ===== INICIO DEL CÓDIGO A AGREGAR =====
-                // ==================================================================
                 const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
-                // ==================================================================
-                // ===== FIN DEL CÓDIGO A AGREGAR =====
-                // ==================================================================
+
+                if (teammateStats.pj > 0) {
+                    const teammateStatBox = (value, label, {bgColor, valueColor, labelColor}) => `<div class="p-3 flex flex-col justify-between text-center rounded-lg ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
+
+                    comparisonHTML += `
+                        <div class="space-y-4 p-4">
+                            <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Jugando Juntos (${teammateStats.pj} PJ)</h4>
+                            <div class="grid grid-cols-3 gap-4">
+                                ${teammateStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
+                                ${teammateStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
+                                ${teammateStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                            </div>
+                        </div>
+                    `;
+                }
                 
                 if (headToHeadStats.pjTotal > 0) {
                     const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, efectividad: headToHeadStats.p1_efectividad };
@@ -3363,27 +3372,6 @@
                             ${headToHeadStats.pjEnfrentados > 0 ? `<div><h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6 mb-4">Como Rivales</h4><div class="space-y-4">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div></div>` : ''}
                         </div>`;
                 }
-                
-                // ==================================================================
-                // ===== INICIO DEL BLOQUE DE CÓDIGO A AGREGAR =====
-                // ==================================================================
-                if (teammateStats.pj > 0) {
-                    const teammateStatBox = (value, label, {bgColor, valueColor, labelColor}) => `<div class="p-3 flex flex-col justify-between text-center rounded-lg ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
-
-                    comparisonHTML += `
-                        <div class="space-y-4 p-4">
-                            <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Jugando Juntos (${teammateStats.pj} PJ)</h4>
-                            <div class="grid grid-cols-3 gap-4">
-                                ${teammateStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
-                                ${teammateStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
-                                ${teammateStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
-                            </div>
-                        </div>
-                    `;
-                }
-                // ==================================================================
-                // ===== FIN DEL BLOQUE DE CÓDIGO A AGREGAR =====
-                // ==================================================================
             
                 const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
                 comparisonHTML += `<div class="space-y-4 p-4"><h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6">Individuales</h4>${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div>`;
