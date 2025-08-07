@@ -3214,9 +3214,6 @@
                     </div>
                     ${createPlayerSelectorCard(1, selectedPlayer1)}
                     <div class="p-4 pt-0 space-y-3">
-                        <button id="go-to-screen-2-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                            Estadísticas Individuales
-                        </button>
                         <button id="go-to-screen-3-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
                             Agregar otro jugador
                         </button>
@@ -3224,7 +3221,6 @@
                 `;
                 setupPlayerSearch(1);
                 document.getElementById('go-to-screen-3-btn').addEventListener('click', () => showScreen(3));
-                document.getElementById('go-to-screen-2-btn').addEventListener('click', renderIndividualScreen);
             }
             
             function renderScreen3() {
@@ -3252,55 +3248,6 @@
                 screen3Container.querySelector('#back-to-screen-1-btn').addEventListener('click', () => showScreen(1));
                 screen3Container.querySelector('#go-to-screen-4-btn').addEventListener('click', renderFullComparisonScreen);
                 screen3Container.querySelector('.comparator-reset-btn').addEventListener('click', resetComparator);
-            }
-
-            function renderIndividualScreen() {
-                if (!selectedPlayer1) return;
-                const screen2Container = document.getElementById('comparator-screen-2');
-
-                const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
-                let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
-                if (selectedYears.includes('all')) {
-                    selectedYears = ['all'];
-                }
-                const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
-                const localFilterState = { selectedYears, selectedPeriod };
-
-                const { players } = calculateStats(localFilterState);
-                const stats = players.find(p => p.id === selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
-                
-                const individualMeta = [
-                    { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
-                    { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
-                    { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' },
-                    { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'TT' },
-                    { key: 'ausentes', label: 'Ausencias' },
-                ];
-
-                const tableRows = individualMeta.map(meta => `
-                    <tr class="border-b border-border-color last:border-b-0">
-                        <td class="p-3 text-left font-semibold text-text-secondary">${meta.label}</td>
-                        <td class="p-3 text-right font-bold text-accent-color text-lg">${stats[meta.key]}${meta.suffix || ''}</td>
-                    </tr>
-                `).join('');
-
-                const statsHtml = `<div class="table-container"><table class="w-full"><tbody>${tableRows}</tbody></table></div>`;
-
-                screen2Container.innerHTML = `
-                    <div class="comparator-screen-header">
-                        <span>ESTADISTICAS INDIVIDUALES</span>
-                        <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                    </div>
-                    <div id="individual-stats-display" class="space-y-6">
-                        <div class="w-full max-w-md mx-auto text-center p-4">
-                            <img src="${selectedPlayer1.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'}" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-accent-color shadow-lg">
-                            <h3 class="text-3xl font-bold mt-3">${selectedPlayer1.name}</h3>
-                            <div class="mt-6">${statsHtml}</div>
-                        </div>
-                    </div>
-                `;
-                screen2Container.querySelector('.comparator-reset-btn').addEventListener('click', resetComparator);
-                showScreen(2);
             }
 
             function renderFullComparisonScreen() {
