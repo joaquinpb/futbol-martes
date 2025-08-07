@@ -1098,21 +1098,22 @@
         </div>
         <!-- FIN: Modal de Jugador Simple -->
 
-        <div id="player-change-modal" class="fixed inset-0 bg-black/70 flex items-start justify-center p-4 pt-20 z-50 hidden opacity-0 transition-opacity duration-300">
-            <div id="player-change-modal-content" class="card card-styled w-full max-w-sm transform scale-95 transition-transform duration-300">
-                <div class="relative p-4 border-b border-border-color bg-white dark:bg-gray-800">
-                    <h3 class="text-xl font-semibold text-center" id="player-change-modal-title">Cambiar Jugador</h3>
-                    <button id="player-change-modal-close" class="modal-close-button">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="p-6">
-                    <div class="relative">
-                        <input type="text" id="player-change-search-input" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
-                        <button id="player-change-clear-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
-                        <div id="player-change-results-dropdown" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                        <input type="hidden" id="player-change-context">
-                    </div>
+        <div id="player-change-modal-content" class="card card-styled w-full max-w-sm transform scale-95 transition-transform duration-300">
+            <div class="relative p-4 border-b border-border-color bg-white dark:bg-gray-800">
+                <h3 class="text-xl font-semibold text-center" id="player-change-modal-title">Cambiar Jugador</h3>
+                <button id="player-change-modal-close" class="modal-close-button">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        
+            <div class="p-6 pb-2 flex justify-center">
+                <img id="player-change-avatar" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Avatar del jugador a cambiar" class="w-24 h-24 rounded-full object-cover border-4 border-border-color">
+            </div>
+            <div class="p-6 pt-4"> <div class="relative">
+                    <input type="text" id="player-change-search-input" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
+                    <button id="player-change-clear-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted hidden"><i class="fas fa-times-circle"></i></button>
+                    <div id="player-change-results-dropdown" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600"></div>
+                    <input type="hidden" id="player-change-context">
                 </div>
             </div>
         </div>
@@ -3276,20 +3277,20 @@
                         selectedYears = ['all'];
                     }
                     const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
-    
+        
                     const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
                     let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
                     let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, id: selectedPlayer2.id };
-    
+        
                     let comparisonHTML = `
                         <div class="p-4">
                             <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                                ${createPlayerCard(selectedPlayer1, 1).replace('<div class="p-4 space-y-4 text-center">','<div class="space-y-4 text-center">')}
+                                ${createPlayerCard(selectedPlayer1, 1)}
                                 <div class="vs-separator">VS</div>
-                                ${createPlayerCard(selectedPlayer2, 2).replace('<div class="p-4 space-y-4 text-center">','<div class="space-y-4 text-center">')}
+                                ${createPlayerCard(selectedPlayer2, 2)}
                             </div>
                         </div>`;
-    
+        
                     const allFilteredMatches = allMatchesData.filter(match => {
                         if (!match.result) return false;
                         const matchYear = parseDate(match.match_date).getFullYear();
@@ -3300,23 +3301,17 @@
                     });
             
                     const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
-                    
-                    // ==================================================================
-                    // ===== INICIO DEL CÓDIGO A AGREGAR =====
-                    // ==================================================================
                     const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
-                    // ==================================================================
-                    // ===== FIN DEL CÓDIGO A AGREGAR =====
-                    // ==================================================================
                     
                     if (headToHeadStats.pjTotal > 0) {
                         const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, efectividad: headToHeadStats.p1_efectividad };
                         const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, efectividad: headToHeadStats.p2_efectividad };
                         const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
                         const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
-    
+        
+                        // --- SECCIÓN "ENTRE SÍ" ---
                         comparisonHTML += `
-                            <div class="space-y-4 p-4">
+                            <div class="space-y-2 p-2">
                                 <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Entre Sí</h4>
                                 <div class="grid grid-cols-4 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
                                     ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
@@ -3324,55 +3319,56 @@
                                     ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'RIVALES', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
                                     ${unifiedStatBox(headToHeadStats.empates, 'EMPATES', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
                                 </div>
-                                ${headToHeadStats.pjEnfrentados > 0 ? `<div><h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6 mb-4">Como Rivales</h4><div class="space-y-4">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div></div>` : ''}
                             </div>`;
-                    }
-                    
-                    // ==================================================================
-                    // ===== INICIO DEL BLOQUE DE CÓDIGO A AGREGAR =====
-                    // ==================================================================
-                    if (teammateStats.pj > 0) {
-                        const teammateStatBox = (value, label, {bgColor, valueColor, labelColor}) => `<div class="p-3 flex flex-col justify-between text-center rounded-lg ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
-    
-                        comparisonHTML += `
-                            <div class="space-y-4 p-4">
-                                <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Jugando Juntos (${teammateStats.pj} PJ)</h4>
-                                <div class="grid grid-cols-3 gap-4">
-                                    ${teammateStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
-                                    ${teammateStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
-                                    ${teammateStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+        
+                        // --- SECCIÓN "JUGANDO JUNTOS" (AHORA AQUÍ) ---
+                        if (teammateStats.pj > 0) {
+                            const teammateStatBox = (value, label, {bgColor, valueColor, labelColor}) => `<div class="p-3 flex flex-col justify-between text-center rounded-lg ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
+        
+                            comparisonHTML += `
+                                <div class="space-y-2 p-2">
+                                    <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Jugando Juntos (${teammateStats.pj} PJ)</h4>
+                                    <div class="grid grid-cols-3 gap-4">
+                                        ${teammateStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
+                                        ${teammateStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
+                                        ${teammateStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                                    </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        }
+        
+                        // --- SECCIÓN "COMO RIVALES" ---
+                        if (headToHeadStats.pjEnfrentados > 0) {
+                             comparisonHTML += `
+                                <div class="space-y-2 p-2">
+                                    <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6 mb-4">Como Rivales</h4>
+                                    <div class="space-y-4">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
+                                </div>
+                            `;
+                        }
                     }
-                    // ==================================================================
-                    // ===== FIN DEL BLOQUE DE CÓDIGO A AGREGAR =====
-                    // ==================================================================
                 
                     const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
-                    comparisonHTML += `<div class="space-y-4 p-4"><h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6">Individuales</h4>${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div>`;
-    
+                    comparisonHTML += `<div class="space-y-2 p-2"><h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6">Individuales</h4>${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div>`;
+        
                     screen4Container.innerHTML = `
                         <div class="comparator-screen-header">
                             <span>COMPARATIVA</span>
                             <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
                         </div>
-                        <div id="full-comparison-display" class="space-y-6 overflow-y-auto max-h-[70vh]">
+                        <div id="full-comparison-display" class="space-y-3 overflow-y-auto max-h-[70vh]">
                             ${comparisonHTML}
                         </div>
                     `;
                     screen4Container.querySelector('.comparator-reset-btn').addEventListener('click', resetComparator);
-                    showScreen(4);
-
-                    // Se agrega el event listener para las tarjetas de jugador
+                    
                     screen4Container.querySelectorAll('.player-card-clickable').forEach(card => {
                         card.addEventListener('click', (e) => {
                             const playerNum = e.currentTarget.dataset.playerNum;
                             openPlayerChangeModal(parseInt(playerNum));
                         });
                     });
-    
-                    // Se agregan los listeners para cerrar el nuevo modal
+        
                     document.getElementById('player-change-modal-close').addEventListener('click', closePlayerChangeModal);
                     document.getElementById('player-change-modal').addEventListener('click', (e) => {
                          if(e.target.id === 'player-change-modal') {
@@ -3390,16 +3386,23 @@
                     const modal = document.getElementById('player-change-modal');
                     const modalContent = document.getElementById('player-change-modal-content');
                     const title = document.getElementById('player-change-modal-title');
-                    const searchInput = document.getElementById('player-change-search-input');
+                    const avatarImg = document.getElementById('player-change-avatar');
                     
+                    // Determina qué jugador se está cambiando y obtiene sus datos
+                    const currentPlayer = playerNum === 1 ? selectedPlayer1 : selectedPlayer2;
+                    
+                    // Actualiza el título y el avatar en el modal
                     title.textContent = `Cambiar Jugador ${playerNum}`;
+                    if (currentPlayer) {
+                        avatarImg.src = currentPlayer.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+                    }
         
                     modal.classList.remove('hidden');
                     setTimeout(() => {
                         modal.classList.remove('opacity-0');
                         modalContent.classList.remove('scale-95');
                         document.body.classList.add('modal-open');
-                        initializePlayerChangeSearch(); // <--- Nueva llamada
+                        setupPlayerChangeSearch();
                     }, 10);
                 }
         
