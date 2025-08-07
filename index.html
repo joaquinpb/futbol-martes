@@ -3364,28 +3364,37 @@
                     searchInput.value = player?.name || ''; idInput.value = player?.id || ''; avatar.src = player?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'; name.textContent = player?.name || 'Seleccionar Jugador'; clearButton.classList.toggle('hidden', !player);
                     if (playerNum === 1) { document.getElementById('go-to-screen-3-btn').disabled = !player; } else { document.getElementById('go-to-screen-4-btn').disabled = !player; }
                 }
-    
-                // --- INICIO DE LA MODIFICACIÓN CLAVE: Eventos centralizados ---
+
                 const comparatorAppContainer = document.getElementById('comparator-app-container');
-                if (!comparatorAppContainer.dataset.listenerAttached) {
-                    comparatorAppContainer.addEventListener('click', (e) => {
-                        const target = e.target.closest('button'); // Busca el botón más cercano
-                        if (!target) return;
-    
-                        if (target.id === 'go-to-screen-3-btn') {
-                            showScreen(3);
-                        } else if (target.id === 'go-to-screen-4-btn') {
-                            renderFullComparisonScreen();
-                            showScreen(4);
-                        } else if (target.id === 'back-to-screen-1-btn') {
-                            showScreen(1);
-                        } else if (target.classList.contains('comparator-reset-btn')) {
-                            resetComparator();
-                        }
-                    });
-                    comparatorAppContainer.dataset.listenerAttached = 'true';
-                }
-                // --- FIN DE LA MODIFICACIÓN CLAVE ---
+                    if (!comparatorAppContainer.dataset.listenerAttached) {
+                        comparatorAppContainer.addEventListener('click', (e) => {
+                            const buttonTarget = e.target.closest('button');
+                            const cardTarget = e.target.closest('.player-card-clickable');
+        
+                            // Prioridad 1: Abrir el modal para cambiar jugador
+                            if (cardTarget) {
+                                const playerNum = cardTarget.dataset.playerNum;
+                                if (playerNum) {
+                                    openPlayerChangeModal(parseInt(playerNum));
+                                }
+                                return; // Detiene la ejecución para no interferir con otros botones
+                            }
+        
+                            // Prioridad 2: Botones de navegación y reset
+                            if (buttonTarget) {
+                                if (buttonTarget.id === 'go-to-screen-3-btn') {
+                                    showScreen(3);
+                                } else if (buttonTarget.id === 'go-to-screen-4-btn') {
+                                    renderFullComparisonScreen();
+                                } else if (buttonTarget.id === 'back-to-screen-1-btn') {
+                                    showScreen(1);
+                                } else if (buttonTarget.classList.contains('comparator-reset-btn')) {
+                                    resetComparator();
+                                }
+                            }
+                        });
+                        comparatorAppContainer.dataset.listenerAttached = 'true';
+                    }
     
                 // --- EVENTOS GLOBALES DEL COMPARADOR ---
                 if (!document.body.dataset.comparadorListener) {
