@@ -1100,7 +1100,7 @@
 
         <div id="player-change-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
             <div id="player-change-modal-content" class="card card-styled w-full max-w-sm transform scale-95 transition-transform duration-300">
-                <div class="relative p-4 border-b border-border-color">
+                <div class="relative p-4 border-b border-border-color bg-secondary">
                     <h3 class="text-xl font-semibold text-center" id="player-change-modal-title">Cambiar Jugador</h3>
                     <button id="player-change-modal-close" class="modal-close-button">
                         <i class="fas fa-times"></i>
@@ -3399,10 +3399,7 @@
                         modal.classList.remove('opacity-0');
                         modalContent.classList.remove('scale-95');
                         document.body.classList.add('modal-open');
-                        setupPlayerChangeSearch();
-                        // Forzamos el foco y la apertura del dropdown
-                        searchInput.readOnly = false;
-                        searchInput.focus();
+                        initializePlayerChangeSearch(); // <--- Nueva llamada
                     }, 10);
                 }
         
@@ -3425,12 +3422,22 @@
                         resultsDropdown.classList.add('hidden');
                     }, 300);
                 }
-        
+
+                function initializePlayerChangeSearch() {
+                    setupPlayerChangeSearch(); // Llama a la función que configura los eventos
+                    
+                    // Simula un "input" vacío para que se cargue la lista completa de jugadores
+                    const searchInput = document.getElementById('player-change-search-input');
+                    const event = new Event('input', { bubbles: true });
+                    searchInput.dispatchEvent(event);
+                }
+                
                 function setupPlayerChangeSearch() {
                     const searchInput = document.getElementById('player-change-search-input');
                     const resultsDiv = document.getElementById('player-change-results-dropdown');
                     const clearButton = document.getElementById('player-change-clear-search');
         
+                    // --- Función interna para filtrar y mostrar resultados ---
                     const filterAndDisplay = () => {
                         const searchTerm = searchInput.value.toLowerCase();
                         clearButton.classList.toggle('hidden', searchTerm.length === 0);
@@ -3446,6 +3453,7 @@
                         resultsDiv.classList.remove('hidden');
                     };
         
+                    // --- Función interna para seleccionar un jugador ---
                     const selectPlayer = (playerId) => {
                         const player = allPlayersData.find(p => p.id == playerId);
                         if (activePlayerChangeContext === 1) {
@@ -3454,28 +3462,55 @@
                             selectedPlayer2 = player;
                         }
                         closePlayerChangeModal();
-                        renderFullComparisonScreen(); // Re-renderiza la comparativa con el nuevo jugador
-                    }
+                        renderFullComparisonScreen(); // Re-renderiza la comparativa
+                    };
         
-                    // Usamos 'mousedown' para que se dispare antes que el 'blur' del input
+                    // --- Configuración de Eventos ---
+        
+                    // Evento para cuando el usuario hace clic en un jugador de la lista
                     resultsDiv.onmousedown = (e) => {
                         const target = e.target.closest('.option-item');
                         if (target?.dataset.playerId) {
-                            e.preventDefault();
+                            e.preventDefault(); // Evita que el input pierda el foco antes de tiempo
                             selectPlayer(target.dataset.playerId);
                         }
                     };
                     
+                    // Evento para cuando el usuario escribe en el campo
                     searchInput.oninput = filterAndDisplay;
-                    searchInput.onfocus = filterAndDisplay;
-                    searchInput.onblur = () => setTimeout(() => resultsDiv.classList.add('hidden'), 150);
+                    
+                    // Evento CLAVE: para cuando el usuario hace clic en el campo de búsqueda
+                    searchInput.onclick = () => {
+                        // Solo si el campo es de solo lectura, lo habilitamos para escribir
+                        if (searchInput.readOnly) {
+                            searchInput.readOnly = false;
+                        }
+                        // Siempre mostramos la lista al hacer clic
+                        filterAndDisplay();
+                    };
+                    
+                    // Evento para cuando el campo pierde el foco
+                    searchInput.onblur = () => {
+                        // Ocultamos la lista después de un breve instante para permitir el clic en los resultados
+                        setTimeout(() => {
+                            resultsDiv.classList.add('hidden');
+                            // Lo volvemos de solo lectura para el próximo uso
+                            searchInput.readOnly = true; 
+                        }, 200);
+                    };
         
+                    // Evento para el botón de limpiar (la "X")
                     clearButton.onmousedown = (e) => {
                         e.preventDefault();
                         searchInput.value = '';
                         filterAndDisplay();
-                        searchInput.focus();
+                        searchInput.focus(); // Mantenemos el foco para seguir escribiendo
                     };
+        
+                    // --- Carga inicial de la lista ---
+                    // Simula un "input" para que la lista aparezca completa al abrir el modal
+                    const event = new Event('input', { bubbles: true });
+                    searchInput.dispatchEvent(event);
                 }
                 // === FIN: Lógica para Modal de Cambio de Jugador ===
     
@@ -3624,10 +3659,13 @@
                 }
                 
                 return `
-                    <div class="player-card-clickable cursor-pointer group" data-player-num="${playerNum}">
+                    <div class="player-card-clickable cursor-pointer group relative" data-player-num="${playerNum}">
                         <div class="flex flex-col items-center text-center space-y-3">
-                            <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 ${borderColorClass} shadow-lg transition-transform group-hover:scale-105">
+                            <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 ${borderColorClass} shadow-lg transition-transform duration-300 group-hover:scale-105">
                             <h3 class="text-2xl font-bold text-text-primary ${isPlaceholder ? 'opacity-50' : ''}">${playerStats.name}</h3>
+                        </div>
+                        <div class="absolute top-0 right-0 bg-black/50 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <i class="fas fa-sync-alt"></i>
                         </div>
                     </div>
                 `;
