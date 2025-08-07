@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -2810,43 +2811,90 @@
                 supabaseClient.removeChannel(statsChannel);
                 statsChannel = null;
             }
+            clearInterval(heartbeatInterval);
             
-            console.log('Subscribing to DB changes channel on stats page...');
+            console.log('Setting up Realtime subscriptions for stats page...');
             
-            const handleBroadcast = (payload) => {
-                console.log('Stats page broadcast received!', payload);
-                refreshDataAndRender();
+            const handleChanges = (payload) => {
+                console.log('Change received on stats page!', payload);
+                const { table, eventType, new: newRecord, old: oldRecord } = payload;
+                
+                let dataArray;
+                let sortNeeded = false;
+
+                switch(table) {
+                    case 'players': dataArray = allPlayersData; break;
+                    case 'matches': dataArray = allMatchesData; sortNeeded = true; break;
+                    default: return;
+                }
+
+                if (eventType === 'INSERT') {
+                    if (!dataArray.some(item => item.id === newRecord.id)) {
+                       dataArray.push(newRecord);
+                    }
+                }
+                else if (eventType === 'UPDATE') {
+                    const index = dataArray.findIndex(item => item.id === newRecord.id);
+                    if (index !== -1) dataArray[index] = { ...dataArray[index], ...newRecord };
+                }
+                else if (eventType === 'DELETE') {
+                    const idToDelete = oldRecord.id;
+                    const index = dataArray.findIndex(item => item.id === idToDelete);
+                    if (index !== -1) dataArray.splice(index, 1);
+                }
+                
+                if (sortNeeded) {
+                    allMatchesData.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
+                }
+
+                const activeTabButton = document.querySelector('.tab-button.active');
+                if (activeTabButton) {
+                    const tabId = activeTabButton.dataset.tab;
+                    activateTab(tabId);
+                }
             };
 
-            statsChannel = supabaseClient.channel('db-changes');
+            statsChannel = supabaseClient.channel('public:stats_changes', {
+                config: {
+                    broadcast: { ack: true }
+                }
+            });
+
+            const startHeartbeat = () => {
+                clearInterval(heartbeatInterval); 
+                heartbeatInterval = setInterval(() => {
+                    if (statsChannel.state === 'joined') {
+                        statsChannel.send({
+                            type: 'broadcast',
+                            event: 'heartbeat',
+                            payload: { message: 'alive' },
+                        });
+                        console.log('Stats page heartbeat sent.');
+                    }
+                }, 30000); 
+            };
+
+            const stopHeartbeat = () => {
+                clearInterval(heartbeatInterval);
+            };
 
             statsChannel
-                .on('broadcast', { event: 'postgres-change' }, (message) => handleBroadcast(message.payload))
-                .subscribe((status) => {
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
+                .subscribe((status, err) => {
+                    console.log(`Stats page Realtime status: ${status}`);
                     if (status === 'SUBSCRIBED') {
-                        console.log('Stats page successfully subscribed to broadcast channel!');
+                        console.log('Stats page subscribed to Realtime channel!');
+                        startHeartbeat(); 
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        console.error(`Stats page Realtime issue: ${status}`, err);
+                        stopHeartbeat();
+                        setTimeout(setupRealtimeSubscriptions, 5000);
+                    } else if (status === 'CLOSED') {
+                        console.warn('Stats page Realtime channel closed.');
+                        stopHeartbeat();
                     }
                 });
-
-            async function refreshDataAndRender() {
-                try {
-                    const [playersRes, matchesRes] = await Promise.all([
-                        supabaseClient.from('players').select('id, name, photo_url, status'),
-                        supabaseClient.from('matches').select('*')
-                    ]);
-
-                    if (playersRes.data) allPlayersData = playersRes.data;
-                    if (matchesRes.data) allMatchesData = matchesRes.data.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
-
-                    const activeTabButton = document.querySelector('.tab-button.active');
-                    if (activeTabButton) {
-                        const tabId = activeTabButton.dataset.tab;
-                        activateTab(tabId);
-                    }
-                } catch (error) {
-                    console.error("Error refreshing data on stats page:", error);
-                }
-            }
         }
 
         // --- INICIO: Funciones del Comparador ---
