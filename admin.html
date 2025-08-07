@@ -822,92 +822,24 @@
                 supabase.removeChannel(AppState.realtimeChannel);
                 AppState.realtimeChannel = null;
             }
-            clearInterval(AppState.heartbeatInterval);
             
-            console.log('Setting up Realtime subscriptions...');
+            console.log('Subscribing to DB changes channel...');
 
-            const handleChanges = (payload) => {
-                console.log('Change received!', payload);
-                const { table, eventType, new: newRecord, old: oldRecord } = payload;
-                
-                let dataArray;
-                
-                switch(table) {
-                    case 'players': dataArray = AppState.players; break;
-                    case 'matches': dataArray = AppState.matches; break;
-                    case 'profiles': dataArray = AppState.users; break;
-                    default: return;
-                }
-
-                if (eventType === 'INSERT') {
-                    if (!dataArray.some(item => item.id === newRecord.id)) {
-                        dataArray.push(newRecord);
-                    }
-                } else if (eventType === 'UPDATE') {
-                    const index = dataArray.findIndex(item => item.id === newRecord.id);
-                    if (index !== -1) {
-                        dataArray[index] = { ...dataArray[index], ...newRecord };
-                    } else {
-                        dataArray.push(newRecord);
-                    }
-                } else if (eventType === 'DELETE') {
-                    const idToDelete = oldRecord.id;
-                    const index = dataArray.findIndex(item => item.id === idToDelete);
-                    if (index !== -1) {
-                        dataArray.splice(index, 1);
-                    }
-                }
-
-                if (table === 'matches') {
-                    AppState.matches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
-                }
-                
+            const handleBroadcast = (payload) => {
+                console.log('Broadcast received!', payload);
                 const currentTab = window.location.hash.substring(1);
                 if (currentTab) {
-                    renderPage(currentTab);
+                    refreshDataAndRender(currentTab);
                 }
             };
             
-            const channel = supabase.channel('public:admin_changes', {
-                config: {
-                    broadcast: { ack: true }
-                }
-            });
-
-            const startHeartbeat = () => {
-                clearInterval(AppState.heartbeatInterval);
-                AppState.heartbeatInterval = setInterval(() => {
-                    if (channel.state === 'joined') {
-                        channel.send({
-                            type: 'broadcast',
-                            event: 'heartbeat',
-                            payload: { message: 'alive' },
-                        });
-                        console.log('Realtime heartbeat sent.');
-                    }
-                }, 30000);
-            };
-
-            const stopHeartbeat = () => {
-                clearInterval(AppState.heartbeatInterval);
-            };
+            const channel = supabase.channel('db-changes');
 
             channel
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, handleChanges)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, handleChanges)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, handleChanges)
-                .subscribe((status, err) => {
-                    console.log(`Realtime status: ${status}`);
+                .on('broadcast', { event: 'postgres-change' }, (message) => handleBroadcast(message.payload))
+                .subscribe((status) => {
                     if (status === 'SUBSCRIBED') {
-                        console.log('Realtime channel subscribed successfully!');
-                        startHeartbeat();
-                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                        console.error(`Realtime channel issue: ${status}`, err);
-                        stopHeartbeat();
-                        setTimeout(() => setupRealtimeSubscriptions(), 5000); 
-                    } else if (status === 'CLOSED') {
-                        console.warn('Realtime channel closed.');
-                        stopHeartbeat();
+                        console.log('Successfully subscribed to broadcast channel!');
                     }
                 });
 
