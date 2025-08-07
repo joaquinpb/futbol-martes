@@ -3337,6 +3337,14 @@
         
                 const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
                 
+                // ==================================================================
+                // ===== INICIO DEL CÓDIGO A AGREGAR =====
+                // ==================================================================
+                const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
+                // ==================================================================
+                // ===== FIN DEL CÓDIGO A AGREGAR =====
+                // ==================================================================
+                
                 if (headToHeadStats.pjTotal > 0) {
                     const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, efectividad: headToHeadStats.p1_efectividad };
                     const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, efectividad: headToHeadStats.p2_efectividad };
@@ -3355,6 +3363,27 @@
                             ${headToHeadStats.pjEnfrentados > 0 ? `<div><h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6 mb-4">Como Rivales</h4><div class="space-y-4">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div></div>` : ''}
                         </div>`;
                 }
+                
+                // ==================================================================
+                // ===== INICIO DEL BLOQUE DE CÓDIGO A AGREGAR =====
+                // ==================================================================
+                if (teammateStats.pj > 0) {
+                    const teammateStatBox = (value, label, {bgColor, valueColor, labelColor}) => `<div class="p-3 flex flex-col justify-between text-center rounded-lg ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
+
+                    comparisonHTML += `
+                        <div class="space-y-4 p-4">
+                            <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Jugando Juntos (${teammateStats.pj} PJ)</h4>
+                            <div class="grid grid-cols-3 gap-4">
+                                ${teammateStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
+                                ${teammateStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
+                                ${teammateStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                            </div>
+                        </div>
+                    `;
+                }
+                // ==================================================================
+                // ===== FIN DEL BLOQUE DE CÓDIGO A AGREGAR =====
+                // ==================================================================
             
                 const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
                 comparisonHTML += `<div class="space-y-4 p-4"><h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6">Individuales</h4>${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div>`;
@@ -3611,6 +3640,42 @@
             h2h.p2_efectividad = p2PossiblePoints > 0 ? ((p2TotalPoints / p2PossiblePoints) * 100).toFixed(2) : "0.00";
 
             return h2h;
+        }
+
+        function calculateTeammateStats(player1Id, player2Id, filteredMatches) {
+            const stats = {
+                pj: 0,
+                pg: 0,
+                pe: 0,
+                pp: 0
+            };
+
+            if (!player1Id || !player2Id) return stats;
+
+            filteredMatches.forEach(match => {
+                const p1Team = (match.team_white_players || []).includes(player1Id) ? 'claros'
+                             : (match.team_dark_players || []).includes(player1Id) ? 'oscuros' : null;
+
+                const p2Team = (match.team_white_players || []).includes(player2Id) ? 'claros'
+                             : (match.team_dark_players || []).includes(player2Id) ? 'oscuros' : null;
+
+                // Verificamos si jugaron en el mismo equipo y el partido no fue suspendido
+                if (p1Team && p1Team === p2Team && match.result && match.result !== 'Suspendido') {
+                    stats.pj++;
+                    const result = match.result;
+                    const theirTeam = p1Team === 'claros' ? 'Claros' : 'Oscuros';
+
+                    if (result === 'Empate') {
+                        stats.pe++;
+                    } else if (result === theirTeam) {
+                        stats.pg++;
+                    } else {
+                        stats.pp++;
+                    }
+                }
+            });
+
+            return stats;
         }
         
         function updateComparison() {
