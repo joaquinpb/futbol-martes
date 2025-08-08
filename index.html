@@ -3091,7 +3091,7 @@
                 let selectedPlayer2 = null;
                 const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
     
-                // --- INYECCIÓN DE ESTILOS (si no lo hiciste antes, asegúrate de que esta función exista dentro de renderComparador) ---
+                // --- INYECCIÓN DE ESTILOS (Solo se ejecuta una vez) ---
                 (function injectComparatorStyles() {
                     const styleId = 'comparator-dynamic-styles';
                     if (document.getElementById(styleId)) return;
@@ -3114,7 +3114,26 @@
                     document.head.appendChild(style);
                 })();
     
-                // --- FUNCIONES DE RENDERIZADO DE PANTALLAS (limpias, sin listeners de navegación) ---
+                // --- FUNCIONES AUXILIARES Y DE RENDERIZADO ---
+                function showScreen(screenNum) {
+                    if (screenNum === 3 && !document.getElementById('screen-3-content')) {
+                        renderScreen3();
+                    }
+                    for (let i = 1; i <= 4; i++) {
+                        const screen = document.getElementById(`comparator-screen-${i}`);
+                        if(screen) screen.classList.add('hidden');
+                    }
+                    const targetScreen = document.getElementById(`comparator-screen-${screenNum}`);
+                    if(targetScreen) targetScreen.classList.remove('hidden');
+                }
+    
+                function resetComparator() {
+                    selectedPlayer1 = null;
+                    selectedPlayer2 = null;
+                    renderScreen1();
+                    showScreen(1);
+                }
+    
                 function createPlayerSelectorCard(playerNum, playerData = null) {
                     const photoUrl = playerData?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';
                     const playerName = playerData?.name || 'Seleccionar Jugador';
@@ -3133,7 +3152,7 @@
                         </div>
                     `;
                 }
-    
+                
                 function renderScreen1() {
                     const screen1Container = document.getElementById('comparator-screen-1');
                     screen1Container.innerHTML = `
@@ -3179,9 +3198,7 @@
                     
                     const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
                     let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
-                    if (selectedYears.includes('all')) {
-                        selectedYears = ['all'];
-                    }
+                    if (selectedYears.includes('all')) selectedYears = ['all'];
                     const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
         
                     const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
@@ -3210,11 +3227,7 @@
                     const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
                     
                     if (headToHeadStats.pjTotal > 0) {
-                        const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, efectividad: headToHeadStats.p1_efectividad };
-                        const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, efectividad: headToHeadStats.p2_efectividad };
-                        const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
                         const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
-        
                         comparisonHTML += `
                             <div class="space-y-2 p-2">
                                 <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Entre Sí</h4>
@@ -3225,7 +3238,7 @@
                                     ${unifiedStatBox(headToHeadStats.empates, 'EMPATES', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
                                 </div>
                             </div>`;
-        
+                        
                         if (teammateStats.pj > 0) {
                             const teammateStatBox = (value, label, {bgColor, valueColor, labelColor}) => `<div class="p-3 flex flex-col justify-between text-center rounded-lg ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
                             comparisonHTML += `
@@ -3236,17 +3249,18 @@
                                         ${teammateStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
                                         ${teammateStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
                                     </div>
-                                </div>
-                            `;
+                                </div>`;
                         }
-        
+                        
                         if (headToHeadStats.pjEnfrentados > 0) {
+                            const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, efectividad: headToHeadStats.p1_efectividad };
+                            const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, efectividad: headToHeadStats.p2_efectividad };
+                            const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
                             comparisonHTML += `
                                 <div class="space-y-2 p-2">
                                     <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6 mb-4">Como Rivales</h4>
                                     <div class="space-y-4">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
-                                </div>
-                            `;
+                                </div>`;
                         }
                     }
                 
@@ -3262,85 +3276,10 @@
                             ${comparisonHTML}
                         </div>
                     `;
-                }
-    
-                // === Lógica para Modal de Cambio de Jugador (completa) ===
-                let activePlayerChangeContext = null;
-        
-                function openPlayerChangeModal(playerNum) {
-                    // (El código de esta función no cambia, lo mantenemos como está)
-                    activePlayerChangeContext = playerNum;
-                    const modal = document.getElementById('player-change-modal');
-                    const modalContent = document.getElementById('player-change-modal-content');
-                    const title = document.getElementById('player-change-modal-title');
-                    const avatarImg = document.getElementById('player-change-avatar');
-                    const currentPlayer = playerNum === 1 ? selectedPlayer1 : selectedPlayer2;
-                    title.textContent = `Cambiar Jugador ${playerNum}`;
-                    if (currentPlayer) {
-                        avatarImg.src = currentPlayer.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
-                    }
-                    modal.classList.remove('hidden');
-                    setTimeout(() => {
-                        modal.classList.remove('opacity-0');
-                        modalContent.classList.remove('scale-95');
-                        document.body.classList.add('modal-open');
-                        setupPlayerChangeSearch();
-                    }, 10);
-                }
-        
-                function closePlayerChangeModal() {
-                    // (El código de esta función no cambia, lo mantenemos como está)
-                    const modal = document.getElementById('player-change-modal');
-                    const modalContent = document.getElementById('player-change-modal-content');
-                    const searchInput = document.getElementById('player-change-search-input');
-                    const resultsDropdown = document.getElementById('player-change-results-dropdown');
-                    modal.classList.add('opacity-0');
-                    modalContent.classList.add('scale-95');
-                    setTimeout(() => {
-                        modal.classList.add('hidden');
-                        document.body.classList.remove('modal-open');
-                        activePlayerChangeContext = null;
-                        searchInput.value = '';
-                        searchInput.readOnly = true;
-                        resultsDropdown.innerHTML = '';
-                        resultsDropdown.classList.add('hidden');
-                    }, 300);
-                }
-    
-                function setupPlayerChangeSearch() {
-                    // (El código de esta función no cambia, lo mantenemos como está)
-                    const searchInput = document.getElementById('player-change-search-input');
-                    const resultsDiv = document.getElementById('player-change-results-dropdown');
-                    const clearButton = document.getElementById('player-change-clear-search');
-                    const filterAndDisplay = () => { const searchTerm = searchInput.value.toLowerCase(); clearButton.classList.toggle('hidden', searchTerm.length === 0); const otherPlayerNum = activePlayerChangeContext === 1 ? 2 : 1; const otherPlayerId = (otherPlayerNum === 1 ? selectedPlayer1 : selectedPlayer2)?.id; const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm) && p.id != otherPlayerId).sort((a, b) => a.name.localeCompare(b.name)); resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join(''); resultsDiv.classList.remove('hidden'); };
-                    const selectPlayer = (playerId) => { const player = allPlayersData.find(p => p.id == playerId); if (activePlayerChangeContext === 1) { selectedPlayer1 = player; } else { selectedPlayer2 = player; } closePlayerChangeModal(); renderFullComparisonScreen(); };
-                    resultsDiv.onmousedown = (e) => { const target = e.target.closest('.option-item'); if (target?.dataset.playerId) { e.preventDefault(); selectPlayer(target.dataset.playerId); } };
-                    searchInput.oninput = filterAndDisplay;
-                    searchInput.onclick = () => { if (searchInput.readOnly) { searchInput.readOnly = false; } filterAndDisplay(); };
-                    searchInput.onblur = () => { setTimeout(() => { resultsDiv.classList.add('hidden'); searchInput.readOnly = true; }, 200); };
-                    clearButton.onmousedown = (e) => { e.preventDefault(); searchInput.value = ''; filterAndDisplay(); searchInput.focus(); };
-                    const event = new Event('input', { bubbles: true });
-                    searchInput.dispatchEvent(event);
-                }
-                
-                // --- FUNCIONES DE LÓGICA Y EVENTOS ---
-                function showScreen(screenNum) {
-                    if (screenNum === 3) renderScreen3();
-                    for (let i = 1; i <= 4; i++) {
-                        document.getElementById(`comparator-screen-${i}`).classList.add('hidden');
-                    }
-                    document.getElementById(`comparator-screen-${screenNum}`).classList.remove('hidden');
-                }
-    
-                function resetComparator() {
-                    selectedPlayer1 = null;
-                    selectedPlayer2 = null;
-                    renderScreen1();
-                    showScreen(1);
+                    showScreen(4);
                 }
     
                 function setupPlayerSearch(playerNum, initialOpen = false) {
-                    // (El código de esta función no cambia)
                     const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
                     const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
                     const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
@@ -3355,46 +3294,39 @@
                 }
     
                 function updatePlayerDisplay(playerNum, player) {
-                    // (El código de esta función no cambia)
                     const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
-                    const idInput = document.getElementById(`comparador-player${playerNum}-id`);
                     const avatar = document.getElementById(`player${playerNum}-avatar`);
                     const name = document.getElementById(`player${playerNum}-name`);
                     const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
-                    searchInput.value = player?.name || ''; idInput.value = player?.id || ''; avatar.src = player?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'; name.textContent = player?.name || 'Seleccionar Jugador'; clearButton.classList.toggle('hidden', !player);
-                    if (playerNum === 1) { document.getElementById('go-to-screen-3-btn').disabled = !player; } else { document.getElementById('go-to-screen-4-btn').disabled = !player; }
+                    searchInput.value = player?.name || ''; 
+                    avatar.src = player?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'; 
+                    name.textContent = player?.name || 'Seleccionar Jugador'; 
+                    clearButton.classList.toggle('hidden', !player);
+                    if (playerNum === 1) { document.getElementById('go-to-screen-3-btn').disabled = !player; } 
+                    else { document.getElementById('go-to-screen-4-btn').disabled = !player; }
                 }
-
+    
+                // --- MANEJO DE EVENTOS CENTRALIZADO ---
                 const comparatorAppContainer = document.getElementById('comparator-app-container');
-                    if (!comparatorAppContainer.dataset.listenerAttached) {
-                        comparatorAppContainer.addEventListener('click', (e) => {
-                            const buttonTarget = e.target.closest('button');
-                            const cardTarget = e.target.closest('.player-card-clickable');
-        
-                            // Prioridad 1: Abrir el modal para cambiar jugador
-                            if (cardTarget) {
-                                const playerNum = cardTarget.dataset.playerNum;
-                                if (playerNum) {
-                                    openPlayerChangeModal(parseInt(playerNum));
-                                }
-                                return; // Detiene la ejecución para no interferir con otros botones
-                            }
-        
-                            // Prioridad 2: Botones de navegación y reset
-                            if (buttonTarget) {
-                                if (buttonTarget.id === 'go-to-screen-3-btn') {
-                                    showScreen(3);
-                                } else if (buttonTarget.id === 'go-to-screen-4-btn') {
-                                    renderFullComparisonScreen();
-                                } else if (buttonTarget.id === 'back-to-screen-1-btn') {
-                                    showScreen(1);
-                                } else if (buttonTarget.classList.contains('comparator-reset-btn')) {
-                                    resetComparator();
-                                }
-                            }
-                        });
-                        comparatorAppContainer.dataset.listenerAttached = 'true';
-                    }
+                if (!comparatorAppContainer.dataset.listenerAttached) {
+                    comparatorAppContainer.addEventListener('click', (e) => {
+                        const cardTarget = e.target.closest('.player-card-clickable');
+                        if (cardTarget) {
+                            const playerNum = cardTarget.dataset.playerNum;
+                            if (playerNum) openPlayerChangeModal(parseInt(playerNum));
+                            return;
+                        }
+                        
+                        const buttonTarget = e.target.closest('button');
+                        if (buttonTarget) {
+                            if (buttonTarget.id === 'go-to-screen-3-btn') showScreen(3);
+                            else if (buttonTarget.id === 'go-to-screen-4-btn') renderFullComparisonScreen();
+                            else if (buttonTarget.id === 'back-to-screen-1-btn') showScreen(1);
+                            else if (buttonTarget.classList.contains('comparator-reset-btn')) resetComparator();
+                        }
+                    });
+                    comparatorAppContainer.dataset.listenerAttached = 'true';
+                }
     
                 // --- EVENTOS GLOBALES DEL COMPARADOR ---
                 if (!document.body.dataset.comparadorListener) {
@@ -3407,6 +3339,7 @@
                     document.body.dataset.comparadorListener = 'true';
                 }
     
+                // --- INICIALIZACIÓN ---
                 resetComparator();
             }
     
