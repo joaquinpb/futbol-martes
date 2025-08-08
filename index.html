@@ -3208,8 +3208,9 @@
                     let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
                     let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, id: selectedPlayer2.id };
         
-                    let comparisonHTML = `
-                        <div class="p-4">
+                    // Contenedor "pegajoso" para los avatares
+                    const stickyHeaderHTML = `
+                        <div class="sticky top-0 bg-bg-secondary z-10 p-4">
                             <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
                                 ${createPlayerCard(selectedPlayer1, 1)}
                                 <div class="vs-separator">VS</div>
@@ -3230,11 +3231,12 @@
                     const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
                     
                     const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
-
                     const subHeaderClasses = "text-sm font-bold text-center text-button-text-color uppercase tracking-wider p-1.5 md:p-2 rounded-md";
 
+                    let scrollableContentHTML = '';
+
                     if (headToHeadStats.pjTotal > 0) {
-                        comparisonHTML += `
+                        scrollableContentHTML += `
                             <div class="space-y-2 p-2">
                                 <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Entre Sí</h4>
                                 <div class="grid grid-cols-4 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
@@ -3247,7 +3249,7 @@
                     }
                     
                     if (teammateStats.pj > 0) {
-                        comparisonHTML += `
+                        scrollableContentHTML += `
                             <div class="space-y-2 p-2 mt-1">
                                 <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Jugando Juntos (${teammateStats.pj} PJ)</h4>
                                 <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
@@ -3262,7 +3264,7 @@
                         const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, efectividad: headToHeadStats.p1_efectividad };
                         const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, efectividad: headToHeadStats.p2_efectividad };
                         const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
-                        comparisonHTML += `
+                        scrollableContentHTML += `
                             <div class="space-y-2 p-2 mt-1">
                                 <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Como Rivales</h4>
                                 <div class="space-y-4 mt-2">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
@@ -3270,15 +3272,16 @@
                     }
                 
                     const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
-                    comparisonHTML += `<div class="space-y-2 p-2 mt-1"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Individuales</h4><div class="space-y-4 mt-2">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
+                    scrollableContentHTML += `<div class="space-y-2 p-2 mt-1"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Individuales</h4><div class="space-y-4 mt-2">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
         
                     screen4Container.innerHTML = `
                         <div class="comparator-screen-header">
                             <span>COMPARATIVA</span>
                             <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
                         </div>
-                        <div id="full-comparison-display" class="space-y-3 overflow-y-auto max-h-[70vh]">
-                            ${comparisonHTML}
+                        <div id="full-comparison-display" class="md:overflow-y-auto md:max-h-[70vh]">
+                            ${stickyHeaderHTML}
+                            ${scrollableContentHTML}
                         </div>
                     `;
                 }
@@ -3569,15 +3572,23 @@
                     const suffix = stat.suffix || '';
                     const total = val1 + val2;
                     
-                    // El cálculo de los anchos sigue siendo el mismo
                     const width1 = total > 0 ? (val1 / total) * 100 : 0;
                     const width2 = total > 0 ? (val2 / total) * 100 : 0;
+
+                    // Lógica para determinar el color de las barras
+                    let bar1ColorClass = 'bg-danger-color'; // Rojo por defecto
+                    let bar2ColorClass = 'bg-danger-color'; // Rojo por defecto
+
+                    if (val1 > val2) {
+                        bar1ColorClass = 'bg-success-color'; // Verde para el ganador
+                    } else if (val2 > val1) {
+                        bar2ColorClass = 'bg-success-color'; // Verde para el ganador
+                    }
     
-                    // Nueva estructura HTML con 5 columnas para una alineación perfecta
                     return `
                         <div class="comparison-row">
                             <div class="stat-bar-container bar-left">
-                                <div class="progress-fill player1" style="width: ${width1}%"></div>
+                                <div class="progress-fill ${bar1ColorClass}" style="width: ${width1}%"></div>
                             </div>
     
                             <span class="value-label player1">${val1.toLocaleString('es-AR')}${suffix}</span>
@@ -3587,7 +3598,7 @@
                             <span class="value-label player2">${val2.toLocaleString('es-AR')}${suffix}</span>
     
                             <div class="stat-bar-container bar-right">
-                                <div class="progress-fill player2" style="width: ${width2}%"></div>
+                                <div class="progress-fill ${bar2ColorClass}" style="width: ${width2}%"></div>
                             </div>
                         </div>
                     `;
