@@ -3116,13 +3116,16 @@
     
                 // --- FUNCIONES AUXILIARES Y DE RENDERIZADO ---
                 function showScreen(screenNum) {
+                    // Si intentamos mostrar la pantalla 3, primero nos aseguramos de que su contenido esté generado.
                     if (screenNum === 3 && !document.getElementById('screen-3-content')) {
                         renderScreen3();
                     }
+                    // Ocultamos todas las pantallas del comparador
                     for (let i = 1; i <= 4; i++) {
                         const screen = document.getElementById(`comparator-screen-${i}`);
                         if(screen) screen.classList.add('hidden');
                     }
+                    // Mostramos solo la pantalla deseada
                     const targetScreen = document.getElementById(`comparator-screen-${screenNum}`);
                     if(targetScreen) targetScreen.classList.remove('hidden');
                 }
@@ -3133,7 +3136,7 @@
                     renderScreen1();
                     showScreen(1);
                 }
-    
+                
                 function createPlayerSelectorCard(playerNum, playerData = null) {
                     const photoUrl = playerData?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';
                     const playerName = playerData?.name || 'Seleccionar Jugador';
@@ -3143,7 +3146,6 @@
                                 <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
                                 <button id="comparador-clear-player${playerNum}-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted ${!playerData ? 'hidden' : ''}"><i class="fas fa-times-circle"></i></button>
                                 <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                                <input type="hidden" id="comparador-player${playerNum}-id" value="${playerData?.id || ''}">
                             </div>
                             <div class="mt-4">
                                 <img src="${photoUrl}" alt="Avatar del jugador" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-border-color shadow-lg" id="player${playerNum}-avatar" onerror="this.onerror=null;this.src='https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';">
@@ -3276,20 +3278,21 @@
                             ${comparisonHTML}
                         </div>
                     `;
-                    showScreen(4);
+                    // La llamada a showScreen(4) se hace ahora desde el manejador de eventos central.
                 }
     
                 function setupPlayerSearch(playerNum, initialOpen = false) {
                     const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
                     const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
-                    const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
                     const isMobile = window.innerWidth < 768;
                     const filterAndDisplay = () => { const searchTerm = searchInput.value.toLowerCase(); const otherPlayerId = playerNum === 1 ? selectedPlayer2?.id : selectedPlayer1?.id; const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId).sort((a, b) => a.name.localeCompare(b.name)); resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join(''); resultsDiv.classList.remove('hidden'); };
-                    if (initialOpen) { filterAndDisplay(); }
+                    if (initialOpen) filterAndDisplay();
                     resultsDiv.addEventListener('mousedown', (e) => { const target = e.target.closest('.option-item'); if (target?.dataset.playerId) { e.preventDefault(); const player = allPlayersData.find(p => p.id == target.dataset.playerId); if (playerNum === 1) selectedPlayer1 = player; else selectedPlayer2 = player; updatePlayerDisplay(playerNum, player); resultsDiv.classList.add('hidden'); searchInput.readOnly = true; } });
                     searchInput.addEventListener('mousedown', (e) => { e.preventDefault(); if (isMobile) { if (resultsDiv.classList.contains('hidden')) { searchInput.readOnly = true; filterAndDisplay(); } else { searchInput.readOnly = false; searchInput.focus(); } } else { searchInput.readOnly = false; searchInput.focus(); filterAndDisplay(); } });
                     searchInput.addEventListener('input', filterAndDisplay);
                     searchInput.addEventListener('blur', () => setTimeout(() => { if (!resultsDiv.contains(document.activeElement)) { resultsDiv.classList.add('hidden'); searchInput.readOnly = true; } }, 150));
+                    
+                    const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
                     clearButton.addEventListener('mousedown', (e) => { e.preventDefault(); if (playerNum === 1) selectedPlayer1 = null; else selectedPlayer2 = null; updatePlayerDisplay(playerNum, null); if (isMobile) { searchInput.readOnly = true; } else { searchInput.readOnly = false; searchInput.focus(); } filterAndDisplay(); });
                 }
     
@@ -3306,7 +3309,7 @@
                     else { document.getElementById('go-to-screen-4-btn').disabled = !player; }
                 }
     
-                // --- MANEJO DE EVENTOS CENTRALIZADO ---
+                // --- MANEJO DE EVENTOS CENTRALIZADO (VERSIÓN CORREGIDA Y FINAL) ---
                 const comparatorAppContainer = document.getElementById('comparator-app-container');
                 if (!comparatorAppContainer.dataset.listenerAttached) {
                     comparatorAppContainer.addEventListener('click', (e) => {
@@ -3319,10 +3322,16 @@
                         
                         const buttonTarget = e.target.closest('button');
                         if (buttonTarget) {
-                            if (buttonTarget.id === 'go-to-screen-3-btn') showScreen(3);
-                            else if (buttonTarget.id === 'go-to-screen-4-btn') renderFullComparisonScreen();
-                            else if (buttonTarget.id === 'back-to-screen-1-btn') showScreen(1);
-                            else if (buttonTarget.classList.contains('comparator-reset-btn')) resetComparator();
+                            if (buttonTarget.id === 'go-to-screen-3-btn') {
+                                showScreen(3);
+                            } else if (buttonTarget.id === 'go-to-screen-4-btn') {
+                                renderFullComparisonScreen();
+                                showScreen(4); // Se genera y LUEGO se muestra la pantalla.
+                            } else if (buttonTarget.id === 'back-to-screen-1-btn') {
+                                showScreen(1);
+                            } else if (buttonTarget.classList.contains('comparator-reset-btn')) {
+                                resetComparator();
+                            }
                         }
                     });
                     comparatorAppContainer.dataset.listenerAttached = 'true';
