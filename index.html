@@ -3368,9 +3368,15 @@
                     if (!searchInput.dataset.listenerAttached) {
                         searchInput.addEventListener('mousedown', (e) => {
                             e.preventDefault();
+                            const isDesktop = window.innerWidth >= 768;
+
                             if (resultsDiv.classList.contains('hidden')) {
                                 resultsDiv.classList.remove('hidden');
                                 filterAndDisplay();
+                                if (isDesktop) {
+                                    searchInput.readOnly = false;
+                                    searchInput.focus();
+                                }
                             } else {
                                 searchInput.readOnly = false;
                                 searchInput.focus();
@@ -3436,14 +3442,14 @@
                     const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
                     const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
                     const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
-                    
+    
                     const filterAndDisplay = () => {
                         const searchTerm = searchInput.value.toLowerCase();
                         const otherPlayerId = playerNum === 1 ? selectedPlayer2?.id : selectedPlayer1?.id;
                         const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId).sort((a, b) => a.name.localeCompare(b.name));
                         resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
                     };
-
+    
                     clearButton.addEventListener('mousedown', (e) => {
                         e.preventDefault();
                         if (playerNum === 1) {
@@ -3452,32 +3458,38 @@
                             selectedPlayer2 = null;
                         }
                         updatePlayerDisplay(playerNum, null);
-                        
+    
                         if (!resultsDiv.classList.contains('hidden')) {
-                           filterAndDisplay();
+                            filterAndDisplay();
                         } else {
-                           resultsDiv.classList.remove('hidden');
-                           filterAndDisplay();
+                            resultsDiv.classList.remove('hidden');
+                            filterAndDisplay();
                         }
                     });
-
+    
                     searchInput.addEventListener('mousedown', (e) => {
                         e.preventDefault();
+                        const isDesktop = window.innerWidth >= 768;
+    
                         if (resultsDiv.classList.contains('hidden')) {
                             resultsDiv.classList.remove('hidden');
                             filterAndDisplay();
+                            if (isDesktop) {
+                                searchInput.readOnly = false;
+                                searchInput.focus();
+                            }
                         } else {
                             searchInput.readOnly = false;
                             searchInput.focus();
                         }
                     });
-
+    
                     searchInput.addEventListener('input', () => {
                         if (!searchInput.readOnly) {
-                             filterAndDisplay();
+                            filterAndDisplay();
                         }
                     });
-                    
+    
                     searchInput.addEventListener('blur', () => {
                         setTimeout(() => {
                             if (!resultsDiv.contains(document.activeElement)) {
@@ -3486,21 +3498,22 @@
                             }
                         }, 150);
                     });
-                    
+    
                     resultsDiv.addEventListener('mousedown', (e) => {
                         const target = e.target.closest('.option-item');
                         if (target?.dataset.playerId) {
                             e.preventDefault();
                             const player = allPlayersData.find(p => p.id == target.dataset.playerId);
-                            if (playerNum === 1) selectedPlayer1 = player; else selectedPlayer2 = player;
+                            if (playerNum === 1) selectedPlayer1 = player;
+                            else selectedPlayer2 = player;
                             updatePlayerDisplay(playerNum, player);
                             resultsDiv.classList.add('hidden');
                             searchInput.readOnly = true;
                             searchInput.blur();
                         }
                     });
-
-                    if(initialOpen) {
+    
+                    if (initialOpen) {
                         resultsDiv.classList.remove('hidden');
                         filterAndDisplay();
                     }
