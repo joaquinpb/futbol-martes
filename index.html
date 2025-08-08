@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1221,13 +1222,12 @@
     
             let allPlayersData = [];
             let allMatchesData = [];
-            let selectedPlayer1 = null;
-            let selectedPlayer2 = null;
             let lastSelectedFixtureMatchId = null;
             let currentEstadisticasData = []; 
             let globalFilterState = {}; 
             let statsChannel = null;
             let heartbeatInterval = null;
+    
             let estadisticasSortState = { criterion: 'points', order: 'desc' };
     
             const renderFunctions = {
@@ -1346,22 +1346,14 @@
             }
             
             function setTodayFilters(prefix, isMonthFilter = false) {
-                const today = new Date();
                 const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
                 yearCheckboxes.forEach(cb => cb.checked = false);
                 
-                // --- INICIO DE LA CORRECCIÓN ---
-                // Busca el año más reciente que realmente existe en los datos
-                const yearsInData = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
-                const mostRecentYearInData = yearsInData.length > 0 ? yearsInData[0] : new Date().getFullYear();
-                
-                // Selecciona el checkbox de ese año
-                const yearToSelectCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="${mostRecentYearInData}"]`);
-                if (yearToSelectCheckbox) {
-                    yearToSelectCheckbox.checked = true;
+                const today = new Date();
+                const currentYearCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="${today.getFullYear()}"]`);
+                if (currentYearCheckbox) {
+                    currentYearCheckbox.checked = true;
                 }
-                // --- FIN DE LA CORRECCIÓN ---
-                
                 updateMultiYearButtonText(prefix);
                 
                 if (isMonthFilter) {
@@ -2576,15 +2568,15 @@
                 const dropdown = document.getElementById(`${prefix}-year-select-dropdown`);
                 const button = document.getElementById(`${prefix}-year-select-button`);
                 if (!dropdown || !button) return;
-            
+    
                 const years = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
-            
+                
                 let optionsHTML = `
                     <label class="font-bold border-b border-border-color">
                         <input type="checkbox" value="all" class="year-checkbox">
                         <span>Todos los Años</span>
                     </label>`;
-            
+                
                 optionsHTML += years.map(year => `
                     <label>
                         <input type="checkbox" value="${year}" class="year-checkbox">
@@ -2592,9 +2584,7 @@
                     </label>
                 `).join('');
                 dropdown.innerHTML = optionsHTML;
-            
-                // --- INICIO DE LA CORRECCIÓN ---
-                // Su única responsabilidad es aplicar el estado guardado, si existe.
+    
                 const savedYears = globalFilterState.years || [];
                 if (savedYears.length > 0) {
                     dropdown.querySelectorAll('input').forEach(cb => {
@@ -2602,24 +2592,27 @@
                             cb.checked = true;
                         }
                     });
+                } else {
+                    const currentYear = new Date().getFullYear().toString();
+                    const currentYearCb = dropdown.querySelector(`input[value="${currentYear}"]`);
+                    if (currentYearCb) currentYearCb.checked = true;
                 }
                 updateMultiYearButtonText(prefix);
-                // --- FIN DE LA CORRECCIÓN ---
-            
+    
                 dropdown.addEventListener('change', (e) => {
                     const allCheckbox = dropdown.querySelector('input[value="all"]');
                     const yearCheckboxes = dropdown.querySelectorAll('input[value]:not([value="all"])');
-            
+    
                     if (e.target.value === 'all') {
                         yearCheckboxes.forEach(cb => cb.checked = e.target.checked);
                     } else {
                         allCheckbox.checked = [...yearCheckboxes].every(cb => cb.checked);
                     }
-            
+                    
                     updateMultiYearButtonText(prefix);
                     changeCallback();
                 });
-            
+    
                 button.addEventListener('click', (e) => {
                     e.stopPropagation();
                     dropdown.classList.toggle('hidden');
@@ -2708,7 +2701,9 @@
                     }
                     
                     FilterSessionManager.update(globalFilterState);
-                
+                    document.body.dispatchEvent(new CustomEvent('filterChanged'));
+    
+    
                     if (renderFn) {
                         if (prefix === 'estadisticas') {
                             currentEstadisticasData = [];
@@ -2716,10 +2711,7 @@
                         } else if (prefix === 'fixture') {
                             renderFixture(true);
                         } else if (prefix === 'comparador') {
-                            const screen4 = document.getElementById('comparator-screen-4');
-                            if (screen4 && !screen4.classList.contains('hidden')) {
-                                renderFullComparisonScreen();
-                            }
+                            updateComparison();
                         }
                         else {
                             renderFn();
@@ -2808,7 +2800,7 @@
     
                 if (tabId.includes('content') && !tabId.includes('individual')) {
                     const isMonthFilter = prefix === 'fixture';
-                    const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0;
+                    const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.months : globalFilterState.period);
                     
                     if (hasSavedState) {
                         if (isMonthFilter && globalFilterState.months) {
@@ -3108,9 +3100,11 @@
             }
     
             // ===== INICIO: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
-            
+    
             function renderComparador() {
                 // Estado local para el wizard del comparador
+                let selectedPlayer1 = null;
+                let selectedPlayer2 = null;
                 const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
     
                 // --- INYECCIÓN DE ESTILOS (Solo se ejecuta una vez) ---
@@ -3218,7 +3212,99 @@
                     setupPlayerSearch(2, true); 
                     updatePlayerDisplay(2, selectedPlayer2);
                 }
-      
+    
+                function renderFullComparisonScreen() {
+                    const screen4Container = document.getElementById('comparator-screen-4');
+                    if (!selectedPlayer1 || !selectedPlayer2) return;
+                    
+                    const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
+                    let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
+                    if (selectedYears.includes('all')) selectedYears = ['all'];
+                    const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
+        
+                    const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
+                    let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
+                    let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, id: selectedPlayer2.id };
+        
+                    const stickyAvatarsHTML = `
+                        <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                            ${createPlayerCard(selectedPlayer1, 1)}
+                            <div class="vs-separator">VS</div>
+                            ${createPlayerCard(selectedPlayer2, 2)}
+                        </div>`;
+        
+                    const allFilteredMatches = allMatchesData.filter(match => {
+                        if (!match.result) return false;
+                        const matchYear = parseDate(match.match_date).getFullYear();
+                        const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
+                        const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
+                        const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
+                        return yearMatch && periodMatch;
+                    });
+            
+                    const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
+                    const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
+                    
+                    const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
+                    const subHeaderClasses = "text-sm font-bold text-center text-white uppercase tracking-wider p-1.5 md:p-2 rounded-md";
+
+                    let scrollableContentHTML = '';
+
+                    if (headToHeadStats.pjTotal > 0) {
+                        scrollableContentHTML += `
+                            <div class="space-y-2 p-2">
+                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">PARTIDOS COMPARTIDOS</h4>
+                                <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
+                                    ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
+                                    ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'EN EQUIPO', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
+                                    ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'RIVALES', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                                </div>
+                            </div>`;
+                    }
+                    
+                    if (teammateStats.pj > 0) {
+                        scrollableContentHTML += `
+                            <div class="space-y-2 p-2 mt-2">
+                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">EN EQUIPO (${teammateStats.pj} PJ)</h4>
+                                <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
+                                    ${unifiedStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' }, true)}
+                                    ${unifiedStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
+                                    ${unifiedStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                                </div>
+                            </div>`;
+                    }
+                    
+                    if (headToHeadStats.pjEnfrentados > 0) {
+                        const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p1_efectividad };
+                        const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p2_efectividad };
+                        const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'empates', label: 'Empatados'}, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
+                        scrollableContentHTML += `
+                            <div class="space-y-2 p-2 mt-2">
+                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Como Rivales (${headToHeadStats.pjEnfrentados} PJ)</h4>
+                                <div class="space-y-4 mt-2 px-2">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
+                            </div>`;
+                    }
+                
+                    const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
+                    scrollableContentHTML += `<div class="space-y-2 p-2 mt-2"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Individuales</h4><div class="space-y-4 mt-2 px-2">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
+        
+                    screen4Container.innerHTML = `
+                        <div class="comparator-sticky-header" style="background-color: var(--bg-secondary);">
+                            <div class="comparator-screen-header">
+                                <span>COMPARATIVA</span>
+                                <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="p-4 border-b border-border-color">
+                                ${stickyAvatarsHTML}
+                            </div>
+                        </div>
+                        
+                        <div id="full-comparison-display" class="p-4 space-y-6">
+                             ${scrollableContentHTML}
+                        </div>
+                    `;
+                }
+    
                 // --- INICIO: Funciones del Modal de Cambio de Jugador (PANTALLA 4) ---
                 function openPlayerChangeModal(playerNum) {
                     const modal = document.getElementById('player-change-modal');
@@ -3484,7 +3570,84 @@
             }
             
             // ===== FIN: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
-      
+    
+            function createPlayerCard(playerStats, playerNum) {
+                if (!playerStats) return '';
+    
+                const isPlaceholder = !playerStats.id;
+                const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+                
+                let borderColorClass = 'border-gray-300 dark:border-gray-600';
+                if (!isPlaceholder) {
+                    borderColorClass = playerNum === 1 ? 'border-accent-color' : 'border-danger-color';
+                }
+                
+                return `
+                    <div class="player-card-clickable cursor-pointer group" data-player-num="${playerNum}">
+                        <div class="flex flex-col items-center text-center space-y-3">
+                            <div class="relative bg-bg-muted p-2 rounded-full">
+                                <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 ${borderColorClass} shadow-lg">
+                                <div class="absolute top-1 right-1 bg-black/60 backdrop-blur-sm text-white border-2 border-white/50 rounded-full w-8 h-8 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
+                                    <i class="fas fa-sync-alt"></i>
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-text-primary ${isPlaceholder ? 'opacity-50' : ''}">${playerStats.name}</h3>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            function createComparisonBars(stats1, stats2, statsMeta) {
+                const renderStatBar = (stat) => {
+                    const val1 = parseFloat(stats1[stat.key]) || 0;
+                    const val2 = parseFloat(stats2[stat.key]) || 0;
+                    const suffix = stat.suffix || '';
+                    const total = val1 + val2;
+                    
+                    const width1 = total > 0 ? (val1 / total) * 100 : 0;
+                    const width2 = total > 0 ? (val2 / total) * 100 : 0;
+            
+                    // Lógica para determinar el color de las barras (MEJORADA)
+                    const lowerIsBetterKeys = ['pp', 'ausentes']; // Stats donde menos es mejor
+                    const isLowerBetter = lowerIsBetterKeys.includes(stat.key);
+                    let bar1ColorClass = 'bg-danger-color'; // Rojo por defecto (perdedor)
+                    let bar2ColorClass = 'bg-danger-color'; // Rojo por defecto (perdedor)
+            
+                    if (val1 !== val2) {
+                        // Determina quién gana
+                        if ((isLowerBetter && val1 < val2) || (!isLowerBetter && val1 > val2)) {
+                            bar1ColorClass = 'bg-success-color'; // Jugador 1 gana
+                        } else {
+                            bar2ColorClass = 'bg-success-color'; // Jugador 2 gana
+                        }
+                    } else {
+                        // En caso de empate, ambas son verdes
+                        bar1ColorClass = 'bg-success-color';
+                        bar2ColorClass = 'bg-success-color';
+                    }
+            
+                    return `
+                        <div class="comparison-row">
+                            <div class="stat-bar-container bar-left">
+                                <div class="progress-fill ${bar1ColorClass}" style="width: ${width1}%"></div>
+                            </div>
+            
+                            <span class="value-label player1">${val1.toLocaleString('es-AR')}${suffix}</span>
+            
+                            <div class="central-label">${stat.label}</div>
+            
+                            <span class="value-label player2">${val2.toLocaleString('es-AR')}${suffix}</span>
+            
+                            <div class="stat-bar-container bar-right">
+                                <div class="progress-fill ${bar2ColorClass}" style="width: ${width2}%"></div>
+                            </div>
+                        </div>
+                    `;
+                };
+            
+                return statsMeta.map(renderStatBar).join('');
+            }
+    
             function calculateHeadToHeadStats(player1Id, player2Id, filteredMatches) {
                 // Objeto para almacenar las estadísticas del "Entre Sí"
                 const h2h = {
@@ -3575,175 +3738,7 @@
     
                 return stats;
             }
-
-            function renderFullComparisonScreen() {
-                const screen4Container = document.getElementById('comparator-screen-4');
-                if (!selectedPlayer1 || !selectedPlayer2) return;
-                
-                const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
-                let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
-                if (selectedYears.includes('all')) selectedYears = ['all'];
-                const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
     
-                const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
-                let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
-                let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, id: selectedPlayer2.id };
-    
-                const stickyAvatarsHTML = `
-                    <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                        ${createPlayerCard(selectedPlayer1, 1)}
-                        <div class="vs-separator">VS</div>
-                        ${createPlayerCard(selectedPlayer2, 2)}
-                    </div>`;
-    
-                const allFilteredMatches = allMatchesData.filter(match => {
-                    if (!match.result) return false;
-                    const matchYear = parseDate(match.match_date).getFullYear();
-                    const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
-                    const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
-                    const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
-                    return yearMatch && periodMatch;
-                });
-        
-                const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
-                const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
-                
-                const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
-                const subHeaderClasses = "text-sm font-bold text-center text-white uppercase tracking-wider p-1.5 md:p-2 rounded-md";
-
-                let scrollableContentHTML = '';
-
-                if (headToHeadStats.pjTotal > 0) {
-                    scrollableContentHTML += `
-                        <div class="space-y-2 p-2">
-                            <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">PARTIDOS COMPARTIDOS</h4>
-                            <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
-                                ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
-                                ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'EN EQUIPO', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
-                                ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'RIVALES', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
-                            </div>
-                        </div>`;
-                }
-                
-                if (teammateStats.pj > 0) {
-                    scrollableContentHTML += `
-                        <div class="space-y-2 p-2 mt-2">
-                            <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">EN EQUIPO (${teammateStats.pj} PJ)</h4>
-                            <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
-                                ${unifiedStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' }, true)}
-                                ${unifiedStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
-                                ${unifiedStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
-                            </div>
-                        </div>`;
-                }
-                
-                if (headToHeadStats.pjEnfrentados > 0) {
-                    const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p1_efectividad };
-                    const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p2_efectividad };
-                    const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'empates', label: 'Empatados'}, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
-                    scrollableContentHTML += `
-                        <div class="space-y-2 p-2 mt-2">
-                            <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Como Rivales (${headToHeadStats.pjEnfrentados} PJ)</h4>
-                            <div class="space-y-4 mt-2 px-2">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
-                        </div>`;
-                }
-            
-                const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
-                scrollableContentHTML += `<div class="space-y-2 p-2 mt-2"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Individuales</h4><div class="space-y-4 mt-2 px-2">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
-    
-                screen4Container.innerHTML = `
-                    <div class="comparator-sticky-header" style="background-color: var(--bg-secondary);">
-                        <div class="comparator-screen-header">
-                            <span>COMPARATIVA</span>
-                            <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                        </div>
-                        <div class="p-4 border-b border-border-color">
-                            ${stickyAvatarsHTML}
-                        </div>
-                    </div>
-                    
-                    <div id="full-comparison-display" class="p-4 space-y-6">
-                         ${scrollableContentHTML}
-                    </div>
-                `;
-            }
-
-            function createPlayerCard(playerStats, playerNum) {
-                if (!playerStats) return '';
-    
-                const isPlaceholder = !playerStats.id;
-                const photoUrl = playerStats.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
-                
-                let borderColorClass = 'border-gray-300 dark:border-gray-600';
-                if (!isPlaceholder) {
-                    borderColorClass = playerNum === 1 ? 'border-accent-color' : 'border-danger-color';
-                }
-                
-                return `
-                    <div class="player-card-clickable cursor-pointer group" data-player-num="${playerNum}">
-                        <div class="flex flex-col items-center text-center space-y-3">
-                            <div class="relative bg-bg-muted p-2 rounded-full">
-                                <img src="${photoUrl}" alt="Foto de ${playerStats.name}" class="w-32 h-32 rounded-full object-cover border-4 ${borderColorClass} shadow-lg">
-                                <div class="absolute top-1 right-1 bg-black/60 backdrop-blur-sm text-white border-2 border-white/50 rounded-full w-8 h-8 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
-                                    <i class="fas fa-sync-alt"></i>
-                                </div>
-                            </div>
-                            <h3 class="text-2xl font-bold text-text-primary ${isPlaceholder ? 'opacity-50' : ''}">${playerStats.name}</h3>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            function createComparisonBars(stats1, stats2, statsMeta) {
-                const renderStatBar = (stat) => {
-                    const val1 = parseFloat(stats1[stat.key]) || 0;
-                    const val2 = parseFloat(stats2[stat.key]) || 0;
-                    const suffix = stat.suffix || '';
-                    const total = val1 + val2;
-                    
-                    const width1 = total > 0 ? (val1 / total) * 100 : 0;
-                    const width2 = total > 0 ? (val2 / total) * 100 : 0;
-            
-                    // Lógica para determinar el color de las barras (MEJORADA)
-                    const lowerIsBetterKeys = ['pp', 'ausentes']; // Stats donde menos es mejor
-                    const isLowerBetter = lowerIsBetterKeys.includes(stat.key);
-                    let bar1ColorClass = 'bg-danger-color'; // Rojo por defecto (perdedor)
-                    let bar2ColorClass = 'bg-danger-color'; // Rojo por defecto (perdedor)
-            
-                    if (val1 !== val2) {
-                        // Determina quién gana
-                        if ((isLowerBetter && val1 < val2) || (!isLowerBetter && val1 > val2)) {
-                            bar1ColorClass = 'bg-success-color'; // Jugador 1 gana
-                        } else {
-                            bar2ColorClass = 'bg-success-color'; // Jugador 2 gana
-                        }
-                    } else {
-                        // En caso de empate, ambas son verdes
-                        bar1ColorClass = 'bg-success-color';
-                        bar2ColorClass = 'bg-success-color';
-                    }
-            
-                    return `
-                        <div class="comparison-row">
-                            <div class="stat-bar-container bar-left">
-                                <div class="progress-fill ${bar1ColorClass}" style="width: ${width1}%"></div>
-                            </div>
-            
-                            <span class="value-label player1">${val1.toLocaleString('es-AR')}${suffix}</span>
-            
-                            <div class="central-label">${stat.label}</div>
-            
-                            <span class="value-label player2">${val2.toLocaleString('es-AR')}${suffix}</span>
-            
-                            <div class="stat-bar-container bar-right">
-                                <div class="progress-fill ${bar2ColorClass}" style="width: ${width2}%"></div>
-                            </div>
-                        </div>
-                    `;
-                };
-            
-                return statsMeta.map(renderStatBar).join('');
-            }
             // --- FIN: Funciones del Comparador ---
     
             function adjustFixtureHeights() {
