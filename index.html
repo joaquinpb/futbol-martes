@@ -1099,18 +1099,18 @@
         <!-- FIN: Modal de Jugador Simple -->
 
         <div id="player-change-modal" class="fixed inset-0 bg-black/70 flex items-start justify-center p-4 pt-20 z-50 hidden opacity-0 transition-opacity duration-300">
-            <div id="player-change-modal-content" class="card card-styled w-full max-w-sm transform scale-95 transition-transform duration-300">
-                <div class="relative p-4 border-b border-border-color bg-white dark:bg-gray-800">
+            <div id="player-change-modal-content" class="card card-styled w-full max-w-sm transform scale-95 transition-transform duration-300 overflow-hidden">
+                <div class="relative p-4 border-b border-border-color">
                     <h3 class="text-xl font-semibold text-center" id="player-change-modal-title">Cambiar Jugador</h3>
                     <button id="player-change-modal-close" class="modal-close-button">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-        
+            
                 <div class="p-6 pb-2 flex justify-center">
                     <img id="player-change-avatar" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Avatar del jugador a cambiar" class="w-24 h-24 rounded-full object-cover border-4 border-border-color">
                 </div>
-        
+            
                 <div class="p-6 pt-4">
                     <div class="relative">
                         <input type="text" id="player-change-search-input" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
@@ -3358,11 +3358,11 @@
                     const resultsDiv = document.getElementById('player-change-results-dropdown');
                     const clearButton = document.getElementById('player-change-clear-search');
                     const contextInput = document.getElementById('player-change-context');
-
+                
                     const filterAndDisplay = () => {
                         const searchTerm = searchInput.value.toLowerCase();
                         clearButton.classList.toggle('hidden', searchTerm.length === 0);
-
+                
                         const playerNumToChange = contextInput.value;
                         const otherPlayerId = (playerNumToChange == 1) ? selectedPlayer2?.id : selectedPlayer1?.id;
                         
@@ -3373,16 +3373,16 @@
                         resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
                         resultsDiv.classList.remove('hidden');
                     };
-
+                
                     // Se agrega el event listener solo si no ha sido agregado antes
                     if (!searchInput.dataset.listenerAttached) {
                         searchInput.addEventListener('click', () => {
                             searchInput.readOnly = false;
                             filterAndDisplay();
                         });
-
+                
                         searchInput.addEventListener('input', filterAndDisplay);
-
+                
                         searchInput.addEventListener('blur', () => {
                             setTimeout(() => {
                                 if (!resultsDiv.contains(document.activeElement)) {
@@ -3391,36 +3391,60 @@
                                 }
                             }, 150);
                         });
-
+                
                         clearButton.addEventListener('mousedown', (e) => {
                             e.preventDefault();
                             searchInput.value = '';
                             filterAndDisplay();
                         });
-
+                
                         resultsDiv.addEventListener('mousedown', (e) => {
                             const target = e.target.closest('.option-item');
                             if (target?.dataset.playerId) {
                                 e.preventDefault();
                                 const newPlayer = allPlayersData.find(p => p.id == target.dataset.playerId);
                                 const playerNumToChange = parseInt(contextInput.value);
-
+                
                                 if (playerNumToChange === 1) {
                                     selectedPlayer1 = newPlayer;
                                 } else {
                                     selectedPlayer2 = newPlayer;
                                 }
-
+                
                                 closePlayerChangeModal();
                                 renderFullComparisonScreen(); // Re-renderiza la comparativa con el nuevo jugador
                             }
                         });
                         
+                        // Cierra el modal al hacer clic en el botón 'X'
                         document.getElementById('player-change-modal-close').addEventListener('click', closePlayerChangeModal);
+                        
+                        // Cierra el modal al hacer clic en el overlay (fondo oscuro)
+                        const modalOverlay = document.getElementById('player-change-modal');
+                        modalOverlay.addEventListener('click', (e) => {
+                            if (e.target.id === 'player-change-modal') {
+                                closePlayerChangeModal();
+                            }
+                        });
                         
                         searchInput.dataset.listenerAttached = 'true';
                     }
                 }
+        
+        // Cierra el modal al hacer clic en el botón 'X'
+        document.getElementById('player-change-modal-close').addEventListener('click', closePlayerChangeModal);
+        
+        // Cierra el modal al hacer clic en el overlay (fondo oscuro)
+        const modalOverlay = document.getElementById('player-change-modal');
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target.id === 'player-change-modal') {
+                closePlayerChangeModal();
+            }
+        });
+        
+        searchInput.dataset.listenerAttached = 'true';
+    }
+}
                 // --- FIN: Funciones para el Modal de Cambio de Jugador ---
                 
                 // --- MANEJO DE EVENTOS CENTRALIZADO (VERSIÓN CORREGIDA Y FINAL) ---
