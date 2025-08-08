@@ -747,7 +747,7 @@
                  * la proporción del diseño de escritorio.
                 */
                 grid-template-columns: 18% 15% 34% 15% 18%;
-                gap: 0 0.25rem; /* Un pequeño gap solo horizontal para que no se peguen */
+                /* gap: 0 0.25rem; /* Un pequeño gap solo horizontal para que no se peguen */
             }
         
             /* Opcional: Reducir un poco el texto para asegurar que todo entre bien */
@@ -3253,7 +3253,7 @@
                     if (headToHeadStats.pjTotal > 0) {
                         scrollableContentHTML += `
                             <div class="space-y-2 p-2">
-                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Entre Sí</h4>
+                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">PARTIDOS COMPARTIDOS</h4>
                                 <div class="grid grid-cols-4 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
                                     ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
                                     ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'EN EQUIPO', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
@@ -3266,7 +3266,7 @@
                     if (teammateStats.pj > 0) {
                         scrollableContentHTML += `
                             <div class="space-y-2 p-2 mt-2">
-                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Jugando Juntos (${teammateStats.pj} PJ)</h4>
+                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">EN EQUIPO (${teammateStats.pj} PJ)</h4>
                                 <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
                                     ${unifiedStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' }, true)}
                                     ${unifiedStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
@@ -3726,146 +3726,6 @@
                 });
     
                 return stats;
-            }
-            
-            function updateComparison() {
-                const player1Id = document.getElementById('comparador-player1-id')?.value;
-                const player2Id = document.getElementById('comparador-player2-id')?.value;
-            
-                const displayArea = document.getElementById('comparison-display-area');
-                const placeholder = document.getElementById('comparador-placeholder');
-                if (!displayArea || !placeholder) return;
-            
-                displayArea.innerHTML = '';
-            
-                if (!player1Id && !player2Id) {
-                    displayArea.classList.add('hidden');
-                    placeholder.classList.remove('hidden');
-                    placeholder.textContent = 'Selecciona un jugador para comenzar.';
-                    return;
-                }
-            
-                const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
-                let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
-                if (selectedYears.includes('all')) {
-                    selectedYears = ['all'];
-                }
-                const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
-            
-                if (!selectedYears || selectedYears.length === 0 || !selectedPeriod) {
-                    displayArea.classList.add('hidden');
-                    placeholder.classList.remove('hidden');
-                    placeholder.textContent = 'Por favor, selecciona un período válido para comparar.';
-                    return;
-                }
-            
-                const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
-                
-                const placeholderPlayer = { name: 'Seleccionar...', photo_url: 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽', id: null };
-                const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
-            
-                let player1Data = player1Id ? allPlayersData.find(p => p.id == player1Id) : placeholderPlayer;
-                let player2Data = player2Id ? allPlayersData.find(p => p.id == player2Id) : placeholderPlayer;
-                
-                let player1IndividualStats = player1Id ? allIndividualStats.find(p => p.id == player1Id) : zeroStats;
-                let player2IndividualStats = player2Id ? allIndividualStats.find(p => p.id == player2Id) : zeroStats;
-                
-                if (player1Id && !player1IndividualStats) player1IndividualStats = { ...zeroStats, id: player1Id };
-                if (player2Id && !player2IndividualStats) player2IndividualStats = { ...zeroStats, id: player2Id };
-            
-                placeholder.classList.add('hidden');
-                displayArea.classList.remove('hidden');
-            
-                displayArea.innerHTML += `
-                    <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                        ${createPlayerCard(player1Data, 1)}
-                        <div class="vs-separator">VS</div>
-                        ${createPlayerCard(player2Data, 2)}
-                    </div>`;
-                
-                if (player1Id && player2Id) {
-                    const allFilteredMatches = allMatchesData.filter(match => {
-                        if (!match.result) return false;
-                        const matchYear = parseDate(match.match_date).getFullYear();
-                        const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
-                        const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
-                        const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
-                        return yearMatch && periodMatch;
-                    });
-            
-                    const headToHeadStats = calculateHeadToHeadStats(player1Id, player2Id, allFilteredMatches);
-                    
-                    if (headToHeadStats.pjTotal > 0) {
-                        const p1_vs_stats = {
-                            pg: headToHeadStats.p1_wins,
-                            pp: headToHeadStats.p2_wins,
-                            efectividad: headToHeadStats.p1_efectividad
-                        };
-                        const p2_vs_stats = {
-                            pg: headToHeadStats.p2_wins,
-                            pp: headToHeadStats.p1_wins,
-                            efectividad: headToHeadStats.p2_efectividad
-                        };
-        
-                        const h2hMeta = [
-                            { key: 'pg', label: 'Ganados' },
-                            { key: 'pp', label: 'Perdidos' },
-                            { key: 'efectividad', label: 'Efectividad', suffix: '%' }
-                        ];
-        
-                        // Función de ayuda para crear cada celda de la grilla con su color
-                        const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `
-                            <div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}">
-                                <span class="text-3xl font-extrabold ${valueColor}">${value}</span>
-                                <span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span>
-                            </div>
-                        `;
-    
-                        const entreSiHtml = `
-                            <div class="space-y-4">
-                                <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-4">Entre Sí</h4>
-                                
-                                <div class="grid grid-cols-4 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
-                                    ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', 
-                                        { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
-                                    
-                                    ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'EN EQUIPO', 
-                                        { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
-                                    
-                                    ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'RIVALES', 
-                                        { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
-                                    
-                                    ${unifiedStatBox(headToHeadStats.empates, 'EMPATES', 
-                                        { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
-                                </div>
-        
-                                ${headToHeadStats.pjEnfrentados > 0 ? `
-                                    <div>
-                                        <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6 mb-4">Como Rivales</h4>
-                                        <div class="space-y-4">
-                                            ${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}
-                                        </div>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `;
-                        displayArea.innerHTML += entreSiHtml;
-                    }
-                }
-                
-                const individualMeta = [
-                    { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' },
-                    { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' },
-                    { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' },
-                    { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' },
-                    { key: 'ausentes', label: 'Ausencias' },
-                ];
-                displayArea.innerHTML += `
-                    <div class="space-y-4">
-                        <h4 class="text-xl font-bold text-center text-text-secondary uppercase tracking-wider mt-6">Individuales</h4>
-                        ${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}
-                    </div>
-                `;
             }
     
             // --- FIN: Funciones del Comparador ---
