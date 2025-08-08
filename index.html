@@ -3245,7 +3245,6 @@
                     const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
                     
                     const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
-                    // En la función renderFullComparisonScreen(), cerca de la línea 2070
                     const subHeaderClasses = "text-sm font-bold text-center text-white uppercase tracking-wider p-1.5 md:p-2 rounded-md";
 
                     let scrollableContentHTML = '';
@@ -3254,11 +3253,10 @@
                         scrollableContentHTML += `
                             <div class="space-y-2 p-2">
                                 <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">PARTIDOS COMPARTIDOS</h4>
-                                <div class="grid grid-cols-4 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
+                                <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
                                     ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
                                     ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'EN EQUIPO', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
                                     ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'RIVALES', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
-                                    ${unifiedStatBox(headToHeadStats.empates, 'EMPATES', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
                                 </div>
                             </div>`;
                     }
@@ -3276,12 +3274,12 @@
                     }
                     
                     if (headToHeadStats.pjEnfrentados > 0) {
-                        const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, efectividad: headToHeadStats.p1_efectividad };
-                        const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, efectividad: headToHeadStats.p2_efectividad };
-                        const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
+                        const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p1_efectividad };
+                        const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p2_efectividad };
+                        const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'empates', label: 'Empatados'}, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
                         scrollableContentHTML += `
                             <div class="space-y-2 p-2 mt-2">
-                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Como Rivales</h4>
+                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Como Rivales (${headToHeadStats.pjEnfrentados} PJ)</h4>
                                 <div class="space-y-4 mt-2 px-2">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
                             </div>`;
                     }
@@ -3289,7 +3287,6 @@
                     const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
                     scrollableContentHTML += `<div class="space-y-2 p-2 mt-2"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Individuales</h4><div class="space-y-4 mt-2 px-2">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
         
-                    // Cerca de la línea 2050 en la función renderFullComparisonScreen()
                     screen4Container.innerHTML = `
                         <div class="comparator-sticky-header" style="background-color: var(--bg-secondary);">
                             <div class="comparator-screen-header">
