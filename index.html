@@ -3101,7 +3101,6 @@
                     style.innerHTML = `
                         .bg-success-color { background-color: var(--success-color); }
                         .bg-danger-color { background-color: var(--danger-color); }
-                        #comparator-screen-4 { display: flex; flex-direction: column; overflow: hidden; }
                         #full-comparison-content { overflow-y: auto; flex-grow: 1; }
                         .comparator-screen-wrapper { border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 0; width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
                         #comparator-screen-4 { max-width: 100%; }
@@ -3275,16 +3274,20 @@
                     const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
                     scrollableContentHTML += `<div class="space-y-2 p-2 mt-2"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Individuales</h4><div class="space-y-4 mt-2 px-2">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
         
+                    // Cerca de la línea 2050 en la función renderFullComparisonScreen()
                     screen4Container.innerHTML = `
-                        <div class="comparator-screen-header sticky top-0 z-20">
-                            <span>COMPARATIVA</span>
-                            <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                        </div>
-                        <div id="full-comparison-content">
-                            <div class="sticky top-0 z-10 p-4" style="background-color: var(--bg-secondary);">
+                        <div class="sticky top-0 z-10" style="background-color: var(--bg-secondary);">
+                            <div class="comparator-screen-header">
+                                <span>COMPARATIVA</span>
+                                <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="p-4 border-b border-border-color">
                                 ${stickyAvatarsHTML}
                             </div>
-                            ${scrollableContentHTML}
+                        </div>
+                        
+                        <div id="full-comparison-display" class="p-4 space-y-6">
+                             ${scrollableContentHTML}
                         </div>
                     `;
                 }
@@ -3577,36 +3580,45 @@
                     
                     const width1 = total > 0 ? (val1 / total) * 100 : 0;
                     const width2 = total > 0 ? (val2 / total) * 100 : 0;
-
-                    // Lógica para determinar el color de las barras
-                    let bar1ColorClass = 'bg-danger-color'; // Rojo por defecto
-                    let bar2ColorClass = 'bg-danger-color'; // Rojo por defecto
-
-                    if (val1 > val2) {
-                        bar1ColorClass = 'bg-success-color'; // Verde para el ganador
-                    } else if (val2 > val1) {
-                        bar2ColorClass = 'bg-success-color'; // Verde para el ganador
+            
+                    // Lógica para determinar el color de las barras (MEJORADA)
+                    const lowerIsBetterKeys = ['pp', 'ausentes']; // Stats donde menos es mejor
+                    const isLowerBetter = lowerIsBetterKeys.includes(stat.key);
+                    let bar1ColorClass = 'bg-danger-color'; // Rojo por defecto (perdedor)
+                    let bar2ColorClass = 'bg-danger-color'; // Rojo por defecto (perdedor)
+            
+                    if (val1 !== val2) {
+                        // Determina quién gana
+                        if ((isLowerBetter && val1 < val2) || (!isLowerBetter && val1 > val2)) {
+                            bar1ColorClass = 'bg-success-color'; // Jugador 1 gana
+                        } else {
+                            bar2ColorClass = 'bg-success-color'; // Jugador 2 gana
+                        }
+                    } else {
+                        // En caso de empate, ambas son verdes
+                        bar1ColorClass = 'bg-success-color';
+                        bar2ColorClass = 'bg-success-color';
                     }
-    
+            
                     return `
                         <div class="comparison-row">
                             <div class="stat-bar-container bar-left">
                                 <div class="progress-fill ${bar1ColorClass}" style="width: ${width1}%"></div>
                             </div>
-    
+            
                             <span class="value-label player1">${val1.toLocaleString('es-AR')}${suffix}</span>
-    
+            
                             <div class="central-label">${stat.label}</div>
-    
+            
                             <span class="value-label player2">${val2.toLocaleString('es-AR')}${suffix}</span>
-    
+            
                             <div class="stat-bar-container bar-right">
                                 <div class="progress-fill ${bar2ColorClass}" style="width: ${width2}%"></div>
                             </div>
                         </div>
                     `;
                 };
-    
+            
                 return statsMeta.map(renderStatBar).join('');
             }
     
