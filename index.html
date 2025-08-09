@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -102,13 +101,13 @@
             color: var(--text-primary);
             transition: background-color 0.2s, border-color 0.2s;
             width: 100%;
-            padding: 0.75rem; /* Padding aumentado para consistencia */
+            padding: 0.75rem;
             border-radius: 0.375rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             text-align: left;
-            height: 100%; /* Para que ocupe toda la altura en la grilla */
+            height: 100%;
         }
         .custom-select-button:hover {
             border-color: var(--accent-color);
@@ -127,11 +126,13 @@
             margin-top: 0.25rem;
             border-radius: 0.375rem;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
-            z-index: 30; /* Aumentado para que se superponga a todo */
+            z-index: 30;
+            max-height: 50vh;
+            overflow-y: auto;
         }
         html.dark .custom-select-options {
-             background-color: #1f2937;
-             border-color: #374151;
+            background-color: #1f2937;
+            border-color: #374151;
         }
         .custom-select-options .option-item {
             transition: background-color 0.2s;
@@ -155,26 +156,234 @@
         html.dark .custom-select-options .option-item.current-match {
             color: var(--accent-color-hover);
         }
-        .multi-year-select-dropdown label,
-        .multi-month-select-dropdown label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
+        /* Estilos para el nuevo selector de meses */
+        .month-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
             padding: 0.75rem;
-            transition: background-color 0.2s;
         }
-        .multi-year-select-dropdown label:hover,
-        .multi-month-select-dropdown label:hover {
+        .month-selector-grid .first-row {
+            grid-column: 1 / -1; /* Ocupa las 3 columnas */
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--text-primary);
+        }
+        html.dark .month-selector-grid .first-row {
+            border-bottom: 1px solid var(--bg-secondary);
+        }
+        .month-selector-grid button {
+            padding: 0.75rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            background-color: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .month-selector-grid button:hover:not(:disabled) {
+            background-color: var(--border-color);
+        }
+        .month-selector-grid button.selected {
+            background-color: var(--accent-color);
+            color: var(--button-text-color);
+            border-color: var(--accent-color);
+        }
+        .month-selector-grid button:disabled {
+            background-color: var(--bg-muted);
+            color: var(--text-secondary);
+            opacity: 0.6;
+            cursor: not-allowed;
+            border-color: var(--border-color);
+        }
+        .month-selector-grid .col-span-2 {
+            grid-column: span 2 / span 2;
+        }
+        .month-selector-grid .col-span-1 {
+            grid-column: span 1 / span 1;
+        }
+        html.dark .month-selector-grid button {
+            background-color: #374151;
+            color: var(--sidebar-text);
+            border-color: #4b5563;
+        }
+        html.dark .month-selector-grid button:hover:not(:disabled) {
+            background-color: #4b5563;
+        }
+        html.dark .month-selector-grid button.selected {
+            background-color: var(--accent-color);
+            color: var(--button-text-color);
+            border-color: var(--accent-color);
+        }
+        .month-selector-grid #all-months-button {
+            background-color: var(--success-color);
+            color: var(--button-text-color);
+            border-color: var(--success-color);
+        }
+        .month-selector-grid #all-months-button:hover {
+            background-color: #10b981; /* Un verde un poco más oscuro para el hover */
+        }
+        .month-selector-grid #reset-months-button {
+            background-color: var(--danger-color);
+            color: var(--button-text-color);
+            border-color: var(--danger-color);
+        }
+        .month-selector-grid #reset-months-button:hover {
+            background-color: #ef4444; /* Un rojo un poco más claro para el hover */
+        }
+        /* === FIN: Estilos unificados para menús desplegables === */
+        CSS
+
+        /* REEMPLAZA EL BLOQUE ANTERIOR CON ESTE */
+        /* === INICIO: Estilos unificados para menús desplegables === */
+        .custom-select-container {
+            position: relative;
+        }
+        .custom-select-button {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            transition: background-color 0.2s, border-color 0.2s;
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+            height: 100%;
+        }
+        .custom-select-button:hover {
+            border-color: var(--accent-color);
+        }
+        html.dark .custom-select-button {
             background-color: var(--bg-muted);
         }
-        html.dark .multi-year-select-dropdown label:hover,
-        html.dark .multi-month-select-dropdown label:hover {
+        .custom-select-options {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            transition: opacity 0.2s, transform 0.2s;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            margin-top: 0.25rem;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
+            z-index: 30;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        html.dark .custom-select-options {
+            background-color: #1f2937;
+            border-color: #374151;
+        }
+        .custom-select-options .option-item {
+            transition: background-color 0.2s;
+            padding: 0.75rem;
+            cursor: pointer;
+        }
+        .custom-select-options .option-item:hover {
+            background-color: var(--bg-muted);
+        }
+        html.dark .custom-select-options .option-item:hover {
             background-color: #374151;
         }
-        .multi-year-select-dropdown input[type="checkbox"],
-        .multi-month-select-dropdown input[type="checkbox"] {
-            margin-right: 0.5rem;
-            accent-color: var(--accent-color);
+        .custom-select-options .option-item.selected {
+            background-color: var(--accent-color);
+            color: var(--sidebar-active-text);
+        }
+        .custom-select-options .option-item.current-match {
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+        html.dark .custom-select-options .option-item.current-match {
+            color: var(--accent-color-hover);
+        }
+        /* Estilos para el nuevo selector de meses */
+        .month-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+            padding: 0.75rem;
+        }
+        .month-selector-grid .first-row {
+            grid-column: 1 / -1; /* Ocupa las 3 columnas */
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--text-primary);
+        }
+        html.dark .month-selector-grid .first-row {
+            border-bottom: 1px solid #ffffff; /* Color del separador en tema oscuro */
+        }
+        .month-selector-grid button {
+            padding: 0.75rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            background-color: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .month-selector-grid button:hover:not(:disabled) {
+            background-color: var(--border-color);
+        }
+        .month-selector-grid button.selected {
+            background-color: var(--accent-color);
+            color: var(--button-text-color);
+            border-color: var(--accent-color);
+        }
+        .month-selector-grid button:disabled {
+            background-color: var(--bg-muted);
+            color: var(--text-secondary);
+            opacity: 0.6;
+            cursor: not-allowed;
+            border-color: var(--border-color);
+        }
+        .month-selector-grid .col-span-2 {
+            grid-column: span 2 / span 2;
+        }
+        .month-selector-grid .col-span-1 {
+            grid-column: span 1 / span 1;
+        }
+        html.dark .month-selector-grid button {
+            background-color: #374151;
+            color: var(--sidebar-text);
+            border-color: #4b5563;
+        }
+        html.dark .month-selector-grid button:hover:not(:disabled) {
+            background-color: #4b5563;
+        }
+        html.dark .month-selector-grid button.selected {
+            background-color: var(--accent-color);
+            color: var(--button-text-color);
+            border-color: var(--accent-color);
+        }
+        .month-selector-grid #all-months-button {
+            background-color: var(--success-color);
+            color: var(--button-text-color);
+            border-color: var(--success-color);
+        }
+        .month-selector-grid #all-months-button:hover {
+            background-color: #10b981; /* Un verde un poco más oscuro para el hover */
+        }
+        .month-selector-grid #reset-months-button {
+            background-color: var(--danger-color);
+            color: var(--button-text-color);
+            border-color: var(--danger-color);
+        }
+        .month-selector-grid #reset-months-button:hover {
+            background-color: #ef4444; /* Un rojo un poco más claro para el hover */
         }
         /* === FIN: Estilos unificados para menús desplegables === */
         
@@ -201,6 +410,7 @@
             background-color: var(--accent-color-muted);
             color: var(--button-text-color);
             border-bottom: 1px solid transparent;
+            z-index: 40; /* Añadimos z-index para que esté sobre los dropdowns */
         }
 
         html.dark header.md\:hidden {
@@ -440,8 +650,8 @@
             background-color: var(--accent-color);
             border-radius: 0.75rem;
             overflow: hidden;
-            display: flex; 
-            flex-direction: column; 
+            display: flex;
+            flex-direction: column;
         }
         #fixture-details-display h3 {
             color: var(--button-text-color);
@@ -451,29 +661,33 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             text-align: center;
-            flex-shrink: 0; 
+            flex-shrink: 0;
         }
         #fixture-details-display .table-container {
             border: none;
             box-shadow: none;
             border-radius: 0;
-            overflow-y: auto; 
-            flex-grow: 1; 
-            max-height: none; 
-            background-color: var(--bg-secondary); /* Agregado para el fondo */
+            flex-grow: 1;
+            max-height: none;
+            background-color: var(--bg-secondary);
+            overflow-y: auto; /* <-- AÑADIR ESTA LÍNEA */
         }
         html.dark #fixture-details-display .table-container {
-            background-color: #1f2937; /* Fondo para modo oscuro */
+            background-color: #1f2937;
         }
         @media (min-width: 768px) {
             #fixture-details-display .table-container {
-                max-height: none; /* Aseguramos que no haya altura máxima en desktop */
+                max-height: none;
             }
         }
-
         #tt-attendees-table td {
+            height: 48px; /* Altura fija para las celdas de la tabla */
+            padding: 0.5rem 0.75rem;
             border-bottom: 1px solid var(--border-color);
             background-color: var(--bg-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         #tt-attendees-table tr:nth-child(even) td {
             background-color: var(--bg-even-row);
@@ -984,6 +1198,82 @@
             }
         }
         
+        /* === INICIO: Corrección de Superposición en Fixture === */
+        #fixture-filters-container {
+            position: relative;
+            z-index: 30; /* Asegura que los filtros de año/mes estén por encima */
+        }
+
+        #fixture-dropdown-container {
+            position: relative;
+            z-index: 20; /* Coloca el selector de partido por debajo de los filtros */
+        }
+        /* === FIN: Corrección de Superposición en Fixture === */
+
+        /* === INICIO: Estilos para Grilla de Años === */
+        .year-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr)); /* <-- ÚNICO CAMBIO AQUÍ */
+            gap: 0.5rem;
+            padding: 0.75rem;
+        }
+        .year-selector-grid .first-row {
+            grid-column: 1 / -1; /* Ocupa las 2 columnas */
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr)); /* Dos columnas para "Todos" y "Reset" */
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        html.dark .year-selector-grid .first-row {
+            border-color: rgba(255, 255, 255, 0.15); /* Blanco con 15% de opacidad */
+        }
+        /* Reutilizamos los estilos de los botones del selector de meses para consistencia */
+        .year-selector-grid button {
+            padding: 0.75rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            background-color: var(--bg-muted);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .year-selector-grid button:hover:not(:disabled) {
+            background-color: var(--border-color);
+        }
+        .year-selector-grid button.selected {
+            background-color: var(--accent-color);
+            color: var(--button-text-color);
+            border-color: var(--accent-color);
+        }
+        .year-selector-grid #all-years-button {
+            background-color: var(--success-color);
+            color: var(--button-text-color);
+            border-color: var(--success-color);
+        }
+        .year-selector-grid #reset-years-button {
+            background-color: var(--danger-color);
+            color: var(--button-text-color);
+            border-color: var(--danger-color);
+        }
+        html.dark .year-selector-grid button {
+            background-color: #374151;
+            color: var(--sidebar-text);
+            border-color: #4b5563;
+        }
+        html.dark .year-selector-grid button:hover:not(:disabled) {
+            background-color: #4b5563;
+        }
+        html.dark .year-selector-grid button.selected {
+            background-color: var(--accent-color);
+            color: var(--button-text-color);
+            border-color: var(--accent-color);
+        }
+        /* === FIN: Estilos para Grilla de Años === */
+
     </style>
     <script>
         (function() {
@@ -1223,9 +1513,11 @@
             let allMatchesData = [];
             let lastSelectedFixtureMatchId = null;
             let currentEstadisticasData = []; 
-            let globalFilterState = {}; 
+            let globalFilterState = {};
             let statsChannel = null;
             let heartbeatInterval = null;
+            let selectedPlayer1 = null;
+            let selectedPlayer2 = null;
     
             let estadisticasSortState = { criterion: 'points', order: 'desc' };
     
@@ -1345,73 +1637,89 @@
             }
             
             function setTodayFilters(prefix, isMonthFilter = false) {
-                const yearCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]`);
-                yearCheckboxes.forEach(cb => cb.checked = false);
-                
                 const today = new Date();
-                const currentYearCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="${today.getFullYear()}"]`);
-                if (currentYearCheckbox) {
-                    currentYearCheckbox.checked = true;
-                }
-                updateMultiYearButtonText(prefix);
+                const currentYear = today.getFullYear();
                 
+                // Establece el AÑO actual en el filtro de años
+                const yearDropdown = document.getElementById(`${prefix}-year-select-dropdown`);
+                if (yearDropdown) {
+                    yearDropdown.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                    const currentYearButton = yearDropdown.querySelector(`button[data-value="${currentYear}"]`);
+                    if (currentYearButton) {
+                        currentYearButton.classList.add('selected');
+                    } else {
+                        const allYearsButton = yearDropdown.querySelector('#all-years-button');
+                        if (allYearsButton) allYearsButton.classList.add('selected');
+                    }
+                    updateMultiYearButtonTextFromGrid(prefix);
+                }
+
                 if (isMonthFilter) {
+                    // Lógica para Fixture: Seleccionar el MES del último partido del año
                     const monthDropdown = document.getElementById(`${prefix}-month-select-dropdown`);
                     if (!monthDropdown) return;
-                    monthDropdown.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
-    
-                    let targetMonth = today.getMonth() + 1;
-                    const hasMatchesInMonth = (year, month) => allMatchesData.some(m => {
-                        const d = parseDate(m.match_date);
-                        return d.getFullYear() === year && (d.getMonth() + 1) == month;
-                    });
-    
-                    let searchDate = new Date();
-                    let found = false;
-                    for (let i=0; i < 12; i++) {
-                        if (hasMatchesInMonth(searchDate.getFullYear(), searchDate.getMonth() + 1)) {
-                            found = true;
-                            break;
-                        }
-                        searchDate.setMonth(searchDate.getMonth() - 1);
-                    }
                     
-                    if (found) {
-                        targetMonth = searchDate.getMonth() + 1;
-                        const targetYearCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="${searchDate.getFullYear()}"]`);
-                        if(targetYearCheckbox && !targetYearCheckbox.checked) {
-                            yearCheckboxes.forEach(cb => cb.checked = false);
-                            targetYearCheckbox.checked = true;
-                            updateMultiYearButtonText(prefix);
-                        }
-                    }
-    
-                    const targetMonthCheckbox = monthDropdown.querySelector(`input[value="${targetMonth}"]`);
-                    if (targetMonthCheckbox) {
-                        targetMonthCheckbox.checked = true;
+                    monthDropdown.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                    
+                    // Busca el último partido jugado en el año actual.
+                    const lastMatchOfTheYear = allMatchesData
+                        .filter(m => parseDate(m.match_date).getUTCFullYear() === currentYear)
+                        .sort((a, b) => new Date(b.match_date) - new Date(a.match_date))[0];
+                    
+                    // Determina el mes a seleccionar: el del último partido o el mes actual como fallback.
+                    const monthToSelect = lastMatchOfTheYear 
+                        ? parseDate(lastMatchOfTheYear.match_date).getUTCMonth() + 1 
+                        : today.getUTCMonth() + 1;
+
+                    const targetMonthButton = monthDropdown.querySelector(`button[data-value="${monthToSelect}"]`);
+                    const allMonthsButton = document.getElementById('all-months-button');
+
+                    if (targetMonthButton && !targetMonthButton.disabled) {
+                        targetMonthButton.classList.add('selected');
+                        if(allMonthsButton) allMonthsButton.classList.remove('selected');
+                    } else {
+                        if (allMonthsButton) allMonthsButton.classList.add('selected');
                     }
                     updateMultiMonthButtonText(prefix);
-    
+
                 } else {
+                    // Lógica para el resto de pestañas: Seleccionar PERIODO (Apertura/Clausura)
                     const periodContainer = document.getElementById(`${prefix}-period-select-container`);
                     if (!periodContainer) return;
-                    
+
                     const valueInput = periodContainer.querySelector('input[type=hidden]');
                     const buttonSpan = periodContainer.querySelector('button span');
                     const dropdown = periodContainer.querySelector('.custom-select-options');
                     
-                    const defaultPeriod = today.getMonth() <= 5 ? 'apertura' : 'clausura';
-                    valueInput.value = defaultPeriod;
+                    const currentPeriod = today.getMonth() <= 5 ? 'apertura' : 'clausura';
+                    valueInput.value = currentPeriod;
                     
-                    const selectedOption = dropdown.querySelector(`.option-item[data-value="${defaultPeriod}"]`);
+                    dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                    const selectedOption = dropdown.querySelector(`.option-item[data-value="${currentPeriod}"]`);
+                    
                     if (selectedOption) {
                         buttonSpan.textContent = selectedOption.textContent;
-                        dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
                         selectedOption.classList.add('selected');
                     }
                 }
             }
             
+            function getFiltersForPrefix(prefix) {
+                const allYearsButton = document.querySelector(`#${prefix}-year-select-dropdown #all-years-button`);
+                let selectedYears = [];
+                if (allYearsButton && allYearsButton.classList.contains('selected')) {
+                    selectedYears = ['all'];
+                } else {
+                    const yearButtons = document.querySelectorAll(`#${prefix}-year-select-dropdown button.selected[data-value]`);
+                    selectedYears = Array.from(yearButtons).map(btn => btn.dataset.value);
+                }
+
+                const periodSelect = document.getElementById(`${prefix}-period-select`);
+                const selectedPeriod = periodSelect ? periodSelect.value : null;
+
+                return { selectedYears, selectedPeriod };
+            }
+
             function calculateStats(filters) {
                 const { selectedYears, selectedPeriod, selectedMonths } = filters;
             
@@ -1509,13 +1817,18 @@
             }
     
             function calculateStatsForPeriod(prefix) {
-                const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type="checkbox"]:checked`);
-                let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
-                
-                if (selectedYears.includes('all')) {
+                // --- INICIO DE LA CORRECCIÓN ---
+                const allYearsButton = document.querySelector(`#${prefix}-year-select-dropdown #all-years-button`);
+                let selectedYears = [];
+
+                if (allYearsButton && allYearsButton.classList.contains('selected')) {
                     selectedYears = ['all'];
+                } else {
+                    const yearButtons = document.querySelectorAll(`#${prefix}-year-select-dropdown button.selected[data-value]`);
+                    selectedYears = Array.from(yearButtons).map(btn => btn.dataset.value);
                 }
-    
+                // --- FIN DE LA CORRECCIÓN ---
+
                 const selectedPeriod = document.getElementById(`${prefix}-period-select`)?.value;
                 
                 return calculateStats({ selectedYears, selectedPeriod });
@@ -1769,23 +2082,27 @@
                 const dropdownContainer = document.getElementById('fixture-dropdown-container');
                 const loadingMessage = document.getElementById('fixture-loading-message');
                 
-                const selectedYearsCheckboxes = document.querySelectorAll(`#fixture-year-select-dropdown input[type="checkbox"]:checked:not([value="all"])`);
-                let selectedYears = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
-                if (document.querySelector(`#fixture-year-select-dropdown input[value="all"]`)?.checked) {
+                // --- INICIO DE LA CORRECCIÓN ---
+                let selectedYears = [];
+                const allYearsButton = document.querySelector('#fixture-year-select-dropdown #all-years-button');
+                if (allYearsButton && allYearsButton.classList.contains('selected')) {
                     selectedYears = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].map(String);
+                } else {
+                    const yearButtons = document.querySelectorAll(`#fixture-year-select-dropdown button.selected[data-value]`);
+                    selectedYears = Array.from(yearButtons).map(btn => btn.dataset.value);
                 }
-    
-                const selectedMonthCheckboxes = document.querySelectorAll(`#fixture-month-select-dropdown input[type="checkbox"]:checked:not([value="all"])`);
-                let selectedMonths = Array.from(selectedMonthCheckboxes).map(cb => cb.value);
-                if (document.querySelector(`#fixture-month-select-dropdown input[value="all"]`)?.checked) {
-                    selectedMonths = []; // Empty array means all months
+                // --- FIN DE LA CORRECCIÓN ---
+
+                let selectedMonths = globalFilterState.months || ['all'];
+                if (selectedMonths.includes('all')) {
+                    selectedMonths = []; // Un array vacío significa todos los meses en este contexto.
                 }
-                
+
                 if (!dropdownContainer || !loadingMessage) return;
-    
+
                 dropdownContainer.classList.add('hidden');
                 loadingMessage.classList.remove('hidden');
-    
+
                 let filteredMatches = allMatchesData;
                 if (selectedYears.length > 0) {
                     filteredMatches = filteredMatches.filter(m => selectedYears.includes(String(parseDate(m.match_date).getFullYear())));
@@ -1793,29 +2110,27 @@
                 if (selectedMonths.length > 0) {
                     filteredMatches = filteredMatches.filter(m => selectedMonths.includes(String(parseDate(m.match_date).getMonth() + 1)));
                 }
-    
+
                 if (!filteredMatches || filteredMatches.length === 0) { 
                     loadingMessage.innerHTML = `No hay partidos disponibles.`; 
                     lastSelectedFixtureMatchId = null; 
                     document.getElementById('fixture-visual-details-container').classList.add('hidden');
                     return; 
                 }
-    
+
                 filteredMatches.sort((a, b) => new Date(b.match_date) - new Date(a.match_date));
                 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 let currentOrFutureMatchFound = false;
-    
                 const getPlayerName = id => (allPlayersData.find(p => p.id == id) || { name: '?' }).name;
-    
+
                 const optionsContainer = dropdownContainer.querySelector('.custom-select-options');
                 optionsContainer.innerHTML = filteredMatches.map(match => {
                     const matchDateObj = parseDate(match.match_date);
                     let isCurrent = !currentOrFutureMatchFound && matchDateObj.getTime() >= today.getTime();
                     if(isCurrent) currentOrFutureMatchFound = true;
-    
-                    // --- LOGIC TO GET CHAMIGO NAMES ---
+
                     let chamigoText = '';
                     if (match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0) {
                         const votesArray = Object.values(match.chamigo_votes);
@@ -1826,20 +2141,19 @@
                             chamigoText = ` - Chamigo: ${chamigoNames}`;
                         }
                     }
-                    // --- END OF LOGIC ---
-    
+
                     return `
                         <div class="option-item ${isCurrent ? 'current-match' : ''}" data-match-id="${match.id}">
                             ${matchDateObj.toLocaleDateString('es-AR', {timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric'})}
                             <span class="text-xs text-gray-400 ml-2">${match.result || 'Pendiente'}${chamigoText}</span>
                         </div>`;
                 }).join('');
-    
+
                 loadingMessage.classList.add('hidden');
                 dropdownContainer.classList.remove('hidden');
-    
+
                 const firstMatchToSelect = document.querySelector('.current-match') || optionsContainer.querySelector('[data-match-id]');
-    
+
                 if (firstMatchToSelect) {
                     if (isFilterChange || !lastSelectedFixtureMatchId || !filteredMatches.some(m => m.id == lastSelectedFixtureMatchId)) {
                         handleFixtureSelection(firstMatchToSelect.dataset.matchId);
@@ -1847,8 +2161,8 @@
                         handleFixtureSelection(lastSelectedFixtureMatchId);
                     }
                 } else {
-                     document.getElementById('fixture-visual-details-container').classList.add('hidden');
-                     lastSelectedFixtureMatchId = null;
+                    document.getElementById('fixture-visual-details-container').classList.add('hidden');
+                    lastSelectedFixtureMatchId = null;
                 }
             }
     
@@ -1881,32 +2195,43 @@
                     console.error("Detalles del partido no encontrados localmente para el ID:", matchId);
                     return;
                 }
-    
+                
                 lastSelectedFixtureMatchId = matchId;
-    
+                
                 const visualDetailsContainer = document.getElementById('fixture-visual-details-container');
                 const soccerFieldContainer = document.getElementById('soccer-field-container');
-                const ttAttendeesTableBody = document.querySelector('#tt-attendees-table tbody');
-    
+                const ttAttendeesTableBody = document.querySelector('#tt-attendees-table-body');
+                
                 if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
-    
-                soccerFieldContainer.innerHTML = `
-                    <div class="goal-area top"></div><div class="goal-area bottom"></div>
-                    <div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
-    
-                const { team_white_players, team_dark_players, result, chamigo_votes, tt_attendees } = match;
+                
+                // Limpia el contenido previo
+                soccerFieldContainer.innerHTML = `<div class="goal-area top"></div><div class="goal-area bottom"></div><div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
+                
+                // Renderiza la tabla de asistentes al TT
+                ttAttendeesTableBody.innerHTML = '';
                 const getPlayerName = id => (allPlayersData.find(p => p.id === id) || { name: 'ID Desconocido' }).name;
-    
-                ttAttendeesTableBody.innerHTML = (Array.isArray(tt_attendees) && tt_attendees.length > 0)
-                    ? tt_attendees.map(id => `
-                        <tr><td class="p-3 text-center">${getPlayerName(id)}</td></tr>`
-                      ).join('')
-                    : `<tr><td class="p-4 text-center text-gray-500" colspan="1">No hay asistentes al TT.</td></tr>`;
-    
+                const attendees = (Array.isArray(match.tt_attendees) && match.tt_attendees.length > 0)
+                    ? match.tt_attendees.map(getPlayerName).sort()
+                    : [];
+
+                if (attendees.length > 0) {
+                    ttAttendeesTableBody.innerHTML = attendees.map((playerName, index) => {
+                        const isEven = (index + 1) % 2 === 0;
+                        const rowClass = isEven ? 'bg-even-row' : 'bg-secondary';
+                        const darkRowClass = isEven ? 'dark:bg-bg-even-row' : 'dark:bg-bg-secondary';
+                        return `<tr><td class="text-center ${rowClass} ${darkRowClass}">${playerName}</td></tr>`;
+                    }).join('');
+                } else {
+                    ttAttendeesTableBody.innerHTML = `<tr><td class="p-4 text-center text-gray-500">No hay asistentes al TT.</td></tr>`;
+                }
+
+                // --- INICIO DEL CÓDIGO RESTAURADO ---
+                const { team_white_players, team_dark_players, result, chamigo_votes } = match;
+                
                 const isHorizontalField = window.innerWidth >= 768;
                 soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
                 soccerFieldContainer.querySelectorAll('.goal-area, .penalty-area').forEach(el => el.classList.toggle('horizontal-layout', isHorizontalField));
-    
+                
                 const playerPositions = {
                     vertical: {
                         claros:  [{ x: 0.5, y: 0.94 }, { x: 0.25, y: 0.78 }, { x: 0.75, y: 0.78 }, { x: 0.35, y: 0.62 }, { x: 0.65, y: 0.57 }],
@@ -1918,7 +2243,7 @@
                     }
                 };
                 const currentPositions = isHorizontalField ? playerPositions.horizontal : playerPositions.vertical;
-    
+                
                 let chamigoPlayerIds = [];
                 if (chamigo_votes && Object.keys(chamigo_votes).length > 0) {
                     const votesArray = Object.values(chamigo_votes);
@@ -1927,96 +2252,89 @@
                         chamigoPlayerIds = Object.keys(chamigo_votes).filter(id => chamigo_votes[id] === maxVotes);
                     }
                 }
-    
+                
                 const createPlayerMarker = (playerId, team, index) => {
                     const playerWrapper = document.createElement('div');
                     playerWrapper.className = `player-wrapper absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10`;
                     playerWrapper.style.top = `${currentPositions[team][index].y * 100}%`;
                     playerWrapper.style.left = `${currentPositions[team][index].x * 100}%`;
-    
+                
                     const player = allPlayersData.find(p => p.id === playerId) || {name: 'ID Desconocido'};
                     const isChamigo = chamigoPlayerIds.includes(String(playerId));
                     const photoUrl = player.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
                     
                     const labelClass = team === 'claros' ? 'claros-label' : 'oscuros-label';
-    
-                    let markerHTML = `
+                    
+                    playerWrapper.innerHTML = `
                         <div class="player-marker ${team} relative w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center" data-player-id="${playerId}">
                             <img src="${photoUrl}" alt="Foto de ${player.name}" class="w-full h-full rounded-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
                             ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-2 -right-2 text-lg md:text-3xl" style="text-shadow: 0 0 4px black;"></i>' : ''}
                         </div>
                         <div class="player-name-label ${labelClass}">${player.name}</div>`;
                     
-                    playerWrapper.innerHTML = markerHTML;
                     playerWrapper.querySelector('.player-marker').addEventListener('click', (e) => {
                         e.stopPropagation();
                         showPlayerModal(playerId);
                     });
-    
+                    
                     soccerFieldContainer.appendChild(playerWrapper);
                 };
-    
+                
                 (team_white_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'claros', i));
                 (team_dark_players || []).slice(0, 5).forEach((id, i) => createPlayerMarker(id, 'oscuros', i));
-    
+                
                 if (result && result !== 'Empate' && result !== 'Suspendido') {
                     const trophyDiv = document.createElement('div');
                     trophyDiv.className = 'winner-trophy absolute text-3xl md:text-5xl z-20 transform -translate-x-1/2 -translate-y-1/2';
                     trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
-    
+                
                     const trophyPositions = {
-                        horizontal: {
-                            Claros:  { top: '92%', left: '95%' },
-                            Oscuros: { top: '92%', left: '5%' }
-                        },
-                        vertical: {
-                            Claros:  { top: '95%', left: '93%' },
-                            Oscuros: { top: '5%', left: '93%' }
-                        }
+                        horizontal: { Claros: { top: '92%', left: '95%' }, Oscuros: { top: '92%', left: '5%' } },
+                        vertical: { Claros: { top: '95%', left: '93%' }, Oscuros: { top: '5%', left: '93%' } }
                     };
-    
-                    // --- INICIO DE LA MODIFICACIÓN: Corrección en la lógica de posicionamiento del trofeo ---
-                    // Se corrige la obtención de la posición para el layout vertical, que antes no accedía
-                    // a la propiedad correcta ("Claros" u "Oscuros") del objeto.
                     const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical[result];
-                    // --- FIN DE LA MODIFICACIÓN ---
-                    
+                
                     if (currentTrophyPosition) {
                         Object.assign(trophyDiv.style, currentTrophyPosition);
                         soccerFieldContainer.appendChild(trophyDiv);
                     }
                 }
-    
+                // --- FIN DEL CÓDIGO RESTAURADO ---
+                
                 visualDetailsContainer.classList.remove('hidden');
-    
-                // Esperamos a que todas las imágenes dentro del campo se carguen
+                
                 const images = soccerFieldContainer.querySelectorAll('img');
-                const promises = [...images].map(img => {
-                    if (img.complete) return Promise.resolve();
-                    return new Promise(resolve => {
-                        img.onload = img.onerror = resolve;
-                    });
-                });
-    
-                // Una vez que todas las imágenes han cargado (o fallado), ajustamos la altura
+                const promises = [...images].map(img => new Promise(resolve => { if(img.complete) resolve(); else { img.onload = img.onerror = resolve; } }));
+                
                 Promise.all(promises).then(() => {
-                    // Usamos requestAnimationFrame para asegurarnos de que el navegador haya renderizado el layout
-                    // antes de que midamos la altura. Esto previene el "glitch" visual.
                     requestAnimationFrame(() => {
                         adjustFixtureHeights();
+                        adjustTTTablePadding(); 
                     });
                 });
             }
     
             function showPlayerModal(playerId) {
-                // Get filters specifically from the Fixture section
-                const yearCheckboxes = document.querySelectorAll(`#fixture-year-select-dropdown input[type="checkbox"]:checked`);
-                let selectedYears = Array.from(yearCheckboxes).map(cb => cb.value);
+                // --- INICIO DE LA CORRECCIÓN ---
+                let selectedYears = [];
+                const allYearsButton = document.querySelector('#fixture-year-select-dropdown #all-years-button');
+                if (allYearsButton && allYearsButton.classList.contains('selected')) {
+                    selectedYears = ['all'];
+                } else {
+                    const yearButtons = document.querySelectorAll(`#fixture-year-select-dropdown button.selected[data-value]`);
+                    selectedYears = Array.from(yearButtons).map(btn => btn.dataset.value);
+                }
+
+                let selectedMonths = [];
+                const allMonthsButton = document.getElementById('all-months-button');
+                if (allMonthsButton && allMonthsButton.classList.contains('selected')) {
+                    selectedMonths = ['all'];
+                } else {
+                    const monthButtons = document.querySelectorAll(`#fixture-month-select-dropdown button.selected`);
+                    selectedMonths = Array.from(monthButtons).map(btn => btn.dataset.value);
+                }
+                // --- FIN DE LA CORRECCIÓN ---
                 
-                const monthCheckboxes = document.querySelectorAll(`#fixture-month-select-dropdown input[type="checkbox"]:checked`);
-                let selectedMonths = Array.from(monthCheckboxes).map(cb => cb.value);
-                
-                // Calculate stats using these specific filters
                 const { players, error } = calculateStats({ selectedYears, selectedMonths });
                 if (error) {
                     console.error("Error calculating stats for modal:", error);
@@ -2031,7 +2349,6 @@
                 playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
                 playerModal.name.textContent = playerData.name;
                 
-                // --- NEW LOGIC FOR TOURNAMENT TEXT ---
                 let tournamentText = '';
                 const allYearsSelected = selectedYears.includes('all') || selectedYears.length === 0;
                 const allMonthsSelected = selectedMonths.length === 0 || selectedMonths.includes('all');
@@ -2042,19 +2359,13 @@
                     tournamentText = `Total Año - ${selectedYears[0]}`;
                 } else if (selectedYears.length === 1 && !allYearsSelected && selectedMonths.length === 1 && !allMonthsSelected) {
                     const month = parseInt(selectedMonths[0]);
-                    if (month <= 6) {
-                        tournamentText = `Apertura - ${selectedYears[0]}`;
-                    } else {
-                        tournamentText = `Clausura - ${selectedYears[0]}`;
-                    }
+                    tournamentText = (month <= 6) ? `Apertura - ${selectedYears[0]}` : `Clausura - ${selectedYears[0]}`;
                 } else {
-                    // Fallback for other combinations (e.g., multiple years, multiple specific months)
                     const yearText = allYearsSelected ? 'Varios Años' : selectedYears.join(', ');
                     const monthText = allMonthsSelected ? 'Todos los Meses' : `${selectedMonths.length} meses`;
                     tournamentText = `${monthText} - ${yearText}`;
                 }
                 playerModal.tournament.textContent = tournamentText;
-                // --- END OF NEW LOGIC ---
     
                 playerModal.points.textContent = playerStats.points;
                 playerModal.chamigo.textContent = playerStats.chamigos;
@@ -2074,6 +2385,37 @@
                 setTimeout(() => {
                     playerModal.overlay.classList.add('hidden');
                 }, 300);
+            }
+
+            function adjustTTTablePadding() {
+                const ttAttendeesTableBody = document.querySelector('#tt-attendees-table-body');
+                const tableContainer = document.querySelector('#fixture-details-display .table-container');
+
+                if (!ttAttendeesTableBody || !tableContainer) return;
+
+                // Primero, eliminamos las filas vacías anteriores para evitar duplicados
+                ttAttendeesTableBody.querySelectorAll('.empty-row').forEach(row => row.remove());
+
+                const rowHeight = 48; // Altura de la fila definida en el CSS
+                const containerHeight = tableContainer.clientHeight;
+                const maxRows = Math.floor(containerHeight / rowHeight);
+                
+                // Contamos solo las filas con asistentes reales
+                const currentRealRows = ttAttendeesTableBody.querySelectorAll('tr:not(.empty-row)').length;
+
+                if (currentRealRows > 0 && currentRealRows < maxRows) {
+                    const rowsToAdd = maxRows - currentRealRows;
+                    let emptyRowsHtml = '';
+                    for (let i = 0; i < rowsToAdd; i++) {
+                        const rowIndex = currentRealRows + i;
+                        const isEven = (rowIndex + 1) % 2 === 0;
+                        const rowClass = isEven ? 'bg-even-row' : 'bg-secondary';
+                        const darkRowClass = isEven ? 'dark:bg-bg-even-row' : 'dark:bg-bg-secondary';
+                        // Añadimos una clase para identificarlas y poder borrarlas fácilmente
+                        emptyRowsHtml += `<tr class="empty-row"><td class="text-center ${rowClass} ${darkRowClass}">&nbsp;</td></tr>`;
+                    }
+                    ttAttendeesTableBody.insertAdjacentHTML('beforeend', emptyRowsHtml);
+                }
             }
     
             // INICIO: Funciones para el nuevo modal simple
@@ -2347,30 +2689,31 @@
                             <div id="${prefix}-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto">
                             </div>
                         </div>`;
-                     
-                     const periodOrMonthFilterHTML = prefix === 'fixture' ? `
+                    
+                    // Modificamos el HTML del filtro de meses
+                    const periodOrMonthFilterHTML = prefix === 'fixture' ? `
                         <div class="custom-select-container">
                             <button id="fixture-month-select-button" class="custom-select-button">
                                 <span class="truncate">Seleccionar Meses</span>
                                 <i class="fas fa-chevron-down transition-transform"></i>
                             </button>
-                            <div id="fixture-month-select-dropdown" class="custom-select-options multi-month-select-dropdown hidden max-h-60 overflow-y-auto">
+                            <div id="fixture-month-select-dropdown" class="custom-select-options hidden">
                             </div>
                         </div>` : `
                         <div id="${prefix}-period-select-container" class="custom-select-container">
-                            <input type="hidden" id="${prefix}-period-select" value="apertura">
+                            <input type="hidden" id="${prefix}-period-select" value="total">
                             <button id="${prefix}-period-select-button" class="custom-select-button">
-                                <span class="truncate">Apertura</span>
+                                <span class="truncate">Seleccionar Torneo</span>
                                 <i class="fas fa-chevron-down transition-transform"></i>
                             </button>
                             <div id="${prefix}-period-select-dropdown" class="custom-select-options hidden">
-                                <div class="option-item selected" data-value="apertura">Apertura</div>
+                                <div class="option-item" data-value="apertura">Apertura</div>
                                 <div class="option-item" data-value="clausura">Clausura</div>
                                 <div class="option-item" data-value="total">Totales</div>
                             </div>
                         </div>`;
-    
-                     baseHtml += `
+
+                    baseHtml += `
                         <div id="${prefix}-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
                             <div class="col-span-1 md:col-span-2 md:order-1">
                                 ${yearFilterHTML}
@@ -2379,7 +2722,7 @@
                                 ${periodOrMonthFilterHTML}
                             </div>
                             <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                               <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
+                            <button id="${prefix}-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
                             </div>
                         </div>
                         <hr class="border-border-color"/>
@@ -2391,10 +2734,10 @@
                         baseHtml += `<div class="table-container">
                                         <p id="${prefix}-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
                                         <table id="${prefix}-table"></table>
-                                     </div>`;
+                                    </div>`;
                         break;
                     case 'estadisticas-content':
-                         baseHtml += `
+                        baseHtml += `
                             <div class="table-container overflow-x-auto">
                                 <p id="estadisticas-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
                                 <table id="estadisticas-table"></table>
@@ -2402,10 +2745,10 @@
                         break;
                     case 'equipos-content':
                         baseHtml += `<p id="equipos-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando...</p>
-                                     <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>`;
+                                    <div id="equipos-stats-display" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>`;
                         break;
                     case 'fixture-content':
-                         baseHtml += `
+                        baseHtml += `
                             <p id="fixture-loading-message" class="loading-message p-4 flex items-center justify-center gap-2"><span class="loading-spinner"></span>Cargando partidos...</p>
                             <div id="fixture-dropdown-container" class="custom-select-container relative hidden">
                                 <button class="custom-select-button">
@@ -2421,7 +2764,7 @@
                                     <h3>Asistentes al TT</h3>
                                     <div class="table-container flex-grow">
                                         <table id="tt-attendees-table">
-                                            <tbody>
+                                            <tbody id="tt-attendees-table-body">
                                             </tbody>
                                         </table>
                                     </div>
@@ -2445,27 +2788,25 @@
                         break;
                         
                     case 'comparador-content':
-                         // ESTRUCTURA FINAL PARA EL COMPARADOR POR PASOS
+                        // ESTRUCTURA FINAL PARA EL COMPARADOR POR PASOS
                         baseHtml = `
                             <div id="comparador-content" class="main-content-container space-y-4">
-                                <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
+                                <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch hidden">
                                     <div class="col-span-1 md:col-span-2 md:order-1">
                                         <div class="custom-select-container">
                                             <button id="comparador-year-select-button" class="custom-select-button">
-                                                <span class="truncate">Seleccionar Años</span>
-                                                <i class="fas fa-chevron-down transition-transform"></i>
+                                                <span class="truncate">Seleccionar Años</span><i class="fas fa-chevron-down transition-transform"></i>
                                             </button>
-                                            <div id="comparador-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto"></div>
+                                            <div id="comparador-year-select-dropdown" class="custom-select-options hidden year-selector-grid"></div>
                                         </div>
                                     </div>
                                     <div class="col-span-1 md:col-span-2 md:order-3">
-                                         <div id="comparador-period-select-container" class="custom-select-container">
+                                        <div id="comparador-period-select-container" class="custom-select-container">
                                             <input type="hidden" id="comparador-period-select" value="apertura">
                                             <button id="comparador-period-select-button" class="custom-select-button">
-                                                <span class="truncate">Apertura</span>
-                                                <i class="fas fa-chevron-down transition-transform"></i>
+                                                <span class="truncate">Apertura</span><i class="fas fa-chevron-down transition-transform"></i>
                                             </button>
-                                            <div id="comparador-period-select-dropdown" class="custom-select-options hidden">
+                                            <div class="custom-select-options hidden">
                                                 <div class="option-item selected" data-value="apertura">Apertura</div>
                                                 <div class="option-item" data-value="clausura">Clausura</div>
                                                 <div class="option-item" data-value="total">Totales</div>
@@ -2473,27 +2814,14 @@
                                         </div>
                                     </div>
                                     <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                                       <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
+                                        <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
                                     </div>
                                 </div>
-                                
-                                <hr class="border-border-color"/>
-    
-                                <div id="comparator-app-container" class="relative mt-6 min-h-[450px]">
-                                    
-                                    <div id="comparator-screen-1" class="comparator-screen-wrapper">
-                                        </div>
-    
-                                    <div id="comparator-screen-3" class="comparator-screen-wrapper hidden">
-                                         <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                                        <div id="screen-3-content">
-                                            </div>
-                                    </div>
-    
-                                    <div id="comparator-screen-4" class="comparator-screen-wrapper hidden">
-                                        <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                                        <div id="full-comparison-display" class="space-y-6"></div>
-                                    </div>
+                                <hr class="border-border-color hidden"/>
+                                <div id="comparator-app-container" class="relative mt-2 min-h-[450px]">
+                                    <div id="comparator-screen-1" class="comparator-screen-wrapper"></div>
+                                    <div id="comparator-screen-3" class="comparator-screen-wrapper hidden"></div>
+                                    <div id="comparator-screen-4" class="comparator-screen-wrapper hidden"></div>
                                 </div>
                             </div>
                         `;
@@ -2545,297 +2873,393 @@
                 }
             }
             
-            function updateMultiYearButtonText(prefix) {
+            function updateMultiYearButtonTextFromGrid(prefix) {
                 const button = document.getElementById(`${prefix}-year-select-button`);
                 if (!button) return;
                 const buttonSpan = button.querySelector('span');
-                const allYearsCheckbox = document.querySelector(`#${prefix}-year-select-dropdown input[value="all"]`);
-                const checked = document.querySelectorAll(`#${prefix}-year-select-dropdown input[value]:not([value="all"]):checked`);
-                
-                if (allYearsCheckbox && allYearsCheckbox.checked) {
+                const allYearsButton = document.querySelector(`#${prefix}-year-select-dropdown #all-years-button`);
+                const checkedButtons = document.querySelectorAll(`#${prefix}-year-select-dropdown button.selected[data-value]`);
+
+                if (allYearsButton && allYearsButton.classList.contains('selected')) {
                     buttonSpan.textContent = 'Todos los Años';
-                } else if (checked.length === 0) {
-                     buttonSpan.textContent = 'Seleccionar Años';
-                } else if (checked.length === 1) {
-                    buttonSpan.textContent = checked[0].value;
+                } else if (checkedButtons.length === 0) {
+                    buttonSpan.textContent = 'Seleccionar Años';
+                } else if (checkedButtons.length === 1) {
+                    buttonSpan.textContent = checkedButtons[0].dataset.value;
                 } else {
-                    buttonSpan.textContent = `${checked.length} Años seleccionados`;
+                    buttonSpan.textContent = `${checkedButtons.length} Años seleccionados`;
                 }
             }
-    
-            function populateMultiYearSelect(prefix, changeCallback) {
+
+            function populateMultiYearGrid(prefix, changeCallback) {
                 const dropdown = document.getElementById(`${prefix}-year-select-dropdown`);
                 const button = document.getElementById(`${prefix}-year-select-button`);
                 if (!dropdown || !button) return;
-    
+
+                // Prevenimos que los listeners se añadan múltiples veces
+                if (button.dataset.listenerAttached) return;
+
+                dropdown.className = 'custom-select-options hidden year-selector-grid';
+
                 const years = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getFullYear()))].sort((a, b) => b - a);
-                
-                let optionsHTML = `
-                    <label class="font-bold border-b border-border-color">
-                        <input type="checkbox" value="all" class="year-checkbox">
-                        <span>Todos los Años</span>
-                    </label>`;
-                
-                optionsHTML += years.map(year => `
-                    <label>
-                        <input type="checkbox" value="${year}" class="year-checkbox">
-                        <span>${year}</span>
-                    </label>
-                `).join('');
-                dropdown.innerHTML = optionsHTML;
-    
+
+                let gridHTML = `
+                    <div class="first-row">
+                        <button id="all-years-button">Todos</button>
+                        <button id="reset-years-button">Reset</button>
+                    </div>
+                `;
+
+                gridHTML += years.map(year => `<button data-value="${year}">${year}</button>`).join('');
+                dropdown.innerHTML = gridHTML;
+
                 const savedYears = globalFilterState.years || [];
-                if (savedYears.length > 0) {
-                    dropdown.querySelectorAll('input').forEach(cb => {
-                        if (savedYears.includes(cb.value)) {
-                            cb.checked = true;
-                        }
+                // Primero, deseleccionamos todo para empezar de cero
+                dropdown.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+
+                if (savedYears.includes('all')) {
+                    dropdown.querySelectorAll('button').forEach(btn => {
+                        if (btn.id !== 'reset-years-button') btn.classList.add('selected');
                     });
+                } else if (savedYears.length > 0) {
+                    savedYears.forEach(year => {
+                        const btn = dropdown.querySelector(`button[data-value="${year}"]`);
+                        if (btn) btn.classList.add('selected');
+                    });
+                    const allYearButtons = dropdown.querySelectorAll('button[data-value]');
+                    if ([...allYearButtons].every(btn => btn.classList.contains('selected'))) {
+                        dropdown.querySelector('#all-years-button').classList.add('selected');
+                    }
                 } else {
-                    const currentYear = new Date().getFullYear().toString();
-                    const currentYearCb = dropdown.querySelector(`input[value="${currentYear}"]`);
-                    if (currentYearCb) currentYearCb.checked = true;
+                    const currentYearButton = dropdown.querySelector(`button[data-value="${new Date().getFullYear()}"]`);
+                    if (currentYearButton) currentYearButton.classList.add('selected');
+                    else document.getElementById('all-years-button').classList.add('selected');
                 }
-                updateMultiYearButtonText(prefix);
-    
-                dropdown.addEventListener('change', (e) => {
-                    const allCheckbox = dropdown.querySelector('input[value="all"]');
-                    const yearCheckboxes = dropdown.querySelectorAll('input[value]:not([value="all"])');
-    
-                    if (e.target.value === 'all') {
-                        yearCheckboxes.forEach(cb => cb.checked = e.target.checked);
-                    } else {
-                        allCheckbox.checked = [...yearCheckboxes].every(cb => cb.checked);
+                updateMultiYearButtonTextFromGrid(prefix);
+
+                dropdown.addEventListener('click', (e) => {
+                    const target = e.target.closest('button');
+                    if (!target) return;
+
+                    const allYearsButton = dropdown.querySelector('#all-years-button');
+                    const yearButtons = dropdown.querySelectorAll('button[data-value]');
+
+                    if (target.id === 'all-years-button') {
+                        allYearsButton.classList.add('selected');
+                        yearButtons.forEach(btn => btn.classList.add('selected'));
+                    } else if (target.id === 'reset-years-button') {
+                        dropdown.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                        const currentYearBtn = dropdown.querySelector(`button[data-value="${new Date().getFullYear()}"]`);
+                        if (currentYearBtn) currentYearBtn.classList.add('selected');
+                    } else { 
+                        target.classList.toggle('selected');
+                        const allSelected = [...yearButtons].every(btn => btn.classList.contains('selected'));
+                        allYearsButton.classList.toggle('selected', allSelected);
                     }
                     
-                    updateMultiYearButtonText(prefix);
+                    updateMultiYearButtonTextFromGrid(prefix);
+                    
+                    // --- INICIO DE LA CORRECCIÓN CLAVE ---
+                    // 1. Notificamos al filtro de meses para que se actualice.
+                    if (prefix === 'fixture') {
+                        populateMultiMonthSelect(prefix, handleFilterChange);
+                    }
+                    // 2. Ejecutamos el callback principal para que los datos de la página se filtren.
                     changeCallback();
+                    // --- FIN DE LA CORRECCIÓN CLAVE ---
                 });
-    
+
                 button.addEventListener('click', (e) => {
                     e.stopPropagation();
                     dropdown.classList.toggle('hidden');
                     button.querySelector('i').classList.toggle('rotate-180');
                 });
+                // Marcamos que el listener ya fue añadido para no duplicarlo.
+                button.dataset.listenerAttached = 'true';
             }
     
             function updateMultiMonthButtonText(prefix) {
                 const button = document.getElementById(`${prefix}-month-select-button`);
                 if (!button) return;
                 const buttonSpan = button.querySelector('span');
-                const allMonthsCheckbox = document.querySelector(`#${prefix}-month-select-dropdown input[value="all"]`);
-                const checked = document.querySelectorAll(`#${prefix}-month-select-dropdown input[value]:not([value="all"]):checked`);
-                
-                if (allMonthsCheckbox && allMonthsCheckbox.checked) {
+                const checkedButtons = document.querySelectorAll(`#${prefix}-month-select-dropdown button.selected`);
+                const allMonthsButton = document.getElementById(`all-months-button`);
+                const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+                if (allMonthsButton && allMonthsButton.classList.contains('selected')) {
                     buttonSpan.textContent = 'Todos los Meses';
-                } else if (checked.length === 0) {
-                     buttonSpan.textContent = 'Seleccionar Meses';
-                } else if (checked.length === 1) {
-                    const monthIndex = parseInt(checked[0].value) - 1;
-                    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                    buttonSpan.textContent = months[monthIndex];
+                } else if (checkedButtons.length === 0) {
+                    buttonSpan.textContent = 'Seleccionar Meses';
+                } else if (checkedButtons.length === 1) {
+                    const monthIndex = parseInt(checkedButtons[0].dataset.value) - 1;
+                    buttonSpan.textContent = monthNames[monthIndex];
                 } else {
-                    buttonSpan.textContent = `${checked.length} Meses seleccionados`;
+                    buttonSpan.textContent = `${checkedButtons.length} Meses seleccionados`;
                 }
             }
-    
+
             function populateMultiMonthSelect(prefix, changeCallback) {
                 const dropdown = document.getElementById(`${prefix}-month-select-dropdown`);
                 const button = document.getElementById(`${prefix}-month-select-button`);
                 if (!dropdown || !button) return;
-    
-                const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+                // --- Renderizado del contenido (se ejecuta siempre que se llama a la función) ---
+                const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sept.', 'Oct.', 'Nov.', 'Dic.'];
+                const yearButtons = document.querySelectorAll(`#${prefix}-year-select-dropdown button.selected[data-value]`);
+                let selectedYears;
+                if (yearButtons.length > 0) {
+                    selectedYears = Array.from(yearButtons).map(btn => parseInt(btn.dataset.value));
+                } else {
+                    selectedYears = [...new Set(allMatchesData.map(match => parseDate(match.match_date).getUTCFullYear()))];
+                }
                 
-                let optionsHTML = `<label class="font-bold border-b border-border-color"><input type="checkbox" value="all" class="month-checkbox"><span>Todos los Meses</span></label>`;
-                optionsHTML += months.map((month, index) => `<label><input type="checkbox" value="${index + 1}" class="month-checkbox"><span>${month}</span></label>`).join('');
-                dropdown.innerHTML = optionsHTML;
-    
+                let monthsWithMatches = new Set();
+                const matchesToConsider = allMatchesData.filter(match => selectedYears.includes(parseDate(match.match_date).getUTCFullYear()));
+                matchesToConsider.forEach(match => monthsWithMatches.add(parseDate(match.match_date).getUTCMonth() + 1));
+
+                let gridHTML = `<div class="month-selector-grid">
+                    <div class="first-row">
+                        <button id="all-months-button" class="col-span-2">Todos</button>
+                        <button id="reset-months-button" class="col-span-1">Reset</button>
+                    </div>`;
+                for (let i = 0; i < 12; i++) {
+                    const monthValue = i + 1;
+                    const isDisabled = !monthsWithMatches.has(monthValue);
+                    gridHTML += `<button data-value="${monthValue}" ${isDisabled ? 'disabled' : ''}>${monthNames[i]}</button>`;
+                }
+                gridHTML += `</div>`;
+                dropdown.innerHTML = gridHTML;
+
                 const savedMonths = globalFilterState.months || [];
-                if (savedMonths.length > 0) {
-                    dropdown.querySelectorAll('input').forEach(cb => {
-                        if (savedMonths.includes(cb.value)) {
-                            cb.checked = true;
-                        }
+                if (savedMonths.length > 0 && !savedMonths.includes('all')) {
+                    dropdown.querySelectorAll('button[data-value]').forEach(btn => {
+                        if (savedMonths.includes(btn.dataset.value) && !btn.disabled) btn.classList.add('selected');
                     });
+                    if (!dropdown.querySelector('button.selected[data-value]')) {
+                        document.getElementById('all-months-button').classList.add('selected');
+                    }
+                } else {
+                    document.getElementById('all-months-button').classList.add('selected');
                 }
                 updateMultiMonthButtonText(prefix);
-    
-                dropdown.addEventListener('change', (e) => {
-                    const allCheckbox = dropdown.querySelector('input[value="all"]');
-                    const monthCheckboxes = dropdown.querySelectorAll('input[value]:not([value="all"])');
-    
-                    if (e.target.value === 'all') {
-                        monthCheckboxes.forEach(cb => cb.checked = e.target.checked);
-                    } else {
-                        allCheckbox.checked = [...monthCheckboxes].every(cb => cb.checked);
+
+                // --- Listeners (se añaden solo una vez para evitar duplicados) ---
+                if (button.dataset.listenerAttached) return;
+
+                dropdown.addEventListener('click', (e) => {
+                    const target = e.target.closest('button');
+                    if (!target || target.disabled) return;
+
+                    const allMonthsButton = document.getElementById('all-months-button');
+                    const monthButtons = dropdown.querySelectorAll('button[data-value]:not(:disabled)');
+
+                    if (target.id === 'all-months-button') {
+                        allMonthsButton.classList.add('selected');
+                        monthButtons.forEach(btn => btn.classList.add('selected'));
+                    } 
+                    // --- INICIO DE LA LÓGICA CORREGIDA PARA RESET ---
+                    else if (target.id === 'reset-months-button') {
+                        dropdown.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+                        
+                        // Busca el último partido dentro de los años ya seleccionados
+                        const lastMatch = [...matchesToConsider]
+                                            .sort((a, b) => new Date(b.match_date) - new Date(a.match_date))[0];
+                        
+                        if (lastMatch) {
+                            const monthToSelect = parseDate(lastMatch.match_date).getUTCMonth() + 1;
+                            const targetButton = dropdown.querySelector(`button[data-value="${monthToSelect}"]`);
+                            if (targetButton && !targetButton.disabled) {
+                                targetButton.classList.add('selected');
+                            } else {
+                                allMonthsButton.classList.add('selected');
+                            }
+                        } else {
+                            allMonthsButton.classList.add('selected');
+                        }
+                    } 
+                    // --- FIN DE LA LÓGICA CORREGIDA ---
+                    else {
+                        target.classList.toggle('selected');
+                        const allSelected = [...monthButtons].every(btn => btn.classList.contains('selected'));
+                        allMonthsButton.classList.toggle('selected', allSelected);
                     }
                     
                     updateMultiMonthButtonText(prefix);
                     changeCallback();
                 });
-    
+
                 button.addEventListener('click', (e) => {
                     e.stopPropagation();
                     dropdown.classList.toggle('hidden');
                     button.querySelector('i').classList.toggle('rotate-180');
                 });
+                button.dataset.listenerAttached = 'true';
             }
     
+            function handleFilterChange() {
+                const activeTabButton = document.querySelector('.tab-button.active');
+                if (!activeTabButton) return;
+
+                const prefix = activeTabButton.dataset.tab.replace('-content', '');
+
+                // Se elimina la llamada recursiva que causaba el error.
+                // La lógica para actualizar el filtro de meses ahora está en el filtro de años.
+
+                const allYearsButton = document.querySelector(`#${prefix}-year-select-dropdown #all-years-button`);
+                if (allYearsButton && allYearsButton.classList.contains('selected')) {
+                    globalFilterState.years = ['all'];
+                } else {
+                    const yearButtons = document.querySelectorAll(`#${prefix}-year-select-dropdown button.selected[data-value]`);
+                    globalFilterState.years = Array.from(yearButtons).map(btn => btn.dataset.value);
+                }
+
+                const periodSelect = document.getElementById(`${prefix}-period-select`);
+                if (periodSelect) globalFilterState.period = periodSelect.value;
+                
+                if (prefix === 'fixture') {
+                    const allMonthsButton = document.getElementById('all-months-button');
+                    if (allMonthsButton && allMonthsButton.classList.contains('selected')) {
+                        globalFilterState.months = ['all'];
+                    } else {
+                        const monthButtons = document.querySelectorAll('#fixture-month-select-dropdown button.selected');
+                        globalFilterState.months = Array.from(monthButtons).map(btn => btn.dataset.value);
+                    }
+                }
+
+                FilterSessionManager.update(globalFilterState);
+
+                // Eliminamos el dispatchEvent y manejamos el comparador directamente
+                const renderFn = renderFunctions[prefix + '-content'];
+                if (renderFn) {
+                    if (prefix === 'estadisticas') {
+                        currentEstadisticasData = [];
+                        renderEstadisticas();
+                    } else if (prefix === 'fixture') {
+                        renderFixture(true);
+                    } else if (prefix === 'comparador') {
+                        // Ahora llamamos a la función de renderizado directamente
+                        const screen4 = document.getElementById('comparator-screen-4');
+                        if (screen4 && !screen4.classList.contains('hidden')) {
+                            renderFullComparisonScreen();
+                        }
+                    } else {
+                        renderFn();
+                    }
+                }
+            }
+
             function setupDynamicEventListeners(tabId) {
                 const prefix = tabId.replace('-content', '');
-                const renderFn = renderFunctions[tabId];
-    
-                const handleFilterChange = () => {
-                    const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`);
-                    globalFilterState.years = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
-                    
-                    const periodSelect = document.getElementById(`${prefix}-period-select`);
-                    if (periodSelect) globalFilterState.period = periodSelect.value;
-                    
-                    const monthCheckboxes = document.querySelectorAll(`#${prefix}-month-select-dropdown input[type=checkbox]:checked`);
-                    if (monthCheckboxes.length > 0) {
-                        globalFilterState.months = Array.from(monthCheckboxes).map(cb => cb.value);
-                    } else {
-                        delete globalFilterState.months;
-                    }
-                    
-                    FilterSessionManager.update(globalFilterState);
-                    document.body.dispatchEvent(new CustomEvent('filterChanged'));
-    
-    
-                    if (renderFn) {
-                        if (prefix === 'estadisticas') {
-                            currentEstadisticasData = [];
-                            renderEstadisticas();
-                        } else if (prefix === 'fixture') {
-                            renderFixture(true);
-                        } else if (prefix === 'comparador') {
-                            updateComparison();
-                        }
-                        else {
-                            renderFn();
-                        }
-                    }
-                };
-                
-                if (tabId.includes('content') && !tabId.includes('individual')) {
-                     populateMultiYearSelect(prefix, handleFilterChange);
+
+                if (['leaderboard', 'chamigo', 'tt', 'presentismo', 'ausentismo', 'equipos', 'estadisticas', 'fixture', 'comparador'].includes(prefix)) {
+                    populateMultiYearGrid(prefix, handleFilterChange);
                 }
-    
+
                 const periodContainer = document.getElementById(`${prefix}-period-select-container`);
                 if (periodContainer) {
-                    const button = periodContainer.querySelector('button');
-                    const dropdown = periodContainer.querySelector('.custom-select-options');
-                    const valueInput = periodContainer.querySelector('input[type=hidden]');
-                    const buttonSpan = button.querySelector('span');
-    
-                    button.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        dropdown.classList.toggle('hidden');
-                        button.querySelector('i').classList.toggle('rotate-180');
-                    });
-    
-                    dropdown.addEventListener('click', (e) => {
-                        const option = e.target.closest('.option-item');
-                        if (option) {
-                            const newValue = option.dataset.value;
-                            valueInput.value = newValue;
-                            buttonSpan.textContent = option.textContent;
-                            dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
-                            option.classList.add('selected');
-                            dropdown.classList.add('hidden');
-                            button.querySelector('i').classList.remove('rotate-180');
-                            handleFilterChange();
+                    if (globalFilterState.period) {
+                        const valueInput = periodContainer.querySelector('input[type=hidden]');
+                        const buttonSpan = periodContainer.querySelector('button span');
+                        const dropdown = periodContainer.querySelector('.custom-select-options');
+                        const savedPeriod = globalFilterState.period;
+
+                        valueInput.value = savedPeriod;
+                        dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                        const selectedOption = dropdown.querySelector(`.option-item[data-value="${savedPeriod}"]`);
+                        
+                        if (selectedOption) {
+                            buttonSpan.textContent = selectedOption.textContent;
+                            selectedOption.classList.add('selected');
                         }
-                    });
+                    }
+                    const button = periodContainer.querySelector('button');
+                    if (button && !button.dataset.listenerAttached) {
+                        const dropdown = periodContainer.querySelector('.custom-select-options');
+                        const valueInput = periodContainer.querySelector('input[type=hidden]');
+                        const buttonSpan = button.querySelector('span');
+                        button.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            dropdown.classList.toggle('hidden');
+                            button.querySelector('i').classList.toggle('rotate-180');
+                        });
+                        dropdown.addEventListener('click', (e) => {
+                            const option = e.target.closest('.option-item');
+                            if (option) {
+                                valueInput.value = option.dataset.value;
+                                buttonSpan.textContent = option.textContent;
+                                dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                                option.classList.add('selected');
+                                dropdown.classList.add('hidden');
+                                button.querySelector('i').classList.remove('rotate-180');
+                                handleFilterChange();
+                            }
+                        });
+                        button.dataset.listenerAttached = 'true';
+                    }
                 }
-    
+
                 if (prefix === 'fixture') {
                     populateMultiMonthSelect(prefix, handleFilterChange);
                 }
-    
-                document.getElementById(`${prefix}-hoy-button`)?.addEventListener('click', () => {
-                    const isMonthFilter = prefix === 'fixture';
+
+                const hoyButton = document.getElementById(`${prefix}-hoy-button`);
+                if (hoyButton && !hoyButton.dataset.listenerAttached) {
+                    hoyButton.addEventListener('click', () => {
+                        const isMonthFilter = prefix === 'fixture';
+                        setTodayFilters(prefix, isMonthFilter);
+                        handleFilterChange();
+                        if (isMonthFilter) {
+                            populateMultiMonthSelect(prefix, handleFilterChange);
+                        }
+                    });
+                    hoyButton.dataset.listenerAttached = 'true';
+                }
+
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Se restaura la lógica que establece los filtros por defecto al cargar una pestaña sin sesión guardada.
+                const isMonthFilter = prefix === 'fixture';
+                const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0;
+
+                if (!hasSavedState) {
                     setTodayFilters(prefix, isMonthFilter);
                     handleFilterChange();
-                });
-    
+                }
+                // --- FIN DE LA CORRECCIÓN ---
+
                 if (tabId === 'estadisticas-content') {
-                     const table = document.getElementById('estadisticas-table');
-                     table?.addEventListener('click', (e) => {
-                         const th = e.target.closest('th[data-sort]');
-                         if (!th) return;
-                         const newCriterion = th.dataset.sort;
-                         if (estadisticasSortState.criterion === newCriterion) {
-                             estadisticasSortState.order = estadisticasSortState.order === 'desc' ? 'asc' : 'desc';
-                         } else {
-                             estadisticasSortState.criterion = newCriterion;
-                             estadisticasSortState.order = 'desc';
-                         }
-                         renderEstadisticas(true);
-                     });
+                    const table = document.getElementById('estadisticas-table');
+                    if (table && !table.dataset.listenerAttached) {
+                        table.addEventListener('click', (e) => {
+                            const th = e.target.closest('th[data-sort]');
+                            if (!th) return;
+                            const newCriterion = th.dataset.sort;
+                            estadisticasSortState.order = (estadisticasSortState.criterion === newCriterion && estadisticasSortState.order === 'desc') ? 'asc' : 'desc';
+                            estadisticasSortState.criterion = newCriterion;
+                            renderEstadisticas(true);
+                        });
+                        table.dataset.listenerAttached = 'true';
+                    }
                 }
                 
                 if (tabId === 'fixture-content') {
                     const dropdownContainer = document.getElementById('fixture-dropdown-container');
                     const button = dropdownContainer?.querySelector('.custom-select-button');
-                    const options = dropdownContainer?.querySelector('.custom-select-options');
-    
-                    button?.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        options.classList.toggle('hidden');
-                        button.querySelector('i').classList.toggle('rotate-180');
-                    });
-    
-                    options?.addEventListener('click', (e) => {
-                        const optionItem = e.target.closest('.option-item');
-                        if (optionItem) {
-                            handleFixtureSelection(optionItem.dataset.matchId);
-                            options.classList.add('hidden');
-                            button.querySelector('i').classList.remove('rotate-180');
-                        }
-                    });
-                }
-    
-                if (tabId.includes('content') && !tabId.includes('individual')) {
-                    const isMonthFilter = prefix === 'fixture';
-                    const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0 && (isMonthFilter ? globalFilterState.months : globalFilterState.period);
-                    
-                    if (hasSavedState) {
-                        if (isMonthFilter && globalFilterState.months) {
-                            const monthDropdown = document.getElementById('fixture-month-select-dropdown');
-                            monthDropdown.querySelectorAll('input').forEach(cb => {
-                                cb.checked = globalFilterState.months.includes(cb.value);
-                            });
-                            updateMultiMonthButtonText('fixture');
-                        } else if (!isMonthFilter && globalFilterState.period) {
-                            const periodContainer = document.getElementById(`${prefix}-period-select-container`);
-                            const valueInput = periodContainer.querySelector('input[type=hidden]');
-                            const buttonSpan = periodContainer.querySelector('button span');
-                            const dropdown = periodContainer.querySelector('.custom-select-options');
-                            
-                            valueInput.value = globalFilterState.period;
-                            const selectedOption = dropdown.querySelector(`.option-item[data-value="${globalFilterState.period}"]`);
-                             if (selectedOption) {
-                                buttonSpan.textContent = selectedOption.textContent;
-                                dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
-                                selectedOption.classList.add('selected');
+                    if (button && !button.dataset.listenerAttached) {
+                        const options = dropdownContainer.querySelector('.custom-select-options');
+                        button.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            options.classList.toggle('hidden');
+                            button.querySelector('i').classList.toggle('rotate-180');
+                        });
+                        options.addEventListener('click', (e) => {
+                            const optionItem = e.target.closest('.option-item');
+                            if (optionItem) {
+                                handleFixtureSelection(optionItem.dataset.matchId);
+                                options.classList.add('hidden');
+                                button.querySelector('i').classList.remove('rotate-180');
                             }
-                        }
-                    } else {
-                        setTodayFilters(prefix, isMonthFilter);
-                        
-                        const selectedYearsCheckboxes = document.querySelectorAll(`#${prefix}-year-select-dropdown input[type=checkbox]:checked`);
-                        globalFilterState.years = Array.from(selectedYearsCheckboxes).map(cb => cb.value);
-                        
-                        const periodSelect = document.getElementById(`${prefix}-period-select`);
-                        if (periodSelect) globalFilterState.period = periodSelect.value;
-                        
-                        const monthCheckboxes = document.querySelectorAll(`#${prefix}-month-select-dropdown input[type=checkbox]:checked`);
-                        if (monthCheckboxes.length > 0) {
-                            globalFilterState.months = Array.from(monthCheckboxes).map(cb => cb.value);
-                        }
-                        FilterSessionManager.update(globalFilterState);
+                        });
+                        button.dataset.listenerAttached = 'true';
                     }
                 }
                 
@@ -3101,373 +3525,213 @@
             // ===== INICIO: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
     
             function renderComparador() {
-                // Estado local para el wizard del comparador
-                let selectedPlayer1 = null;
-                let selectedPlayer2 = null;
-                const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
-    
-                // --- INYECCIÓN DE ESTILOS (Solo se ejecuta una vez) ---
-                (function injectComparatorStyles() {
-                    const styleId = 'comparator-dynamic-styles';
-                    if (document.getElementById(styleId)) return;
-                    const style = document.createElement('style');
-                    style.id = styleId;
-                    style.innerHTML = `
-                        .bg-success-color { background-color: var(--success-color); }
-                        .bg-danger-color { background-color: var(--danger-color); }
-                        #full-comparison-content { overflow-y: auto; flex-grow: 1; }
-                        .comparator-screen-wrapper { border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 0; width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
-                        #comparator-screen-4 { max-width: 100%; }
-                        .comparator-screen-header { background-color: var(--warning-color); color: var(--button-text-color); padding: 0.75rem; font-weight: 700; text-align: center; text-transform: uppercase; font-size: 1rem; letter-spacing: 0.05em; position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-                        html.dark .comparator-screen-header { background-color: #d97706; }
-                        .comparator-screen-header .modal-close-button { position: absolute; top: 50%; right: 0.75rem; transform: translateY(-50%); background-color: var(--danger-color); border: 1px solid transparent; color: white; }
-                        @media (min-width: 768px) { .comparator-screen-header .modal-close-button { background-color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); } .comparator-screen-header .modal-close-button:hover { background-color: var(--danger-color); transform: translateY(-50%) scale(1.1) rotate(90deg); border-color: transparent; } }
-                        .comparator-search-input { padding-right: 2.5rem !important; }
-                        html.dark .comparator-search-input { background-color: #374151 !important; color: var(--text-primary) !important; border-color: #4b5563 !important; -webkit-box-shadow: 0 0 0 30px #374151 inset !important; -webkit-text-fill-color: var(--text-primary) !important; }
-                        html.dark .comparator-search-input::placeholder { color: var(--text-muted); }
-                        .comparator-results-dropdown .option-item:nth-child(even) { background-color: var(--bg-even-row); }
-                        .comparator-results-dropdown .option-item:hover { background-color: #eef2ff; }
-                        html.dark .comparator-results-dropdown .option-item:nth-child(even) { background-color: #111827; }
-                        html.dark .comparator-results-dropdown .option-item:hover { background-color: var(--sidebar-hover-bg); }
-                    `;
-                    document.head.appendChild(style);
-                })();
-    
-                // --- FUNCIONES AUXILIARES Y DE RENDERIZADO ---
-                function showScreen(screenNum) {
-                    if (screenNum === 3) {
-                        renderScreen3();
+            // 1. Revisa si hay una comparación guardada en la sesión
+            if (globalFilterState.comparatorP1 && globalFilterState.comparatorP2) {
+                const p1 = allPlayersData.find(p => p.id === globalFilterState.comparatorP1);
+                const p2 = allPlayersData.find(p => p.id === globalFilterState.comparatorP2);
+
+                // 2. Si ambos jugadores todavía existen, reconstruye la pantalla 4
+                if (p1 && p2) {
+                    selectedPlayer1 = p1;
+                    selectedPlayer2 = p2;
+                    renderFullComparisonScreen(); // Renderiza el contenido
+                    showScreen(4);              // Muestra la pantalla de comparación
+                    return; // Detiene la ejecución para no mostrar la pantalla de selección inicial
+                }
+            }
+
+            // El resto de la función original sigue aquí...
+            const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
+
+            // --- INYECCIÓN DE ESTILOS (Solo se ejecuta una vez) ---
+            (function injectComparatorStyles() {
+                const styleId = 'comparator-dynamic-styles';
+                if (document.getElementById(styleId)) return;
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.innerHTML = `
+                    .bg-success-color { background-color: var(--success-color); }
+                    .bg-danger-color { background-color: var(--danger-color); }
+                    #full-comparison-content { overflow-y: auto; flex-grow: 1; }
+                    .comparator-screen-wrapper { border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 0; width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
+                    #comparator-screen-4 { max-width: 100%; }
+                    .comparator-screen-header { background-color: var(--warning-color); color: var(--button-text-color); padding: 0.75rem; font-weight: 700; text-align: center; text-transform: uppercase; font-size: 1rem; letter-spacing: 0.05em; position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                    html.dark .comparator-screen-header { background-color: #d97706; }
+                    .comparator-screen-header .modal-close-button { position: absolute; top: 50%; right: 0.75rem; transform: translateY(-50%); background-color: var(--danger-color); border: 1px solid transparent; color: white; }
+                    @media (min-width: 768px) { .comparator-screen-header .modal-close-button { background-color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); } .comparator-screen-header .modal-close-button:hover { background-color: var(--danger-color); transform: translateY(-50%) scale(1.1) rotate(90deg); border-color: transparent; } }
+                    .comparator-search-input { padding-right: 2.5rem !important; }
+                    html.dark .comparator-search-input { background-color: #374151 !important; color: var(--text-primary) !important; border-color: #4b5563 !important; -webkit-box-shadow: 0 0 0 30px #374151 inset !important; -webkit-text-fill-color: var(--text-primary) !important; }
+                    html.dark .comparator-search-input::placeholder { color: var(--text-muted); }
+                    .comparator-results-dropdown .option-item:nth-child(even) { background-color: var(--bg-even-row); }
+                    .comparator-results-dropdown .option-item:hover { background-color: #eef2ff; }
+                    html.dark .comparator-results-dropdown .option-item:nth-child(even) { background-color: #111827; }
+                    html.dark .comparator-results-dropdown .option-item:hover { background-color: var(--sidebar-hover-bg); }
+                `;
+                document.head.appendChild(style);
+            })();
+
+            // --- FUNCIONES AUXILIARES Y DE RENDERIZADO ---
+            function showScreen(screenNum) {
+                const filtersContainer = document.getElementById('comparador-filters-container');
+                const hrSeparator = filtersContainer ? filtersContainer.nextElementSibling : null;
+
+                if (filtersContainer && hrSeparator) {
+                    if (screenNum === 4) {
+                        filtersContainer.classList.remove('hidden');
+                        hrSeparator.classList.remove('hidden');
+                    } else {
+                        filtersContainer.classList.add('hidden');
+                        hrSeparator.classList.add('hidden');
                     }
-                    for (let i = 1; i <= 4; i++) {
-                        const screen = document.getElementById(`comparator-screen-${i}`);
-                        if(screen) screen.classList.add('hidden');
-                    }
-                    const targetScreen = document.getElementById(`comparator-screen-${screenNum}`);
-                    if(targetScreen) targetScreen.classList.remove('hidden');
                 }
-    
-                function resetComparator() {
-                    selectedPlayer1 = null;
-                    selectedPlayer2 = null;
-                    renderScreen1();
-                    showScreen(1);
+
+                if (screenNum === 3) {
+                    renderScreen3();
                 }
-                
-                function createPlayerSelectorCard(playerNum, playerData = null) {
-                    const photoUrl = playerData?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';
-                    const playerName = playerData?.name || 'Seleccionar Jugador';
-                    return `
-                        <div class="p-4 space-y-4 text-center">
-                            <div class="relative">
-                                <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
-                                <button id="comparador-clear-player${playerNum}-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted comparator-clear-btn" data-player-num="${playerNum}">
-                                    <i class="fas fa-times-circle"></i>
-                                </button>
-                                <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                            </div>
-                            <div class="mt-4">
-                                <img src="${photoUrl}" alt="Avatar del jugador" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-border-color shadow-lg" id="player${playerNum}-avatar" onerror="this.onerror=null;this.src='https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';">
-                                <h3 class="text-2xl font-bold mt-3" id="player${playerNum}-name">${playerName}</h3>
-                            </div>
+                for (let i = 1; i <= 4; i++) {
+                    const screen = document.getElementById(`comparator-screen-${i}`);
+                    if(screen) screen.classList.add('hidden');
+                }
+                const targetScreen = document.getElementById(`comparator-screen-${screenNum}`);
+                if(targetScreen) targetScreen.classList.remove('hidden');
+            }
+
+            function resetComparator() {
+                selectedPlayer1 = null;
+                selectedPlayer2 = null;
+
+                // Limpia los jugadores de la sesión
+                if (globalFilterState.comparatorP1 || globalFilterState.comparatorP2) {
+                    globalFilterState.comparatorP1 = null;
+                    globalFilterState.comparatorP2 = null;
+                    FilterSessionManager.update(globalFilterState);
+                }
+
+                renderScreen1();
+                showScreen(1);
+            }
+            
+            function createPlayerSelectorCard(playerNum, playerData = null) {
+                const photoUrl = playerData?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';
+                const playerName = playerData?.name || 'Seleccionar Jugador';
+                return `
+                    <div class="p-4 space-y-4 text-center">
+                        <div class="relative">
+                            <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
+                            <button id="comparador-clear-player${playerNum}-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted comparator-clear-btn" data-player-num="${playerNum}">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                            <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                         </div>
-                    `;
-                }
-                
-                function renderScreen1() {
-                    const screen1Container = document.getElementById('comparator-screen-1');
-                    screen1Container.innerHTML = `
-                        <div class="comparator-screen-header">
-                            <span>SELECCIONAR JUGADOR</span>
+                        <div class="mt-4">
+                            <img src="${photoUrl}" alt="Avatar del jugador" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-border-color shadow-lg" id="player${playerNum}-avatar" onerror="this.onerror=null;this.src='https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';">
+                            <h3 class="text-2xl font-bold mt-3" id="player${playerNum}-name">${playerName}</h3>
                         </div>
-                        ${createPlayerSelectorCard(1, selectedPlayer1)}
-                        <div class="p-4 pt-0 space-y-3">
-                            <button id="go-to-screen-3-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                                Agregar otro jugador
+                    </div>
+                `;
+            }
+            
+            function renderScreen1() {
+                const screen1Container = document.getElementById('comparator-screen-1');
+                screen1Container.innerHTML = `
+                    <div class="comparator-screen-header">
+                        <span>SELECCIONAR JUGADOR</span>
+                    </div>
+                    ${createPlayerSelectorCard(1, selectedPlayer1)}
+                    <div class="p-4 pt-0 space-y-3">
+                        <button id="go-to-screen-3-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            Agregar otro jugador
+                        </button>
+                    </div>
+                `;
+                setupPlayerSearch(1);
+            }
+                            
+            function renderScreen3() {
+                const screen3Container = document.getElementById('comparator-screen-3');
+                screen3Container.innerHTML = `
+                    <div class="comparator-screen-header">
+                        <span>SELECCIONAR JUGADOR</span>
+                        <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="screen-3-content">
+                        ${createPlayerSelectorCard(2, selectedPlayer2)}
+                        <div class="p-4 pt-0 grid grid-cols-2 gap-3">
+                            <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700">
+                                VOLVER
+                            </button>
+                            <button id="go-to-screen-4-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                                COMPARAR
                             </button>
                         </div>
-                    `;
-                    setupPlayerSearch(1);
-                }
-                                
-                function renderScreen3() {
-                    const screen3Container = document.getElementById('comparator-screen-3');
-                    screen3Container.innerHTML = `
-                        <div class="comparator-screen-header">
-                            <span>SELECCIONAR JUGADOR</span>
-                            <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                        </div>
-                        <div id="screen-3-content">
-                            ${createPlayerSelectorCard(2, selectedPlayer2)}
-                            <div class="p-4 pt-0 grid grid-cols-2 gap-3">
-                                <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700">
-                                    VOLVER
-                                </button>
-                                <button id="go-to-screen-4-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                                    COMPARAR
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    setupPlayerSearch(2, true); 
-                    updatePlayerDisplay(2, selectedPlayer2);
-                }
-    
-                function renderFullComparisonScreen() {
-                    const screen4Container = document.getElementById('comparator-screen-4');
-                    if (!selectedPlayer1 || !selectedPlayer2) return;
-                    
-                    const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
-                    let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
-                    if (selectedYears.includes('all')) selectedYears = ['all'];
-                    const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
-        
-                    const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
-                    let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
-                    let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, id: selectedPlayer2.id };
-        
-                    const stickyAvatarsHTML = `
-                        <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                            ${createPlayerCard(selectedPlayer1, 1)}
-                            <div class="vs-separator">VS</div>
-                            ${createPlayerCard(selectedPlayer2, 2)}
-                        </div>`;
-        
-                    const allFilteredMatches = allMatchesData.filter(match => {
-                        if (!match.result) return false;
-                        const matchYear = parseDate(match.match_date).getFullYear();
-                        const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
-                        const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
-                        const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
-                        return yearMatch && periodMatch;
-                    });
-            
-                    const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
-                    const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
-                    
-                    const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
-                    const subHeaderClasses = "text-sm font-bold text-center text-white uppercase tracking-wider p-1.5 md:p-2 rounded-md";
+                    </div>
+                `;
+                setupPlayerSearch(2, true); 
+                updatePlayerDisplay(2, selectedPlayer2);
+            }
 
-                    let scrollableContentHTML = '';
-
-                    if (headToHeadStats.pjTotal > 0) {
-                        scrollableContentHTML += `
-                            <div class="space-y-2 p-2">
-                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">PARTIDOS COMPARTIDOS</h4>
-                                <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
-                                    ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
-                                    ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'EN EQUIPO', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
-                                    ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'RIVALES', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
-                                </div>
-                            </div>`;
-                    }
-                    
-                    if (teammateStats.pj > 0) {
-                        scrollableContentHTML += `
-                            <div class="space-y-2 p-2 mt-2">
-                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">EN EQUIPO (${teammateStats.pj} PJ)</h4>
-                                <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
-                                    ${unifiedStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' }, true)}
-                                    ${unifiedStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
-                                    ${unifiedStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
-                                </div>
-                            </div>`;
-                    }
-                    
-                    if (headToHeadStats.pjEnfrentados > 0) {
-                        const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p1_efectividad };
-                        const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p2_efectividad };
-                        const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'empates', label: 'Empatados'}, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
-                        scrollableContentHTML += `
-                            <div class="space-y-2 p-2 mt-2">
-                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Como Rivales (${headToHeadStats.pjEnfrentados} PJ)</h4>
-                                <div class="space-y-4 mt-2 px-2">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
-                            </div>`;
-                    }
+            function openPlayerChangeModal(playerNum) {
+                const modal = document.getElementById('player-change-modal');
+                const modalContent = document.getElementById('player-change-modal-content');
+                const avatar = document.getElementById('player-change-avatar');
+                const contextInput = document.getElementById('player-change-context');
+                const searchInput = document.getElementById('player-change-search-input');
                 
-                    const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
-                    scrollableContentHTML += `<div class="space-y-2 p-2 mt-2"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Individuales</h4><div class="space-y-4 mt-2 px-2">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
-        
-                    screen4Container.innerHTML = `
-                        <div class="comparator-sticky-header" style="background-color: var(--bg-secondary);">
-                            <div class="comparator-screen-header">
-                                <span>COMPARATIVA</span>
-                                <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                            </div>
-                            <div class="p-4 border-b border-border-color">
-                                ${stickyAvatarsHTML}
-                            </div>
-                        </div>
-                        
-                        <div id="full-comparison-display" class="p-4 space-y-6">
-                             ${scrollableContentHTML}
-                        </div>
-                    `;
-                }
-    
-                // --- INICIO: Funciones del Modal de Cambio de Jugador (PANTALLA 4) ---
-                function openPlayerChangeModal(playerNum) {
-                    const modal = document.getElementById('player-change-modal');
-                    const modalContent = document.getElementById('player-change-modal-content');
-                    const avatar = document.getElementById('player-change-avatar');
-                    const contextInput = document.getElementById('player-change-context');
-                    const searchInput = document.getElementById('player-change-search-input');
+                const currentPlayer = (playerNum === 1) ? selectedPlayer1 : selectedPlayer2;
+                
+                if (!currentPlayer) return;
+
+                avatar.src = currentPlayer.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+                avatar.onerror = () => { avatar.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
+                contextInput.value = playerNum;
+                searchInput.value = ''; 
+                document.getElementById('player-change-results-dropdown').innerHTML = '';
+
+                modal.classList.remove('hidden');
+                document.body.classList.add('modal-open');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    modalContent.classList.remove('scale-95');
+                }, 10);
+
+                setupPlayerChangeSearch();
+            }
+
+            function closePlayerChangeModal() {
+                const modal = document.getElementById('player-change-modal');
+                const modalContent = document.getElementById('player-change-modal-content');
+
+                modal.classList.add('opacity-0');
+                modalContent.classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    document.body.classList.remove('modal-open');
+                }, 300);
+            }
+
+            function setupPlayerChangeSearch() {
+                const searchInput = document.getElementById('player-change-search-input');
+                const resultsDiv = document.getElementById('player-change-results-dropdown');
+                const clearButton = document.getElementById('player-change-clear-search');
+                const contextInput = document.getElementById('player-change-context');
+
+                const filterAndDisplay = () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const playerNumToChange = contextInput.value;
+                    const otherPlayerId = (playerNumToChange == 1) ? selectedPlayer2?.id : selectedPlayer1?.id;
                     
-                    const currentPlayer = (playerNum === 1) ? selectedPlayer1 : selectedPlayer2;
-                    
-                    if (!currentPlayer) return;
-
-                    avatar.src = currentPlayer.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
-                    avatar.onerror = () => { avatar.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
-                    contextInput.value = playerNum;
-                    searchInput.value = ''; 
-                    document.getElementById('player-change-results-dropdown').innerHTML = '';
-
-                    modal.classList.remove('hidden');
-                    document.body.classList.add('modal-open');
-                    setTimeout(() => {
-                        modal.classList.remove('opacity-0');
-                        modalContent.classList.remove('scale-95');
-                    }, 10);
-
-                    setupPlayerChangeSearch();
-                }
-
-                function closePlayerChangeModal() {
-                    const modal = document.getElementById('player-change-modal');
-                    const modalContent = document.getElementById('player-change-modal-content');
-
-                    modal.classList.add('opacity-0');
-                    modalContent.classList.add('scale-95');
-                    setTimeout(() => {
-                        modal.classList.add('hidden');
-                        document.body.classList.remove('modal-open');
-                    }, 300);
-                }
-
-                function setupPlayerChangeSearch() {
-                    const searchInput = document.getElementById('player-change-search-input');
-                    const resultsDiv = document.getElementById('player-change-results-dropdown');
-                    const clearButton = document.getElementById('player-change-clear-search');
-                    const contextInput = document.getElementById('player-change-context');
-
-                    const filterAndDisplay = () => {
-                        const searchTerm = searchInput.value.toLowerCase();
-                        const playerNumToChange = contextInput.value;
-                        const otherPlayerId = (playerNumToChange == 1) ? selectedPlayer2?.id : selectedPlayer1?.id;
+                    const filtered = allPlayersData
+                        .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId)
+                        .sort((a, b) => a.name.localeCompare(b.name));
                         
-                        const filtered = allPlayersData
-                            .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId)
-                            .sort((a, b) => a.name.localeCompare(b.name));
-                            
-                        resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
-                    };
+                    resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
+                };
 
-                    if (!searchInput.dataset.listenerAttached) {
-                        searchInput.addEventListener('mousedown', (e) => {
-                            e.preventDefault();
-                            const isDesktop = window.innerWidth >= 768;
-
-                            if (resultsDiv.classList.contains('hidden')) {
-                                resultsDiv.classList.remove('hidden');
-                                filterAndDisplay();
-                                if (isDesktop) {
-                                    searchInput.readOnly = false;
-                                    searchInput.focus();
-                                }
-                            } else {
-                                searchInput.readOnly = false;
-                                searchInput.focus();
-                            }
-                        });
-
-                        searchInput.addEventListener('input', filterAndDisplay);
-
-                        searchInput.addEventListener('blur', () => {
-                            setTimeout(() => {
-                                if (!resultsDiv.contains(document.activeElement)) {
-                                    resultsDiv.classList.add('hidden');
-                                    searchInput.readOnly = true;
-                                }
-                            }, 200);
-                        });
-
-                        clearButton.addEventListener('mousedown', (e) => {
-                            e.preventDefault(); // Esto evita que cambie el estado del teclado
-                            searchInput.value = ''; // Limpia el texto del buscador
-                            
-                            // Aquí está la magia: nos aseguramos de que la lista sea visible y se actualice
-                            resultsDiv.classList.remove('hidden'); 
-                            filterAndDisplay(); 
-                            
-                            searchInput.focus(); // Mantenemos el cursor en el buscador para seguir escribiendo
-                        });
-
-                        resultsDiv.addEventListener('mousedown', (e) => {
-                            const target = e.target.closest('.option-item');
-                            if (target?.dataset.playerId) {
-                                e.preventDefault();
-                                const newPlayer = allPlayersData.find(p => p.id == target.dataset.playerId);
-                                const playerNumToChange = parseInt(contextInput.value);
-
-                                if (playerNumToChange === 1) {
-                                    selectedPlayer1 = newPlayer;
-                                } else {
-                                    selectedPlayer2 = newPlayer;
-                                }
-
-                                closePlayerChangeModal();
-                                renderFullComparisonScreen();
-                            }
-                        });
-                        
-                        document.getElementById('player-change-modal-close').addEventListener('click', closePlayerChangeModal);
-                        
-                        const modalOverlay = document.getElementById('player-change-modal');
-                        modalOverlay.addEventListener('click', (e) => {
-                            if (e.target.id === 'player-change-modal') {
-                                closePlayerChangeModal();
-                            }
-                        });
-                        
-                        searchInput.dataset.listenerAttached = 'true';
-                    }
-                }
-                // --- FIN: Funciones del Modal de Cambio de Jugador (PANTALLA 4) ---
-
-                // --- INICIO: Buscador para Pantallas 1 y 3 ---
-                function setupPlayerSearch(playerNum, initialOpen = false) {
-                    const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
-                    const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
-                    const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
-    
-                    const filterAndDisplay = () => {
-                        const searchTerm = searchInput.value.toLowerCase();
-                        const otherPlayerId = playerNum === 1 ? selectedPlayer2?.id : selectedPlayer1?.id;
-                        const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId).sort((a, b) => a.name.localeCompare(b.name));
-                        resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
-                    };
-    
-                    clearButton.addEventListener('mousedown', (e) => {
-                        e.preventDefault();
-                        if (playerNum === 1) {
-                            selectedPlayer1 = null;
-                        } else {
-                            selectedPlayer2 = null;
-                        }
-                        updatePlayerDisplay(playerNum, null);
-    
-                        if (!resultsDiv.classList.contains('hidden')) {
-                            filterAndDisplay();
-                        } else {
-                            resultsDiv.classList.remove('hidden');
-                            filterAndDisplay();
-                        }
-                    });
-    
+                if (!searchInput.dataset.listenerAttached) {
                     searchInput.addEventListener('mousedown', (e) => {
                         e.preventDefault();
                         const isDesktop = window.innerWidth >= 768;
-    
+
                         if (resultsDiv.classList.contains('hidden')) {
                             resultsDiv.classList.remove('hidden');
                             filterAndDisplay();
@@ -3480,96 +3744,284 @@
                             searchInput.focus();
                         }
                     });
-    
-                    searchInput.addEventListener('input', () => {
-                        if (!searchInput.readOnly) {
-                            filterAndDisplay();
-                        }
-                    });
-    
+
+                    searchInput.addEventListener('input', filterAndDisplay);
+
                     searchInput.addEventListener('blur', () => {
                         setTimeout(() => {
                             if (!resultsDiv.contains(document.activeElement)) {
                                 resultsDiv.classList.add('hidden');
                                 searchInput.readOnly = true;
                             }
-                        }, 150);
+                        }, 200);
                     });
-    
+
+                    clearButton.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        searchInput.value = '';
+                        resultsDiv.classList.remove('hidden'); 
+                        filterAndDisplay(); 
+                        searchInput.focus();
+                    });
+
                     resultsDiv.addEventListener('mousedown', (e) => {
                         const target = e.target.closest('.option-item');
                         if (target?.dataset.playerId) {
                             e.preventDefault();
-                            const player = allPlayersData.find(p => p.id == target.dataset.playerId);
-                            if (playerNum === 1) selectedPlayer1 = player;
-                            else selectedPlayer2 = player;
-                            updatePlayerDisplay(playerNum, player);
-                            resultsDiv.classList.add('hidden');
-                            searchInput.readOnly = true;
-                            searchInput.blur();
-                        }
-                    });
-    
-                    if (initialOpen) {
-                        resultsDiv.classList.remove('hidden');
-                        filterAndDisplay();
-                    }
-                }
-                // --- FIN: Buscador para Pantallas 1 y 3 ---
-    
-                function updatePlayerDisplay(playerNum, player) {
-                    const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
-                    const avatar = document.getElementById(`player${playerNum}-avatar`);
-                    const name = document.getElementById(`player${playerNum}-name`);
-                    searchInput.value = player?.name || ''; 
-                    avatar.src = player?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'; 
-                    name.textContent = player?.name || 'Seleccionar Jugador'; 
-                    if (playerNum === 1) { document.getElementById('go-to-screen-3-btn').disabled = !player; } 
-                    else { document.getElementById('go-to-screen-4-btn').disabled = !player; }
-                }
-    
-                const comparatorAppContainer = document.getElementById('comparator-app-container');
-                if (!comparatorAppContainer.dataset.listenerAttached) {
-                    comparatorAppContainer.addEventListener('click', (e) => {
-                        const cardTarget = e.target.closest('.player-card-clickable');
-                        if (cardTarget) {
-                            const playerNum = cardTarget.dataset.playerNum;
-                            if (playerNum) openPlayerChangeModal(parseInt(playerNum));
-                            return;
-                        }
-                        
-                        const buttonTarget = e.target.closest('button');
-                        if (buttonTarget) {
-                            if (buttonTarget.id === 'go-to-screen-3-btn') {
-                                showScreen(3);
-                            } else if (buttonTarget.id === 'go-to-screen-4-btn') {
-                                renderFullComparisonScreen();
-                                showScreen(4);
-                            } else if (buttonTarget.id === 'back-to-screen-1-btn') {
-                                showScreen(1);
-                            } else if (buttonTarget.classList.contains('comparator-reset-btn')) {
-                                resetComparator();
+                            const newPlayer = allPlayersData.find(p => p.id == target.dataset.playerId);
+                            const playerNumToChange = parseInt(contextInput.value);
+
+                            if (playerNumToChange === 1) {
+                                selectedPlayer1 = newPlayer;
+                            } else {
+                                selectedPlayer2 = newPlayer;
                             }
-                        }
-                    });
-                    comparatorAppContainer.dataset.listenerAttached = 'true';
-                }
-    
-                if (!document.body.dataset.comparadorListener) {
-                    document.body.addEventListener('filterChanged', () => {
-                        const screen4 = document.getElementById('comparator-screen-4');
-                        if (screen4 && !screen4.classList.contains('hidden')) {
+
+                            closePlayerChangeModal();
                             renderFullComparisonScreen();
                         }
                     });
-                    document.body.dataset.comparadorListener = 'true';
+                    
+                    document.getElementById('player-change-modal-close').addEventListener('click', closePlayerChangeModal);
+                    
+                    const modalOverlay = document.getElementById('player-change-modal');
+                    modalOverlay.addEventListener('click', (e) => {
+                        if (e.target.id === 'player-change-modal') {
+                            closePlayerChangeModal();
+                        }
+                    });
+                    
+                    searchInput.dataset.listenerAttached = 'true';
                 }
-    
-                resetComparator();
             }
-            
-            // ===== FIN: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
+
+            function setupPlayerSearch(playerNum, initialOpen = false) {
+                const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
+                const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
+                const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
+
+                const filterAndDisplay = () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const otherPlayerId = playerNum === 1 ? selectedPlayer2?.id : selectedPlayer1?.id;
+                    const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId).sort((a, b) => a.name.localeCompare(b.name));
+                    resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
+                };
+
+                clearButton.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    if (playerNum === 1) {
+                        selectedPlayer1 = null;
+                    } else {
+                        selectedPlayer2 = null;
+                    }
+                    updatePlayerDisplay(playerNum, null);
+
+                    if (!resultsDiv.classList.contains('hidden')) {
+                        filterAndDisplay();
+                    } else {
+                        resultsDiv.classList.remove('hidden');
+                        filterAndDisplay();
+                    }
+                });
+
+                searchInput.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    const isDesktop = window.innerWidth >= 768;
+
+                    if (resultsDiv.classList.contains('hidden')) {
+                        resultsDiv.classList.remove('hidden');
+                        filterAndDisplay();
+                        if (isDesktop) {
+                            searchInput.readOnly = false;
+                            searchInput.focus();
+                        }
+                    } else {
+                        searchInput.readOnly = false;
+                        searchInput.focus();
+                    }
+                });
+
+                searchInput.addEventListener('input', () => {
+                    if (!searchInput.readOnly) {
+                        filterAndDisplay();
+                    }
+                });
+
+                searchInput.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        if (!resultsDiv.contains(document.activeElement)) {
+                            resultsDiv.classList.add('hidden');
+                            searchInput.readOnly = true;
+                        }
+                    }, 150);
+                });
+
+                resultsDiv.addEventListener('mousedown', (e) => {
+                    const target = e.target.closest('.option-item');
+                    if (target?.dataset.playerId) {
+                        e.preventDefault();
+                        const player = allPlayersData.find(p => p.id == target.dataset.playerId);
+                        if (playerNum === 1) selectedPlayer1 = player;
+                        else selectedPlayer2 = player;
+                        updatePlayerDisplay(playerNum, player);
+                        resultsDiv.classList.add('hidden');
+                        searchInput.readOnly = true;
+                        searchInput.blur();
+                    }
+                });
+
+                if (initialOpen) {
+                    resultsDiv.classList.remove('hidden');
+                    filterAndDisplay();
+                }
+            }
+
+            function updatePlayerDisplay(playerNum, player) {
+                const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
+                const avatar = document.getElementById(`player${playerNum}-avatar`);
+                const name = document.getElementById(`player${playerNum}-name`);
+                searchInput.value = player?.name || ''; 
+                avatar.src = player?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'; 
+                name.textContent = player?.name || 'Seleccionar Jugador'; 
+                if (playerNum === 1) { document.getElementById('go-to-screen-3-btn').disabled = !player; } 
+                else { document.getElementById('go-to-screen-4-btn').disabled = !player; }
+            }
+
+            const comparatorAppContainer = document.getElementById('comparator-app-container');
+            if (!comparatorAppContainer.dataset.listenerAttached) {
+                comparatorAppContainer.addEventListener('click', (e) => {
+                    const cardTarget = e.target.closest('.player-card-clickable');
+                    if (cardTarget) {
+                        const playerNum = cardTarget.dataset.playerNum;
+                        if (playerNum) openPlayerChangeModal(parseInt(playerNum));
+                        return;
+                    }
+                    
+                    const buttonTarget = e.target.closest('button');
+                    if (buttonTarget) {
+                        if (buttonTarget.id === 'go-to-screen-3-btn') {
+                            showScreen(3);
+                        } else if (buttonTarget.id === 'go-to-screen-4-btn') {
+                            // Guarda los jugadores en la sesión
+                            if (selectedPlayer1 && selectedPlayer2) {
+                                globalFilterState.comparatorP1 = selectedPlayer1.id;
+                                globalFilterState.comparatorP2 = selectedPlayer2.id;
+                                FilterSessionManager.update(globalFilterState);
+                            }
+                            renderFullComparisonScreen();
+                            showScreen(4);
+                        } else if (buttonTarget.id === 'back-to-screen-1-btn') {
+                            showScreen(1);
+                        } else if (buttonTarget.classList.contains('comparator-reset-btn')) {
+                            resetComparator();
+                        }
+                    }
+                });
+                comparatorAppContainer.dataset.listenerAttached = 'true';
+            }
+
+            resetComparator();
+        }
+
+            function renderFullComparisonScreen() {
+                const screen4Container = document.getElementById('comparator-screen-4');
+                if (!selectedPlayer1 || !selectedPlayer2) return;
+                
+                const { players: allIndividualStats } = calculateStatsForPeriod('comparador');
+                const zeroStats = { name: 'N/A', photo_url: '', points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0 };
+                let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, name: selectedPlayer1.name, photo_url: selectedPlayer1.photo_url };
+                let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, name: selectedPlayer2.name, photo_url: selectedPlayer2.photo_url };
     
+                const stickyAvatarsHTML = `
+                    <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                        ${createPlayerCard(player1IndividualStats, 1)}
+                        <div class="vs-separator">VS</div>
+                        ${createPlayerCard(player2IndividualStats, 2)}
+                    </div>`;
+                
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Usamos la nueva función para obtener los filtros y aplicarlos
+                const comparadorFilters = getFiltersForPrefix('comparador');
+                const allFilteredMatches = allMatchesData.filter(match => {
+                    if (!match.result) return false;
+                    const { selectedYears, selectedPeriod } = comparadorFilters;
+                    
+                    const matchYear = parseDate(match.match_date).getFullYear();
+                    const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
+
+                    if (!yearMatch) return false;
+
+                    if (selectedPeriod && selectedPeriod !== 'total') {
+                        const month = parseDate(match.match_date).getMonth();
+                        const period = (month <= 5) ? 'apertura' : 'clausura';
+                        return period === selectedPeriod;
+                    }
+                    return true;
+                });
+                // --- FIN DE LA CORRECCIÓN ---
+        
+                const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
+                const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
+                
+                const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
+                const subHeaderClasses = "text-sm font-bold text-center text-white uppercase tracking-wider p-1.5 md:p-2 rounded-md";
+
+                let scrollableContentHTML = '';
+
+                if (headToHeadStats.pjTotal > 0) {
+                    scrollableContentHTML += `
+                        <div class="space-y-2">
+                            <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Partidos Compartidos</h4>
+                            <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
+                                ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
+                                ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'En Equipo', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
+                                ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'Rivales', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                            </div>
+                        </div>`;
+                }
+                
+                if (teammateStats.pj > 0) {
+                    scrollableContentHTML += `
+                        <div class="space-y-2">
+                            <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Jugando Juntos (${teammateStats.pj} PJ)</h4>
+                            <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
+                                ${unifiedStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' }, true)}
+                                ${unifiedStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
+                                ${unifiedStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                            </div>
+                        </div>`;
+                }
+                
+                if (headToHeadStats.pjEnfrentados > 0) {
+                    const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p1_efectividad };
+                    const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p2_efectividad };
+                    const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'empates', label: 'Empatados'}, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
+                    scrollableContentHTML += `
+                        <div class="space-y-2">
+                            <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Como Rivales (${headToHeadStats.pjEnfrentados} PJ)</h4>
+                            <div class="space-y-4 mt-2 px-1">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
+                        </div>`;
+                }
+            
+                const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
+                scrollableContentHTML += `<div class="space-y-2"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Estadísticas Individuales</h4><div class="space-y-4 mt-2 px-1">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
+    
+                screen4Container.innerHTML = `
+                    <div class="comparator-sticky-header" style="background-color: var(--bg-secondary);">
+                        <div class="comparator-screen-header">
+                            <span>COMPARATIVA</span>
+                            <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="p-4 border-b border-border-color">
+                            ${stickyAvatarsHTML}
+                        </div>
+                    </div>
+                    <div id="full-comparison-display" class="p-2 md:p-4 space-y-6">
+                            ${scrollableContentHTML}
+                    </div>
+                `;
+            }
+
             function createPlayerCard(playerStats, playerNum) {
                 if (!playerStats) return '';
     
@@ -3737,21 +4189,57 @@
     
                 return stats;
             }
+            
+            // ===== FIN: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
+     
+            function calculateTeammateStats(player1Id, player2Id, filteredMatches) {
+                const stats = {
+                    pj: 0,
+                    pg: 0,
+                    pe: 0,
+                    pp: 0
+                };
+    
+                if (!player1Id || !player2Id) return stats;
+    
+                filteredMatches.forEach(match => {
+                    const p1Team = (match.team_white_players || []).includes(player1Id) ? 'claros'
+                                 : (match.team_dark_players || []).includes(player1Id) ? 'oscuros' : null;
+    
+                    const p2Team = (match.team_white_players || []).includes(player2Id) ? 'claros'
+                                 : (match.team_dark_players || []).includes(player2Id) ? 'oscuros' : null;
+    
+                    // Verificamos si jugaron en el mismo equipo y el partido no fue suspendido
+                    if (p1Team && p1Team === p2Team && match.result && match.result !== 'Suspendido') {
+                        stats.pj++;
+                        const result = match.result;
+                        const theirTeam = p1Team === 'claros' ? 'Claros' : 'Oscuros';
+    
+                        if (result === 'Empate') {
+                            stats.pe++;
+                        } else if (result === theirTeam) {
+                            stats.pg++;
+                        } else {
+                            stats.pp++;
+                        }
+                    }
+                });
+    
+                return stats;
+            }
     
             // --- FIN: Funciones del Comparador ---
     
             function adjustFixtureHeights() {
                 const soccerField = document.getElementById('soccer-field-container');
                 const detailsDisplay = document.getElementById('fixture-details-display');
-    
+
                 if (!soccerField || !detailsDisplay) return;
-    
-                // Solo aplicamos la altura fija en vistas de escritorio (horizontales)
-                if (window.innerWidth >= 768) { 
+
+                if (window.innerWidth >= 768) {
                     const fieldHeight = soccerField.offsetHeight;
                     detailsDisplay.style.height = `${fieldHeight}px`;
-                } else { 
-                    // En móvil, reseteamos la altura para que se ajuste al contenido
+                } else {
                     detailsDisplay.style.height = 'auto';
                 }
             }
@@ -3815,11 +4303,11 @@
                 window.addEventListener('resize', () => {
                     clearTimeout(resizeTimer);
                     resizeTimer = setTimeout(() => {
-                        // Solo reajustar si la pestaña de fixture está visible
                         if (document.getElementById('fixture-content')) {
                             adjustFixtureHeights();
+                            adjustTTTablePadding(); // <-- AÑADIR ESTA LÍNEA
                         }
-                    }, 200); // Un pequeño delay para no sobrecargar el navegador
+                    }, 200);
                 });
                 
                 DOMElements.tabButtons.forEach(button => {
