@@ -1513,9 +1513,11 @@
             let allMatchesData = [];
             let lastSelectedFixtureMatchId = null;
             let currentEstadisticasData = []; 
-            let globalFilterState = {}; 
+            let globalFilterState = {};
             let statsChannel = null;
             let heartbeatInterval = null;
+            let selectedPlayer1 = null;
+            let selectedPlayer2 = null;
     
             let estadisticasSortState = { criterion: 'points', order: 'desc' };
     
@@ -1702,6 +1704,22 @@
                 }
             }
             
+            function getFiltersForPrefix(prefix) {
+                const allYearsButton = document.querySelector(`#${prefix}-year-select-dropdown #all-years-button`);
+                let selectedYears = [];
+                if (allYearsButton && allYearsButton.classList.contains('selected')) {
+                    selectedYears = ['all'];
+                } else {
+                    const yearButtons = document.querySelectorAll(`#${prefix}-year-select-dropdown button.selected[data-value]`);
+                    selectedYears = Array.from(yearButtons).map(btn => btn.dataset.value);
+                }
+
+                const periodSelect = document.getElementById(`${prefix}-period-select`);
+                const selectedPeriod = periodSelect ? periodSelect.value : null;
+
+                return { selectedYears, selectedPeriod };
+            }
+
             function calculateStats(filters) {
                 const { selectedYears, selectedPeriod, selectedMonths } = filters;
             
@@ -2186,64 +2204,29 @@
                 
                 if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
                 
-                soccerFieldContainer.innerHTML = `
-                    <div class="goal-area top"></div><div class="goal-area bottom"></div>
-                    <div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
+                // Limpia el contenido previo
+                soccerFieldContainer.innerHTML = `<div class="goal-area top"></div><div class="goal-area bottom"></div><div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
                 
-                const { team_white_players, team_dark_players, result, chamigo_votes } = match;
-
-                // --- INICIO DE LA MODIFICACIÓN: Rellenar tabla de Asistentes TT ---
-
-                // Limpiamos el contenido anterior.
+                // Renderiza la tabla de asistentes al TT
                 ttAttendeesTableBody.innerHTML = '';
-                
                 const getPlayerName = id => (allPlayersData.find(p => p.id === id) || { name: 'ID Desconocido' }).name;
                 const attendees = (Array.isArray(match.tt_attendees) && match.tt_attendees.length > 0)
                     ? match.tt_attendees.map(getPlayerName).sort()
                     : [];
 
-                // 1. Renderizamos los asistentes reales.
-                let ttHtml = attendees.map((playerName, index) => {
-                    const isEven = (index + 1) % 2 === 0;
-                    const rowClass = isEven ? 'bg-even-row' : 'bg-secondary';
-                    const darkRowClass = isEven ? 'dark:bg-bg-even-row' : 'dark:bg-bg-secondary';
-                    // El estilo del padding y texto se hereda del CSS para #tt-attendees-table td
-                    return `<tr><td class="text-center ${rowClass} ${darkRowClass}">${playerName}</td></tr>`;
-                }).join('');
-                ttAttendeesTableBody.innerHTML = ttHtml;
+                if (attendees.length > 0) {
+                    ttAttendeesTableBody.innerHTML = attendees.map((playerName, index) => {
+                        const isEven = (index + 1) % 2 === 0;
+                        const rowClass = isEven ? 'bg-even-row' : 'bg-secondary';
+                        const darkRowClass = isEven ? 'dark:bg-bg-even-row' : 'dark:bg-bg-secondary';
+                        return `<tr><td class="text-center ${rowClass} ${darkRowClass}">${playerName}</td></tr>`;
+                    }).join('');
+                } else {
+                    ttAttendeesTableBody.innerHTML = `<tr><td class="p-4 text-center text-gray-500">No hay asistentes al TT.</td></tr>`;
+                }
 
-                // 2. Usamos requestAnimationFrame para asegurar que el DOM está actualizado
-                //    antes de medir la altura del contenedor.
-                requestAnimationFrame(() => {
-                    const tableContainer = document.querySelector('#fixture-details-display .table-container');
-                    if (!tableContainer) return;
-
-                    // Altura fija de la fila definida en el CSS (#tt-attendees-table td).
-                    const rowHeight = 48; 
-                    const containerHeight = tableContainer.clientHeight;
-                    const maxRows = Math.floor(containerHeight / rowHeight);
-                    const currentRows = attendees.length;
-                    const rowsToAdd = maxRows - currentRows;
-
-                    let emptyRowsHtml = '';
-                    if (rowsToAdd > 0) {
-                        for (let i = 0; i < rowsToAdd; i++) {
-                            const rowIndex = currentRows + i;
-                            const isEven = (rowIndex + 1) % 2 === 0;
-                            const rowClass = isEven ? 'bg-even-row' : 'bg-secondary';
-                            const darkRowClass = isEven ? 'dark:bg-bg-even-row' : 'dark:bg-bg-secondary';
-                            // Añadimos un espacio indivisible para que la celda no colapse.
-                            emptyRowsHtml += `<tr><td class="text-center ${rowClass} ${darkRowClass}">&nbsp;</td></tr>`;
-                        }
-                        ttAttendeesTableBody.insertAdjacentHTML('beforeend', emptyRowsHtml);
-                    }
-
-                    // 3. Manejar el caso en que no hay absolutamente ninguna fila que mostrar.
-                    if (attendees.length === 0 && rowsToAdd <= 0) {
-                        ttAttendeesTableBody.innerHTML = `<tr><td class="p-4 text-center text-gray-500">No hay asistentes al TT.</td></tr>`;
-                    }
-                });
-                // --- FIN DE LA MODIFICACIÓN ---
+                // --- INICIO DEL CÓDIGO RESTAURADO ---
+                const { team_white_players, team_dark_players, result, chamigo_votes } = match;
                 
                 const isHorizontalField = window.innerWidth >= 768;
                 soccerFieldContainer.classList.toggle('horizontal-layout', isHorizontalField);
@@ -2282,14 +2265,13 @@
                     
                     const labelClass = team === 'claros' ? 'claros-label' : 'oscuros-label';
                     
-                    let markerHTML = `
+                    playerWrapper.innerHTML = `
                         <div class="player-marker ${team} relative w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center" data-player-id="${playerId}">
                             <img src="${photoUrl}" alt="Foto de ${player.name}" class="w-full h-full rounded-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
                             ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-2 -right-2 text-lg md:text-3xl" style="text-shadow: 0 0 4px black;"></i>' : ''}
                         </div>
                         <div class="player-name-label ${labelClass}">${player.name}</div>`;
                     
-                    playerWrapper.innerHTML = markerHTML;
                     playerWrapper.querySelector('.player-marker').addEventListener('click', (e) => {
                         e.stopPropagation();
                         showPlayerModal(playerId);
@@ -2307,14 +2289,8 @@
                     trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
                 
                     const trophyPositions = {
-                        horizontal: {
-                            Claros: { top: '92%', left: '95%' },
-                            Oscuros: { top: '92%', left: '5%' }
-                        },
-                        vertical: {
-                            Claros: { top: '95%', left: '93%' },
-                            Oscuros: { top: '5%', left: '93%' }
-                        }
+                        horizontal: { Claros: { top: '92%', left: '95%' }, Oscuros: { top: '92%', left: '5%' } },
+                        vertical: { Claros: { top: '95%', left: '93%' }, Oscuros: { top: '5%', left: '93%' } }
                     };
                     const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical[result];
                 
@@ -2323,20 +2299,17 @@
                         soccerFieldContainer.appendChild(trophyDiv);
                     }
                 }
+                // --- FIN DEL CÓDIGO RESTAURADO ---
                 
                 visualDetailsContainer.classList.remove('hidden');
                 
                 const images = soccerFieldContainer.querySelectorAll('img');
-                const promises = [...images].map(img => {
-                    if (img.complete) return Promise.resolve();
-                    return new Promise(resolve => {
-                        img.onload = img.onerror = resolve;
-                    });
-                });
+                const promises = [...images].map(img => new Promise(resolve => { if(img.complete) resolve(); else { img.onload = img.onerror = resolve; } }));
                 
                 Promise.all(promises).then(() => {
                     requestAnimationFrame(() => {
                         adjustFixtureHeights();
+                        adjustTTTablePadding(); 
                     });
                 });
             }
@@ -2412,6 +2385,37 @@
                 setTimeout(() => {
                     playerModal.overlay.classList.add('hidden');
                 }, 300);
+            }
+
+            function adjustTTTablePadding() {
+                const ttAttendeesTableBody = document.querySelector('#tt-attendees-table-body');
+                const tableContainer = document.querySelector('#fixture-details-display .table-container');
+
+                if (!ttAttendeesTableBody || !tableContainer) return;
+
+                // Primero, eliminamos las filas vacías anteriores para evitar duplicados
+                ttAttendeesTableBody.querySelectorAll('.empty-row').forEach(row => row.remove());
+
+                const rowHeight = 48; // Altura de la fila definida en el CSS
+                const containerHeight = tableContainer.clientHeight;
+                const maxRows = Math.floor(containerHeight / rowHeight);
+                
+                // Contamos solo las filas con asistentes reales
+                const currentRealRows = ttAttendeesTableBody.querySelectorAll('tr:not(.empty-row)').length;
+
+                if (currentRealRows > 0 && currentRealRows < maxRows) {
+                    const rowsToAdd = maxRows - currentRealRows;
+                    let emptyRowsHtml = '';
+                    for (let i = 0; i < rowsToAdd; i++) {
+                        const rowIndex = currentRealRows + i;
+                        const isEven = (rowIndex + 1) % 2 === 0;
+                        const rowClass = isEven ? 'bg-even-row' : 'bg-secondary';
+                        const darkRowClass = isEven ? 'dark:bg-bg-even-row' : 'dark:bg-bg-secondary';
+                        // Añadimos una clase para identificarlas y poder borrarlas fácilmente
+                        emptyRowsHtml += `<tr class="empty-row"><td class="text-center ${rowClass} ${darkRowClass}">&nbsp;</td></tr>`;
+                    }
+                    ttAttendeesTableBody.insertAdjacentHTML('beforeend', emptyRowsHtml);
+                }
             }
     
             // INICIO: Funciones para el nuevo modal simple
@@ -2697,13 +2701,13 @@
                             </div>
                         </div>` : `
                         <div id="${prefix}-period-select-container" class="custom-select-container">
-                            <input type="hidden" id="${prefix}-period-select" value="apertura">
+                            <input type="hidden" id="${prefix}-period-select" value="total">
                             <button id="${prefix}-period-select-button" class="custom-select-button">
-                                <span class="truncate">Apertura</span>
+                                <span class="truncate">Seleccionar Torneo</span>
                                 <i class="fas fa-chevron-down transition-transform"></i>
                             </button>
-                            <div id="prefix-period-select-dropdown" class="custom-select-options hidden">
-                                <div class="option-item selected" data-value="apertura">Apertura</div>
+                            <div id="${prefix}-period-select-dropdown" class="custom-select-options hidden">
+                                <div class="option-item" data-value="apertura">Apertura</div>
                                 <div class="option-item" data-value="clausura">Clausura</div>
                                 <div class="option-item" data-value="total">Totales</div>
                             </div>
@@ -2787,24 +2791,22 @@
                         // ESTRUCTURA FINAL PARA EL COMPARADOR POR PASOS
                         baseHtml = `
                             <div id="comparador-content" class="main-content-container space-y-4">
-                                <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch">
+                                <div id="comparador-filters-container" class="grid grid-cols-2 md:grid-cols-5 gap-4 items-stretch hidden">
                                     <div class="col-span-1 md:col-span-2 md:order-1">
                                         <div class="custom-select-container">
                                             <button id="comparador-year-select-button" class="custom-select-button">
-                                                <span class="truncate">Seleccionar Años</span>
-                                                <i class="fas fa-chevron-down transition-transform"></i>
+                                                <span class="truncate">Seleccionar Años</span><i class="fas fa-chevron-down transition-transform"></i>
                                             </button>
-                                            <div id="comparador-year-select-dropdown" class="custom-select-options multi-year-select-dropdown hidden max-h-60 overflow-y-auto"></div>
+                                            <div id="comparador-year-select-dropdown" class="custom-select-options hidden year-selector-grid"></div>
                                         </div>
                                     </div>
                                     <div class="col-span-1 md:col-span-2 md:order-3">
                                         <div id="comparador-period-select-container" class="custom-select-container">
                                             <input type="hidden" id="comparador-period-select" value="apertura">
                                             <button id="comparador-period-select-button" class="custom-select-button">
-                                                <span class="truncate">Apertura</span>
-                                                <i class="fas fa-chevron-down transition-transform"></i>
+                                                <span class="truncate">Apertura</span><i class="fas fa-chevron-down transition-transform"></i>
                                             </button>
-                                            <div id="comparador-period-select-dropdown" class="custom-select-options hidden">
+                                            <div class="custom-select-options hidden">
                                                 <div class="option-item selected" data-value="apertura">Apertura</div>
                                                 <div class="option-item" data-value="clausura">Clausura</div>
                                                 <div class="option-item" data-value="total">Totales</div>
@@ -2812,27 +2814,14 @@
                                         </div>
                                     </div>
                                     <div class="col-span-2 md:col-span-1 md:order-2 md:self-stretch">
-                                    <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
+                                        <button id="comparador-hoy-button" class="button-primary w-full h-full py-2 rounded-md shadow-sm">Ver Torneo Actual</button>
                                     </div>
                                 </div>
-                                
-                                <hr class="border-border-color"/>
-
-                                <div id="comparator-app-container" class="relative mt-6 min-h-[450px]">
-                                    
-                                    <div id="comparator-screen-1" class="comparator-screen-wrapper">
-                                        </div>
-
-                                    <div id="comparator-screen-3" class="comparator-screen-wrapper hidden">
-                                        <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                                        <div id="screen-3-content">
-                                            </div>
-                                    </div>
-
-                                    <div id="comparator-screen-4" class="comparator-screen-wrapper hidden">
-                                        <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                                        <div id="full-comparison-display" class="space-y-6"></div>
-                                    </div>
+                                <hr class="border-border-color hidden"/>
+                                <div id="comparator-app-container" class="relative mt-2 min-h-[450px]">
+                                    <div id="comparator-screen-1" class="comparator-screen-wrapper"></div>
+                                    <div id="comparator-screen-3" class="comparator-screen-wrapper hidden"></div>
+                                    <div id="comparator-screen-4" class="comparator-screen-wrapper hidden"></div>
                                 </div>
                             </div>
                         `;
@@ -2925,16 +2914,25 @@
                 dropdown.innerHTML = gridHTML;
 
                 const savedYears = globalFilterState.years || [];
-                if (savedYears.length > 0 && !savedYears.includes('all')) {
-                    dropdown.querySelectorAll('button[data-value]').forEach(btn => {
-                        if (savedYears.includes(btn.dataset.value)) btn.classList.add('selected');
+                // Primero, deseleccionamos todo para empezar de cero
+                dropdown.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+
+                if (savedYears.includes('all')) {
+                    dropdown.querySelectorAll('button').forEach(btn => {
+                        if (btn.id !== 'reset-years-button') btn.classList.add('selected');
                     });
-                    if (!dropdown.querySelector('button[data-value].selected')) {
-                         document.getElementById('all-years-button').classList.add('selected');
+                } else if (savedYears.length > 0) {
+                    savedYears.forEach(year => {
+                        const btn = dropdown.querySelector(`button[data-value="${year}"]`);
+                        if (btn) btn.classList.add('selected');
+                    });
+                    const allYearButtons = dropdown.querySelectorAll('button[data-value]');
+                    if ([...allYearButtons].every(btn => btn.classList.contains('selected'))) {
+                        dropdown.querySelector('#all-years-button').classList.add('selected');
                     }
                 } else {
                     const currentYearButton = dropdown.querySelector(`button[data-value="${new Date().getFullYear()}"]`);
-                    if(currentYearButton) currentYearButton.classList.add('selected');
+                    if (currentYearButton) currentYearButton.classList.add('selected');
                     else document.getElementById('all-years-button').classList.add('selected');
                 }
                 updateMultiYearButtonTextFromGrid(prefix);
@@ -3129,8 +3127,8 @@
                 }
 
                 FilterSessionManager.update(globalFilterState);
-                document.body.dispatchEvent(new CustomEvent('filterChanged'));
 
+                // Eliminamos el dispatchEvent y manejamos el comparador directamente
                 const renderFn = renderFunctions[prefix + '-content'];
                 if (renderFn) {
                     if (prefix === 'estadisticas') {
@@ -3139,9 +3137,12 @@
                     } else if (prefix === 'fixture') {
                         renderFixture(true);
                     } else if (prefix === 'comparador') {
-                        // El renderizado se maneja internamente
-                    }
-                    else {
+                        // Ahora llamamos a la función de renderizado directamente
+                        const screen4 = document.getElementById('comparator-screen-4');
+                        if (screen4 && !screen4.classList.contains('hidden')) {
+                            renderFullComparisonScreen();
+                        }
+                    } else {
                         renderFn();
                     }
                 }
@@ -3156,6 +3157,21 @@
 
                 const periodContainer = document.getElementById(`${prefix}-period-select-container`);
                 if (periodContainer) {
+                    if (globalFilterState.period) {
+                        const valueInput = periodContainer.querySelector('input[type=hidden]');
+                        const buttonSpan = periodContainer.querySelector('button span');
+                        const dropdown = periodContainer.querySelector('.custom-select-options');
+                        const savedPeriod = globalFilterState.period;
+
+                        valueInput.value = savedPeriod;
+                        dropdown.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                        const selectedOption = dropdown.querySelector(`.option-item[data-value="${savedPeriod}"]`);
+                        
+                        if (selectedOption) {
+                            buttonSpan.textContent = selectedOption.textContent;
+                            selectedOption.classList.add('selected');
+                        }
+                    }
                     const button = periodContainer.querySelector('button');
                     if (button && !button.dataset.listenerAttached) {
                         const dropdown = periodContainer.querySelector('.custom-select-options');
@@ -3190,23 +3206,25 @@
                 if (hoyButton && !hoyButton.dataset.listenerAttached) {
                     hoyButton.addEventListener('click', () => {
                         const isMonthFilter = prefix === 'fixture';
-                        
-                        // --- INICIO DE LA SECUENCIA CORRECTA ---
-                        // 1. Establece la apariencia de los filtros en la fecha de hoy.
                         setTodayFilters(prefix, isMonthFilter);
-                        
-                        // 2. Guarda el estado de los filtros y actualiza los datos.
                         handleFilterChange();
-                        
-                        // 3. AHORA, con el estado ya guardado, reconstruye la grilla de meses
-                        // para que los meses habilitados/deshabilitados se muestren correctamente.
                         if (isMonthFilter) {
                             populateMultiMonthSelect(prefix, handleFilterChange);
                         }
-                        // --- FIN DE LA SECUENCIA CORRECTA ---
                     });
                     hoyButton.dataset.listenerAttached = 'true';
                 }
+
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Se restaura la lógica que establece los filtros por defecto al cargar una pestaña sin sesión guardada.
+                const isMonthFilter = prefix === 'fixture';
+                const hasSavedState = globalFilterState.years && globalFilterState.years.length > 0;
+
+                if (!hasSavedState) {
+                    setTodayFilters(prefix, isMonthFilter);
+                    handleFilterChange();
+                }
+                // --- FIN DE LA CORRECCIÓN ---
 
                 if (tabId === 'estadisticas-content') {
                     const table = document.getElementById('estadisticas-table');
@@ -3507,373 +3525,213 @@
             // ===== INICIO: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
     
             function renderComparador() {
-                // Estado local para el wizard del comparador
-                let selectedPlayer1 = null;
-                let selectedPlayer2 = null;
-                const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
-    
-                // --- INYECCIÓN DE ESTILOS (Solo se ejecuta una vez) ---
-                (function injectComparatorStyles() {
-                    const styleId = 'comparator-dynamic-styles';
-                    if (document.getElementById(styleId)) return;
-                    const style = document.createElement('style');
-                    style.id = styleId;
-                    style.innerHTML = `
-                        .bg-success-color { background-color: var(--success-color); }
-                        .bg-danger-color { background-color: var(--danger-color); }
-                        #full-comparison-content { overflow-y: auto; flex-grow: 1; }
-                        .comparator-screen-wrapper { border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 0; width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
-                        #comparator-screen-4 { max-width: 100%; }
-                        .comparator-screen-header { background-color: var(--warning-color); color: var(--button-text-color); padding: 0.75rem; font-weight: 700; text-align: center; text-transform: uppercase; font-size: 1rem; letter-spacing: 0.05em; position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-                        html.dark .comparator-screen-header { background-color: #d97706; }
-                        .comparator-screen-header .modal-close-button { position: absolute; top: 50%; right: 0.75rem; transform: translateY(-50%); background-color: var(--danger-color); border: 1px solid transparent; color: white; }
-                        @media (min-width: 768px) { .comparator-screen-header .modal-close-button { background-color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); } .comparator-screen-header .modal-close-button:hover { background-color: var(--danger-color); transform: translateY(-50%) scale(1.1) rotate(90deg); border-color: transparent; } }
-                        .comparator-search-input { padding-right: 2.5rem !important; }
-                        html.dark .comparator-search-input { background-color: #374151 !important; color: var(--text-primary) !important; border-color: #4b5563 !important; -webkit-box-shadow: 0 0 0 30px #374151 inset !important; -webkit-text-fill-color: var(--text-primary) !important; }
-                        html.dark .comparator-search-input::placeholder { color: var(--text-muted); }
-                        .comparator-results-dropdown .option-item:nth-child(even) { background-color: var(--bg-even-row); }
-                        .comparator-results-dropdown .option-item:hover { background-color: #eef2ff; }
-                        html.dark .comparator-results-dropdown .option-item:nth-child(even) { background-color: #111827; }
-                        html.dark .comparator-results-dropdown .option-item:hover { background-color: var(--sidebar-hover-bg); }
-                    `;
-                    document.head.appendChild(style);
-                })();
-    
-                // --- FUNCIONES AUXILIARES Y DE RENDERIZADO ---
-                function showScreen(screenNum) {
-                    if (screenNum === 3) {
-                        renderScreen3();
+            // 1. Revisa si hay una comparación guardada en la sesión
+            if (globalFilterState.comparatorP1 && globalFilterState.comparatorP2) {
+                const p1 = allPlayersData.find(p => p.id === globalFilterState.comparatorP1);
+                const p2 = allPlayersData.find(p => p.id === globalFilterState.comparatorP2);
+
+                // 2. Si ambos jugadores todavía existen, reconstruye la pantalla 4
+                if (p1 && p2) {
+                    selectedPlayer1 = p1;
+                    selectedPlayer2 = p2;
+                    renderFullComparisonScreen(); // Renderiza el contenido
+                    showScreen(4);              // Muestra la pantalla de comparación
+                    return; // Detiene la ejecución para no mostrar la pantalla de selección inicial
+                }
+            }
+
+            // El resto de la función original sigue aquí...
+            const zeroStats = { points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0, id: null };
+
+            // --- INYECCIÓN DE ESTILOS (Solo se ejecuta una vez) ---
+            (function injectComparatorStyles() {
+                const styleId = 'comparator-dynamic-styles';
+                if (document.getElementById(styleId)) return;
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.innerHTML = `
+                    .bg-success-color { background-color: var(--success-color); }
+                    .bg-danger-color { background-color: var(--danger-color); }
+                    #full-comparison-content { overflow-y: auto; flex-grow: 1; }
+                    .comparator-screen-wrapper { border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 0; width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
+                    #comparator-screen-4 { max-width: 100%; }
+                    .comparator-screen-header { background-color: var(--warning-color); color: var(--button-text-color); padding: 0.75rem; font-weight: 700; text-align: center; text-transform: uppercase; font-size: 1rem; letter-spacing: 0.05em; position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                    html.dark .comparator-screen-header { background-color: #d97706; }
+                    .comparator-screen-header .modal-close-button { position: absolute; top: 50%; right: 0.75rem; transform: translateY(-50%); background-color: var(--danger-color); border: 1px solid transparent; color: white; }
+                    @media (min-width: 768px) { .comparator-screen-header .modal-close-button { background-color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); } .comparator-screen-header .modal-close-button:hover { background-color: var(--danger-color); transform: translateY(-50%) scale(1.1) rotate(90deg); border-color: transparent; } }
+                    .comparator-search-input { padding-right: 2.5rem !important; }
+                    html.dark .comparator-search-input { background-color: #374151 !important; color: var(--text-primary) !important; border-color: #4b5563 !important; -webkit-box-shadow: 0 0 0 30px #374151 inset !important; -webkit-text-fill-color: var(--text-primary) !important; }
+                    html.dark .comparator-search-input::placeholder { color: var(--text-muted); }
+                    .comparator-results-dropdown .option-item:nth-child(even) { background-color: var(--bg-even-row); }
+                    .comparator-results-dropdown .option-item:hover { background-color: #eef2ff; }
+                    html.dark .comparator-results-dropdown .option-item:nth-child(even) { background-color: #111827; }
+                    html.dark .comparator-results-dropdown .option-item:hover { background-color: var(--sidebar-hover-bg); }
+                `;
+                document.head.appendChild(style);
+            })();
+
+            // --- FUNCIONES AUXILIARES Y DE RENDERIZADO ---
+            function showScreen(screenNum) {
+                const filtersContainer = document.getElementById('comparador-filters-container');
+                const hrSeparator = filtersContainer ? filtersContainer.nextElementSibling : null;
+
+                if (filtersContainer && hrSeparator) {
+                    if (screenNum === 4) {
+                        filtersContainer.classList.remove('hidden');
+                        hrSeparator.classList.remove('hidden');
+                    } else {
+                        filtersContainer.classList.add('hidden');
+                        hrSeparator.classList.add('hidden');
                     }
-                    for (let i = 1; i <= 4; i++) {
-                        const screen = document.getElementById(`comparator-screen-${i}`);
-                        if(screen) screen.classList.add('hidden');
-                    }
-                    const targetScreen = document.getElementById(`comparator-screen-${screenNum}`);
-                    if(targetScreen) targetScreen.classList.remove('hidden');
                 }
-    
-                function resetComparator() {
-                    selectedPlayer1 = null;
-                    selectedPlayer2 = null;
-                    renderScreen1();
-                    showScreen(1);
+
+                if (screenNum === 3) {
+                    renderScreen3();
                 }
-                
-                function createPlayerSelectorCard(playerNum, playerData = null) {
-                    const photoUrl = playerData?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';
-                    const playerName = playerData?.name || 'Seleccionar Jugador';
-                    return `
-                        <div class="p-4 space-y-4 text-center">
-                            <div class="relative">
-                                <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
-                                <button id="comparador-clear-player${playerNum}-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted comparator-clear-btn" data-player-num="${playerNum}">
-                                    <i class="fas fa-times-circle"></i>
-                                </button>
-                                <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
-                            </div>
-                            <div class="mt-4">
-                                <img src="${photoUrl}" alt="Avatar del jugador" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-border-color shadow-lg" id="player${playerNum}-avatar" onerror="this.onerror=null;this.src='https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';">
-                                <h3 class="text-2xl font-bold mt-3" id="player${playerNum}-name">${playerName}</h3>
-                            </div>
+                for (let i = 1; i <= 4; i++) {
+                    const screen = document.getElementById(`comparator-screen-${i}`);
+                    if(screen) screen.classList.add('hidden');
+                }
+                const targetScreen = document.getElementById(`comparator-screen-${screenNum}`);
+                if(targetScreen) targetScreen.classList.remove('hidden');
+            }
+
+            function resetComparator() {
+                selectedPlayer1 = null;
+                selectedPlayer2 = null;
+
+                // Limpia los jugadores de la sesión
+                if (globalFilterState.comparatorP1 || globalFilterState.comparatorP2) {
+                    globalFilterState.comparatorP1 = null;
+                    globalFilterState.comparatorP2 = null;
+                    FilterSessionManager.update(globalFilterState);
+                }
+
+                renderScreen1();
+                showScreen(1);
+            }
+            
+            function createPlayerSelectorCard(playerNum, playerData = null) {
+                const photoUrl = playerData?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';
+                const playerName = playerData?.name || 'Seleccionar Jugador';
+                return `
+                    <div class="p-4 space-y-4 text-center">
+                        <div class="relative">
+                            <input type="text" id="comparador-player${playerNum}-search" placeholder="Buscar Jugador..." class="w-full p-2 shadow-sm comparator-search-input" autocomplete="off" readonly>
+                            <button id="comparador-clear-player${playerNum}-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted comparator-clear-btn" data-player-num="${playerNum}">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                            <div id="comparador-player${playerNum}-results" class="comparator-results-dropdown custom-select-options absolute z-20 w-full rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
                         </div>
-                    `;
-                }
-                
-                function renderScreen1() {
-                    const screen1Container = document.getElementById('comparator-screen-1');
-                    screen1Container.innerHTML = `
-                        <div class="comparator-screen-header">
-                            <span>SELECCIONAR JUGADOR</span>
+                        <div class="mt-4">
+                            <img src="${photoUrl}" alt="Avatar del jugador" class="w-36 h-36 rounded-full object-cover mx-auto border-4 border-border-color shadow-lg" id="player${playerNum}-avatar" onerror="this.onerror=null;this.src='https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png';">
+                            <h3 class="text-2xl font-bold mt-3" id="player${playerNum}-name">${playerName}</h3>
                         </div>
-                        ${createPlayerSelectorCard(1, selectedPlayer1)}
-                        <div class="p-4 pt-0 space-y-3">
-                            <button id="go-to-screen-3-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                                Agregar otro jugador
+                    </div>
+                `;
+            }
+            
+            function renderScreen1() {
+                const screen1Container = document.getElementById('comparator-screen-1');
+                screen1Container.innerHTML = `
+                    <div class="comparator-screen-header">
+                        <span>SELECCIONAR JUGADOR</span>
+                    </div>
+                    ${createPlayerSelectorCard(1, selectedPlayer1)}
+                    <div class="p-4 pt-0 space-y-3">
+                        <button id="go-to-screen-3-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                            Agregar otro jugador
+                        </button>
+                    </div>
+                `;
+                setupPlayerSearch(1);
+            }
+                            
+            function renderScreen3() {
+                const screen3Container = document.getElementById('comparator-screen-3');
+                screen3Container.innerHTML = `
+                    <div class="comparator-screen-header">
+                        <span>SELECCIONAR JUGADOR</span>
+                        <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="screen-3-content">
+                        ${createPlayerSelectorCard(2, selectedPlayer2)}
+                        <div class="p-4 pt-0 grid grid-cols-2 gap-3">
+                            <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700">
+                                VOLVER
+                            </button>
+                            <button id="go-to-screen-4-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                                COMPARAR
                             </button>
                         </div>
-                    `;
-                    setupPlayerSearch(1);
-                }
-                                
-                function renderScreen3() {
-                    const screen3Container = document.getElementById('comparator-screen-3');
-                    screen3Container.innerHTML = `
-                        <div class="comparator-screen-header">
-                            <span>SELECCIONAR JUGADOR</span>
-                            <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                        </div>
-                        <div id="screen-3-content">
-                            ${createPlayerSelectorCard(2, selectedPlayer2)}
-                            <div class="p-4 pt-0 grid grid-cols-2 gap-3">
-                                <button id="back-to-screen-1-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700">
-                                    VOLVER
-                                </button>
-                                <button id="go-to-screen-4-btn" class="w-full py-3 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                                    COMPARAR
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    setupPlayerSearch(2, true); 
-                    updatePlayerDisplay(2, selectedPlayer2);
-                }
-    
-                function renderFullComparisonScreen() {
-                    const screen4Container = document.getElementById('comparator-screen-4');
-                    if (!selectedPlayer1 || !selectedPlayer2) return;
-                    
-                    const comparadorYearCheckboxes = document.querySelectorAll(`#comparador-year-select-dropdown input[type="checkbox"]:checked`);
-                    let selectedYears = Array.from(comparadorYearCheckboxes).map(cb => cb.value);
-                    if (selectedYears.includes('all')) selectedYears = ['all'];
-                    const selectedPeriod = document.getElementById(`comparador-period-select`)?.value;
-        
-                    const { players: allIndividualStats } = calculateStats({ selectedYears, selectedPeriod });
-                    let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, id: selectedPlayer1.id };
-                    let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, id: selectedPlayer2.id };
-        
-                    const stickyAvatarsHTML = `
-                        <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                            ${createPlayerCard(selectedPlayer1, 1)}
-                            <div class="vs-separator">VS</div>
-                            ${createPlayerCard(selectedPlayer2, 2)}
-                        </div>`;
-        
-                    const allFilteredMatches = allMatchesData.filter(match => {
-                        if (!match.result) return false;
-                        const matchYear = parseDate(match.match_date).getFullYear();
-                        const matchPeriod = parseDate(match.match_date).getMonth() <= 5 ? 'apertura' : 'clausura';
-                        const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
-                        const periodMatch = selectedPeriod === 'total' || selectedPeriod === matchPeriod;
-                        return yearMatch && periodMatch;
-                    });
-            
-                    const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
-                    const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
-                    
-                    const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
-                    const subHeaderClasses = "text-sm font-bold text-center text-white uppercase tracking-wider p-1.5 md:p-2 rounded-md";
+                    </div>
+                `;
+                setupPlayerSearch(2, true); 
+                updatePlayerDisplay(2, selectedPlayer2);
+            }
 
-                    let scrollableContentHTML = '';
-
-                    if (headToHeadStats.pjTotal > 0) {
-                        scrollableContentHTML += `
-                            <div class="space-y-2 p-2">
-                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">PARTIDOS COMPARTIDOS</h4>
-                                <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
-                                    ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
-                                    ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'EN EQUIPO', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
-                                    ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'RIVALES', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
-                                </div>
-                            </div>`;
-                    }
-                    
-                    if (teammateStats.pj > 0) {
-                        scrollableContentHTML += `
-                            <div class="space-y-2 p-2 mt-2">
-                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">EN EQUIPO (${teammateStats.pj} PJ)</h4>
-                                <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
-                                    ${unifiedStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' }, true)}
-                                    ${unifiedStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
-                                    ${unifiedStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
-                                </div>
-                            </div>`;
-                    }
-                    
-                    if (headToHeadStats.pjEnfrentados > 0) {
-                        const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p1_efectividad };
-                        const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p2_efectividad };
-                        const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'empates', label: 'Empatados'}, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
-                        scrollableContentHTML += `
-                            <div class="space-y-2 p-2 mt-2">
-                                <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Como Rivales (${headToHeadStats.pjEnfrentados} PJ)</h4>
-                                <div class="space-y-4 mt-2 px-2">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
-                            </div>`;
-                    }
+            function openPlayerChangeModal(playerNum) {
+                const modal = document.getElementById('player-change-modal');
+                const modalContent = document.getElementById('player-change-modal-content');
+                const avatar = document.getElementById('player-change-avatar');
+                const contextInput = document.getElementById('player-change-context');
+                const searchInput = document.getElementById('player-change-search-input');
                 
-                    const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
-                    scrollableContentHTML += `<div class="space-y-2 p-2 mt-2"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Individuales</h4><div class="space-y-4 mt-2 px-2">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
-        
-                    screen4Container.innerHTML = `
-                        <div class="comparator-sticky-header" style="background-color: var(--bg-secondary);">
-                            <div class="comparator-screen-header">
-                                <span>COMPARATIVA</span>
-                                <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
-                            </div>
-                            <div class="p-4 border-b border-border-color">
-                                ${stickyAvatarsHTML}
-                            </div>
-                        </div>
-                        
-                        <div id="full-comparison-display" class="p-4 space-y-6">
-                             ${scrollableContentHTML}
-                        </div>
-                    `;
-                }
-    
-                // --- INICIO: Funciones del Modal de Cambio de Jugador (PANTALLA 4) ---
-                function openPlayerChangeModal(playerNum) {
-                    const modal = document.getElementById('player-change-modal');
-                    const modalContent = document.getElementById('player-change-modal-content');
-                    const avatar = document.getElementById('player-change-avatar');
-                    const contextInput = document.getElementById('player-change-context');
-                    const searchInput = document.getElementById('player-change-search-input');
+                const currentPlayer = (playerNum === 1) ? selectedPlayer1 : selectedPlayer2;
+                
+                if (!currentPlayer) return;
+
+                avatar.src = currentPlayer.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
+                avatar.onerror = () => { avatar.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
+                contextInput.value = playerNum;
+                searchInput.value = ''; 
+                document.getElementById('player-change-results-dropdown').innerHTML = '';
+
+                modal.classList.remove('hidden');
+                document.body.classList.add('modal-open');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    modalContent.classList.remove('scale-95');
+                }, 10);
+
+                setupPlayerChangeSearch();
+            }
+
+            function closePlayerChangeModal() {
+                const modal = document.getElementById('player-change-modal');
+                const modalContent = document.getElementById('player-change-modal-content');
+
+                modal.classList.add('opacity-0');
+                modalContent.classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    document.body.classList.remove('modal-open');
+                }, 300);
+            }
+
+            function setupPlayerChangeSearch() {
+                const searchInput = document.getElementById('player-change-search-input');
+                const resultsDiv = document.getElementById('player-change-results-dropdown');
+                const clearButton = document.getElementById('player-change-clear-search');
+                const contextInput = document.getElementById('player-change-context');
+
+                const filterAndDisplay = () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const playerNumToChange = contextInput.value;
+                    const otherPlayerId = (playerNumToChange == 1) ? selectedPlayer2?.id : selectedPlayer1?.id;
                     
-                    const currentPlayer = (playerNum === 1) ? selectedPlayer1 : selectedPlayer2;
-                    
-                    if (!currentPlayer) return;
-
-                    avatar.src = currentPlayer.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
-                    avatar.onerror = () => { avatar.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
-                    contextInput.value = playerNum;
-                    searchInput.value = ''; 
-                    document.getElementById('player-change-results-dropdown').innerHTML = '';
-
-                    modal.classList.remove('hidden');
-                    document.body.classList.add('modal-open');
-                    setTimeout(() => {
-                        modal.classList.remove('opacity-0');
-                        modalContent.classList.remove('scale-95');
-                    }, 10);
-
-                    setupPlayerChangeSearch();
-                }
-
-                function closePlayerChangeModal() {
-                    const modal = document.getElementById('player-change-modal');
-                    const modalContent = document.getElementById('player-change-modal-content');
-
-                    modal.classList.add('opacity-0');
-                    modalContent.classList.add('scale-95');
-                    setTimeout(() => {
-                        modal.classList.add('hidden');
-                        document.body.classList.remove('modal-open');
-                    }, 300);
-                }
-
-                function setupPlayerChangeSearch() {
-                    const searchInput = document.getElementById('player-change-search-input');
-                    const resultsDiv = document.getElementById('player-change-results-dropdown');
-                    const clearButton = document.getElementById('player-change-clear-search');
-                    const contextInput = document.getElementById('player-change-context');
-
-                    const filterAndDisplay = () => {
-                        const searchTerm = searchInput.value.toLowerCase();
-                        const playerNumToChange = contextInput.value;
-                        const otherPlayerId = (playerNumToChange == 1) ? selectedPlayer2?.id : selectedPlayer1?.id;
+                    const filtered = allPlayersData
+                        .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId)
+                        .sort((a, b) => a.name.localeCompare(b.name));
                         
-                        const filtered = allPlayersData
-                            .filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId)
-                            .sort((a, b) => a.name.localeCompare(b.name));
-                            
-                        resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
-                    };
+                    resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
+                };
 
-                    if (!searchInput.dataset.listenerAttached) {
-                        searchInput.addEventListener('mousedown', (e) => {
-                            e.preventDefault();
-                            const isDesktop = window.innerWidth >= 768;
-
-                            if (resultsDiv.classList.contains('hidden')) {
-                                resultsDiv.classList.remove('hidden');
-                                filterAndDisplay();
-                                if (isDesktop) {
-                                    searchInput.readOnly = false;
-                                    searchInput.focus();
-                                }
-                            } else {
-                                searchInput.readOnly = false;
-                                searchInput.focus();
-                            }
-                        });
-
-                        searchInput.addEventListener('input', filterAndDisplay);
-
-                        searchInput.addEventListener('blur', () => {
-                            setTimeout(() => {
-                                if (!resultsDiv.contains(document.activeElement)) {
-                                    resultsDiv.classList.add('hidden');
-                                    searchInput.readOnly = true;
-                                }
-                            }, 200);
-                        });
-
-                        clearButton.addEventListener('mousedown', (e) => {
-                            e.preventDefault(); // Esto evita que cambie el estado del teclado
-                            searchInput.value = ''; // Limpia el texto del buscador
-                            
-                            // Aquí está la magia: nos aseguramos de que la lista sea visible y se actualice
-                            resultsDiv.classList.remove('hidden'); 
-                            filterAndDisplay(); 
-                            
-                            searchInput.focus(); // Mantenemos el cursor en el buscador para seguir escribiendo
-                        });
-
-                        resultsDiv.addEventListener('mousedown', (e) => {
-                            const target = e.target.closest('.option-item');
-                            if (target?.dataset.playerId) {
-                                e.preventDefault();
-                                const newPlayer = allPlayersData.find(p => p.id == target.dataset.playerId);
-                                const playerNumToChange = parseInt(contextInput.value);
-
-                                if (playerNumToChange === 1) {
-                                    selectedPlayer1 = newPlayer;
-                                } else {
-                                    selectedPlayer2 = newPlayer;
-                                }
-
-                                closePlayerChangeModal();
-                                renderFullComparisonScreen();
-                            }
-                        });
-                        
-                        document.getElementById('player-change-modal-close').addEventListener('click', closePlayerChangeModal);
-                        
-                        const modalOverlay = document.getElementById('player-change-modal');
-                        modalOverlay.addEventListener('click', (e) => {
-                            if (e.target.id === 'player-change-modal') {
-                                closePlayerChangeModal();
-                            }
-                        });
-                        
-                        searchInput.dataset.listenerAttached = 'true';
-                    }
-                }
-                // --- FIN: Funciones del Modal de Cambio de Jugador (PANTALLA 4) ---
-
-                // --- INICIO: Buscador para Pantallas 1 y 3 ---
-                function setupPlayerSearch(playerNum, initialOpen = false) {
-                    const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
-                    const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
-                    const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
-    
-                    const filterAndDisplay = () => {
-                        const searchTerm = searchInput.value.toLowerCase();
-                        const otherPlayerId = playerNum === 1 ? selectedPlayer2?.id : selectedPlayer1?.id;
-                        const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId).sort((a, b) => a.name.localeCompare(b.name));
-                        resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
-                    };
-    
-                    clearButton.addEventListener('mousedown', (e) => {
-                        e.preventDefault();
-                        if (playerNum === 1) {
-                            selectedPlayer1 = null;
-                        } else {
-                            selectedPlayer2 = null;
-                        }
-                        updatePlayerDisplay(playerNum, null);
-    
-                        if (!resultsDiv.classList.contains('hidden')) {
-                            filterAndDisplay();
-                        } else {
-                            resultsDiv.classList.remove('hidden');
-                            filterAndDisplay();
-                        }
-                    });
-    
+                if (!searchInput.dataset.listenerAttached) {
                     searchInput.addEventListener('mousedown', (e) => {
                         e.preventDefault();
                         const isDesktop = window.innerWidth >= 768;
-    
+
                         if (resultsDiv.classList.contains('hidden')) {
                             resultsDiv.classList.remove('hidden');
                             filterAndDisplay();
@@ -3886,96 +3744,284 @@
                             searchInput.focus();
                         }
                     });
-    
-                    searchInput.addEventListener('input', () => {
-                        if (!searchInput.readOnly) {
-                            filterAndDisplay();
-                        }
-                    });
-    
+
+                    searchInput.addEventListener('input', filterAndDisplay);
+
                     searchInput.addEventListener('blur', () => {
                         setTimeout(() => {
                             if (!resultsDiv.contains(document.activeElement)) {
                                 resultsDiv.classList.add('hidden');
                                 searchInput.readOnly = true;
                             }
-                        }, 150);
+                        }, 200);
                     });
-    
+
+                    clearButton.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        searchInput.value = '';
+                        resultsDiv.classList.remove('hidden'); 
+                        filterAndDisplay(); 
+                        searchInput.focus();
+                    });
+
                     resultsDiv.addEventListener('mousedown', (e) => {
                         const target = e.target.closest('.option-item');
                         if (target?.dataset.playerId) {
                             e.preventDefault();
-                            const player = allPlayersData.find(p => p.id == target.dataset.playerId);
-                            if (playerNum === 1) selectedPlayer1 = player;
-                            else selectedPlayer2 = player;
-                            updatePlayerDisplay(playerNum, player);
-                            resultsDiv.classList.add('hidden');
-                            searchInput.readOnly = true;
-                            searchInput.blur();
-                        }
-                    });
-    
-                    if (initialOpen) {
-                        resultsDiv.classList.remove('hidden');
-                        filterAndDisplay();
-                    }
-                }
-                // --- FIN: Buscador para Pantallas 1 y 3 ---
-    
-                function updatePlayerDisplay(playerNum, player) {
-                    const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
-                    const avatar = document.getElementById(`player${playerNum}-avatar`);
-                    const name = document.getElementById(`player${playerNum}-name`);
-                    searchInput.value = player?.name || ''; 
-                    avatar.src = player?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'; 
-                    name.textContent = player?.name || 'Seleccionar Jugador'; 
-                    if (playerNum === 1) { document.getElementById('go-to-screen-3-btn').disabled = !player; } 
-                    else { document.getElementById('go-to-screen-4-btn').disabled = !player; }
-                }
-    
-                const comparatorAppContainer = document.getElementById('comparator-app-container');
-                if (!comparatorAppContainer.dataset.listenerAttached) {
-                    comparatorAppContainer.addEventListener('click', (e) => {
-                        const cardTarget = e.target.closest('.player-card-clickable');
-                        if (cardTarget) {
-                            const playerNum = cardTarget.dataset.playerNum;
-                            if (playerNum) openPlayerChangeModal(parseInt(playerNum));
-                            return;
-                        }
-                        
-                        const buttonTarget = e.target.closest('button');
-                        if (buttonTarget) {
-                            if (buttonTarget.id === 'go-to-screen-3-btn') {
-                                showScreen(3);
-                            } else if (buttonTarget.id === 'go-to-screen-4-btn') {
-                                renderFullComparisonScreen();
-                                showScreen(4);
-                            } else if (buttonTarget.id === 'back-to-screen-1-btn') {
-                                showScreen(1);
-                            } else if (buttonTarget.classList.contains('comparator-reset-btn')) {
-                                resetComparator();
+                            const newPlayer = allPlayersData.find(p => p.id == target.dataset.playerId);
+                            const playerNumToChange = parseInt(contextInput.value);
+
+                            if (playerNumToChange === 1) {
+                                selectedPlayer1 = newPlayer;
+                            } else {
+                                selectedPlayer2 = newPlayer;
                             }
-                        }
-                    });
-                    comparatorAppContainer.dataset.listenerAttached = 'true';
-                }
-    
-                if (!document.body.dataset.comparadorListener) {
-                    document.body.addEventListener('filterChanged', () => {
-                        const screen4 = document.getElementById('comparator-screen-4');
-                        if (screen4 && !screen4.classList.contains('hidden')) {
+
+                            closePlayerChangeModal();
                             renderFullComparisonScreen();
                         }
                     });
-                    document.body.dataset.comparadorListener = 'true';
+                    
+                    document.getElementById('player-change-modal-close').addEventListener('click', closePlayerChangeModal);
+                    
+                    const modalOverlay = document.getElementById('player-change-modal');
+                    modalOverlay.addEventListener('click', (e) => {
+                        if (e.target.id === 'player-change-modal') {
+                            closePlayerChangeModal();
+                        }
+                    });
+                    
+                    searchInput.dataset.listenerAttached = 'true';
                 }
-    
-                resetComparator();
             }
-            
-            // ===== FIN: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
+
+            function setupPlayerSearch(playerNum, initialOpen = false) {
+                const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
+                const resultsDiv = document.getElementById(`comparador-player${playerNum}-results`);
+                const clearButton = document.getElementById(`comparador-clear-player${playerNum}-search`);
+
+                const filterAndDisplay = () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const otherPlayerId = playerNum === 1 ? selectedPlayer2?.id : selectedPlayer1?.id;
+                    const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(searchTerm) && p.id !== otherPlayerId).sort((a, b) => a.name.localeCompare(b.name));
+                    resultsDiv.innerHTML = filtered.map(player => `<div class="option-item p-2 cursor-pointer" data-player-id="${player.id}">${player.name}</div>`).join('');
+                };
+
+                clearButton.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    if (playerNum === 1) {
+                        selectedPlayer1 = null;
+                    } else {
+                        selectedPlayer2 = null;
+                    }
+                    updatePlayerDisplay(playerNum, null);
+
+                    if (!resultsDiv.classList.contains('hidden')) {
+                        filterAndDisplay();
+                    } else {
+                        resultsDiv.classList.remove('hidden');
+                        filterAndDisplay();
+                    }
+                });
+
+                searchInput.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    const isDesktop = window.innerWidth >= 768;
+
+                    if (resultsDiv.classList.contains('hidden')) {
+                        resultsDiv.classList.remove('hidden');
+                        filterAndDisplay();
+                        if (isDesktop) {
+                            searchInput.readOnly = false;
+                            searchInput.focus();
+                        }
+                    } else {
+                        searchInput.readOnly = false;
+                        searchInput.focus();
+                    }
+                });
+
+                searchInput.addEventListener('input', () => {
+                    if (!searchInput.readOnly) {
+                        filterAndDisplay();
+                    }
+                });
+
+                searchInput.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        if (!resultsDiv.contains(document.activeElement)) {
+                            resultsDiv.classList.add('hidden');
+                            searchInput.readOnly = true;
+                        }
+                    }, 150);
+                });
+
+                resultsDiv.addEventListener('mousedown', (e) => {
+                    const target = e.target.closest('.option-item');
+                    if (target?.dataset.playerId) {
+                        e.preventDefault();
+                        const player = allPlayersData.find(p => p.id == target.dataset.playerId);
+                        if (playerNum === 1) selectedPlayer1 = player;
+                        else selectedPlayer2 = player;
+                        updatePlayerDisplay(playerNum, player);
+                        resultsDiv.classList.add('hidden');
+                        searchInput.readOnly = true;
+                        searchInput.blur();
+                    }
+                });
+
+                if (initialOpen) {
+                    resultsDiv.classList.remove('hidden');
+                    filterAndDisplay();
+                }
+            }
+
+            function updatePlayerDisplay(playerNum, player) {
+                const searchInput = document.getElementById(`comparador-player${playerNum}-search`);
+                const avatar = document.getElementById(`player${playerNum}-avatar`);
+                const name = document.getElementById(`player${playerNum}-name`);
+                searchInput.value = player?.name || ''; 
+                avatar.src = player?.photo_url || 'https://ccvfhajwlfhnrmftqpxs.supabase.co/storage/v1/object/public/player-photos/no-photo%20/no-photo.png'; 
+                name.textContent = player?.name || 'Seleccionar Jugador'; 
+                if (playerNum === 1) { document.getElementById('go-to-screen-3-btn').disabled = !player; } 
+                else { document.getElementById('go-to-screen-4-btn').disabled = !player; }
+            }
+
+            const comparatorAppContainer = document.getElementById('comparator-app-container');
+            if (!comparatorAppContainer.dataset.listenerAttached) {
+                comparatorAppContainer.addEventListener('click', (e) => {
+                    const cardTarget = e.target.closest('.player-card-clickable');
+                    if (cardTarget) {
+                        const playerNum = cardTarget.dataset.playerNum;
+                        if (playerNum) openPlayerChangeModal(parseInt(playerNum));
+                        return;
+                    }
+                    
+                    const buttonTarget = e.target.closest('button');
+                    if (buttonTarget) {
+                        if (buttonTarget.id === 'go-to-screen-3-btn') {
+                            showScreen(3);
+                        } else if (buttonTarget.id === 'go-to-screen-4-btn') {
+                            // Guarda los jugadores en la sesión
+                            if (selectedPlayer1 && selectedPlayer2) {
+                                globalFilterState.comparatorP1 = selectedPlayer1.id;
+                                globalFilterState.comparatorP2 = selectedPlayer2.id;
+                                FilterSessionManager.update(globalFilterState);
+                            }
+                            renderFullComparisonScreen();
+                            showScreen(4);
+                        } else if (buttonTarget.id === 'back-to-screen-1-btn') {
+                            showScreen(1);
+                        } else if (buttonTarget.classList.contains('comparator-reset-btn')) {
+                            resetComparator();
+                        }
+                    }
+                });
+                comparatorAppContainer.dataset.listenerAttached = 'true';
+            }
+
+            resetComparator();
+        }
+
+            function renderFullComparisonScreen() {
+                const screen4Container = document.getElementById('comparator-screen-4');
+                if (!selectedPlayer1 || !selectedPlayer2) return;
+                
+                const { players: allIndividualStats } = calculateStatsForPeriod('comparador');
+                const zeroStats = { name: 'N/A', photo_url: '', points: 0, pj: 0, pg: 0, pe: 0, pp: 0, efectividad: '0.00', chamigos: 0, tt: 0, ausentes: 0 };
+                let player1IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer1.id) || { ...zeroStats, name: selectedPlayer1.name, photo_url: selectedPlayer1.photo_url };
+                let player2IndividualStats = allIndividualStats.find(p => p.id == selectedPlayer2.id) || { ...zeroStats, name: selectedPlayer2.name, photo_url: selectedPlayer2.photo_url };
     
+                const stickyAvatarsHTML = `
+                    <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+                        ${createPlayerCard(player1IndividualStats, 1)}
+                        <div class="vs-separator">VS</div>
+                        ${createPlayerCard(player2IndividualStats, 2)}
+                    </div>`;
+                
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Usamos la nueva función para obtener los filtros y aplicarlos
+                const comparadorFilters = getFiltersForPrefix('comparador');
+                const allFilteredMatches = allMatchesData.filter(match => {
+                    if (!match.result) return false;
+                    const { selectedYears, selectedPeriod } = comparadorFilters;
+                    
+                    const matchYear = parseDate(match.match_date).getFullYear();
+                    const yearMatch = selectedYears.includes('all') || selectedYears.includes(String(matchYear));
+
+                    if (!yearMatch) return false;
+
+                    if (selectedPeriod && selectedPeriod !== 'total') {
+                        const month = parseDate(match.match_date).getMonth();
+                        const period = (month <= 5) ? 'apertura' : 'clausura';
+                        return period === selectedPeriod;
+                    }
+                    return true;
+                });
+                // --- FIN DE LA CORRECCIÓN ---
+        
+                const headToHeadStats = calculateHeadToHeadStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
+                const teammateStats = calculateTeammateStats(selectedPlayer1.id, selectedPlayer2.id, allFilteredMatches);
+                
+                const unifiedStatBox = (value, label, {bgColor, valueColor, labelColor}, isFirst = false) => `<div class="p-3 flex flex-col justify-between text-center ${isFirst ? '' : 'border-l border-gray-300/50 dark:border-gray-600/50'} ${bgColor}"><span class="text-3xl font-extrabold ${valueColor}">${value}</span><span class="text-xs font-bold ${labelColor} uppercase mt-1">${label}</span></div>`;
+                const subHeaderClasses = "text-sm font-bold text-center text-white uppercase tracking-wider p-1.5 md:p-2 rounded-md";
+
+                let scrollableContentHTML = '';
+
+                if (headToHeadStats.pjTotal > 0) {
+                    scrollableContentHTML += `
+                        <div class="space-y-2">
+                            <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Partidos Compartidos</h4>
+                            <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
+                                ${unifiedStatBox(headToHeadStats.pjTotal, 'PJ', { bgColor: 'bg-indigo-200 dark:bg-indigo-800/20', valueColor: 'text-indigo-700 dark:text-indigo-400', labelColor: 'text-indigo-800 dark:text-indigo-400/70' }, true)}
+                                ${unifiedStatBox(headToHeadStats.pjEnEquipo, 'En Equipo', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' })}
+                                ${unifiedStatBox(headToHeadStats.pjEnfrentados, 'Rivales', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                            </div>
+                        </div>`;
+                }
+                
+                if (teammateStats.pj > 0) {
+                    scrollableContentHTML += `
+                        <div class="space-y-2">
+                            <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Jugando Juntos (${teammateStats.pj} PJ)</h4>
+                            <div class="grid grid-cols-3 rounded-lg bg-bg-muted border border-border-color overflow-hidden shadow-inner">
+                                ${unifiedStatBox(teammateStats.pg, 'Ganados', { bgColor: 'bg-green-200 dark:bg-green-800/20', valueColor: 'text-green-700 dark:text-green-400', labelColor: 'text-green-800 dark:text-green-400/70' }, true)}
+                                ${unifiedStatBox(teammateStats.pe, 'Empatados', { bgColor: 'bg-amber-200 dark:bg-amber-800/20', valueColor: 'text-amber-700 dark:text-amber-400', labelColor: 'text-amber-800 dark:text-amber-400/70' })}
+                                ${unifiedStatBox(teammateStats.pp, 'Perdidos', { bgColor: 'bg-red-200 dark:bg-red-800/20', valueColor: 'text-red-700 dark:text-red-400', labelColor: 'text-red-800 dark:text-red-400/70' })}
+                            </div>
+                        </div>`;
+                }
+                
+                if (headToHeadStats.pjEnfrentados > 0) {
+                    const p1_vs_stats = { pg: headToHeadStats.p1_wins, pp: headToHeadStats.p2_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p1_efectividad };
+                    const p2_vs_stats = { pg: headToHeadStats.p2_wins, pp: headToHeadStats.p1_wins, empates: headToHeadStats.empates, efectividad: headToHeadStats.p2_efectividad };
+                    const h2hMeta = [ { key: 'pg', label: 'Ganados' }, { key: 'pp', label: 'Perdidos' }, { key: 'empates', label: 'Empatados'}, { key: 'efectividad', label: 'Efectividad', suffix: '%' } ];
+                    scrollableContentHTML += `
+                        <div class="space-y-2">
+                            <h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Como Rivales (${headToHeadStats.pjEnfrentados} PJ)</h4>
+                            <div class="space-y-4 mt-2 px-1">${createComparisonBars(p1_vs_stats, p2_vs_stats, h2hMeta)}</div>
+                        </div>`;
+                }
+            
+                const individualMeta = [ { key: 'points', label: 'Puntos' }, { key: 'pj', label: 'Partidos' }, { key: 'pg', label: 'Ganados' }, { key: 'pe', label: 'Empatados' }, { key: 'pp', label: 'Perdidos' }, { key: 'efectividad', label: 'Efectividad', suffix: '%' }, { key: 'chamigos', label: 'Chamigo' }, { key: 'tt', label: 'Asistencias TT' }, { key: 'ausentes', label: 'Ausencias' }, ];
+                scrollableContentHTML += `<div class="space-y-2"><h4 class="${subHeaderClasses}" style="background-color: var(--accent-color);">Estadísticas Individuales</h4><div class="space-y-4 mt-2 px-1">${createComparisonBars(player1IndividualStats, player2IndividualStats, individualMeta)}</div></div>`;
+    
+                screen4Container.innerHTML = `
+                    <div class="comparator-sticky-header" style="background-color: var(--bg-secondary);">
+                        <div class="comparator-screen-header">
+                            <span>COMPARATIVA</span>
+                            <button class="modal-close-button comparator-reset-btn"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="p-4 border-b border-border-color">
+                            ${stickyAvatarsHTML}
+                        </div>
+                    </div>
+                    <div id="full-comparison-display" class="p-2 md:p-4 space-y-6">
+                            ${scrollableContentHTML}
+                    </div>
+                `;
+            }
+
             function createPlayerCard(playerStats, playerNum) {
                 if (!playerStats) return '';
     
@@ -4143,6 +4189,44 @@
     
                 return stats;
             }
+            
+            // ===== FIN: NUEVA LÓGICA DEL COMPARADOR POR PASOS (VERSIÓN FINAL) =====
+     
+            function calculateTeammateStats(player1Id, player2Id, filteredMatches) {
+                const stats = {
+                    pj: 0,
+                    pg: 0,
+                    pe: 0,
+                    pp: 0
+                };
+    
+                if (!player1Id || !player2Id) return stats;
+    
+                filteredMatches.forEach(match => {
+                    const p1Team = (match.team_white_players || []).includes(player1Id) ? 'claros'
+                                 : (match.team_dark_players || []).includes(player1Id) ? 'oscuros' : null;
+    
+                    const p2Team = (match.team_white_players || []).includes(player2Id) ? 'claros'
+                                 : (match.team_dark_players || []).includes(player2Id) ? 'oscuros' : null;
+    
+                    // Verificamos si jugaron en el mismo equipo y el partido no fue suspendido
+                    if (p1Team && p1Team === p2Team && match.result && match.result !== 'Suspendido') {
+                        stats.pj++;
+                        const result = match.result;
+                        const theirTeam = p1Team === 'claros' ? 'Claros' : 'Oscuros';
+    
+                        if (result === 'Empate') {
+                            stats.pe++;
+                        } else if (result === theirTeam) {
+                            stats.pg++;
+                        } else {
+                            stats.pp++;
+                        }
+                    }
+                });
+    
+                return stats;
+            }
     
             // --- FIN: Funciones del Comparador ---
     
@@ -4219,11 +4303,11 @@
                 window.addEventListener('resize', () => {
                     clearTimeout(resizeTimer);
                     resizeTimer = setTimeout(() => {
-                        // Solo reajustar si la pestaña de fixture está visible
                         if (document.getElementById('fixture-content')) {
                             adjustFixtureHeights();
+                            adjustTTTablePadding(); // <-- AÑADIR ESTA LÍNEA
                         }
-                    }, 200); // Un pequeño delay para no sobrecargar el navegador
+                    }, 200);
                 });
                 
                 DOMElements.tabButtons.forEach(button => {
