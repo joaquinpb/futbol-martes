@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -638,8 +639,8 @@
         };
         
         // Sorting state for tables
-        let playerSortState = { key: 'id', dir: 'asc' };
-        let userSortState = { key: 'email', dir: 'asc' };
+        let playerSortState = { key: 'role', dir: 'asc' };
+        let userSortState = { key: 'name', dir: 'asc' };
 
         const NAV_ITEMS = {
             dashboard: [
@@ -1564,17 +1565,25 @@
 
         function createDashboardCard({ id, icon, title, match, iconColorClass }) {
             const getPlayerName = pid => (AppState.players.find(p => p.id == pid) || { name: '?' }).name;
+            const isOperator = AppState.userRole === 'Operador';
+            const today = new Date();
+            const matchDate = new Date(match.match_date + 'T00:00:00');
+            const editDeadline = new Date(matchDate.getTime() + 24 * 60 * 60 * 1000);
+            
             let status = 'pending';
             let summary = 'Datos pendientes de carga';
             let buttonText = 'Cargar';
             let buttonClass = 'button-primary';
+            let buttonDisabled = false;
 
             if (id === 'resultado') {
                 if (match.result) {
                     status = 'completed';
                     summary = `Resultado: <strong>${match.result}</strong>`;
                     buttonText = 'Editar';
-                    buttonClass = 'button-edit';
+                    // CAMBIO: Se usa button-success para el botón de editar
+                    buttonClass = 'button-success';
+                    if (isOperator && today > editDeadline) buttonDisabled = true;
                 }
             } else if (id === 'chamigo') {
                 const hasVotes = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
@@ -1585,7 +1594,9 @@
                     const chamigoNames = votesArray.filter(([, v]) => v === maxVotes).map(([pid]) => getPlayerName(pid)).join(', ');
                     summary = `Chamigo(s): <strong>${chamigoNames}</strong>`;
                     buttonText = 'Editar';
-                    buttonClass = 'button-edit';
+                    // CAMBIO: Se usa button-success para el botón de editar
+                    buttonClass = 'button-success';
+                    if (isOperator && today > editDeadline) buttonDisabled = true;
                 }
             } else if (id === 'tt') {
                 const hasAttendees = match.tt_attendees && match.tt_attendees.length > 0;
@@ -1593,14 +1604,22 @@
                     status = 'completed';
                     const attendeeNames = match.tt_attendees.map(getPlayerName);
                     if (attendeeNames.length > 3) {
-                         summary = `<strong>${attendeeNames.slice(0, 3).join(', ')}</strong> y ${attendeeNames.length - 3} más.`;
+                        summary = `<strong>${attendeeNames.slice(0, 3).join(', ')}</strong> y ${match.tt_attendees.length - 3} más.`;
                     } else {
-                         summary = `Asistentes: <strong>${attendeeNames.join(', ')}</strong>`;
+                        summary = `Asistentes: <strong>${attendeeNames.join(', ')}</strong>`;
                     }
                     buttonText = 'Editar';
-                    buttonClass = 'button-edit';
+                    // CAMBIO: Se usa button-success para el botón de editar
+                    buttonClass = 'button-success';
+                    if (isOperator && today > editDeadline) buttonDisabled = true;
                 }
             }
+            
+            if (isOperator && status === 'completed' && today > editDeadline) {
+                buttonDisabled = true;
+            }
+
+            const formattedMatchDate = new Date(match.match_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
             return `
                 <div class="dashboard-card card card-styled flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border-l-4 ${status === 'completed' ? 'border-success-color' : 'border-danger-color'}">
@@ -1615,7 +1634,9 @@
                         <p class="text-secondary text-sm">${summary}</p>
                     </div>
                     <div class="dashboard-card-footer p-4 bg-muted mt-auto">
-                        <button data-action="${id}" class="w-full py-2 font-semibold rounded-lg shadow-md transition ${buttonClass}">${buttonText}</button>
+                        <div data-action="${id}" data-disabled="${buttonDisabled}" class="w-full">
+                            <button class="w-full py-2 font-semibold rounded-lg shadow-md transition ${buttonClass} ${buttonDisabled ? 'opacity-50 cursor-not-allowed' : ''}" >${buttonText}</button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1623,11 +1644,23 @@
 
         function setupDashboardEventListeners() {
             document.getElementById('dashboard-grid').addEventListener('click', (e) => {
-                const button = e.target.closest('button[data-action]');
-                if (!button) return;
+                const wrapper = e.target.closest('[data-action]');
+                if (!wrapper) return;
 
-                const action = button.dataset.action;
+                const action = wrapper.dataset.action;
+                const isDisabled = wrapper.dataset.disabled === 'true';
+
                 const match = AppState.matches.find(m => m.id === AppState.selectedMatchId);
+                const isOperator = AppState.userRole === 'Operador';
+                const matchDate = new Date(match.match_date + 'T00:00:00');
+                const editDeadline = new Date(matchDate.getTime() + 24 * 60 * 60 * 1000);
+                const today = new Date();
+                const canEdit = !isOperator || today <= editDeadline;
+
+                if (isDisabled) {
+                    showNotification('El partido ya no se puede editar.', 'error');
+                    return;
+                }
 
                 if (action === 'resultado') openResultadoModal(match);
                 else if (action === 'chamigo') openChamigoModal(match);
@@ -1979,6 +2012,7 @@
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs uppercase sticky top-0 z-10">
                             <tr>
+                                <th class="p-4" style="min-width: 60px; max-width: 60px;"></th>
                                 <th class="p-4" data-sort-by="id" style="cursor:pointer;">ID</th>
                                 <th class="p-4" data-sort-by="name" style="cursor:pointer;">Nombre</th>
                                 <th class="p-4" data-sort-by="status" style="cursor:pointer;">Estado</th>
@@ -2059,9 +2093,10 @@
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs uppercase sticky top-0 z-10">
                             <tr>
-                                <th class="p-4" data-sort-by="email" style="cursor:pointer;">Email</th>
+                                <th class="p-4" style="min-width: 60px; max-width: 60px;"></th>
                                 <th class="p-4" data-sort-by="name" style="cursor:pointer;">Nombre</th>
                                 <th class="p-4" data-sort-by="role" style="cursor:pointer;">Rol</th>
+                                <th class="p-4" data-sort-by="email" style="cursor:pointer;">Email</th>
                             </tr>
                         </thead>
                         <tbody id="users-list-admin"></tbody>
@@ -2415,19 +2450,73 @@
 
             if(handlerMap[prefix]) handlerMap[prefix](panelContainer, match);
         }
+
         function setupResultsPanel(panel, match) {
+            const isOperator = AppState.userRole === 'Operador';
+            const hasResult = !!match.result;
+            const matchDate = new Date(match.match_date + 'T00:00:00');
+            const editDeadline = new Date(matchDate.getTime() + 24 * 60 * 60 * 1000);
+            const today = new Date();
+            const canEdit = !isOperator || today <= editDeadline;
+            
             panel.querySelector('#match-date').value = match.match_date;
             const resultSelect = panel.querySelector('#match-result');
             resultSelect.value = match.result || '';
+            
+            const registerButton = panel.querySelector('#register-match-button');
+            // Ya no usamos el atributo 'disabled', en su lugar manejamos el estilo
+            if (isOperator && hasResult && !canEdit) {
+                registerButton.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                registerButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
             if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#register-match-button').addEventListener('click', () => handleRegisterResult(resultSelect.value));
+                panel.addEventListener('click', (e) => {
+                    const clickedButton = e.target.closest('#register-match-button');
+                    if (!clickedButton) return;
+
+                    // Verificamos si el botón está visualmente deshabilitado
+                    if (isOperator && hasResult && !canEdit) {
+                        showNotification('El partido ya no se puede editar.', 'error');
+                        return;
+                    }
+                    
+                    handleRegisterResult(resultSelect.value);
+                });
                 panel.dataset.listenersAdded = 'true';
             }
         }
+
         function setupChamigoPanel(panel, match) {
+            const isOperator = AppState.userRole === 'Operador';
+            const hasVotes = match.chamigo_votes && Object.keys(match.chamigo_votes).length > 0;
+            const matchDate = new Date(match.match_date + 'T00:00:00');
+            const editDeadline = new Date(matchDate.getTime() + 24 * 60 * 60 * 1000);
+            const today = new Date();
+            const canEdit = !isOperator || today <= editDeadline;
+
             renderChamigoVotingPlayers(match, panel.querySelector('#chamigo-voting-players'));
+
+            const registerButton = panel.querySelector('#register-chamigo-button');
+            // Ya no usamos el atributo 'disabled', en su lugar manejamos el estilo
+            if (isOperator && hasVotes && !canEdit) {
+                registerButton.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                registerButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
             if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#register-chamigo-button').addEventListener('click', () => {
+                panel.addEventListener('click', (e) => {
+                    const clickedButton = e.target.closest('#register-chamigo-button');
+                    if (!clickedButton) return;
+
+                    // Verificamos si el botón está visualmente deshabilitado
+                    if (isOperator && hasVotes && !canEdit) {
+                        showNotification('El partido ya no se puede editar.', 'error');
+                        return;
+                    }
+
                     const votes = {};
                     panel.querySelectorAll('.chamigo-player-item').forEach(item => {
                         const count = parseInt(item.querySelector('.chamigo-vote-counter').textContent);
@@ -2445,15 +2534,12 @@
 
             if (whatsappPollTextDiv && copyWhatsappPollBtn && toggleButton && collapsibleContent) {
                 const getPlayerName = id => (AppState.players.find(p => p.id == id) || { name: 'Jugador Desconocido' }).name;
-
                 const clarosPlayersNames = (match.team_white_players || []).map(getPlayerName).join(', ');
                 const oscurosPlayersNames = (match.team_dark_players || []).map(getPlayerName).join(', ');
-
                 const matchDate = new Date(match.match_date + 'T00:00:00');
                 const day = matchDate.getUTCDate();
                 const month = matchDate.getUTCMonth() + 1;
                 const formattedDate = `${day}/${month}`;
-
                 let pollText = `*Chamigo ${formattedDate}*\n`;
                 if (oscurosPlayersNames) {
                     pollText += '*Oscuros*\n' + oscurosPlayersNames + '\n\n';
@@ -2461,9 +2547,7 @@
                 if (clarosPlayersNames) {
                     pollText += '*Claros*\n' + clarosPlayersNames;
                 }
-
                 whatsappPollTextDiv.textContent = pollText;
-
                 copyWhatsappPollBtn.onclick = () => {
                     const textToCopy = whatsappPollTextDiv.textContent;
                     const el = document.createElement('textarea');
@@ -2474,7 +2558,6 @@
                     document.body.removeChild(el);
                     showNotification('Texto copiado al portapapeles!', 'success');
                 };
-
                 if (!toggleButton.dataset.listenerAdded) {
                     toggleButton.addEventListener('click', () => {
                         collapsibleContent.classList.toggle('hidden');
@@ -2490,51 +2573,92 @@
                 toggleButton.querySelector('.toggle-icon')?.classList.add('fa-chevron-down');
             }
         }
+
         function setupTtPanel(panel, match) {
+            const isOperator = AppState.userRole === 'Operador';
+            const hasAttendees = match.tt_attendees && match.tt_attendees.length > 0;
+            const matchDate = new Date(match.match_date + 'T00:00:00');
+            const editDeadline = new Date(matchDate.getTime() + 24 * 60 * 60 * 1000);
+            const today = new Date();
+            const canEdit = !isOperator || today <= editDeadline;
+
             renderTtAttendancePlayers(match, panel.querySelector('#tt-attendance-players'));
+
+            const registerButton = panel.querySelector('#register-tt-button');
+            // Ya no usamos el atributo 'disabled', en su lugar manejamos el estilo
+            if (isOperator && hasAttendees && !canEdit) {
+                registerButton.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                registerButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
             if (!panel.dataset.listenersAdded) {
-                panel.querySelector('#register-tt-button').addEventListener('click', () => {
+                panel.addEventListener('click', (e) => {
+                    const clickedButton = e.target.closest('#register-tt-button');
+                    if (!clickedButton) return;
+
+                    // Verificamos si el botón está visualmente deshabilitado
+                    if (isOperator && hasAttendees && !canEdit) {
+                        showNotification('El partido ya no se puede editar.', 'error');
+                        return;
+                    }
+
                     const attendees = Array.from(panel.querySelectorAll('#tt-attendance-players .selected')).map(el => el.dataset.id);
                     handleRegisterTt(attendees);
                 });
                 panel.dataset.listenersAdded = 'true';
             }
         }
+
         function setupEditMatchPanel(panel, match) {
+            const isOperator = AppState.userRole === 'Operador';
+            const today = new Date();
+            const matchDate = new Date(match.match_date + 'T00:00:00');
+            const editDeadline = new Date(matchDate.getTime() + 24 * 60 * 60 * 1000);
+            const canEdit = !isOperator || today <= editDeadline;
+            
             renderEditMatchPlayers(match);
             
-            panel.querySelector('#edit-match-result').value = match.result || '';
+            panel.querySelector('#edit-match-date').value = match.match_date;
             
+            const resultSelect = panel.querySelector('#edit-match-result');
+            resultSelect.value = match.result || '';
+            resultSelect.disabled = !canEdit;
+
             const updateBtn = panel.querySelector('#update-match-button');
+            updateBtn.disabled = !canEdit;
+            
             const deleteBtn = panel.querySelector('#delete-match-from-edit-button');
+            deleteBtn.disabled = isOperator;
 
-            const newUpdateBtn = updateBtn.cloneNode(true);
-            updateBtn.parentNode.replaceChild(newUpdateBtn, updateBtn);
-            newUpdateBtn.addEventListener('click', handleUpdateMatch);
+            if (!panel.dataset.listenersAdded) {
+                 updateBtn.addEventListener('click', handleUpdateMatch);
+                 deleteBtn.addEventListener('click', handleDeleteMatchFromEdit);
+                 panel.dataset.listenersAdded = 'true';
+            }
 
-            const newDeleteBtn = deleteBtn.cloneNode(true);
-            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
-            newDeleteBtn.addEventListener('click', handleDeleteMatchFromEdit);
-
-            panel.querySelector('#edit-match-date').addEventListener('click', function() {
-                this.showPicker();
+            // Aquí se agrega la funcionalidad para abrir el datepicker al hacer clic en el campo
+            panel.querySelector('#edit-match-date').addEventListener('click', function() { 
+                this.showPicker(); 
             });
         }
-        async function handleRegisterResult(resultValue) {
-            if (resultValue === "") {
-                resultValue = null;
-            }
-            const { error } = await supabase.rpc('update_match_result', {
-                match_id_param: AppState.selectedMatchId,
-                new_result: resultValue
+
+        async function handleRegisterResult(result) {
+            const matchId = AppState.selectedMatchId;
+            const { data, error } = await supabase.rpc('update_match_result', {
+                match_id_param: matchId,
+                new_result: result
             });
-            if(error) { 
-                showNotification('Error al registrar resultado', 'error'); 
+        
+            if (error) {
+                showNotification(`Error al registrar el resultado: ${error.message}`, 'error');
             } else {
-                showNotification('Resultado registrado!', 'success');
-                await refreshDataAndRender('match-results');
+                showNotification('Resultado registrado con éxito.', 'success');
+                await refreshDataAndRender('dashboard');
+                closeDashboardModal();
             }
         }
+
         async function handleDeleteMatchFromEdit() {
             const confirmed = await showModal('Confirmar Eliminación', '¿Seguro que quieres eliminar este partido? Esta acción no se puede deshacer.');
             if (confirmed) {
@@ -2584,18 +2708,18 @@
         }
         
         async function handleRegisterChamigo(votes) {
-            const chamigoData = Object.keys(votes).length === 0 ? null : votes;
-
-            const { error } = await supabase.rpc('update_chamigo_votes', {
-                match_id_param: AppState.selectedMatchId,
-                chamigo_votes_param: chamigoData
+            const matchId = AppState.selectedMatchId;
+            const { data, error } = await supabase.rpc('update_chamigo_votes', {
+                match_id_param: matchId,
+                chamigo_votes_param: votes
             });
-
-            if (error) { 
-                showNotification('Error al guardar votos de Chamigo', 'error');
+        
+            if (error) {
+                showNotification(`Error al registrar los votos de Chamigo: ${error.message}`, 'error');
             } else {
-                showNotification('Votos de Chamigo guardados!', 'success');
-                await refreshDataAndRender('chamigo-management');
+                showNotification('Votos de Chamigo registrados con éxito.', 'success');
+                await refreshDataAndRender('dashboard');
+                closeDashboardModal();
             }
         }
 
@@ -2649,16 +2773,18 @@
         }
         
         async function handleRegisterTt(attendees) {
-            const { error } = await supabase.rpc('update_tt_attendance', {
-                match_id_param: AppState.selectedMatchId,
+            const matchId = AppState.selectedMatchId;
+            const { data, error } = await supabase.rpc('update_tt_attendance', {
+                match_id_param: matchId,
                 tt_attendees_param: attendees
             });
-
-            if (error) { 
-                showNotification('Error al guardar asistencia a TT', 'error');
+        
+            if (error) {
+                showNotification(`Error al registrar la asistencia al TT: ${error.message}`, 'error');
             } else {
-                showNotification('Asistencia a TT guardada!', 'success');
-                await refreshDataAndRender('tt-attendance');
+                showNotification('Asistencia al TT registrada con éxito.', 'success');
+                await refreshDataAndRender('dashboard');
+                closeDashboardModal();
             }
         }
 
@@ -2668,24 +2794,40 @@
             let filteredPlayers = AppState.players.filter(p => 
                 p.name.toLowerCase().includes(normalizedSearch)
             );
+            const placeholder = 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽';
 
             // Sorting logic
             const { key, dir } = playerSortState;
             filteredPlayers.sort((a, b) => {
-                const valA = a[key];
-                const valB = b[key];
-
-                // Use localeCompare with numeric option for natural sorting on all columns
-                const compareResult = String(valA).localeCompare(String(valB), undefined, { numeric: true });
-
-                return dir === 'asc' ? compareResult : -compareResult;
+                const roleOrder = { 'Titular': 1, 'Suplente': 2, 'Inactivo': 3 };
+                
+                if (key === 'role') {
+                    const roleComparison = roleOrder[a.role] - roleOrder[b.role];
+                    if (roleComparison !== 0) {
+                        return dir === 'asc' ? roleComparison : -roleComparison;
+                    }
+                    return dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+                } else {
+                    const valA = a[key];
+                    const valB = b[key];
+                    const compareResult = String(valA).localeCompare(String(valB), undefined, { numeric: true });
+                    return dir === 'asc' ? compareResult : -compareResult;
+                }
             });
 
-            tableBody.innerHTML = filteredPlayers.map(p => `
+            tableBody.innerHTML = filteredPlayers.map(p => {
+                const avatarUrl = p.photo_url ? `${p.photo_url}?t=${new Date().getTime()}` : placeholder;
+                return `
                 <tr class="selectable-row border-b border-border-color cursor-pointer" data-player-id="${p.id}">
-                    <td class="p-4">${p.id}</td><td class="p-4">${p.name}</td>
-                    <td class="p-4">${p.status}</td><td class="p-4">${p.role}</td>
-                </tr>`).join('');
+                    <td class="p-2">
+                        <img src="${avatarUrl}" alt="Avatar de jugador" class="w-8 h-8 rounded-full object-cover" onerror="this.onerror=null;this.src='${placeholder}';">
+                    </td>
+                    <td class="p-4">${p.id}</td>
+                    <td class="p-4">${p.name}</td>
+                    <td class="p-4">${p.status}</td>
+                    <td class="p-4">${p.role}</td>
+                </tr>`;
+            }).join('');
             
             // Add visual indicators to headers
             document.querySelectorAll('#players-management-table-container th[data-sort-by]').forEach(th => {
@@ -2868,6 +3010,7 @@
                 }
             }
         }
+
         function renderUsersListAdmin(searchTerm = '') {
             const tableBody = document.getElementById('users-list-admin');
             const normalizedSearch = searchTerm.toLowerCase();
@@ -2885,13 +3028,20 @@
                     ? String(valA).localeCompare(String(valB)) 
                     : String(valB).localeCompare(String(valA));
             });
+            const placeholder = 'https://placehold.co/40x40/e2e8f0/64748b?text=⚽';
 
-            tableBody.innerHTML = filteredUsers.map(u => `
+            tableBody.innerHTML = filteredUsers.map(u => {
+                const avatarUrl = u.avatar_url ? `${u.avatar_url}?t=${new Date().getTime()}` : placeholder;
+                return `
                 <tr class="selectable-row border-b border-border-color cursor-pointer" data-user-id="${u.id}">
-                    <td class="p-4">${u.email}</td>
+                    <td class="p-2">
+                        <img src="${avatarUrl}" alt="Avatar de usuario" class="w-8 h-8 rounded-full object-cover" onerror="this.onerror=null;this.src='${placeholder}';">
+                    </td>
                     <td class="p-4">${u.name || 'N/A'}</td>
                     <td class="p-4">${u.role || 'Sin Rol'}</td>
-                </tr>`).join('');
+                    <td class="p-4">${u.email}</td>
+                </tr>`;
+            }).join('');
             
             // Add visual indicators to headers
             document.querySelectorAll('#user-management-table-container th[data-sort-by]').forEach(th => {
@@ -2911,17 +3061,20 @@
                 });
             });
         }
+
         function populateUserForm(user) {
             document.getElementById('user-id').value = user.id;
             document.getElementById('user-email').value = user.email;
             document.getElementById('user-name').value = user.name || '';
             document.getElementById('user-role').value = user.role || 'Operador';
         }
+
         function clearUserForm() {
             document.getElementById('user-form').reset();
             document.getElementById('user-id').value = '';
             document.querySelectorAll('#users-list-admin .selectable-row').forEach(r => r.classList.remove('selected'));
         }
+
         async function handleSaveUser(e) {
             e.preventDefault();
             const id = document.getElementById('user-id').value;
@@ -2939,6 +3092,7 @@
                 clearUserForm();
             }
         }
+
         function renderEditMatchPlayers(match) {
             document.getElementById('edit-match-date').value = match.match_date;
             const titularesDiv = document.getElementById('edit-titulares-players');
@@ -2974,6 +3128,7 @@
             
             setupPlayerInteractions('edit-match-container');
         }
+        
         async function handleUpdateMatch() {
             const newDate = document.getElementById('edit-match-date').value;
             const newTeamWhite = Array.from(document.getElementById('edit-team-claros').children).map(el => el.dataset.id);
@@ -2982,9 +3137,10 @@
             if (newResult === "") {
                 newResult = null;
             }
-            
-            if (newTeamWhite.length + newTeamDark.length !== 10) {
-                showNotification('Deben haber 10 jugadores en total para conformar los equipos.', 'warning');
+
+            // Validación actualizada para asegurar que cada equipo tenga 5 jugadores
+            if (newTeamWhite.length !== 5 || newTeamDark.length !== 5) {
+                showNotification('Ambos equipos deben tener exactamente 5 jugadores para guardar el partido.', 'warning');
                 return;
             }
 
@@ -3002,8 +3158,8 @@
             ]);
 
             const error = teamsResult.error || resultResult.error;
-            
-            if (error) { 
+
+            if (error) {
                 showNotification(`Error al actualizar el partido: ${error.message}`, 'error');
             } else {
                 showNotification('Partido actualizado.', 'success');
