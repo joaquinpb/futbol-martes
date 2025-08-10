@@ -476,12 +476,12 @@
         #estadisticas-table, #individual-stats-table { min-width: 800px; }
 
         #estadisticas-table .sticky-col-1 { left: 0; }
-        #estadisticas-table .sticky-col-2 { left: 56px; }
-        #estadisticas-table .sticky-col-3 { left: 112px; }
+        #estadisticas-table .sticky-col-2 { left: 55px; }
+        #estadisticas-table .sticky-col-3 { left: 110px; }
 
         #individual-stats-table { --col-1-width: 90px; }
         #individual-stats-table .sticky-col-1 { left: 0; width: var(--col-1-width); min-width: var(--col-1-width); max-width: var(--col-1-width); }
-        #individual-stats-table .sticky-col-2 { left: var(--col-1-width); }
+        #individual-stats-table .sticky-col-2 { left: calc(var(--col-1-width) - 1px); }
         
         #individual-stats-table tbody tr:nth-child(odd) .sticky-col { background-color: var(--bg-secondary); }
         #individual-stats-table tbody tr:nth-child(even) .sticky-col { background-color: var(--bg-even-row); }
@@ -1075,6 +1075,69 @@
         #individual-stats-table tr[data-year] > td:first-child {
             white-space: nowrap;
         }
+
+        /* ================================================================== */
+        /* == SOLUCIÓN DEFINITIVA PARA ENCABEZADOS DE TABLAS CONGELADOS == */
+        /* ================================================================== */
+
+        /*
+        1. Forzamos a los contenedores de las pestañas "Estadísticas" e "Histórico"
+            a usar flexbox y ocupar toda la altura disponible.
+        */
+        #estadisticas-content,
+        #individual-stats-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /*
+        2. ¡LA CLAVE! Anulamos el 'display: flex' del `.table-container` general
+            (que causaba el conflicto) y hacemos que ESTE contenedor sea el que
+            tenga el scroll vertical y crezca para llenar el espacio.
+        */
+        #estadisticas-content .table-container,
+        #individual-stats-content .table-container {
+            display: block; /* Anulamos el flex del estilo general */
+            overflow-y: auto; /* Activamos el scroll aquí */
+            flex-grow: 1;
+        }
+
+        /*
+        3. Le quitamos el scroll a la tabla misma para que no interfiera.
+        */
+        #estadisticas-content .table-container > table,
+        #individual-stats-content .table-container > table {
+            overflow-y: visible;
+        }
+
+        /*
+        4. Ahora sí, 'position: sticky' funcionará porque el encabezado se pegará
+            a la parte superior de su contenedor con scroll (`.table-container`).
+        */
+        #estadisticas-content thead th,
+        #individual-stats-content thead th {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 0 !important;
+            z-index: 10;
+        }
+
+        /*
+        5. Nos aseguramos que la esquina de la columna fija quede por encima.
+        */
+        #estadisticas-content thead .sticky-col,
+        #individual-stats-content thead .sticky-col {
+            z-index: 15;
+        }
+
+        @media (max-width: 768px) {
+        #estadisticas-content,
+        #individual-stats-content {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+    }
 
     </style>
     <script>
