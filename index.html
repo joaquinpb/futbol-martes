@@ -585,15 +585,86 @@
         html.dark #tt-attendees-table tr:nth-child(even) td { background-color: #111827; }
         /* === FIN: Estilos Asistentes TT === */
 
+        /* === Estilos Asistentes Expandir Fixture === */
         .player-marker { 
             border: 2px solid; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
             cursor: pointer;
             transition: transform 0.2s ease;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden; /* Clave para que la imagen no se desborde */
+            position: relative; /* Contexto para la imagen */
+            z-index: 1; /* El avatar está debajo de la estrella */
         }
         .player-marker:hover {
             transform: scale(1.1);
         }
+        .player-marker img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Asegura que la imagen llene el círculo sin deformarse */
+        }
+        .player-name-label {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            width: max-content;
+            white-space: nowrap;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .player-name-label.for-screenshot {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* --- INICIO: Ajuste fino con Padding Asimétrico --- */
+            /* Reseteamos el padding para tener control total */
+            padding: 0 0.6rem;
+
+            /* Para SUBIR el texto, damos MÁS padding ABAJO */
+            /* Puedes ajustar "4px" al valor que necesites (3px, 5px, etc.) */
+            padding-bottom: 13px; 
+            
+            /* Para que el tamaño total no cambie, damos MENOS padding ARRIBA */
+            padding-top: 1px;
+            /* --- FIN: Ajuste fino con Padding Asimétrico --- */
+
+            height: 24px; /* Mantenemos la altura fija para consistencia */
+        }
+
+        @media (max-width: 767px) {
+            .player-name-label {
+                /* Posición de etiqueta de avatar en render fixture */
+                bottom: 12px;
+            }
+        }
+
+        .winner-trophy { 
+            color: var(--text-yellow-400); 
+            text-shadow: 0 0 5px rgba(0,0,0,0.5); 
+            position: absolute; /* Aseguramos que la posición sea absoluta */
+            z-index: 10;
+        }
+        /* Nuevo estilo para la estrella del chamigo */
+        .chamigo-star {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            z-index: 5; /* Por encima del avatar */
+            text-shadow: 0 0 4px black;
+        }
+
+        /* === FIN: Estilos Asistentes Expandir Fixture === */
         
         .player-marker.claros { 
             background-color: var(--player-claros-bg); 
@@ -605,22 +676,16 @@
             color: var(--player-oscuros-text); 
             border-color: #000000;
         }
-        .player-name-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 0.125rem 0.5rem;
-            border-radius: 0.375rem;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
+        
         .player-name-label.claros-label {
             background-color: #FFFFFF;
             color: #d97706;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #3b3b3b;
         }
         .player-name-label.oscuros-label {
             background-color: #1a202c;
             color: #d97706;
-            text-shadow: 0 0 3px #000, 0 0 3px #000;
+            border: 1px solid #3b3b3b;
         }
 
         .winner-trophy { color: var(--text-yellow-400); text-shadow: 0 0 5px rgba(0,0,0,0.5); }
@@ -662,7 +727,6 @@
             border-radius: 0.75rem; /* Bordes redondeados para el contenedor general */
             overflow: hidden; /* Asegura que el contenido se ajuste a los bordes redondeados */
             border: 1px solid var(--border-color);
-            
             width: 100%;
         }
 
@@ -1164,6 +1228,66 @@
         }
     }
 
+        /* =============================== */
+        /* == BOTON EXPANDIR EN FIXTURE == */
+        /* =============================== */
+
+        #expand-field-button {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 15; /* Z-index reducido */
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #111827;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            transition: all 0.2s ease-in-out;
+        }
+        #expand-field-button:hover {
+            background-color: white;
+            transform: scale(1.05);
+        }
+        #expand-field-button img {
+            width: 16px;
+            height: 16px;
+        }
+
+        #screenshot-close-button {
+            top: 1rem;
+            right: 1rem;
+            left: auto; /* Nos aseguramos que no haya conflicto con 'left' */
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #111827;
+            border-color: rgba(0,0,0,0.1);
+            width: 40px;
+            height: 40px;
+        }
+        #screenshot-close-button:hover {
+            background-color: white;
+            color: var(--danger-color);
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        /* Ajuste para acercar el botón a la imagen en móviles */
+        @media (max-width: 767px) {
+            #screenshot-close-button {
+                top: 9vh;
+            }
+        }
+
+
+        /* =================================== */
+        /* == FIN BOTON EXPANDIR EN FIXTURE == */
+        /* =================================== */
+
     </style>
     <script>
         (function() {
@@ -1341,7 +1465,8 @@
         
         <script src="config.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script> <!-- Librería boton expandir Fixture -->
+
         <script>
         document.addEventListener('DOMContentLoaded', () => {
             
@@ -2125,8 +2250,16 @@
                 const ttAttendeesTableBody = document.querySelector('#tt-attendees-table-body');
                 
                 if (!visualDetailsContainer || !soccerFieldContainer || !ttAttendeesTableBody) return;
-                
-                soccerFieldContainer.innerHTML = `<div class="goal-area top"></div><div class="goal-area bottom"></div><div class="penalty-area top"></div><div class="penalty-area bottom"></div>`;
+
+                const expandIconSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z'/%3E%3C/svg%3E";
+
+                soccerFieldContainer.innerHTML = `
+                    <button id="expand-field-button">
+                        <img src="${expandIconSvg}" alt="Expandir">
+                        <span>Expandir</span>
+                    </button>
+                    <div class="goal-area top"></div><div class="goal-area bottom"></div><div class="penalty-area top"></div><div class="penalty-area bottom"></div>
+                `;
                 
                 ttAttendeesTableBody.innerHTML = '';
                 const getPlayerName = id => (allPlayersData.find(p => p.id === id) || { name: 'ID Desconocido' }).name;
@@ -2153,8 +2286,8 @@
                 
                 const playerPositions = {
                     vertical: {
-                        claros:  [{ x: 0.5, y: 0.94 }, { x: 0.25, y: 0.78 }, { x: 0.75, y: 0.78 }, { x: 0.35, y: 0.62 }, { x: 0.65, y: 0.57 }],
-                        oscuros: [{ x: 0.5, y: 0.06 }, { x: 0.25, y: 0.22 }, { x: 0.75, y: 0.22 }, { x: 0.35, y: 0.38 }, { x: 0.65, y: 0.43 }]
+                        claros:  [{ x: 0.5, y: 0.93 }, { x: 0.25, y: 0.78 }, { x: 0.75, y: 0.78 }, { x: 0.35, y: 0.62 }, { x: 0.65, y: 0.57 }],
+                        oscuros: [{ x: 0.5, y: 0.07 }, { x: 0.25, y: 0.22 }, { x: 0.75, y: 0.22 }, { x: 0.35, y: 0.38 }, { x: 0.65, y: 0.43 }]
                     },
                     horizontal: {
                         claros:  [{ x: 0.94, y: 0.50 }, { x: 0.80, y: 0.25 }, { x: 0.80, y: 0.75 }, { x: 0.62, y: 0.35 }, { x: 0.57, y: 0.65 }],
@@ -2174,20 +2307,26 @@
                 
                 const createPlayerMarker = (playerId, team, index) => {
                     const playerWrapper = document.createElement('div');
-                    playerWrapper.className = `player-wrapper absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10`;
+                    // Se elimina flexbox y se establece un tamaño fijo para el contenedor
+                    playerWrapper.className = `player-wrapper absolute transform -translate-x-1/2 -translate-y-1/2 z-10`;
                     playerWrapper.style.top = `${currentPositions[team][index].y * 100}%`;
                     playerWrapper.style.left = `${currentPositions[team][index].x * 100}%`;
-                
+                    playerWrapper.style.width = '80px';  // Ancho fijo
+                    playerWrapper.style.height = '90px'; // Alto fijo para avatar + nombre
+
                     const player = allPlayersData.find(p => p.id === playerId) || {name: 'ID Desconocido'};
                     const isChamigo = chamigoPlayerIds.includes(String(playerId));
                     const photoUrl = player.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
                     
                     const labelClass = team === 'claros' ? 'claros-label' : 'oscuros-label';
                     
+                    // Se ajusta el HTML para que el nombre se posicione de forma absoluta
                     playerWrapper.innerHTML = `
-                        <div class="player-marker ${team} relative w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-sm md:text-xl font-bold text-center" data-player-id="${playerId}">
-                            <img src="${photoUrl}" alt="Foto de ${player.name}" class="w-full h-full rounded-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
-                            ${isChamigo ? '<i class="fas fa-star text-yellow-400 absolute -top-2 -right-2 text-lg md:text-3xl" style="text-shadow: 0 0 4px black;"></i>' : ''}
+                        <div class="relative w-12 h-12 md:w-16 md:h-16 mx-auto">
+                            <div class="player-marker ${team}" data-player-id="${playerId}">
+                                <img src="${photoUrl}" alt="Foto de ${player.name}" onerror="this.onerror=null;this.src='https://placehold.co/128x128/e2e8f0/64748b?text=⚽';">
+                            </div>
+                            ${isChamigo ? '<i class="fas fa-star text-yellow-400 text-lg md:text-3xl chamigo-star"></i>' : ''}
                         </div>
                         <div class="player-name-label ${labelClass}">${player.name}</div>`;
                     
@@ -2204,13 +2343,15 @@
                 
                 if (result && result !== 'Empate' && result !== 'Suspendido') {
                     const trophyDiv = document.createElement('div');
-                    trophyDiv.className = 'winner-trophy absolute text-3xl md:text-5xl z-10 transform -translate-x-1/2 -translate-y-1/2';
+                    trophyDiv.className = 'winner-trophy text-3xl md:text-5xl';
                     trophyDiv.innerHTML = '<i class="fas fa-trophy"></i>';
                 
+                    // --- INICIO: Lógica de posicionamiento del trofeo corregida ---
                     const trophyPositions = {
-                        horizontal: { Claros: { top: '92%', left: '95%' }, Oscuros: { top: '92%', left: '5%' } },
-                        vertical: { Claros: { top: '95%', left: '93%' }, Oscuros: { top: '5%', left: '93%' } }
+                        horizontal: { Claros: { bottom: '6%', right: '4%' }, Oscuros: { bottom: '6%', left: '4%' } },
+                        vertical:   { Claros: { bottom: '2%', right: '4%' }, Oscuros: { top: '2%', right: '4%' } }
                     };
+                    // --- FIN: Lógica de posicionamiento del trofeo corregida ---
                     const currentTrophyPosition = isHorizontalField ? trophyPositions.horizontal[result] : trophyPositions.vertical[result];
                 
                     if (currentTrophyPosition) {
@@ -2221,6 +2362,45 @@
                 
                 visualDetailsContainer.classList.remove('hidden');
                 
+                const expandButton = document.getElementById('expand-field-button');
+                const screenshotModal = document.getElementById('field-screenshot-modal');
+                const screenshotImage = document.getElementById('screenshot-image');
+
+                if (expandButton && screenshotModal && soccerFieldContainer) {
+                    expandButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        expandButton.style.display = 'none';
+
+                        // 1. Seleccionamos todas las etiquetas de nombre
+                        const labels = soccerFieldContainer.querySelectorAll('.player-name-label');
+                        
+                        // 2. Aplicamos la clase especial justo antes de la captura
+                        labels.forEach(label => label.classList.add('for-screenshot'));
+
+                        html2canvas(soccerFieldContainer, {
+                            useCORS: true,
+                            backgroundColor: null,
+                            logging: false,
+                            scale: 2
+                        }).then(canvas => {
+                            screenshotImage.src = canvas.toDataURL('image/png');
+                            screenshotModal.classList.remove('hidden');
+                            document.body.classList.add('modal-open');
+                            
+                            if (!history.state || !history.state.modalOpen) {
+                                history.pushState({ modalOpen: true }, 'Imagen Expandida');
+                            }
+                        }).catch(err => {
+                            console.error('Error al generar la captura:', err);
+                        }).finally(() => {
+                            // 3. (MUY IMPORTANTE) Quitamos la clase especial después de la captura
+                            labels.forEach(label => label.classList.remove('for-screenshot'));
+                            expandButton.style.display = 'flex'; // Volvemos a mostrar el botón
+                        });
+                    });
+                }
+
+
                 const images = soccerFieldContainer.querySelectorAll('img');
                 const promises = [...images].map(img => new Promise(resolve => { if(img.complete) resolve(); else { img.onload = img.onerror = resolve; } }));
                 
@@ -2370,6 +2550,21 @@
                 }, 300);
             }
     
+            function closeScreenshotModal() {
+                const screenshotModal = document.getElementById('field-screenshot-modal');
+                if (screenshotModal && !screenshotModal.classList.contains('hidden')) {
+                    screenshotModal.classList.add('hidden');
+                    document.body.classList.remove('modal-open');
+                    document.getElementById('screenshot-image').src = ''; // Limpia la imagen
+
+                    // Si el estado actual es el del modal, volvemos atrás para eliminarlo del historial
+                    if (history.state && history.state.modalOpen) {
+                        history.back();
+                    }
+                }
+            }
+
+
             function calculateIndividualPlayerStats(playerId, allPlayerMatches) {
                 const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }};
                 const allYearsInMatches = [...new Set(allPlayerMatches.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
@@ -4094,6 +4289,37 @@
                         showSimplePlayerModal(photoTrigger.dataset.playerId);
                     }
                 });
+
+                // --- LOGICA PARA BOTON EXPANDIR ---
+
+                const screenshotModal = document.getElementById('field-screenshot-modal');
+                const screenshotCloseButton = document.getElementById('screenshot-close-button');
+
+                if (screenshotModal && screenshotCloseButton) {
+                    // Cerrar al hacer clic en el fondo (el modal mismo)
+                    screenshotModal.addEventListener('click', (e) => {
+                        if (e.target === screenshotModal) {
+                            closeScreenshotModal();
+                        }
+                    });
+                    // Cerrar al hacer clic en el botón X
+                    screenshotCloseButton.addEventListener('click', closeScreenshotModal);
+                }
+
+                // Cerrar al presionar la tecla Escape
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        closeScreenshotModal();
+                    }
+                });
+
+                // Cerrar al presionar el botón "atrás" del navegador/móvil
+                window.addEventListener('popstate', () => {
+                    // Si el historial cambia, cerramos el modal por si acaso estuviera abierto
+                    closeScreenshotModal();
+                });
+                
+                // --- FIN: LOGICA PARA BOTON EXPANDIR ---
     
                 initializeApp();
             }
@@ -4101,5 +4327,14 @@
             init();
         });
         </script>
+
+        <!-- Modal para mostrar la captura del campo de juego -->
+        <div id="field-screenshot-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[100] hidden">
+            <button id="screenshot-close-button" class="modal-close-button fixed top-4 right-4 z-10">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="screenshot-image" src="" alt="Campo de juego expandido" class="max-w-full max-h-full rounded-lg shadow-2xl object-contain">
+        </div>
+
     </body>
 </html>
