@@ -1260,30 +1260,6 @@
             height: 16px;
         }
 
-        #screenshot-close-button {
-            top: 1rem;
-            right: 1rem;
-            left: auto; /* Nos aseguramos que no haya conflicto con 'left' */
-            background-color: rgba(255, 255, 255, 0.9);
-            color: #111827;
-            border-color: rgba(0,0,0,0.1);
-            width: 40px;
-            height: 40px;
-        }
-        #screenshot-close-button:hover {
-            background-color: white;
-            color: var(--danger-color);
-            transform: scale(1.1) rotate(90deg);
-        }
-
-        /* Ajuste para acercar el botón a la imagen en móviles */
-        @media (max-width: 767px) {
-            #screenshot-close-button {
-                top: 9vh;
-            }
-        }
-
-
         /* =================================== */
         /* == FIN BOTON EXPANDIR EN FIXTURE == */
         /* =================================== */
@@ -2369,33 +2345,73 @@
                 if (expandButton && screenshotModal && soccerFieldContainer) {
                     expandButton.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        expandButton.style.display = 'none';
 
-                        // 1. Seleccionamos todas las etiquetas de nombre
-                        const labels = soccerFieldContainer.querySelectorAll('.player-name-label');
+                        // 1. Crear un contenedor invisible usando OPACIDAD.
+                        const screenshotWrapper = document.createElement('div');
+                        screenshotWrapper.style.position = 'fixed';
+                        screenshotWrapper.style.top = '0';
+                        screenshotWrapper.style.left = '0';
+                        screenshotWrapper.style.zIndex = '-1'; // Detrás de todo.
+                        screenshotWrapper.style.opacity = '0'; // ¡LA CLAVE! Lo hace transparente.
+                        screenshotWrapper.style.pointerEvents = 'none'; // No se puede hacer clic.
+                        document.body.appendChild(screenshotWrapper);
+
+                        // 2. Clonamos el campo de juego.
+                        const clone = soccerFieldContainer.cloneNode(true);
+
+                        // 3. Forzamos el ANCHO para que el CSS calcule el alto proporcional.
+                        clone.style.width = soccerFieldContainer.offsetWidth + 'px';
                         
-                        // 2. Aplicamos la clase especial justo antes de la captura
-                        labels.forEach(label => label.classList.add('for-screenshot'));
+                        // 4. Añadimos el clon al contenedor transparente.
+                        screenshotWrapper.appendChild(clone);
+                        
+                        // 5. Aplicamos los estilos de captura y ocultamos el botón en el clon.
+                        const labelsInClone = clone.querySelectorAll('.player-name-label');
+                        labelsInClone.forEach(label => label.classList.add('for-screenshot'));
+                        const expandButtonInClone = clone.querySelector('#expand-field-button');
+                        if (expandButtonInClone) {
+                            expandButtonInClone.style.display = 'none';
+                        }
 
-                        html2canvas(soccerFieldContainer, {
-                            useCORS: true,
-                            backgroundColor: null,
-                            logging: false,
-                            scale: 2
-                        }).then(canvas => {
-                            screenshotImage.src = canvas.toDataURL('image/png');
-                            screenshotModal.classList.remove('hidden');
-                            document.body.classList.add('modal-open');
-                            
-                            if (!history.state || !history.state.modalOpen) {
-                                history.pushState({ modalOpen: true }, 'Imagen Expandida');
-                            }
-                        }).catch(err => {
-                            console.error('Error al generar la captura:', err);
-                        }).finally(() => {
-                            // 3. (MUY IMPORTANTE) Quitamos la clase especial después de la captura
-                            labels.forEach(label => label.classList.remove('for-screenshot'));
-                            expandButton.style.display = 'flex'; // Volvemos a mostrar el botón
+                        // 6. Esperamos a que todas las imágenes del clon carguen.
+                        const imagesInClone = clone.querySelectorAll('img');
+                        const imagePromises = [...imagesInClone].map(img => {
+                            return new Promise((resolve) => {
+                                if (img.complete) return resolve();
+                                img.onload = resolve;
+                                img.onerror = resolve;
+                            });
+                        });
+
+                        // 7. Una vez que todo está listo, generamos la imagen.
+                        Promise.all(imagePromises).then(() => {
+                            // Un pequeño delay para asegurar que el navegador haya renderizado todo.
+                            setTimeout(() => {
+                                html2canvas(clone, {
+                                    useCORS: true,
+                                    backgroundColor: null,
+                                    logging: false,
+                                    scale: 2
+                                }).then(canvas => {
+                                    // Esperamos a que la imagen generada esté lista antes de mostrar el modal.
+                                    screenshotImage.onload = () => {
+                                        screenshotModal.classList.remove('hidden');
+                                        document.body.classList.add('modal-open');
+                                        
+                                        if (!history.state || !history.state.modalOpen) {
+                                            history.pushState({ modalOpen: true }, 'Imagen Expandida');
+                                        }
+                                        screenshotImage.onload = null; 
+                                    };
+                                    screenshotImage.src = canvas.toDataURL('image/png');
+
+                                }).catch(err => {
+                                    console.error('Error al generar la captura:', err);
+                                }).finally(() => {
+                                    // 8. Limpiamos el contenedor transparente.
+                                    document.body.removeChild(screenshotWrapper);
+                                });
+                            }, 50); // 50ms de "respiro" para el navegador.
                         });
                     });
                 }
@@ -4293,17 +4309,14 @@
                 // --- LOGICA PARA BOTON EXPANDIR ---
 
                 const screenshotModal = document.getElementById('field-screenshot-modal');
-                const screenshotCloseButton = document.getElementById('screenshot-close-button');
 
-                if (screenshotModal && screenshotCloseButton) {
+                if (screenshotModal) {
                     // Cerrar al hacer clic en el fondo (el modal mismo)
                     screenshotModal.addEventListener('click', (e) => {
                         if (e.target === screenshotModal) {
                             closeScreenshotModal();
                         }
                     });
-                    // Cerrar al hacer clic en el botón X
-                    screenshotCloseButton.addEventListener('click', closeScreenshotModal);
                 }
 
                 // Cerrar al presionar la tecla Escape
@@ -4330,9 +4343,6 @@
 
         <!-- Modal para mostrar la captura del campo de juego -->
         <div id="field-screenshot-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[100] hidden">
-            <button id="screenshot-close-button" class="modal-close-button fixed top-4 right-4 z-10">
-                <i class="fas fa-times"></i>
-            </button>
             <img id="screenshot-image" src="" alt="Campo de juego expandido" class="max-w-full max-h-full rounded-lg shadow-2xl object-contain">
         </div>
 
