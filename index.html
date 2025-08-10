@@ -1003,12 +1003,12 @@
         
         #fixture-filters-container {
             position: relative;
-            z-index: 30;
+            z-index: 10;
         }
 
         #fixture-dropdown-container {
             position: relative;
-            z-index: 10;
+            z-index: 20;
         }
 
         .year-selector-grid {
@@ -1248,8 +1248,8 @@
                     <div class="w-full h-[60px]"></div>
                     <img id="player-modal-photo" src="https://placehold.co/128x128/e2e8f0/64748b?text=⚽" alt="Foto del jugador">
                     <h2 id="player-modal-name" class="text-2xl font-bold mt-4 text-center">Nombre Jugador</h2>
-                    <p id="player-modal-tournament" class="text-sm text-text-secondary mb-6"></p>
-        
+                    <p id="player-modal-tournament" class="text-sm text-text-secondary mb-1"></p>
+                    <p id="player-modal-first-match" class="text-xs text-text-secondary mb-4"></p>
                     <div class="grid grid-cols-3 gap-4 w-full">
                         <div class="stat-item">
                             <div id="player-modal-points" class="value">0</div>
@@ -1278,6 +1278,7 @@
                     <div id="player-status-indicator" class="absolute bottom-1 right-1 w-5 h-5 rounded-full border-2"></div>
                 </div>
                 <h2 id="simple-player-modal-name">Nombre Jugador</h2>
+                <p id="simple-player-modal-first-match" class="text-sm text-text-secondary mt-2"></p>
             </div>
         </div>
         <div id="player-change-modal" class="fixed inset-0 bg-black/70 flex items-start justify-center p-4 pt-20 z-50 hidden opacity-0 transition-opacity duration-300">
@@ -1410,6 +1411,9 @@
                     photo: document.getElementById('player-modal-photo'),
                     name: document.getElementById('player-modal-name'),
                     tournament: document.getElementById('player-modal-tournament'),
+                    // === LÍNEA A AGREGAR ===
+                    firstMatch: document.getElementById('player-modal-first-match'),
+                    // ======================
                     points: document.getElementById('player-modal-points'),
                     chamigo: document.getElementById('player-modal-chamigo'),
                     tt: document.getElementById('player-modal-tt'),
@@ -1420,6 +1424,9 @@
                     closeBtn: document.getElementById('simple-player-modal-close'),
                     photo: document.getElementById('simple-player-modal-photo'),
                     name: document.getElementById('simple-player-modal-name'),
+                    // === LÍNEA A AGREGAR ===
+                    firstMatch: document.getElementById('simple-player-modal-first-match'),
+                    // ======================
                 }
             };
             
@@ -1499,6 +1506,39 @@
                 return new Date(dateString + 'T00:00:00'); 
             }
             
+            function parseDate(dateString) { 
+                if (!dateString) return new Date();
+                return new Date(dateString + 'T00:00:00'); 
+            }
+
+            // =================================================================
+            // === INICIO: NUEVA FUNCIÓN PARA ENCONTRAR PRIMER PARTIDO ===
+            // =================================================================
+            function findFirstMatchDate(playerId) {
+                const playerMatches = allMatchesData.filter(match => {
+                    if (!match.team_white_players && !match.team_dark_players) return false;
+                    const allPlayersInMatch = [...(match.team_white_players || []), ...(match.team_dark_players || [])];
+                    return allPlayersInMatch.includes(playerId);
+                });
+
+                if (playerMatches.length === 0) {
+                    return 'N/A';
+                }
+
+                playerMatches.sort((a, b) => new Date(a.match_date) - new Date(b.match_date));
+
+                const firstMatchDate = parseDate(playerMatches[0].match_date);
+                return firstMatchDate.toLocaleDateString('es-AR', {
+                    timeZone: 'UTC',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            }
+            // =================================================================
+            // === FIN: NUEVA FUNCIÓN PARA ENCONTRAR PRIMER PARTIDO ===
+            // =================================================================
+
             function setTodayFilters(prefix, isMonthFilter = false) {
                 const today = new Date();
                 const currentYear = today.getFullYear();
@@ -2163,56 +2203,53 @@
             }
     
             function showPlayerModal(playerId) {
-                let selectedYears = [];
-                const allYearsButton = document.querySelector('#fixture-year-select-dropdown #all-years-button');
-                if (allYearsButton && allYearsButton.classList.contains('selected')) {
-                    selectedYears = ['all'];
-                } else {
-                    const yearButtons = document.querySelectorAll(`#fixture-year-select-dropdown button.selected[data-value]`);
-                    selectedYears = Array.from(yearButtons).map(btn => btn.dataset.value);
+                // LÓGICA 1: OBTENER FECHA DE INICIO DEL JUGADOR
+                const firstMatchDate = findFirstMatchDate(playerId);
+
+                // LÓGICA 2: CALCULAR ESTADÍSTICAS PARA EL TORNEO DEL PARTIDO SELECCIONADO
+                const selectedMatch = allMatchesData.find(m => m.id == lastSelectedFixtureMatchId);
+                if (!selectedMatch) {
+                    console.error("No se pudo encontrar el partido seleccionado para el modal.");
+                    return;
                 }
 
-                let selectedMonths = [];
-                const allMonthsButton = document.getElementById('all-months-button');
-                if (allMonthsButton && allMonthsButton.classList.contains('selected')) {
-                    selectedMonths = ['all'];
-                } else {
-                    const monthButtons = document.querySelectorAll(`#fixture-month-select-dropdown button.selected`);
-                    selectedMonths = Array.from(monthButtons).map(btn => btn.dataset.value);
-                }
+                const matchDate = parseDate(selectedMatch.match_date);
+                const matchYear = matchDate.getFullYear();
+                const matchMonth = matchDate.getMonth(); // 0-11
+                const tournamentPeriod = (matchMonth <= 5) ? 'apertura' : 'clausura';
                 
-                const { players, error } = calculateStats({ selectedYears, selectedMonths });
+                const scopedFilters = {
+                    selectedYears: [String(matchYear)],
+                    selectedPeriod: tournamentPeriod,
+                    selectedMonths: []
+                };
+
+                const { players, error } = calculateStats(scopedFilters);
+
                 if (error) {
                     console.error("Error calculating stats for modal:", error);
                     return;
                 }
+                
                 const playerStats = players.find(p => p.id === playerId);
                 const playerData = allPlayersData.find(p => p.id === playerId);
+                
                 if (!playerData || !playerStats) return;
-    
+
+                // RENDERIZADO DEL MODAL CON AMBAS INFORMACIONES
                 const { playerModal } = DOMElements;
                 playerModal.photo.src = playerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
                 playerModal.photo.onerror = () => { playerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
                 playerModal.name.textContent = playerData.name;
                 
-                let tournamentText = '';
-                const allYearsSelected = selectedYears.includes('all') || selectedYears.length === 0;
-                const allMonthsSelected = selectedMonths.length === 0 || selectedMonths.includes('all');
+                // Info del torneo del partido
+                const tournamentName = tournamentPeriod.charAt(0).toUpperCase() + tournamentPeriod.slice(1);
+                playerModal.tournament.textContent = `${tournamentName} - ${matchYear}`;
+                
+                // Info del primer partido (histórico)
+                playerModal.firstMatch.textContent = `Jugador desde: ${firstMatchDate}`;
     
-                if (allYearsSelected && allMonthsSelected) {
-                    tournamentText = 'Totales';
-                } else if (selectedYears.length === 1 && !allYearsSelected && allMonthsSelected) {
-                    tournamentText = `Total Año - ${selectedYears[0]}`;
-                } else if (selectedYears.length === 1 && !allYearsSelected && selectedMonths.length === 1 && !allMonthsSelected) {
-                    const month = parseInt(selectedMonths[0]);
-                    tournamentText = (month <= 6) ? `Apertura - ${selectedYears[0]}` : `Clausura - ${selectedYears[0]}`;
-                } else {
-                    const yearText = allYearsSelected ? 'Varios Años' : selectedYears.join(', ');
-                    const monthText = allMonthsSelected ? 'Todos los Meses' : `${selectedMonths.length} meses`;
-                    tournamentText = `${monthText} - ${yearText}`;
-                }
-                playerModal.tournament.textContent = tournamentText;
-    
+                // Estadísticas del torneo del partido
                 playerModal.points.textContent = playerStats.points;
                 playerModal.chamigo.textContent = playerStats.chamigos;
                 playerModal.tt.textContent = playerStats.tt;
@@ -2265,11 +2302,15 @@
                 const playerData = allPlayersData.find(p => p.id === playerId);
                 if (!playerData) return;
     
+                 const firstMatchDate = findFirstMatchDate(playerId);
+
                 const { simplePlayerModal } = DOMElements;
                 simplePlayerModal.photo.src = playerData.photo_url || 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽';
                 simplePlayerModal.photo.onerror = () => { simplePlayerModal.photo.src = 'https://placehold.co/128x128/e2e8f0/64748b?text=⚽'; };
                 simplePlayerModal.name.textContent = playerData.name;
     
+                simplePlayerModal.firstMatch.textContent = `Jugador desde: ${firstMatchDate}`;
+
                 const statusIndicator = document.getElementById('player-status-indicator');
                 if (playerData.status === 'Activo') {
                     statusIndicator.style.backgroundColor = 'var(--success-color)';
