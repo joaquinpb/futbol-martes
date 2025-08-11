@@ -2785,17 +2785,28 @@
                         </tr>
                     </thead>
                     <tbody>`;
-    
+
+                // --- INICIO: NUEVA ESTRUCTURA DE LA TABLA ---
+                // Fila de TOTALES combinada con el nuevo botón de expandir/contraer todo
                 tableHtml += `
                     <tr class="font-bold">
-                        <td class="text-center sticky-col sticky-col-1"><b>TOTAL</b></td>
-                        <td class="sticky-col sticky-col-2"></td>
-                        <td>${playerStats.overallTotal.points}</td><td>${playerStats.overallTotal.pg}</td>
-                        <td>${playerStats.overallTotal.pe}</td><td>${playerStats.overallTotal.pp}</td>
-                        <td>${playerStats.overallTotal.pj}</td><td>${playerStats.overallTotal.efectividad}%</td>
-                        <td>${playerStats.overallTotal.chamigos}</td><td>${playerStats.overallTotal.tt}</td>
+                        <td class="text-center sticky-col sticky-col-1">
+                            <button id="toggle-all-btn" data-state="collapsed" class="text-lg">
+                                <i class="fas fa-plus-circle text-green-500 hover:text-green-400"></i>
+                            </button>
+                        </td>
+                        <td class="sticky-col sticky-col-2"><b>TOTAL</b></td>
+                        <td>${playerStats.overallTotal.points}</td>
+                        <td>${playerStats.overallTotal.pg}</td>
+                        <td>${playerStats.overallTotal.pe}</td>
+                        <td>${playerStats.overallTotal.pp}</td>
+                        <td>${playerStats.overallTotal.pj}</td>
+                        <td>${playerStats.overallTotal.efectividad}%</td>
+                        <td>${playerStats.overallTotal.chamigos}</td>
+                        <td>${playerStats.overallTotal.tt}</td>
                         <td>${playerStats.overallTotal.ausentes}</td>
                     </tr>`;
+                // --- FIN: NUEVA ESTRUCTURA DE LA TABLA ---
     
                 Object.keys(playerStats.years).sort((a,b) => b-a).forEach(year => {
                     const yearData = playerStats.years[year];
@@ -2842,6 +2853,44 @@
                         toggleIcon?.classList.toggle('fa-minus-circle');
                     });
                 });
+
+                // --- INICIO: EVENT LISTENER PARA EL BOTÓN DE EXPANDIR/CONTRAER TODO ---
+                const toggleAllBtn = table.querySelector('#toggle-all-btn');
+
+                if (toggleAllBtn) {
+                    toggleAllBtn.addEventListener('click', () => {
+                        const currentState = toggleAllBtn.dataset.state;
+                        const icon = toggleAllBtn.querySelector('i');
+                        
+                        if (currentState === 'collapsed') {
+                            // Expandir todo
+                            table.querySelectorAll('.period-details-row').forEach(r => r.classList.remove('hidden'));
+                            table.querySelectorAll('.toggle-details').forEach(i => {
+                                i.classList.remove('fa-plus-circle');
+                                i.classList.add('fa-minus-circle');
+                            });
+                            
+                            // Cambiar el botón principal a estado "contraer" (rojo)
+                            icon.classList.remove('fa-plus-circle', 'text-green-500', 'hover:text-green-400');
+                            icon.classList.add('fa-minus-circle', 'text-red-500', 'hover:text-red-400');
+                            toggleAllBtn.dataset.state = 'expanded';
+
+                        } else {
+                            // Contraer todo
+                            table.querySelectorAll('.period-details-row').forEach(r => r.classList.add('hidden'));
+                            table.querySelectorAll('.toggle-details').forEach(i => {
+                                i.classList.add('fa-plus-circle');
+                                i.classList.remove('fa-minus-circle');
+                            });
+
+                            // Cambiar el botón principal a estado "expandir" (verde)
+                            icon.classList.remove('fa-minus-circle', 'text-red-500', 'hover:text-red-400');
+                            icon.classList.add('fa-plus-circle', 'text-green-500', 'hover:text-green-400');
+                            toggleAllBtn.dataset.state = 'collapsed';
+                        }
+                    });
+                }
+                // --- FIN: EVENT LISTENER PARA EL BOTÓN DE EXPANDIR/CONTRAER TODO ---
             }
     
             function setupPlayerSearch() {
