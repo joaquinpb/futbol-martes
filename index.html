@@ -4341,12 +4341,20 @@
                 
                 window.addEventListener('hashchange', () => {
                     if (ignoreNextHashChange) {
-                        // La bandera está activa. Ignoramos la navegación.
-                        ignoreNextHashChange = false; // Reseteamos la bandera para futuras navegaciones.
+                        ignoreNextHashChange = false; // Reseteamos la bandera.
 
-                        // ADEMÁS: Corregimos la URL en la barra de direcciones para que no quede
-                        // con el hash anterior. Esto no recarga la página, solo arregla la URL.
-                        history.replaceState(null, '', '#fixture');
+                        const currentActiveTab = document.querySelector('.tab-button.active');
+                        if (currentActiveTab) {
+                            const tabId = currentActiveTab.dataset.tab;
+                            const expectedHash = Object.keys(hashToTabMap).find(key => hashToTabMap[key] === tabId);
+
+                            // ¡LA CLAVE ESTÁ AQUÍ!
+                            // Solo corregimos la URL si el "atrás" la cambió incorrectamente.
+                            // Si la URL ya es la correcta, no hacemos nada y el scroll no salta.
+                            if (expectedHash && window.location.hash !== expectedHash) {
+                                history.replaceState(null, '', expectedHash);
+                            }
+                        }
                         return; // Detenemos la ejecución para no cambiar de pestaña.
                     }
 
