@@ -140,10 +140,10 @@
             padding: 0.75rem;
             cursor: pointer;
         }
-        .custom-select-options .option-item:hover {
+        .custom-select-options .option-item:hover:not(.selected) {
             background-color: var(--bg-muted);
         }
-        html.dark .custom-select-options .option-item:hover {
+        html.dark .custom-select-options .option-item:hover:not(.selected) {
             background-color: #374151;
         }
         .custom-select-options .option-item.selected {
@@ -184,10 +184,10 @@
             color: var(--text-primary);
             background-color: var(--bg-muted);
             border: 1px solid var(--border-color);
-            transition: all 0.2s ease-in-out;
+            transition: all 0.1s ease-in-out;
             cursor: pointer;
         }
-        .month-selector-grid button:hover:not(:disabled) {
+        .month-selector-grid button:hover:not(:disabled):not(.selected) {
             background-color: var(--border-color);
         }
         .month-selector-grid button.selected {
@@ -213,7 +213,7 @@
             color: var(--sidebar-text);
             border-color: #4b5563;
         }
-        html.dark .month-selector-grid button:hover:not(:disabled) {
+        html.dark .month-selector-grid button:hover:not(:disabled):not(.selected) {
             background-color: #4b5563;
         }
         html.dark .month-selector-grid button.selected {
@@ -1126,10 +1126,10 @@
             color: var(--text-primary);
             background-color: var(--bg-muted);
             border: 1px solid var(--border-color);
-            transition: all 0.2s ease-in-out;
+            transition: all 0.1s ease-in-out;
             cursor: pointer;
         }
-        .year-selector-grid button:hover:not(:disabled) {
+        .year-selector-grid button:hover:not(:disabled):not(.selected) {
             background-color: var(--border-color);
         }
         .year-selector-grid button.selected {
@@ -1152,7 +1152,7 @@
             color: var(--sidebar-text);
             border-color: #4b5563;
         }
-        html.dark .year-selector-grid button:hover:not(:disabled) {
+        html.dark .year-selector-grid button:hover:not(:disabled):not(.selected) {
             background-color: #4b5563;
         }
         html.dark .year-selector-grid button.selected {
@@ -1446,6 +1446,136 @@
         <script>
         document.addEventListener('DOMContentLoaded', () => {
             
+            // =================================================================
+            // === INICIO: MANEJADOR GLOBAL DE CIERRE DE MODALES ===
+            // =================================================================
+
+            function closeScreenshotModal() {
+                const screenshotModal = document.getElementById('field-screenshot-modal');
+                if (screenshotModal && !screenshotModal.classList.contains('hidden')) {
+                    screenshotModal.classList.add('hidden');
+                    document.body.classList.remove('modal-open');
+                    document.getElementById('screenshot-image').src = '';
+                    if (history.state && history.state.modalOpen) {
+                        history.back();
+                    }
+                }
+            }
+
+            function hidePlayerModal() {
+                const { playerModal } = DOMElements;
+                if (playerModal && playerModal.overlay && !playerModal.overlay.classList.contains('hidden')) {
+                    playerModal.overlay.classList.remove('visible');
+                    DOMElements.body.classList.remove('modal-open');
+                    setTimeout(() => {
+                        playerModal.overlay.classList.add('hidden');
+                    }, 300);
+                }
+            }
+
+            function hideSimplePlayerModal() {
+                const { simplePlayerModal } = DOMElements;
+                if (simplePlayerModal && simplePlayerModal.overlay && !simplePlayerModal.overlay.classList.contains('hidden')) {
+                    simplePlayerModal.overlay.classList.add('opacity-0');
+                    simplePlayerModal.content.classList.add('scale-95');
+                    DOMElements.body.classList.remove('modal-open');
+                    setTimeout(() => {
+                        simplePlayerModal.overlay.classList.add('hidden');
+                    }, 300);
+                }
+            }
+
+            function closePlayerChangeModal() {
+                const modal = document.getElementById('player-change-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    const modalContent = document.getElementById('player-change-modal-content');
+                    modal.classList.add('opacity-0');
+                    modalContent.classList.add('scale-95');
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        document.body.classList.remove('modal-open');
+                    }, 300);
+                }
+            }
+
+            function closeAllDropdowns() {
+                const allPossibleDropdowns = document.querySelectorAll(
+                    '.custom-select-options, .comparator-results-dropdown, #individual-player-results'
+                );
+                let atLeastOneWasClosed = false;
+                allPossibleDropdowns.forEach(dropdown => {
+                    if (!dropdown.classList.contains('hidden')) {
+                        atLeastOneWasClosed = true;
+                        dropdown.classList.add('hidden');
+                        // Adicionalmente, corregimos el ícono del botón si existe.
+                        const button = dropdown.closest('.custom-select-container')?.querySelector('.custom-select-button') ||
+                                    dropdown.closest('.relative')?.querySelector('.comparator-search-input');
+                        if (button) {
+                            const icon = button.querySelector('i.fa-chevron-down');
+                            if(icon) icon.classList.remove('rotate-180');
+                        }
+                    }
+                });
+                return atLeastOneWasClosed;
+            }
+
+            function closeTopmostModal(fromPopstate = false) {
+                // 1. PRIORIDAD #1: El modal de la captura de pantalla (lo más alto de todo).
+                const screenshotModal = document.getElementById('field-screenshot-modal');
+                if (screenshotModal && !screenshotModal.classList.contains('hidden')) {
+                    if (!fromPopstate && history.state && history.state.modalOpen) {
+                        history.back();
+                    } else {
+                        closeScreenshotModal();
+                    }
+                    return; // Se cierra y la función termina.
+                }
+
+                // 2. PRIORIDAD #2: Cerrar cualquier dropdown o filtro abierto.
+                if (closeAllDropdowns()) {
+                    return;
+                }
+
+                // 3. PRIORIDAD #3: Cerrar el modal de cambio de jugador.
+                const playerChangeModal = document.getElementById('player-change-modal');
+                if (playerChangeModal && !playerChangeModal.classList.contains('hidden')) {
+                    closePlayerChangeModal();
+                    return;
+                }
+
+                // 4. PRIORIDAD #4: Cerrar las pantallas del comparador.
+                const screen3 = document.getElementById('comparator-screen-3');
+                const screen4 = document.getElementById('comparator-screen-4');
+
+                if (screen3 && !screen3.classList.contains('hidden')) {
+                    document.querySelector('#comparator-screen-3 .comparator-reset-btn')?.click();
+                    return;
+                }
+
+                if (screen4 && !screen4.classList.contains('hidden')) {
+                    document.querySelector('#comparator-screen-4 .comparator-reset-btn')?.click();
+                    return;
+                }
+
+                // 5. PRIORIDAD #5: El resto de los modales (los que quedan por debajo).
+                const otherModals = [
+                    { id: 'simple-player-modal-overlay', closeFn: hideSimplePlayerModal },
+                    { id: 'player-modal-overlay', closeFn: hidePlayerModal }
+                    // Nota: El 'field-screenshot-modal' ya no está en esta lista.
+                ];
+
+                for (const modalInfo of otherModals) {
+                    const modalElement = document.getElementById(modalInfo.id);
+                    if (modalElement && !modalElement.classList.contains('hidden') && !modalElement.classList.contains('opacity-0')) {
+                        modalInfo.closeFn(); // Simplificamos la llamada aquí.
+                        break; 
+                    }
+                }
+            }
+            // =================================================================
+            // === FIN: MANEJADOR GLOBAL DE CIERRE DE MODALES ===
+            // =================================================================
+
             if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
                 console.error("Error: Las variables de configuración de Supabase no están definidas. Asegúrate de que config.js se cargue correctamente.");
                 document.querySelector('main').innerHTML = `<div class="main-content-container text-center text-red-500"><p>Error de configuración. No se pudo conectar a la base de datos.</p></div>`;
@@ -1517,6 +1647,7 @@
             let heartbeatInterval = null;
             let selectedPlayer1 = null;
             let selectedPlayer2 = null;
+            let ignoreNextHashChange = false;
     
             let estadisticasSortState = { criterion: 'points', order: 'desc' };
     
@@ -2489,16 +2620,7 @@
                 }, 10);
             }
     
-            function hidePlayerModal() {
-                const { playerModal } = DOMElements;
-                playerModal.overlay.classList.remove('visible');
-                DOMElements.body.classList.remove('modal-open');
-                setTimeout(() => {
-                    playerModal.overlay.classList.add('hidden');
-                }, 300);
-            }
-
-            function adjustTTTablePadding() {
+                function adjustTTTablePadding() {
                 const ttAttendeesTableBody = document.querySelector('#tt-attendees-table-body');
                 const tableContainer = document.querySelector('#fixture-details-display .table-container');
 
@@ -2556,31 +2678,6 @@
                 }, 10);
             }
     
-            function hideSimplePlayerModal() {
-                const { simplePlayerModal } = DOMElements;
-                simplePlayerModal.overlay.classList.add('opacity-0');
-                simplePlayerModal.content.classList.add('scale-95');
-                DOMElements.body.classList.remove('modal-open');
-                setTimeout(() => {
-                    simplePlayerModal.overlay.classList.add('hidden');
-                }, 300);
-            }
-    
-            function closeScreenshotModal() {
-                const screenshotModal = document.getElementById('field-screenshot-modal');
-                if (screenshotModal && !screenshotModal.classList.contains('hidden')) {
-                    screenshotModal.classList.add('hidden');
-                    document.body.classList.remove('modal-open');
-                    document.getElementById('screenshot-image').src = ''; // Limpia la imagen
-
-                    // Si el estado actual es el del modal, volvemos atrás para eliminarlo del historial
-                    if (history.state && history.state.modalOpen) {
-                        history.back();
-                    }
-                }
-            }
-
-
             function calculateIndividualPlayerStats(playerId, allPlayerMatches) {
                 const playerStats = { years: {}, overallTotal: { name: 'TOTAL', points: 0, pg: 0, pe: 0, pp: 0, pj: 0, efectividad: "0.00", chamigos: 0, tt: 0, ausentes: 0 }};
                 const allYearsInMatches = [...new Set(allPlayerMatches.map(m => m.match_date ? parseDate(m.match_date).getFullYear() : null).filter(Boolean))];
@@ -2772,7 +2869,7 @@
                 });
     
                 searchInput.addEventListener('input', filterAndDisplay);
-                searchInput.addEventListener('focus', filterAndDisplay);
+                searchInput.addEventListener('click', filterAndDisplay);
                 searchInput.addEventListener('blur', () => setTimeout(() => resultsDiv.classList.add('hidden'), 150));
     
                 clearButton.addEventListener('mousedown', (e) => {
@@ -3665,19 +3762,7 @@
                 setupPlayerChangeSearch();
             }
 
-            function closePlayerChangeModal() {
-                const modal = document.getElementById('player-change-modal');
-                const modalContent = document.getElementById('player-change-modal-content');
-
-                modal.classList.add('opacity-0');
-                modalContent.classList.add('scale-95');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                    document.body.classList.remove('modal-open');
-                }, 300);
-            }
-
-            function setupPlayerChangeSearch() {
+                function setupPlayerChangeSearch() {
                 const searchInput = document.getElementById('player-change-search-input');
                 const resultsDiv = document.getElementById('player-change-results-dropdown');
                 const clearButton = document.getElementById('player-change-clear-search');
@@ -4256,6 +4341,17 @@
                 });
                 
                 window.addEventListener('hashchange', () => {
+                    if (ignoreNextHashChange) {
+                        // La bandera está activa. Ignoramos la navegación.
+                        ignoreNextHashChange = false; // Reseteamos la bandera para futuras navegaciones.
+
+                        // ADEMÁS: Corregimos la URL en la barra de direcciones para que no quede
+                        // con el hash anterior. Esto no recarga la página, solo arregla la URL.
+                        history.replaceState(null, '', '#fixture');
+                        return; // Detenemos la ejecución para no cambiar de pestaña.
+                    }
+
+                    // Si la bandera no estaba activa, procedemos con la navegación normal.
                     const tabId = hashToTabMap[window.location.hash] || 'leaderboard-content';
                     activateTab(tabId);
                 });
@@ -4322,14 +4418,40 @@
                 // Cerrar al presionar la tecla Escape
                 window.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape') {
-                        closeScreenshotModal();
+                        // Prevenimos la acción por defecto del navegador (como cambiar el foco).
+                        e.preventDefault();
+                        
+                        // Detenemos la propagación para que ningún otro script escuche este 'Escape'.
+                        e.stopPropagation(); 
+                        
+                        // Ejecutamos nuestra lógica de cierre.
+                        closeTopmostModal();
                     }
-                });
+                }, true);
 
                 // Cerrar al presionar el botón "atrás" del navegador/móvil
-                window.addEventListener('popstate', () => {
-                    // Si el historial cambia, cerramos el modal por si acaso estuviera abierto
-                    closeScreenshotModal();
+                window.addEventListener('popstate', (e) => {
+                    // --- Verificaciones existentes ---
+                    const screenshotModal = document.getElementById('field-screenshot-modal');
+                    const anyDropdownIsOpen = document.querySelector('.custom-select-options:not(.hidden), .comparator-results-dropdown:not(.hidden), #individual-player-results:not(.hidden)');
+
+                    // === INICIO DE LA NUEVA VERIFICACIÓN ===
+                    const screen3 = document.getElementById('comparator-screen-3');
+                    const screen4 = document.getElementById('comparator-screen-4');
+                    const comparatorScreenIsOpen = (screen3 && !screen3.classList.contains('hidden')) || (screen4 && !screen4.classList.contains('hidden'));
+                    // === FIN DE LA NUEVA VERIFICACIÓN ===
+
+                    // Si cualquiera de estas condiciones es verdadera, activamos la bandera.
+                    if (
+                        (screenshotModal && !screenshotModal.classList.contains('hidden')) ||
+                        anyDropdownIsOpen ||
+                        comparatorScreenIsOpen // <-- Se añade la nueva condición
+                    ) {
+                        ignoreNextHashChange = true;
+                    }
+
+                    // Finalmente, llamamos a nuestra función central de cierre.
+                    closeTopmostModal(true);
                 });
                 
                 // --- FIN: LOGICA PARA BOTON EXPANDIR ---
