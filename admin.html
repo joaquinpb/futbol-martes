@@ -619,6 +619,10 @@
         let cropper = null;
         let cropperContext = 'player'; // 'player' or 'avatar'
         
+         // --- Variables globales de navegacion ---
+        let ignoreNextHashChange = false;
+        let isModalOrDropdownOpen = () => false; // La definiremos después
+
         const AppState = {
             players: [],
             matches: [],
@@ -704,12 +708,75 @@
             dashboardModalClose: document.getElementById('dashboard-modal-close'),
         };
 
+        function closeTopmostModalOrDropdown() {
+            // 1. PRIORIDAD #1: El desplegable de Encuesta WhatsApp.
+            const whatsappContent = document.getElementById('chamigo-whatsapp-content');
+            if (whatsappContent && !whatsappContent.classList.contains('hidden')) {
+                document.getElementById('chamigo-whatsapp-toggle')?.click();
+                return;
+            }
+
+            // 2. PRIORIDAD #2: El dropdown de perfil de usuario.
+            const userDropdown = document.querySelector('.user-menu-dropdown:not(.hidden)');
+            if (userDropdown) {
+                userDropdown.classList.add('hidden');
+                return;
+            }
+
+            // 3. PRIORIDAD #3: El resto de los modales.
+            const modalsToCloseInOrder = [
+                '#cropper-modal',
+                '#avatar-modal',
+                '#dashboard-modal',
+                '#change-password-modal',
+                '#change-name-modal',
+                '#player-team-options-modal',
+                '#player-assignment-modal',
+                '#custom-confirm-modal'
+            ];
+
+            for (const modalSelector of modalsToCloseInOrder) {
+                const modal = document.querySelector(modalSelector);
+                if (modal && !modal.classList.contains('hidden')) {
+                    const closeButton = modal.querySelector('.modal-close-button, [id$="-cancel"], [id$="-cancel-button"]');
+                    if (closeButton) {
+                        closeButton.click();
+                    } else {
+                        modal.classList.add('hidden');
+                        document.body.classList.remove('modal-open');
+                    }
+                    return;
+                }
+            }
+        }
+
+        // Esta es la función que declaramos antes. Ahora le damos su lógica completa.
+        isModalOrDropdownOpen = () => {
+            const anyModalIsOpen = document.querySelector('#custom-confirm-modal:not(.hidden), #player-assignment-modal:not(.hidden), #player-team-options-modal:not(.hidden), #change-name-modal:not(.hidden), #change-password-modal:not(.hidden), #dashboard-modal:not(.hidden), #avatar-modal:not(.hidden), #cropper-modal:not(.hidden)');
+            const anyDropdownIsOpen = document.querySelector('.user-menu-dropdown:not(.hidden)');
+            const whatsappIsOpen = document.querySelector('#chamigo-whatsapp-content:not(.hidden)'); // <-- NUEVA LÍNEA
+            return !!anyModalIsOpen || !!anyDropdownIsOpen || !!whatsappIsOpen; // <-- SE AÑADE LA VERIFICACIÓN
+        };
+
         function init() {
             setupTheme();
             setupEventListeners();
             
             // --- START: Hashchange listener for URL routing ---
             window.addEventListener('hashchange', () => {
+                if (ignoreNextHashChange) {
+                    ignoreNextHashChange = false; // Reseteamos la bandera.
+
+                    // Lógica mejorada: encuentra el hash de la pestaña activa actualmente.
+                    const currentActiveTab = document.querySelector('.nav-link.active');
+                    if (currentActiveTab) {
+                        const tabId = currentActiveTab.dataset.tab;
+                        // Corregimos la URL con el hash correcto, evitando el salto.
+                        history.replaceState(null, '', `#${tabId}`);
+                    }
+                    return; // Detenemos la ejecución para no cambiar de pestaña.
+                }
+
                 const tabId = window.location.hash.substring(1) || NAV_ITEMS.dashboard[0].id;
                 renderPage(tabId);
             });
@@ -1280,6 +1347,22 @@
                 document.getElementById('avatar-cancel-button').addEventListener('click', hideAvatarModal);
                 document.getElementById('avatar-upload-form').addEventListener('submit', handleAvatarUpload);
             }
+
+            // Listener para la tecla 'Escape'
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeTopmostModalOrDropdown();
+                }
+            });
+
+            // Listener para el botón "atrás" del navegador/celular
+            window.addEventListener('popstate', () => {
+                if (isModalOrDropdownOpen()) {
+                    ignoreNextHashChange = true;
+                }
+                closeTopmostModalOrDropdown();
+            });
         }
 
         async function handleLogin(e) {
